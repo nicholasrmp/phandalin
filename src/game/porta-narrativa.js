@@ -19,7 +19,9 @@
 // `transmitir(mensagem)` e `esperarResposta(id)`.
 
 /** O que `narrar` aceita; o resto é recusado em desenvolvimento, para uma opção nova não passar calada. */
-export const OPCOES_DA_NARRATIVA = ['formato', 'paginas', 'escolhas', 'pular', 'lista'];
+export const OPCOES_DA_NARRATIVA = ['formato', 'paginas', 'escolhas', 'pular', 'lista', 'campoTexto', 'ajuda'];
+/** O texto digitado por outro jogador é dado de fora: chega cortado, mesmo que o navegador dele não corte. */
+export const MAX_TEXTO_NA_RESPOSTA = 200;
 export const CAMPOS_DA_PAGINA = ['titulo', 'texto', 'teste', 'retrato', 'conteudo'];
 export const CAMPOS_DA_ESCOLHA = ['rotulo', 'valor', 'primaria', 'detalhe', 'motivo'];
 
@@ -34,7 +36,7 @@ const limpo = (v) => (v === undefined ? undefined : JSON.parse(JSON.stringify(v)
  * quem só olha vê o texto, e a tela fica com o anfitrião.
  */
 export function descreverNarrativa(opts) {
-  const { formato = 'tela', paginas, escolhas = null, pular = false, lista = false } = opts;
+  const { formato = 'tela', paginas, escolhas = null, pular = false, lista = false, campoTexto = null, ajuda = null } = opts;
   const aviso = [
     ...desconhecidos(opts, OPCOES_DA_NARRATIVA).map((k) => `opção ${k}`),
     ...paginas.flatMap((p, i) => desconhecidos(p, CAMPOS_DA_PAGINA).map((k) => `página ${i + 1}: campo ${k}`)),
@@ -45,6 +47,8 @@ export function descreverNarrativa(opts) {
       formato,
       pular: Boolean(pular),
       lista: Boolean(lista),
+      ...(campoTexto ? { campoTexto: limpo(campoTexto) } : {}),
+      ...(ajuda ? { ajuda: limpo(ajuda) } : {}),
       paginas: paginas.map((p) => ({
         titulo: p.titulo ?? null,
         texto: limpo(p.texto ?? []),
@@ -119,7 +123,12 @@ export function criarPortaCompartilhada({ local, transmitir, esperarResposta, ao
     // A tela local recebe o ÍNDICE no lugar do valor: dois botões com o mesmo
     // `valor` continuam distintos, e o que se transmite é exatamente o que foi clicado.
     const escolhas = opts.escolhas?.length ? opts.escolhas.map((e, indice) => ({ ...e, valor: indice })) : opts.escolhas;
-    const traduzir = (r) => (opts.escolhas?.length ? { valor: opts.escolhas[r].valor, indice: r } : { valor: 'fim', indice: null });
+    // Com caixa de texto a narrativa resolve com `{ valor, texto }`, venha a resposta daqui ou de outro jogador.
+    const comTexto = (valor, texto) => (opts.campoTexto ? { valor, texto: String(texto ?? '').slice(0, MAX_TEXTO_NA_RESPOSTA) } : valor);
+    const traduzir = (bruto) => {
+      const r = opts.campoTexto ? bruto?.valor : bruto;
+      return opts.escolhas?.length ? { valor: comTexto(opts.escolhas[r]?.valor, bruto?.texto), indice: r } : { valor: 'fim', indice: null };
+    };
     const aqui = local(root, { ...opts, escolhas, sinal: cancelar.signal })
       .then((r) => (decidido ? null : traduzir(r)));
 
@@ -130,7 +139,7 @@ export function criarPortaCompartilhada({ local, transmitir, esperarResposta, ao
           const r = await esperarResposta(id, cancelar.signal);
           if (decidido) return null;
           const v = valorDaResposta(opts, r);
-          if (v.ok) return { valor: v.valor, indice: opts.escolhas?.length ? r.indice : null };
+          if (v.ok) return { valor: comTexto(v.valor, r?.texto), indice: opts.escolhas?.length ? r.indice : null };
         }
       })());
     }

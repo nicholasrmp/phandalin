@@ -1,0 +1,13 @@
+{
+  "_nota": "Lido por último, vale por cima dos lotes: a mesma coisa com o mesmo ícone onde dois lotes escolheram diferente (a família da arma e a arma do catálogo, o azulejo da barra e o recurso de classe).",
+  "cimitarra": "curvy-knife",
+  "item-cimitarra": "curvy-knife",
+  "espadaCurta": "gladius",
+  "item-espadaCurta": "gladius",
+  "surto": "lightning-flame",
+  "classe-actionSurge": "lightning-flame",
+  "correr": "sprint",
+  "acao-disparada": "sprint",
+  "magia-soproDoMongeLinhaMaior": "energy-breath+monk-face",
+  "magia-soproDoMongeConeMaior": "dragon-breath+monk-face"
+}

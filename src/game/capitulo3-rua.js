@@ -74,7 +74,7 @@ export function criarRuaMarcarrubra(app, config) {
           fala: [
             '…Tá bom, tá bom! Lá embaixo da mansão tem gente presa, perto dos túmulos velhos. Quem vigia são uns esqueletos. Eu não chego perto daquilo, juro.',
             'O chefe? A gente chama de Cajavidro, por causa do cajado — é de vidro, e brilha. É mago. Fica na ala oeste, lá embaixo. Nome de verdade, ninguém sabe.',
-            'E tem… uma coisa. Na parte mais funda, numa fenda. Um olho só, do tamanho de um escudo. Fala dentro da cabeça da gente. Eu desço o mínimo possível.',
+            'E tem… uma coisa. Na parte mais funda, numa fenda. Um olho só, e enorme. Fala dentro da cabeça da gente. Eu desço o mínimo possível.',
             'Ele recebe ordem de alguém. Um tal de Aranha Negra, que quer a vila de cabeça baixa e aventureiro bem longe. Mandou até uns bugbears para ajudar.',
           ],
           opcoes: [{ texto: 'Entregar ao chefe da vila.', fim: 'preso' }],

@@ -26,8 +26,8 @@
 // Todo achado vai para o DIÁRIO (`enc.diario`) e para o registro, que a sala inteira vê. Os textos são nossos.
 import { distanceFt } from '../core/grid.js';
 import { skillBonus, passivePerception } from '../rules/abilities.js';
-import { hasCondition } from '../rules/conditions.js';
-import { TRAIT_INFO } from '../rules/monsters.js';
+import { hasCondition, CONDITIONS } from '../rules/conditions.js';
+import { TRAIT_INFO, MONSTERS } from '../rules/monsters.js';
 import { rolarTeste } from '../rules/utilidade.js';
 import { ctxDe } from './magias-fora.js';
 import { criarBuscas } from './buscas.js';
@@ -338,12 +338,16 @@ export function saberDaCriatura(m) {
   const tipo = m.tipo ?? 'humanoide';
   const nd = ndDe(m.xp);
   linhas.push(`${tipo[0].toUpperCase()}${tipo.slice(1)}, de nível de ameaça ${ND_TEXTO[nd] ?? nd}.`);
+  // a LORE do bestiário (o que se conta dela), quando o bloco traz
+  const lore = MONSTERS[m.defId]?.lore;
+  if (lore) linhas.push(lore);
   if (m.immune?.length) linhas.push(`Não sente ${lista(m.immune)}.`);
   if (m.resist?.length) linhas.push(`Aguenta bem ${lista(m.resist)}: leva metade.`);
   if (m.resistNaoMagico?.length) linhas.push(`Arma comum faz pouco nele (${lista(m.resistNaoMagico)}); arma mágica e magia, não.`);
   if (m.vulnerable?.length) linhas.push(`O ponto fraco: ${lista(m.vulnerable)} faz o dobro.`);
-  if (m.conditionImmunities?.length) linhas.push(`Não pode ficar ${lista(m.conditionImmunities)}.`);
-  const sentidos = Object.entries(m.senses ?? {}).filter(([, v]) => v).map(([k, v]) => `${k === 'darkvision' ? 'enxerga no escuro' : k} até ${v} pés`);
+  if (m.conditionImmunities?.length) linhas.push(`Não pode ficar ${lista(m.conditionImmunities.map((c) => CONDITIONS[c]?.name?.toLowerCase() ?? CONDITIONS[c.normalize('NFD').replace(/[̀-ͯ]/g, '')]?.name?.toLowerCase() ?? c))}.`);
+  const NOME_DO_SENTIDO = { darkvisionFt: 'enxerga no escuro', darkvision: 'enxerga no escuro', blindsightFt: 'sente sem ver', blindsight: 'sente sem ver', truesightFt: 'vê as coisas como são', truesight: 'vê as coisas como são', tremorsenseFt: 'sente o tremor do chão', tremorsense: 'sente o tremor do chão' };
+  const sentidos = Object.entries(m.senses ?? {}).filter(([k, v]) => v && NOME_DO_SENTIDO[k]).map(([k, v]) => `${NOME_DO_SENTIDO[k]} até ${v} pés`);
   if (sentidos.length) linhas.push(`Sentidos: ${lista(sentidos)}.`);
   const tracos = (m.traits ?? []).map((t) => TRAIT_INFO[t]).filter(Boolean);
   for (const t of tracos.slice(0, 3)) linhas.push(`${t.name}: ${t.desc}`);
@@ -365,7 +369,22 @@ export function opcaoDeLembrarCriatura(app, c, m, { fora } = {}) {
     pericias: [pericia], cd,
     achado: () => saberDaCriatura(m),
     falha: `${c.name} já ouviu falar de algo assim, mas não lembra de nada que sirva agora.`,
+    efeito: () => marcarConhecida(app, m),
   });
+}
+
+/**
+ * O BESTIÁRIO DO GRUPO: o bloco que alguém já reconheceu pelo Lembrar. A ficha da criatura (`view/ficha-criatura.js`)
+ * só mostra o que se sabe dela depois disso. Mora na campanha (vai no save, por bloco: reconhecer um goblin vale para
+ * todos os goblins); sem campanha (a arena), no campo da cena.
+ */
+const chaveDoBloco = (m) => m.defId ?? m.name;
+export function marcarConhecida(app, m) {
+  const onde = app.campanha ? (app.campanha.bestiario ??= {}) : (app.enc.conhecidas ??= {});
+  onde[chaveDoBloco(m)] = true;
+}
+export function criaturaConhecida(app, m) {
+  return Boolean(app.campanha?.bestiario?.[chaveDoBloco(m)] || app.enc?.conhecidas?.[chaveDoBloco(m)]);
 }
 
 // ------------------------------------------------------------------------------------------ a passiva ---

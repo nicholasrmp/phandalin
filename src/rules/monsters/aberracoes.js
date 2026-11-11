@@ -32,6 +32,95 @@
 // ---------------------------------------------------------------------------
 
 export const ABERRACOES = {
+  // ------------------------------------------------- o capítulo 6 do Obelisco ----
+  // A GÊMULA ENCEFÁLICA (PaBTSO): a cria do aglomerado encefálico, do tamanho de um gato, que gruda e chupa. Cresce até
+  // virar um aglomerado se ninguém a matar em 30 (4d12+4) dias — a cena conta os dias.
+  gemulaEncefalica: {
+    id: 'gemulaEncefalica',
+    tipo: 'aberração',
+    name: 'Gêmula Encefálica',
+    look: 'gemulaEncefalica',
+    fonte: 'PaBTSO',
+    size: 'miúdo',
+    level: 5,
+    cr: '3',
+    xp: 700,
+    abilities: { str: 1, dex: 18, con: 14, int: 5, wis: 12, cha: 7 },
+    ac: 14,
+    maxHp: 54,
+    hpDice: '12d4+24',
+    speedFt: 40,
+    senses: { blindsightFt: 30 },
+    damageResistances: ['psíquico'],
+    conditionImmunities: ['cego'],
+    attacks: [
+      { name: 'Pancada Psíquica', bonus: 6, damage: '3d10', type: 'psíquico', reachFt: 5, art: 'mace' },
+    ],
+    traits: ['resistenciaAMagia', 'sanguessuga'],
+    blurb: 'Um cérebro com pernas de aranha, do tamanho de um gato. Gruda em quem chega perto e chupa; arrancá-la pede Força.',
+  },
+
+  // A GOSMA CINZENTA PSÍQUICA (SRD, com a variante do livro dos monstros que o Obelisco usa): uma poça oleosa que corrói
+  // metal e, com a mente que ganhou perto de um caco do obelisco, esmaga a cabeça de quem ela sente a 18 m.
+  gosmaCinzentaPsiquica: {
+    id: 'gosmaCinzentaPsiquica',
+    tipo: 'gosma',
+    name: 'Gosma Cinzenta Psíquica',
+    look: 'gosmaCinzentaPsiquica',
+    fonte: 'SRD',
+    size: 'médio',
+    level: 2,
+    cr: '1/2',
+    xp: 100,
+    abilities: { str: 12, dex: 6, con: 16, int: 6, wis: 6, cha: 2 },
+    ac: 8,
+    maxHp: 22,
+    hpDice: '3d8+9',
+    speedFt: 10,
+    speeds: { climbFt: 10 },
+    skills: ['furtividade'],
+    senses: { blindsightFt: 60 },
+    damageResistances: ['ácido', 'frio', 'fogo'],
+    conditionImmunities: ['cego', 'enfeitiçado', 'surdo', 'exausto', 'amedrontado', 'caido'],
+    attacks: [
+      { name: 'Pseudópode', bonus: 3, damage: '1d6+1', type: 'concussão', reachFt: 5, art: 'mace', danoExtra: { damage: '2d6', type: 'ácido' } },
+    ],
+    traits: ['amorfo', 'aparenciaFalsa', 'esmagamentoPsiquico'],
+    blurb: 'Uma poça de óleo cinzento que se mexe. Corrói o metal que a acerta e esmaga, com a mente, a cabeça de quem ela sente.',
+  },
+
+  // O MONTE ERRANTE PSIÔNICO (o Obelisco): o monte errante do SRD que devorou um goblin psíquico e ganhou um fiapo de
+  // mente. O Enfeitiçar Pessoa do dia ele JÁ GASTOU — foi assim que atraiu o velho Wallin para a caverna.
+  monteErrantePsionico: {
+    id: 'monteErrantePsionico',
+    tipo: 'planta',
+    name: 'Monte Errante Psiônico',
+    look: 'monteErrantePsionico',
+    fonte: 'PaBTSO',
+    size: 'grande',
+    level: 5,
+    cr: '5',
+    xp: 1800,
+    abilities: { str: 18, dex: 8, con: 16, int: 5, wis: 10, cha: 5 },
+    ac: 15,
+    acNote: 'armadura natural',
+    maxHp: 136,
+    hpDice: '16d10+48',
+    speedFt: 20,
+    speeds: { swimFt: 20 },
+    skills: ['furtividade'],
+    senses: { blindsightFt: 60, passivePerception: 10 },
+    damageResistances: ['frio', 'fogo'],
+    damageImmunities: ['elétrico'],
+    conditionImmunities: ['cego', 'surdo', 'exausto'],
+    attacks: [
+      { name: 'Pancada', bonus: 7, damage: '2d8+4', type: 'concussão', reachFt: 5, art: 'mace', onHit: { semResistencia: true, dc: 14, escape: 14, condition: 'contido', note: 'é agarrado e engolido pelo monte' } },
+    ],
+    multiattack: { count: 2, sequence: ['Pancada', 'Pancada'] },
+    traits: ['absorcaoDeRaios', 'engolir'],
+    blurb: 'Uma pilha de mato e lodo que anda, com um fiapo de mente roubado de um goblin psíquico. Engole quem pega com os dois braços.',
+  },
+
 
   // =========================================================== SRD 5.1
 
@@ -73,9 +162,7 @@ export const ABERRACOES = {
   },
 
   // O GRICK do Castelo Dentefino (área 8), o bicho de estimação do Lhupo.
-  // Bloco do SRD 5.1. A Camuflagem de Pedra (vantagem em Furtividade no
-  // meio de pedra) entra como perícia alta; a resistência a dano não mágico
-  // fica de fora até o motor saber distinguir arma mágica.
+  // Bloco do SRD 5.1, com a resistência a dano NÃO MÁGICO (`damageResistancesNote`, `monsters.js resistNaoMagico`).
   grick: {
     id: 'grick',
     tipo: 'monstruosidade',
@@ -517,19 +604,284 @@ export const ABERRACOES = {
     blurb: 'Prende um de cada vez e não solta, e FALA: é a única do bando com quem dá para negociar a passagem.',
   },
 
+  // ---- o capítulo 5 do Obelisco (revisoes/obelisco-5a8-plano-2026-11-08.md) ----
+
+  // O OTYUGH (SRD): o lixeiro de esgoto da caverna do poço do Barthen. A mordida passa uma DOENÇA (`doencaDoOtyugh`,
+  // curada no descanso longo com Constituição CD 15); os dois tentáculos agarram; com dois presos, bate um no outro.
+  otyugh: {
+    id: 'otyugh',
+    tipo: 'aberração',
+    name: 'Otyugh',
+    look: 'otyugh',
+    fonte: 'SRD',
+    size: 'grande',
+    level: 8,
+    cr: '5',
+    xp: 1800,
+    abilities: { str: 16, dex: 11, con: 19, int: 6, wis: 13, cha: 6 },
+    ac: 14,
+    acNote: 'armadura natural',
+    maxHp: 114,
+    hpDice: '12d10+48',
+    speedFt: 30,
+    senses: { darkvisionFt: 120 },
+    saves: ['con'],
+    attacks: [
+      { name: 'Mordida', bonus: 6, damage: '2d8+3', type: 'perfurante', reachFt: 5, art: 'bite',
+        onHit: { save: 'con', dc: 15, condition: 'doencaDoOtyugh', note: 'pega a doença da mordida' } },
+      { name: 'Tentáculo', bonus: 6, damage: '1d8+3', type: 'concussão', reachFt: 10, art: 'grab', danoExtra: { damage: '1d8', type: 'perfurante' },
+        onHit: { semResistencia: true, dc: 13, escape: 13, condition: 'contido', note: 'é agarrado pelo tentáculo' } },
+    ],
+    multiattack: { count: 3, sequence: ['Mordida', 'Tentáculo', 'Tentáculo'] },
+    traits: ['pancadaDeTentaculos'],
+    blurb: 'Mordida que passa doença e dois tentáculos de 3 m que agarram. Com dois presos, bate um no outro: Constituição CD 14 ou atordoado.',
+  },
+
+  // O OTYUGH MUTANTE (o Obelisco): descendente dos otyughs que os duergar trouxeram para comer o lixo de Zorzula, torto
+  // pela energia dos devoradores de mente. Hálito venenoso em volta, e uma Pancada de Quitina no lugar de um golpe.
+  otyughMutante: {
+    id: 'otyughMutante',
+    tipo: 'aberração',
+    name: 'Otyugh Mutante',
+    look: 'otyughMutante',
+    fonte: 'PaBTSO',
+    size: 'grande',
+    level: 9,
+    cr: '6',
+    xp: 2300,
+    abilities: { str: 19, dex: 11, con: 18, int: 10, wis: 15, cha: 6 },
+    ac: 16,
+    acNote: 'armadura natural',
+    maxHp: 76,
+    hpDice: '8d10+32',
+    speedFt: 30,
+    senses: { darkvisionFt: 120 },
+    saves: ['str', 'con'],
+    damageImmunities: ['veneno'],
+    conditionImmunities: ['envenenado'],
+    attacks: [
+      { name: 'Mordida', bonus: 7, damage: '2d8+4', type: 'perfurante', reachFt: 5, art: 'bite',
+        onHit: { save: 'con', dc: 15, condition: 'doencaDoOtyugh', note: 'pega a doença da mordida' } },
+      { name: 'Tentáculo', bonus: 7, damage: '2d8+4', type: 'concussão', reachFt: 10, art: 'grab',
+        onHit: { semResistencia: true, dc: 15, escape: 15, condition: 'contido', note: 'é agarrado pelo tentáculo' } },
+    ],
+    multiattack: { count: 2, sequence: ['Tentáculo', 'Mordida'] },
+    traits: ['halitoVirulento', 'pancadaDeQuitina'],
+    blurb: 'Hálito venenoso em quem está colado (Constituição CD 15). Tentáculo de 3 m que agarra e mordida que passa doença; no lugar de um golpe, a Pancada de Quitina atordoa um agarrado.',
+  },
+
+  // A BROCA INFERNAL (o Obelisco): uma broca de ferro em brasa, Enorme, que os duergar faziam furar a rocha. Investe em
+  // linha (`investida`: andou 6 m antes do golpe, +2d10 e Força CD 17 ou cai) e solta calor que contorna quinas.
+  // A investida conta os 6 m da ÚLTIMA RETA andada, na direção do alvo (`combat.js retaNoFim`), e a broca fura a rocha
+  // natural do mapa e deixa o túnel (`escavador`, `combat.js abrirTunel`).
+  brocaInfernal: {
+    id: 'brocaInfernal',
+    tipo: 'constructo',
+    name: 'Broca Infernal',
+    look: 'brocaInfernal',
+    fonte: 'PaBTSO',
+    size: 'enorme',
+    level: 8,
+    cr: '5',
+    xp: 1800,
+    abilities: { str: 23, dex: 10, con: 17, int: 6, wis: 12, cha: 5 },
+    ac: 15,
+    acNote: 'armadura natural',
+    maxHp: 85,
+    hpDice: '9d12+27',
+    speedFt: 40,
+    senses: { blindsightFt: 60 },
+    damageImmunities: ['fogo', 'veneno'],
+    conditionImmunities: ['cego', 'enfeitiçado', 'exausto', 'amedrontado', 'paralisado', 'petrificado', 'envenenado', 'inconsciente'],
+    attacks: [
+      { name: 'Broca em Brasa', bonus: 9, damage: '2d10+6', type: 'perfurante', reachFt: 5, art: 'javelin', danoExtra: { damage: '2d6', type: 'fogo' },
+        investida: { pes: 20, dano: '2d10', tipo: 'perfurante', save: 'str', dc: 17 } },
+    ],
+    traits: ['monstroDeCerco', 'escavador', 'rajadaDeCalor'],
+    blurb: 'Broca em brasa: 2d10+6 e 2d6 de fogo, e se veio de 6 m de corrida, mais 2d10 e Força CD 17 ou cai. Ação bônus, recarga 5–6: Rajada de Calor de 9 m que contorna quinas (Constituição CD 17).',
+  },
+
+  // O GUARDIÃO-ESCUDO (SRD): o constructo ligado a um amuleto. O do Santuário Índigo é a estátua que o Ruxithid
+  // desperta. Dois laços diferentes, que a cena põe: `amuletoCom` (quem usa o AMULETO: leva metade do dano dele a até 18
+  // m e protege com +2 de CA colado) e `comandadoPor` (quem o controla: morto ele, o guardião fica inerte). O Ruxithid
+  // o controla pela luz do cristal, sem amuleto — o livro não dá amuleto a ninguém ali —, então no Santuário só vale o
+  // segundo. Ele se refaz 10 PV por turno. APROXIMAÇÃO, dita: a magia guardada (Matar com Ilusão, no
+  // livro) não está no motor.
+  guardiaoEscudo: {
+    id: 'guardiaoEscudo',
+    tipo: 'constructo',
+    name: 'Guardião-Escudo',
+    look: 'guardiaoEscudo',
+    fonte: 'SRD',
+    size: 'grande',
+    level: 10,
+    cr: '7',
+    xp: 2900,
+    abilities: { str: 18, dex: 8, con: 18, int: 7, wis: 10, cha: 3 },
+    ac: 17,
+    acNote: 'armadura natural',
+    maxHp: 142,
+    hpDice: '15d10+60',
+    speedFt: 30,
+    senses: { blindsightFt: 10, darkvisionFt: 60 },
+    damageImmunities: ['veneno'],
+    conditionImmunities: ['enfeitiçado', 'exausto', 'amedrontado', 'paralisado', 'envenenado'],
+    attacks: [
+      { name: 'Punho', bonus: 7, damage: '2d6+4', type: 'concussão', reachFt: 5, art: 'mace' },
+    ],
+    multiattack: { count: 2 },
+    traits: ['vinculo', 'regeneracao', 'escudoDoGuardiao'],
+    blurb: 'Dois punhos de 2d6+4. Leva metade do dano do mestre a até 18 m e dá +2 de CA a ele quando está colado. Recupera 10 PV por turno; sem o mestre, para.',
+  },
+
+  // ---- o que o Obelisco pôs na Mina Perdida (revisoes/obelisco-de-para-2026-11-08.md) ----
+
+  // O CASTELO, C13: a torre assombrada é o covil dele. Voa (pairando), não enxerga além de 18 m e não precisa:
+  // é cego e imune a ficar cego. O tentáculo faz DUAS coisas que o livro separa — o veneno que paralisa, com
+  // resistência, e o agarrão, sem — e por isso o `onHit` é uma lista.
+  grell: {
+    id: 'grell',
+    tipo: 'aberração',
+    name: 'Grell',
+    look: 'grell',
+    fonte: 'MM',
+    size: 'médio',
+    level: 4,
+    cr: '3',
+    xp: 700,
+    abilities: { str: 15, dex: 14, con: 13, int: 12, wis: 11, cha: 9 },
+    ac: 12,
+    maxHp: 55,
+    hpDice: '10d8+10',
+    speedFt: 10,
+    speeds: { walkFt: 10, flyFt: 30 },
+    senses: { blindsightFt: 60, passivePerception: 14 },
+    // Percepção +4 e Furtividade +6: o dobro da proficiência nas duas.
+    skills: ['percepcao', 'furtividade'],
+    expertise: ['percepcao', 'furtividade'],
+    attacks: [
+      {
+        name: 'Tentáculos', bonus: 4, damage: '1d10+2', type: 'perfurante', reachFt: 10, art: 'claw',
+        onHit: [
+          // O veneno deixa ENVENENADO, e o envenenado pelo grell fica PARALISADO: é a paralisia que decide a luta,
+          // e é ela que entra. A resistência se repete no fim de cada turno.
+          { save: 'con', dc: 11, condition: 'paralisado', rounds: 10, repete: true, note: 'o veneno dos tentáculos trava o corpo' },
+          // E agarra, sem resistência. No motor, `contido` é o agarrado que não anda, que é o que o livro dá a quem
+          // é Médio ou menor.
+          { semResistencia: true, dc: 15, escape: 15, condition: 'contido', note: 'é agarrado pelos tentáculos' },
+        ],
+      },
+      { name: 'Bico', bonus: 4, damage: '2d4+2', type: 'perfurante', reachFt: 5, art: 'bite' },
+    ],
+    multiattack: { count: 2, sequence: ['Tentáculos', 'Bico'] },
+    damageImmunities: ['elétrico'],
+    conditionImmunities: ['cego', 'caido'],
+    // Leva consigo, quando se move, quem está agarrado e é Médio ou menor (`carregaAgarrados`, `combat.js levarAgarrados`).
+    traits: ['carregaAgarrados'],
+    blurb: 'Desce voando e paralisa com os tentáculos: quem falha em CON CD 11 trava e é agarrado. A paralisia passa com nova resistência a cada turno.',
+  },
+
+  // A ONDA ECO, W8: dois deles no meio dos fungos, um no canteiro central e um no do norte. Parados, são fungo.
+  fungoVioleta: {
+    id: 'fungoVioleta',
+    tipo: 'planta',
+    name: 'Fungo Violeta',
+    look: 'fungoVioleta',
+    fonte: 'MM',
+    size: 'médio',
+    level: 1,
+    cr: '1/4',
+    xp: 50,
+    abilities: { str: 3, dex: 1, con: 10, int: 1, wis: 3, cha: 1 },
+    ac: 5,
+    maxHp: 18,
+    hpDice: '4d8',
+    speedFt: 5,
+    senses: { blindsightFt: 30, passivePerception: 6 },
+    attacks: [
+      { name: 'Toque Apodrecido', bonus: 2, damage: '1d8', type: 'necrótico', reachFt: 10, art: 'claw' },
+    ],
+    // 1d4 toques por turno: o dado é rolado a cada ação (`combat.js golpesDoAtaque`).
+    multiattack: { countDados: '1d4' },
+    conditionImmunities: ['cego', 'surdo', 'amedrontado'],
+    traits: ['aparenciaFalsa'],
+    blurb: 'Parado, é só mais um fungo. Toca a 3 m, de uma a quatro vezes por turno, e o toque apodrece.',
+  },
+
+  // A MANSÃO, R11: o familiar do Glasstaff, chamado Zeond. Invisível quando o grupo entra, não ataca logo:
+  // espera alguém enfraquecer, ataca e some de novo. E conta tudo ao dono pelo elo telepático.
+  quasit: {
+    id: 'quasit',
+    tipo: 'corruptor',
+    name: 'Quasit',
+    look: 'quasit',
+    fonte: 'MM',
+    size: 'miúdo',
+    level: 2,
+    cr: '1',
+    xp: 200,
+    abilities: { str: 5, dex: 17, con: 10, int: 7, wis: 10, cha: 10 },
+    ac: 13,
+    maxHp: 7,
+    hpDice: '3d4',
+    speedFt: 40,
+    senses: { darkvisionFt: 120, passivePerception: 10 },
+    skills: ['furtividade'],
+    attacks: [
+      {
+        name: 'Garras', bonus: 4, damage: '1d4+3', type: 'perfurante', reachFt: 5, art: 'claw',
+        // UMA resistência para as duas coisas: quem falha leva 2d4 de veneno E fica envenenado; quem passa, nada.
+        onHit: {
+          save: 'con', dc: 10, condition: 'envenenado', rounds: 10, repete: true, note: 'o veneno das garras entra',
+          danoSeFalhar: { damage: '2d4', type: 'veneno' },
+        },
+      },
+    ],
+    damageResistances: ['frio', 'fogo', 'elétrico', 'cortante', 'perfurante', 'concussão'],
+    damageResistancesNote: 'cortante, perfurante e concussão só de armas não mágicas',
+    damageImmunities: ['veneno'],
+    conditionImmunities: ['envenenado'],
+    // `invisivelAVontade` é a Invisibilidade do bloco, que a IA usa (`ai.js turnoInvisivel`); o SUSTO de uma vez por dia
+    // (`combat.js sustoDoQuasit`) e MUDAR DE FORMA — morcego, centopeia, sapo (`combat.js mudarDeForma`).
+    traits: ['resistenciaAMagia', 'invisivelAVontade', 'susto', 'mudaDeForma'],
+    blurb: 'Fica invisível, espera alguém ficar fraco, ataca e some de novo. O veneno das garras envenena e fere; tem vantagem contra magia.',
+  },
+
 };
 
 /** Traços novos desta família, somados ao dicionário geral. */
 export const TRAITS = {
+  sanguessuga: { name: 'Sanguessuga', desc: 'Ação bônus: Destreza CD 14 de quem está colado; falhou, a gêmula gruda nele e tira 3d4 perfurante no começo de cada turno dele. Solta-se com Força CD 15 (a ação de escapar), ou quando a gêmula morre.' },
+  esmagamentoPsiquico: { name: 'Esmagamento Psíquico', desc: 'Recarga 5–6. Uma criatura que ela sinta a até 18 m: Inteligência CD 10, 3d6 psíquico (metade se passar).' },
+  resistenciaAMagia: {
+    name: 'Resistência a Magia',
+    desc: 'Tem vantagem nas resistências contra magias e outros efeitos mágicos.',
+  },
+  invisivelAVontade: {
+    name: 'Invisibilidade',
+    desc: 'Fica invisível quando quer, gastando a ação, até atacar. Espera alguém do grupo enfraquecer, ataca e no turno seguinte some de novo.',
+  },
 
   // --- gelatina ocre (SRD) ---
   amorfo: {
     name: 'Amorfa',
     desc: 'Atravessa uma abertura de 2,5 cm sem gastar deslocamento extra.',
   },
+  susto: {
+    name: 'Susto',
+    desc: 'Uma vez por dia, ação: uma criatura a até 6 m faz Sabedoria CD 10 ou fica amedrontada por 1 minuto. Repete no fim de cada turno, com desvantagem enquanto o vê.',
+  },
+  mudaDeForma: {
+    name: 'Muda de Forma',
+    desc: 'Ação: vira morcego (voa 12 m), centopeia (escala) ou sapo (nada), ou volta. Só o deslocamento muda.',
+  },
+  carregaAgarrados: {
+    name: 'Leva o que Agarra',
+    desc: 'Quando se move, quem ele agarra (Médio ou menor) vai junto.',
+  },
   camuflagemDePedra: {
     name: 'Camuflagem de Pedra',
-    desc: 'Vantagem em Furtividade para se esconder em terreno rochoso. (Ainda não é uma ação do jogo.)',
+    desc: 'Vantagem em Furtividade em terreno rochoso: na surpresa e ao se esconder.',
   },
   escaladaAracnidea: {
     name: 'Escalada Aracnídea',
@@ -577,7 +929,7 @@ export const TRAITS = {
   },
   reacendeNaMorte: {
     name: 'Reacende',
-    desc: 'Reduzida a 0 PV, a chama apaga mas o osso fica. Se os restos não forem queimados ou destruídos, ela volta a arder em uma hora com metade dos PV.',
+    desc: 'Destruída, volta a arder em uma hora com todos os PV, a menos que alguém asperja água benta nos restos ou lance Dissipar Magia ou Remover Maldição neles.',
   },
   visaoAgucada: {
     name: 'Visão Aguçada',

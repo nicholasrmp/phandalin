@@ -221,6 +221,111 @@ export const MORTOS_VIVOS = {
     blurb: 'Atravessa a parede, arranca 4d8+3 do PV máximo de um alvo por turno e ergue espectros de quem cai.',
   },
 
+  // A BANSHEE (SRD), que o Obelisco põe na Agatha de Conyberry: ND 4, 1.100 XP, 58 PV. Ofendida, ou quando a
+  // Persuasão falha, ela ataca. O que o motor executa: o Toque Corruptor, a VISAGEM HORRIPILANTE (quem a vê, a até
+  // 18 m, Sabedoria CD 13 ou amedrontado por 1 minuto, repetindo no fim de cada turno; quem passa fica imune) e o
+  // LAMENTO, uma vez por dia (todos a até 9 m que a ouvem, Constituição CD 13: quem falha cai a 0 PV, quem passa
+  // leva 3d6 psíquicos) — `combat.js visagemHorripilante/lamentoDaBanshee`, `ai.js turnoDaBanshee`.
+  // O movimento incorpóreo atravessa parede e criatura (`grid.js reachable`, `incorporealMovement`); a Visagem envelhece
+  // 1d4 x 10 anos quem falha por 5 ou mais, e a nova resistência ao medo tem desvantagem enquanto ela está à vista
+  // (`desvantagemSeVe`). A Detecção de Vida (sentir vivos a 8 km) não tem o que fazer num tabuleiro: fica no texto.
+  banshee: {
+    id: 'banshee',
+    name: 'Banshee',
+    look: 'agatha',
+    fonte: 'SRD',
+    size: 'médio',
+    level: 7,
+    cr: '4',
+    xp: 1100,
+    abilities: { str: 1, dex: 14, con: 10, int: 12, wis: 11, cha: 17 },
+    saves: ['wis', 'cha'],
+    voice: 'wailSpectre',
+    ac: 12,
+    maxHp: 58,
+    hpDice: '13d8',
+    speedFt: 40,
+    flyFt: 40,
+    hover: true,
+    senses: { darkvisionFt: 60 },
+    attacks: [
+      { name: 'Toque Corruptor', bonus: 4, damage: '3d6+2', type: 'necrótico', reachFt: 5, art: 'claw' },
+    ],
+    damageResistances: ['ácido', 'fogo', 'elétrico', 'trovejante', 'cortante', 'perfurante', 'concussão'],
+    damageResistancesNote: 'cortante, perfurante e concussão só de armas não mágicas',
+    damageImmunities: ['frio', 'necrótico', 'veneno'],
+    conditionImmunities: ['enfeitiçado', 'exausto', 'amedrontado', 'agarrado', 'paralisado', 'petrificado', 'envenenado', 'caido', 'imobilizado'],
+    incorporeo: true,
+    tatica: 'banshee',
+    traits: ['incorporealMovement', 'detectarVida', 'visagemHorripilante', 'lamento'],
+    blurb: 'Abre com a Visagem Horripilante (Sabedoria CD 13 ou amedrontado). Uma vez por dia, o Lamento: quem está a 9 m e falha em Constituição CD 13 cai a 0 PV. De perto, o Toque Corruptor, 3d6+2 necróticos.',
+  },
+
+  // OS ASHENWIGHTS DE ZORZULA (o Obelisco, capítulo 5): os anões duergar mortos quando os devoradores de mente tomaram o
+  // posto, que voltaram presos ao trabalho de antes — forjam, cavam. O ESTILHAÇO NECRÓTICO, de perto ou a 18 m, deixa
+  // o alvo com desvantagem no próximo ataque (`zombado`, a mesma marca da Zombaria Viciosa). O psiônico guardou a mente:
+  // fala por telepatia, e põe a COROA PSIÔNICA junto do multiataque (`combat.js coroaPsionica`).
+  ashenwightFeral: {
+    id: 'ashenwightFeral',
+    name: 'Ashenwight Feral',
+    look: 'ashenwightFeral',
+    fonte: 'PaBTSO',
+    size: 'médio',
+    level: 8,
+    cr: '5',
+    xp: 1800,
+    abilities: { str: 19, dex: 13, con: 15, int: 4, wis: 14, cha: 6 },
+    ac: 16,
+    acNote: 'armadura natural',
+    maxHp: 65,
+    hpDice: '10d8+20',
+    speedFt: 25,
+    senses: { darkvisionFt: 120 },
+    saves: ['str', 'con'],
+    damageResistances: ['necrótico', 'veneno'],
+    conditionImmunities: ['enfeitiçado', 'exausto', 'amedrontado', 'paralisado', 'envenenado', 'inconsciente'],
+    attacks: [
+      { name: 'Estilhaço Necrótico', bonus: 7, damage: '1d6+4', type: 'necrótico', reachFt: 5, art: 'claw',
+        onHit: { semResistencia: true, condition: 'zombado', rounds: 1, note: 'sente o frio do estilhaço' } },
+      { name: 'Estilhaço Necrótico (longe)', bonus: 7, damage: '1d6+4', type: 'necrótico', ranged: true, rangeFt: 60, longRangeFt: 60, art: 'claw',
+        onHit: { semResistencia: true, condition: 'zombado', rounds: 1, note: 'sente o frio do estilhaço' } },
+    ],
+    multiattack: { count: 2 },
+    traits: [],
+    blurb: 'Dois Estilhaços Necróticos por turno, de perto ou a 18 m; quem leva tem desvantagem no próximo ataque. Não sente medo, encanto nem veneno.',
+  },
+
+  ashenwightPsionico: {
+    id: 'ashenwightPsionico',
+    name: 'Ashenwight Psiônico',
+    look: 'ashenwightPsionico',
+    fonte: 'PaBTSO',
+    size: 'médio',
+    level: 10,
+    cr: '7',
+    xp: 2900,
+    abilities: { str: 19, dex: 13, con: 15, int: 17, wis: 14, cha: 6 },
+    ac: 16,
+    acNote: 'armadura natural',
+    maxHp: 78,
+    hpDice: '12d8+24',
+    speedFt: 25,
+    senses: { darkvisionFt: 120 },
+    saves: ['str', 'con', 'int', 'wis'],
+    damageResistances: ['necrótico', 'veneno', 'psíquico'],
+    conditionImmunities: ['enfeitiçado', 'exausto', 'amedrontado', 'paralisado', 'envenenado', 'inconsciente'],
+    attacks: [
+      { name: 'Estilhaço Necrótico', bonus: 7, damage: '1d6+4', type: 'perfurante', reachFt: 5, art: 'claw', danoExtra: { damage: '2d8', type: 'necrótico' },
+        onHit: { semResistencia: true, condition: 'zombado', rounds: 1, note: 'sente o frio do estilhaço' } },
+      { name: 'Estilhaço Necrótico (longe)', bonus: 7, damage: '1d6+4', type: 'perfurante', ranged: true, rangeFt: 60, longRangeFt: 60, art: 'claw', danoExtra: { damage: '2d8', type: 'necrótico' },
+        onHit: { semResistencia: true, condition: 'zombado', rounds: 1, note: 'sente o frio do estilhaço' } },
+    ],
+    multiattack: { count: 2 },
+    // A psiônica do livro (Mão Mágica à vontade, Acalmar Emoções 1/dia) fica no texto: a IA não a usa em luta.
+    traits: ['coroaPsionica'],
+    blurb: 'Dois Estilhaços Necróticos e, junto, a Coroa Psiônica (recarga 5–6): Sabedoria CD 14 ou enfeitiçado, sem reações, a meia velocidade e com 2d8 psíquicos por turno.',
+  },
+
   // MORMESK, a aparição dos aposentos dos magos (Caverna Onda Eco). Os números são os do livro (apêndice B): ND 3,
   // 700 XP, 45 PV, Drenar Vida +5 com 3d8+3. Ele NÃO ergue espectros: prefere deixar os mortos mortos.
   mormesk: {
@@ -253,6 +358,36 @@ export const MORTOS_VIVOS = {
     incorporeo: true,
     traits: ['incorporealMovement', 'lifeDrain', 'sunlightSensitivity'],
     blurb: 'Atravessa a parede e arranca 3d8+3 do PV máximo de um alvo por turno. Fala, e prefere negociar a lutar.',
+  },
+
+  // A ONDA ECO, W4: dois deles com seis zumbis anões na guarita velha, e lutam até cair — o Obelisco acrescentou
+  // os dois à sala. A Fortitude é a mesma do zumbi: CD 5 + o dano, a não ser radiante ou crítico.
+  zumbiOgro: {
+    id: 'zumbiOgro',
+    tipo: 'morto-vivo',
+    name: 'Zumbi Ogro',
+    look: 'zumbiOgro',
+    fonte: 'MM',
+    size: 'grande',
+    level: 3,
+    cr: '2',
+    xp: 450,
+    abilities: { str: 19, dex: 6, con: 18, int: 3, wis: 6, cha: 5 },
+    voice: 'moanZombie',
+    ac: 8,
+    acNote: 'sem armadura',
+    maxHp: 85,
+    hpDice: '9d10+36',
+    speedFt: 30,
+    saves: ['wis'],
+    senses: { darkvisionFt: 60 },
+    attacks: [
+      { name: 'Maça-estrela', bonus: 6, damage: '2d8+4', type: 'concussão', reachFt: 5, art: 'mace' },
+    ],
+    damageImmunities: ['veneno'],
+    conditionImmunities: ['envenenado'],
+    traits: ['undeadFortitude'],
+    blurb: 'Lento de cabeça e pesado de mão: 2d8+4 por golpe, 85 PV, e ainda se recusa a cair a 0 como o zumbi pequeno.',
   },
 
 };
@@ -289,6 +424,19 @@ export const TRAITS = {
 
   // SRD. SEM GANCHO NO MOTOR: `Battlefield.reachable` não aceita regra de
   // passagem por ator, então hoje a parede para o espectro como para todos.
+  // A banshee (SRD). Só texto: a vida que ela pressente não muda nada no tabuleiro.
+  detectarVida: {
+    name: 'Detectar Vida',
+    desc: 'Pressente criaturas vivas a até 8 km, mas não onde estão exatamente.',
+  },
+  visagemHorripilante: {
+    name: 'Visagem Horripilante',
+    desc: 'Ação: quem a vê a até 18 m (menos mortos-vivos) faz Sabedoria CD 13 ou fica amedrontado por 1 minuto, repetindo no fim de cada turno. Quem passa fica imune por 24 horas.',
+  },
+  lamento: {
+    name: 'Lamento (1/dia)',
+    desc: 'Ação: quem a ouve a até 9 m (menos mortos-vivos e constructos) faz Constituição CD 13. Falha: cai a 0 PV. Sucesso: 3d6 psíquicos. Não sob a luz do sol.',
+  },
   incorporealMovement: {
     name: 'Movimento Incorpóreo',
     desc: 'Atravessa criaturas e objetos como terreno difícil (custo dobrado). Sofre 1d10 de dano energético se terminar o turno dentro de um objeto.',

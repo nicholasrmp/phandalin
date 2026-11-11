@@ -536,7 +536,7 @@ export function aplicar(sala, jogadorId, mensagem, agora = 0) {
       const { id, indice = null } = mensagem;
       if (!Number.isInteger(id) || id < 1) return recusa('resposta inválida');
       if (indice !== null && (!Number.isInteger(indice) || indice < 0 || indice > 50)) return recusa('resposta inválida');
-      return ok({ igual: true, repassar: { tipo: 'resposta', id, indice, continuar: mensagem.continuar === true, de: eu.pub } });
+      return ok({ igual: true, repassar: { tipo: 'resposta', id, indice, continuar: mensagem.continuar === true, ...(typeof mensagem.texto === 'string' ? { texto: mensagem.texto.slice(0, 200) } : {}), de: eu.pub } });
     }
     case 'persona': {
       if (sala.fase !== 'lobby') return recusa('a partida já começou');

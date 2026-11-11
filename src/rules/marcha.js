@@ -141,7 +141,9 @@ export function marcharEm(herois, ritmo) {
   for (const c of herois) {
     if (ritmo) {
       c.marcha = ritmo;
-      c.percepcaoMarcha = ritmoDe(ritmo).percepcao;
+      // EXPLORADOR DE MASMORRAS (talento): o ritmo depressa não tira os 5 da Percepção passiva.
+      const pen = ritmoDe(ritmo).percepcao;
+      c.percepcaoMarcha = pen < 0 && (c.talentos ?? []).includes('exploradorDeMasmorras') ? 0 : pen;
     } else {
       delete c.marcha;
       delete c.percepcaoMarcha;
@@ -201,7 +203,9 @@ export function furtividadeDoGrupo(rng, herois, inimigos, passivaDe, { vantagem 
     const fx = conditionEffects(c);
     // O 1º degrau de exaustão atrapalha (Furtividade é teste de Destreza), e a
     // armadura pesada também: andar de cota de malha pela mata faz barulho.
-    const pelaArmadura = ARMORS[c.armor]?.furtividade === 'desvantagem';
+    // MESTRE EM ARMADURAS MÉDIAS (talento): a armadura média não atrapalha a Furtividade.
+    const pelaArmadura = ARMORS[c.armor]?.furtividade === 'desvantagem'
+      && !(ARMORS[c.armor]?.categoria === 'média' && (c.talentos ?? []).includes('mestreEmArmadurasMedias'));
     const ruim = desvantagem || pelaArmadura
       || fx.desvantagemSoTeste.includes('dex') || fx.desvantagemTeste.includes('dex');
     // FURTIVIDADE SUPREMA (ladrão, 9º): vantagem em Furtividade se anda a meio deslocamento ou menos (ritmo lento, ou parado).
@@ -233,7 +237,9 @@ export function chanceDeEsconder(herois, atencao, { vantagem = false, desvantage
   if (!vivos.length) return 0;
   const ps = vivos.map((c) => {
     const fx = conditionEffects(c);
-    const pelaArmadura = ARMORS[c.armor]?.furtividade === 'desvantagem';
+    // MESTRE EM ARMADURAS MÉDIAS (talento): a armadura média não atrapalha a Furtividade.
+    const pelaArmadura = ARMORS[c.armor]?.furtividade === 'desvantagem'
+      && !(ARMORS[c.armor]?.categoria === 'média' && (c.talentos ?? []).includes('mestreEmArmadurasMedias'));
     const ruim = desvantagem || pelaArmadura
       || fx.desvantagemSoTeste.includes('dex') || fx.desvantagemTeste.includes('dex');
     // Precisa PASSAR da atenção: o empate vale para quem defende.

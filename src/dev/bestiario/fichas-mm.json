@@ -1,0 +1,1466 @@
+{
+ "aarakocra": [
+  "MM",
+  "Aarakocra.webp"
+ ],
+ "aboleth": [
+  "MM",
+  "Aboleth.webp"
+ ],
+ "yetiAbominavel": [
+  "MM",
+  "Abominable Yeti.webp"
+ ],
+ "dragaoNegroAdulto": [
+  "MM",
+  "Adult Black Dragon.webp"
+ ],
+ "dracolichAzulAdulto": [
+  "MM",
+  "Adult Blue Dracolich.webp"
+ ],
+ "dragaoAzulAdulto": [
+  "MM",
+  "Adult Blue Dragon.webp"
+ ],
+ "dragaoDeLataoAdulto": [
+  "MM",
+  "Adult Brass Dragon.webp"
+ ],
+ "dragaoDeBronzeAdulto": [
+  "MM",
+  "Adult Bronze Dragon.webp"
+ ],
+ "dragaoDeCobreAdulto": [
+  "MM",
+  "Adult Copper Dragon.webp"
+ ],
+ "dragaoDouradoAdulto": [
+  "MM",
+  "Adult Gold Dragon.webp"
+ ],
+ "dragaoVerdeAdulto": [
+  "MM",
+  "Adult Green Dragon.webp"
+ ],
+ "dragaoVermelhoAdulto": [
+  "MM",
+  "Adult Red Dragon.webp"
+ ],
+ "dragaoDePrataAdulto": [
+  "MM",
+  "Adult Silver Dragon.webp"
+ ],
+ "dragaoBrancoAdulto": [
+  "MM",
+  "Adult White Dragon.webp"
+ ],
+ "elementalDoAr": [
+  "MM",
+  "Air Elemental.webp"
+ ],
+ "alossauro": [
+  "MM",
+  "Allosaurus.webp"
+ ],
+ "dragaoNegroAnciao": [
+  "MM",
+  "Ancient Black Dragon.webp"
+ ],
+ "dragaoAzulAnciao": [
+  "MM",
+  "Ancient Blue Dragon.webp"
+ ],
+ "dragaoDeLataoAnciao": [
+  "MM",
+  "Ancient Brass Dragon.webp"
+ ],
+ "dragaoDeBronzeAnciao": [
+  "MM",
+  "Ancient Bronze Dragon.webp"
+ ],
+ "dragaoDeCobreAnciao": [
+  "MM",
+  "Ancient Copper Dragon.webp"
+ ],
+ "dragaoDeOuroAnciao": [
+  "MM",
+  "Ancient Gold Dragon.webp"
+ ],
+ "dragaoVerdeAnciao": [
+  "MM",
+  "Ancient Green Dragon.webp"
+ ],
+ "dragaoVermelhoAnciao": [
+  "MM",
+  "Ancient Red Dragon.webp"
+ ],
+ "dragaoDePrataAnciao": [
+  "MM",
+  "Ancient Silver Dragon.webp"
+ ],
+ "dragaoBrancoAnciao": [
+  "MM",
+  "Ancient White Dragon.webp"
+ ],
+ "androesfinge": [
+  "MM",
+  "Androsphinx.webp"
+ ],
+ "ankheg": [
+  "MM",
+  "Ankheg.webp"
+ ],
+ "anquilossauro": [
+  "MM",
+  "Ankylosaurus.webp"
+ ],
+ "macaco": [
+  "MM",
+  "Ape.webp"
+ ],
+ "arcanaloth": [
+  "MM",
+  "Arcanaloth.webp"
+ ],
+ "arquimago": [
+  "MM",
+  "Archmage.webp"
+ ],
+ "assassino": [
+  "MM",
+  "Assassin.webp"
+ ],
+ "arbustoDesperto": [
+  "MM",
+  "Awakened Shrub.webp"
+ ],
+ "arvoreDesperta": [
+  "MM",
+  "Awakened Tree.webp"
+ ],
+ "bicoDeMachado": [
+  "MM",
+  "Axe Beak.webp"
+ ],
+ "azer": [
+  "MM",
+  "Azer.webp"
+ ],
+ "babuino": [
+  "MM",
+  "Baboon.webp"
+ ],
+ "texugo": [
+  "MM",
+  "Badger.webp"
+ ],
+ "balor": [
+  "MM",
+  "Balor.webp"
+ ],
+ "diaboFarpado": [
+  "MM",
+  "Barbed Devil.webp"
+ ],
+ "barlgura": [
+  "MM",
+  "Barlgura.webp"
+ ],
+ "basilisco": [
+  "MM",
+  "Basilisk.webp"
+ ],
+ "diaboBarbado": [
+  "MM",
+  "Bearded Devil.webp"
+ ],
+ "behir": [
+  "MM",
+  "Behir.webp"
+ ],
+ "observador": [
+  "MM",
+  "Beholder.webp"
+ ],
+ "observadorZumbi": [
+  "MM",
+  "Beholder Zombie.webp"
+ ],
+ "berserker": [
+  "MM",
+  "Berserker.webp"
+ ],
+ "filhoteDeDragaoNegro": [
+  "MM",
+  "Black Dragon Wyrmling.webp"
+ ],
+ "pudimNegro": [
+  "MM",
+  "Black Pudding.webp"
+ ],
+ "caoIntermitente": [
+  "MM",
+  "Blink Dog.webp"
+ ],
+ "falcaoSangrento": [
+  "MM",
+  "Blood Hawk.webp"
+ ],
+ "filhoteDeDragaoAzul": [
+  "MM",
+  "Blue Dragon Wyrmling.webp"
+ ],
+ "slaadAzul": [
+  "MM",
+  "Blue Slaad.webp"
+ ],
+ "diaboOssudo": [
+  "MM",
+  "Bone Devil.webp"
+ ],
+ "nagaOssudaGuardia": [
+  "MM",
+  "Bone Naga (Guardian).webp"
+ ],
+ "nagaOssudaEspirito": [
+  "MM",
+  "Bone Naga (Spirit).webp"
+ ],
+ "filhoteDeDragaoDeLatao": [
+  "MM",
+  "Brass Dragon Wyrmling.webp"
+ ],
+ "filhoteDeDragaoDeBronze": [
+  "MM",
+  "Bronze Dragon Wyrmling.webp"
+ ],
+ "chefeBugbear": [
+  "MM",
+  "Bugbear Chief.webp"
+ ],
+ "bulette": [
+  "MM",
+  "Bulette.webp"
+ ],
+ "bullywug": [
+  "MM",
+  "Bullywug.webp"
+ ],
+ "cambion": [
+  "MM",
+  "Cambion.webp"
+ ],
+ "camelo": [
+  "MM",
+  "Camel.webp"
+ ],
+ "rastejadorCarniceiro": [
+  "MM",
+  "Carrion Crawler.webp"
+ ],
+ "gato": [
+  "MM",
+  "Cat.webp"
+ ],
+ "ursoDasCavernas": [
+  "MM",
+  "Cave Bear.webp"
+ ],
+ "centauro": [
+  "MM",
+  "Centaur.webp"
+ ],
+ "diaboAcorrentado": [
+  "MM",
+  "Chain Devil.webp"
+ ],
+ "chasme": [
+  "MM",
+  "Chasme.webp"
+ ],
+ "quimera": [
+  "MM",
+  "Chimera.webp"
+ ],
+ "chuul": [
+  "MM",
+  "Chuul.webp"
+ ],
+ "capaNegra": [
+  "MM",
+  "Cloaker.webp"
+ ],
+ "giganteDasNuvens": [
+  "MM",
+  "Cloud Giant.webp"
+ ],
+ "cocatriz": [
+  "MM",
+  "Cockatrice.webp"
+ ],
+ "serpenteConstritora": [
+  "MM",
+  "Constrictor Snake.webp"
+ ],
+ "filhoteDeDragaoDeCobre": [
+  "MM",
+  "Copper Dragon Wyrmling.webp"
+ ],
+ "couatl": [
+  "MM",
+  "Couatl.webp"
+ ],
+ "caranguejo": [
+  "MM",
+  "Crab.webp"
+ ],
+ "garraRastejante": [
+  "MM",
+  "Crawling Claw.webp"
+ ],
+ "crocodilo": [
+  "MM",
+  "Crocodile.webp"
+ ],
+ "fanaticoDoCulto": [
+  "MM",
+  "Cult Fanatic.webp"
+ ],
+ "ciclope": [
+  "MM",
+  "Cyclops.webp"
+ ],
+ "dao": [
+  "MM",
+  "Dao.webp"
+ ],
+ "mantoSombrio": [
+  "MM",
+  "Darkmantle.webp"
+ ],
+ "caoDaMorte": [
+  "MM",
+  "Death Dog.webp"
+ ],
+ "cavaleiroDaMorte": [
+  "MM",
+  "Death Knight.webp"
+ ],
+ "slaadDaMorte": [
+  "MM",
+  "Death Slaad.webp"
+ ],
+ "tiranoDaMorte": [
+  "MM",
+  "Death Tyrant.webp"
+ ],
+ "cervo": [
+  "MM",
+  "Deer.webp"
+ ],
+ "semilich": [
+  "MM",
+  "Demilich.webp"
+ ],
+ "deva": [
+  "MM",
+  "Deva.webp"
+ ],
+ "bestaDeslocadora": [
+  "MM",
+  "Displacer Beast.webp"
+ ],
+ "djinni": [
+  "MM",
+  "Djinni.webp"
+ ],
+ "cavaloDeTracao": [
+  "MM",
+  "Draft Horse.webp"
+ ],
+ "tartarugaDragao": [
+  "MM",
+  "Dragon Turtle.webp"
+ ],
+ "dretch": [
+  "MM",
+  "Dretch.webp"
+ ],
+ "drider": [
+  "MM",
+  "Drider.webp"
+ ],
+ "magoDrow": [
+  "MM",
+  "Drow Mage.webp"
+ ],
+ "sacerdotisaDrowDeLolth": [
+  "MM",
+  "Drow Priestess of Lolth.webp"
+ ],
+ "druida": [
+  "MM",
+  "Druid.webp"
+ ],
+ "driade": [
+  "MM",
+  "Dryad.webp"
+ ],
+ "duergar": [
+  "MM",
+  "Duergar.webp"
+ ],
+ "duodrone": [
+  "MM",
+  "Duodrone.webp"
+ ],
+ "aguia": [
+  "MM",
+  "Eagle.webp"
+ ],
+ "efreeti": [
+  "MM",
+  "Efreeti.webp"
+ ],
+ "elefante": [
+  "MM",
+  "Elephant.webp"
+ ],
+ "alce": [
+  "MM",
+  "Elk.webp"
+ ],
+ "empireo": [
+  "MM",
+  "Empyrean.webp"
+ ],
+ "erinia": [
+  "MM",
+  "Erinyes.webp"
+ ],
+ "ettercap": [
+  "MM",
+  "Ettercap.webp"
+ ],
+ "ettin": [
+  "MM",
+  "Ettin.webp"
+ ],
+ "dragaoFeericoAzul": [
+  "MM",
+  "Faerie Dragon (Blue).webp"
+ ],
+ "dragaoFeericoVerde": [
+  "MM",
+  "Faerie Dragon (Green).webp"
+ ],
+ "dragaoFeericoIndigo": [
+  "MM",
+  "Faerie Dragon (Indigo).webp"
+ ],
+ "dragaoFeericoLaranja": [
+  "MM",
+  "Faerie Dragon (Orange).webp"
+ ],
+ "dragaoFeericoVermelho": [
+  "MM",
+  "Faerie Dragon (Red).webp"
+ ],
+ "dragaoFeericoVioleta": [
+  "MM",
+  "Faerie Dragon (Violet).webp"
+ ],
+ "dragaoFeericoAmarelo": [
+  "MM",
+  "Faerie Dragon (Yellow).webp"
+ ],
+ "elementalDoFogo": [
+  "MM",
+  "Fire Elemental.webp"
+ ],
+ "giganteDoFogo": [
+  "MM",
+  "Fire Giant.webp"
+ ],
+ "serpenteDeFogo": [
+  "MM",
+  "Fire Snake.webp"
+ ],
+ "golemDeCarne": [
+  "MM",
+  "Flesh Golem.webp"
+ ],
+ "flumph": [
+  "MM",
+  "Flumph.webp"
+ ],
+ "serpenteVoadora": [
+  "MM",
+  "Flying Snake.webp"
+ ],
+ "espadaVoadora": [
+  "MM",
+  "Flying Sword.webp"
+ ],
+ "fomoriano": [
+  "MM",
+  "Fomorian.webp"
+ ],
+ "ra": [
+  "MM",
+  "Frog.webp"
+ ],
+ "giganteDoGelo": [
+  "MM",
+  "Frost Giant.webp"
+ ],
+ "gargula": [
+  "MM",
+  "Gargoyle.webp"
+ ],
+ "esporoDeGas": [
+  "MM",
+  "Gas Spore.webp"
+ ],
+ "cuboGelatinoso": [
+  "MM",
+  "Gelatinous Cube.webp"
+ ],
+ "lividoMm": [
+  "MM",
+  "Ghast.webp"
+ ],
+ "macacoGigante": [
+  "MM",
+  "Giant Ape.webp"
+ ],
+ "centopeiaGigante": [
+  "MM",
+  "Giant Centipede.webp"
+ ],
+ "caranguejoGigante": [
+  "MM",
+  "Giant Crab.webp"
+ ],
+ "crocodiloGigante": [
+  "MM",
+  "Giant Crocodile.webp"
+ ],
+ "aguiaGigante": [
+  "MM",
+  "Giant Eagle.webp"
+ ],
+ "alceGigante": [
+  "MM",
+  "Giant Elk.webp"
+ ],
+ "besouroDeFogoGigante": [
+  "MM",
+  "Giant Fire Beetle.webp"
+ ],
+ "raGigante": [
+  "MM",
+  "Giant Frog.webp"
+ ],
+ "hienaGigante": [
+  "MM",
+  "Giant Hyena.webp"
+ ],
+ "lagartoGigante": [
+  "MM",
+  "Giant Lizard.webp"
+ ],
+ "corujaGigante": [
+  "MM",
+  "Giant Owl.webp"
+ ],
+ "escorpiaoGigante": [
+  "MM",
+  "Giant Scorpion.webp"
+ ],
+ "cavaloMarinhoGigante": [
+  "MM",
+  "Giant Sea Horse.webp"
+ ],
+ "tubaraoGigante": [
+  "MM",
+  "Giant Shark.webp"
+ ],
+ "sapoGigante": [
+  "MM",
+  "Giant Toad.webp"
+ ],
+ "abutreGigante": [
+  "MM",
+  "Giant Vulture.webp"
+ ],
+ "vespaGigante": [
+  "MM",
+  "Giant Wasp.webp"
+ ],
+ "doninhaGigante": [
+  "MM",
+  "Giant Weasel.webp"
+ ],
+ "bocaTagarela": [
+  "MM",
+  "Gibbering Mouther.webp"
+ ],
+ "cavaleiroGithyanki": [
+  "MM",
+  "Githyanki Knight.webp"
+ ],
+ "guerreiroGithyanki": [
+  "MM",
+  "Githyanki Warrior.webp"
+ ],
+ "mongeGithzerai": [
+  "MM",
+  "Githzerai Monk.webp"
+ ],
+ "githzeraiZerth": [
+  "MM",
+  "Githzerai Zerth.webp"
+ ],
+ "glabrezu": [
+  "MM",
+  "Glabrezu.webp"
+ ],
+ "gladiador": [
+  "MM",
+  "Gladiator.webp"
+ ],
+ "gnoll": [
+  "MM",
+  "Gnoll.webp"
+ ],
+ "presaDeYeenoghu": [
+  "MM",
+  "Gnoll Fang of Yeenoghu.webp"
+ ],
+ "liderDeMatilhaGnoll": [
+  "MM",
+  "Gnoll Pack Lord.webp"
+ ],
+ "bode": [
+  "MM",
+  "Goat.webp"
+ ],
+ "filhoteDeDragaoDourado": [
+  "MM",
+  "Gold Dragon Wyrmling.webp"
+ ],
+ "gorgona": [
+  "MM",
+  "Gorgon.webp"
+ ],
+ "goristro": [
+  "MM",
+  "Goristro.webp"
+ ],
+ "gosmaCinzenta": [
+  "MM",
+  "Gray Ooze.webp"
+ ],
+ "slaadCinzento": [
+  "MM",
+  "Gray Slaad.webp"
+ ],
+ "filhoteDeDragaoVerde": [
+  "MM",
+  "Green Dragon Wyrmling.webp"
+ ],
+ "bruxaVerde": [
+  "MM",
+  "Green Hag.webp"
+ ],
+ "slaadVerde": [
+  "MM",
+  "Green Slaad.webp"
+ ],
+ "grickAlfa": [
+  "MM",
+  "Grick Alpha.webp"
+ ],
+ "grifo": [
+  "MM",
+  "Griffon.webp"
+ ],
+ "grimlock": [
+  "MM",
+  "Grimlock.webp"
+ ],
+ "nagaGuardia": [
+  "MM",
+  "Guardian Naga.webp"
+ ],
+ "ginosfinge": [
+  "MM",
+  "Gynosphinx.webp"
+ ],
+ "meioOgroOgrilhao": [
+  "MM",
+  "Half-Ogre (Ogrillon).webp"
+ ],
+ "veteranoMeioDragaoVermelho": [
+  "MM",
+  "Half-Red Dragon Veteran.webp"
+ ],
+ "harpia": [
+  "MM",
+  "Harpy.webp"
+ ],
+ "falcao": [
+  "MM",
+  "Hawk.webp"
+ ],
+ "caoInfernal": [
+  "MM",
+  "Hell Hound.webp"
+ ],
+ "hezrou": [
+  "MM",
+  "Hezrou.webp"
+ ],
+ "giganteDaColina": [
+  "MM",
+  "Hill Giant.webp"
+ ],
+ "hipogrifo": [
+  "MM",
+  "Hippogriff.webp"
+ ],
+ "capitaoHobgoblin": [
+  "MM",
+  "Hobgoblin Captain.webp"
+ ],
+ "senhorDaGuerraHobgoblin": [
+  "MM",
+  "Hobgoblin Warlord.webp"
+ ],
+ "homunculo": [
+  "MM",
+  "Homunculus.webp"
+ ],
+ "horrorGancho": [
+  "MM",
+  "Hook Horror.webp"
+ ],
+ "diaboChifrudo": [
+  "MM",
+  "Horned Devil.webp"
+ ],
+ "tubaraoCacador": [
+  "MM",
+  "Hunter Shark.webp"
+ ],
+ "hiena": [
+  "MM",
+  "Hyena.webp"
+ ],
+ "diaboDoGelo": [
+  "MM",
+  "Ice Devil.webp"
+ ],
+ "mefiteDeGelo": [
+  "MM",
+  "Ice Mephit.webp"
+ ],
+ "diabrete": [
+  "MM",
+  "Imp.webp"
+ ],
+ "incubo": [
+  "MM",
+  "Incubus.webp"
+ ],
+ "devoradorDeIntelecto": [
+  "MM",
+  "Intellect Devourer.webp"
+ ],
+ "perseguidorInvisivel": [
+  "MM",
+  "Invisible Stalker.webp"
+ ],
+ "golemDeFerro": [
+  "MM",
+  "Iron Golem.webp"
+ ],
+ "chacal": [
+  "MM",
+  "Jackal.webp"
+ ],
+ "chacalobisomem": [
+  "MM",
+  "Jackalwere.webp"
+ ],
+ "kenku": [
+  "MM",
+  "Kenku.webp"
+ ],
+ "orca": [
+  "MM",
+  "Killer Whale.webp"
+ ],
+ "kobold": [
+  "MM",
+  "Kobold.webp"
+ ],
+ "kraken": [
+  "MM",
+  "Kraken.webp"
+ ],
+ "kuoToa": [
+  "MM",
+  "Kuo-toa.webp"
+ ],
+ "arquissacerdoteKuoToa": [
+  "MM",
+  "Kuo-toa Archpriest.webp"
+ ],
+ "monitorKuoToa": [
+  "MM",
+  "Kuo-toa Monitor.webp"
+ ],
+ "chicoteadorKuoToa": [
+  "MM",
+  "Kuo-toa Whip.webp"
+ ],
+ "lamia": [
+  "MM",
+  "Lamia.webp"
+ ],
+ "lemure": [
+  "MM",
+  "Lemure.webp"
+ ],
+ "lich": [
+  "MM",
+  "Lich.webp"
+ ],
+ "leao": [
+  "MM",
+  "Lion.webp"
+ ],
+ "lagarto": [
+  "MM",
+  "Lizard.webp"
+ ],
+ "reiHomemLagarto": [
+  "MM",
+  "Lizard King.webp"
+ ],
+ "rainhaHomemLagarto": [
+  "MM",
+  "Lizard Queen.webp"
+ ],
+ "homemLagarto": [
+  "MM",
+  "Lizardfolk.webp"
+ ],
+ "xamaPovoLagarto": [
+  "MM",
+  "Lizardfolk Shaman.webp"
+ ],
+ "mefiteDeMagma": [
+  "MM",
+  "Magma Mephit.webp"
+ ],
+ "magmin": [
+  "MM",
+  "Magmin.webp"
+ ],
+ "mamute": [
+  "MM",
+  "Mammoth.webp"
+ ],
+ "manes": [
+  "MM",
+  "Manes.webp"
+ ],
+ "manticora": [
+  "MM",
+  "Manticore.webp"
+ ],
+ "marid": [
+  "MM",
+  "Marid.webp"
+ ],
+ "marilith": [
+  "MM",
+  "Marilith.webp"
+ ],
+ "mastim": [
+  "MM",
+  "Mastiff.webp"
+ ],
+ "sereiano": [
+  "MM",
+  "Merfolk.webp"
+ ],
+ "merrow": [
+  "MM",
+  "Merrow.webp"
+ ],
+ "mezzoloth": [
+  "MM",
+  "Mezzoloth.webp"
+ ],
+ "devoradorDeMentes": [
+  "MM",
+  "Mind Flayer.webp"
+ ],
+ "devoradorDeMentesArcanista": [
+  "MM",
+  "Mind Flayer Arcanist.webp"
+ ],
+ "minotauro": [
+  "MM",
+  "Minotaur.webp"
+ ],
+ "esqueletoDeMinotauro": [
+  "MM",
+  "Minotaur Skeleton.webp"
+ ],
+ "monodrone": [
+  "MM",
+  "Monodrone.webp"
+ ],
+ "mefiteDeLama": [
+  "MM",
+  "Mud Mephit.webp"
+ ],
+ "mula": [
+  "MM",
+  "Mule.webp"
+ ],
+ "senhorDasMumias": [
+  "MM",
+  "Mummy Lord.webp"
+ ],
+ "miconideoAdulto": [
+  "MM",
+  "Myconid Adult.webp"
+ ],
+ "soberanoMiconideo": [
+  "MM",
+  "Myconid Sovereign.webp"
+ ],
+ "brotoMiconideo": [
+  "MM",
+  "Myconid Sprout.webp"
+ ],
+ "nalfeshnee": [
+  "MM",
+  "Nalfeshnee.webp"
+ ],
+ "bruxaDaNoite": [
+  "MM",
+  "Night Hag.webp"
+ ],
+ "pesadelo": [
+  "MM",
+  "Nightmare.webp"
+ ],
+ "nicaloth": [
+  "MM",
+  "Nycaloth.webp"
+ ],
+ "polvo": [
+  "MM",
+  "Octopus.webp"
+ ],
+ "oni": [
+  "MM",
+  "Oni.webp"
+ ],
+ "olhoDeGruumshOrc": [
+  "MM",
+  "Orc Eye of Gruumsh.webp"
+ ],
+ "chefeDeGuerraOrc": [
+  "MM",
+  "Orc War Chief.webp"
+ ],
+ "orog": [
+  "MM",
+  "Orog.webp"
+ ],
+ "coruja": [
+  "MM",
+  "Owl.webp"
+ ],
+ "pantera": [
+  "MM",
+  "Panther.webp"
+ ],
+ "pegaso": [
+  "MM",
+  "Pegasus.webp"
+ ],
+ "pentadrone": [
+  "MM",
+  "Pentadrone.webp"
+ ],
+ "peryton": [
+  "MM",
+  "Peryton.webp"
+ ],
+ "aranhaDefasadora": [
+  "MM",
+  "Phase Spider.webp"
+ ],
+ "perfurador": [
+  "MM",
+  "Piercer.webp"
+ ],
+ "diaboDasProfundezas": [
+  "MM",
+  "Pit Fiend.webp"
+ ],
+ "pixie": [
+  "MM",
+  "Pixie.webp"
+ ],
+ "planetar": [
+  "MM",
+  "Planetar.webp"
+ ],
+ "plesiossauro": [
+  "MM",
+  "Plesiosaurus.webp"
+ ],
+ "cobraVenenosa": [
+  "MM",
+  "Poisonous Snake.webp"
+ ],
+ "ursoPolar": [
+  "MM",
+  "Polar Bear.webp"
+ ],
+ "poltergeist": [
+  "MM",
+  "Poltergeist.webp"
+ ],
+ "ponei": [
+  "MM",
+  "Pony.webp"
+ ],
+ "pseudodragao": [
+  "MM",
+  "Pseudodragon.webp"
+ ],
+ "pteranodonte": [
+  "MM",
+  "Pteranodon.webp"
+ ],
+ "vermePurpura": [
+  "MM",
+  "Purple Worm.webp"
+ ],
+ "quadrone": [
+  "MM",
+  "Quadrone.webp"
+ ],
+ "quaggoth": [
+  "MM",
+  "Quaggoth.webp"
+ ],
+ "quaggothServoDeEsporos": [
+  "MM",
+  "Quaggoth Spore Servant.webp"
+ ],
+ "quaggothThonot": [
+  "MM",
+  "Quaggoth Thonot.webp"
+ ],
+ "piranha": [
+  "MM",
+  "Quipper.webp"
+ ],
+ "rakshasa": [
+  "MM",
+  "Rakshasa.webp"
+ ],
+ "corvo": [
+  "MM",
+  "Raven.webp"
+ ],
+ "filhoteDeDragaoVermelho": [
+  "MM",
+  "Red Dragon Wyrmling.webp"
+ ],
+ "slaadVermelho": [
+  "MM",
+  "Red Slaad.webp"
+ ],
+ "tubaraoDeRecife": [
+  "MM",
+  "Reef Shark.webp"
+ ],
+ "remorhaz": [
+  "MM",
+  "Remorhaz.webp"
+ ],
+ "rinoceronte": [
+  "MM",
+  "Rhinoceros.webp"
+ ],
+ "cavaloDeMontaria": [
+  "MM",
+  "Riding Horse.webp"
+ ],
+ "roca": [
+  "MM",
+  "Roc.webp"
+ ],
+ "enrolador": [
+  "MM",
+  "Roper.webp"
+ ],
+ "tapeteSufocante": [
+  "MM",
+  "Rug of Smothering.webp"
+ ],
+ "monstroDaFerrugem": [
+  "MM",
+  "Rust Monster.webp"
+ ],
+ "sahuagin": [
+  "MM",
+  "Sahuagin.webp"
+ ],
+ "baraoSahuagin": [
+  "MM",
+  "Sahuagin Baron.webp"
+ ],
+ "sacerdotisaSahuagin": [
+  "MM",
+  "Sahuagin Priestess.webp"
+ ],
+ "salamandra": [
+  "MM",
+  "Salamander.webp"
+ ],
+ "satiro": [
+  "MM",
+  "Satyr.webp"
+ ],
+ "espantalho": [
+  "MM",
+  "Scarecrow.webp"
+ ],
+ "escorpiao": [
+  "MM",
+  "Scorpion.webp"
+ ],
+ "bruxaDoMar": [
+  "MM",
+  "Sea Hag.webp"
+ ],
+ "cavaloMarinho": [
+  "MM",
+  "Sea Horse.webp"
+ ],
+ "demonioDasSombras": [
+  "MM",
+  "Shadow Demon.webp"
+ ],
+ "cogumeloGuinchador": [
+  "MM",
+  "Shrieker.webp"
+ ],
+ "filhoteDeDragaoDePrata": [
+  "MM",
+  "Silver Dragon Wyrmling.webp"
+ ],
+ "girinoDeSlaad": [
+  "MM",
+  "Slaad Tadpole.webp"
+ ],
+ "mefiteDeFumaca": [
+  "MM",
+  "Smoke Mephit.webp"
+ ],
+ "solar": [
+  "MM",
+  "Solar.webp"
+ ],
+ "aranha": [
+  "MM",
+  "Spider.webp"
+ ],
+ "diaboEspinhoso": [
+  "MM",
+  "Spined Devil.webp"
+ ],
+ "nagaEspiritual": [
+  "MM",
+  "Spirit Naga.webp"
+ ],
+ "sprite": [
+  "MM",
+  "Sprite.webp"
+ ],
+ "mefiteDeVapor": [
+  "MM",
+  "Steam Mephit.webp"
+ ],
+ "giganteDePedra": [
+  "MM",
+  "Stone Giant.webp"
+ ],
+ "golemDePedra": [
+  "MM",
+  "Stone Golem.webp"
+ ],
+ "giganteDaTempestade": [
+  "MM",
+  "Storm Giant.webp"
+ ],
+ "sucubo": [
+  "MM",
+  "Succubus.webp"
+ ],
+ "enxameDeMorcegos": [
+  "MM",
+  "Swarm of Bats.webp"
+ ],
+ "enxameDeBesouros": [
+  "MM",
+  "Swarm of Beetles.webp"
+ ],
+ "enxameDeSerpentesVenenosas": [
+  "MM",
+  "Swarm of Poisonous Snakes.webp"
+ ],
+ "enxameDePiranhas": [
+  "MM",
+  "Swarm of Quippers.webp"
+ ],
+ "enxameDeCorvos": [
+  "MM",
+  "Swarm of Ravens.webp"
+ ],
+ "enxameDeAranhas": [
+  "MM",
+  "Swarm of Spiders.webp"
+ ],
+ "enxameDeVespas": [
+  "MM",
+  "Swarm of Wasps.webp"
+ ],
+ "tarrasque": [
+  "MM",
+  "Tarrasque.webp"
+ ],
+ "thriKreen": [
+  "MM",
+  "Thri-kreen.webp"
+ ],
+ "tigre": [
+  "MM",
+  "Tiger.webp"
+ ],
+ "ente": [
+  "MM",
+  "Treant.webp"
+ ],
+ "guerreiroTribal": [
+  "MM",
+  "Tribal Warrior.webp"
+ ],
+ "triceratops": [
+  "MM",
+  "Triceratops.webp"
+ ],
+ "tridrone": [
+  "MM",
+  "Tridrone.webp"
+ ],
+ "troglodita": [
+  "MM",
+  "Troglodyte.webp"
+ ],
+ "troll": [
+  "MM",
+  "Troll.webp"
+ ],
+ "tiranossauroRex": [
+  "MM",
+  "Tyrannosaurus Rex.webp"
+ ],
+ "ultroloth": [
+  "MM",
+  "Ultroloth.webp"
+ ],
+ "brutamonteUmbral": [
+  "MM",
+  "Umber Hulk.webp"
+ ],
+ "unicornio": [
+  "MM",
+  "Unicorn.webp"
+ ],
+ "vampiro": [
+  "MM",
+  "Vampire.webp"
+ ],
+ "criaVampirica": [
+  "MM",
+  "Vampire Spawn.webp"
+ ],
+ "vampiroConjurador": [
+  "MM",
+  "Vampire Spellcaster.webp"
+ ],
+ "vampiroGuerreiro": [
+  "MM",
+  "Vampire Warrior.webp"
+ ],
+ "vrock": [
+  "MM",
+  "Vrock.webp"
+ ],
+ "abutre": [
+  "MM",
+  "Vulture.webp"
+ ],
+ "cavaloDeGuerra": [
+  "MM",
+  "Warhorse.webp"
+ ],
+ "esqueletoDeCavaloDeGuerra": [
+  "MM",
+  "Warhorse Skeleton.webp"
+ ],
+ "elementalDaAgua": [
+  "MM",
+  "Water Elemental.webp"
+ ],
+ "doninha": [
+  "MM",
+  "Weasel.webp"
+ ],
+ "homemUrso": [
+  "MM",
+  "Werebear.webp"
+ ],
+ "homemJavali": [
+  "MM",
+  "Wereboar.webp"
+ ],
+ "homemRato": [
+  "MM",
+  "Wererat.webp"
+ ],
+ "homemTigre": [
+  "MM",
+  "Weretiger.webp"
+ ],
+ "lobisomem": [
+  "MM",
+  "Werewolf.webp"
+ ],
+ "filhoteDeDragaoBranco": [
+  "MM",
+  "White Dragon Wyrmling.webp"
+ ],
+ "fogoFatuo": [
+  "MM",
+  "Will-o'-Wisp.webp"
+ ],
+ "koboldAlado": [
+  "MM",
+  "Winged Kobold.webp"
+ ],
+ "loboDoInverno": [
+  "MM",
+  "Winter Wolf.webp"
+ ],
+ "worg": [
+  "MM",
+  "Worg.webp"
+ ],
+ "serpe": [
+  "MM",
+  "Wyvern.webp"
+ ],
+ "xorn": [
+  "MM",
+  "Xorn.webp"
+ ],
+ "yeti": [
+  "MM",
+  "Yeti.webp"
+ ],
+ "yochlol": [
+  "MM",
+  "Yochlol.webp"
+ ],
+ "dragaoNegroJovem": [
+  "MM",
+  "Young Black Dragon.webp"
+ ],
+ "dragaoAzulJovem": [
+  "MM",
+  "Young Blue Dragon.webp"
+ ],
+ "dragaoDeLataoJovem": [
+  "MM",
+  "Young Brass Dragon.webp"
+ ],
+ "dragaoDeBronzeJovem": [
+  "MM",
+  "Young Bronze Dragon.webp"
+ ],
+ "dragaoDeCobreJovem": [
+  "MM",
+  "Young Copper Dragon.webp"
+ ],
+ "dragaoDeOuroJovem": [
+  "MM",
+  "Young Gold Dragon.webp"
+ ],
+ "dragaoVermelhoJovem": [
+  "MM",
+  "Young Red Dragon.webp"
+ ],
+ "dragaoVermelhoJovemDasSombras": [
+  "MM",
+  "Young Red Shadow Dragon.webp"
+ ],
+ "remorhazJovem": [
+  "MM",
+  "Young Remorhaz.webp"
+ ],
+ "dragaoDePrataJovem": [
+  "MM",
+  "Young Silver Dragon.webp"
+ ],
+ "dragaoBrancoJovem": [
+  "MM",
+  "Young White Dragon.webp"
+ ],
+ "abominacaoYuanTi": [
+  "MM",
+  "Yuan-ti Abomination.webp"
+ ],
+ "yuanTiMalditoTipo1": [
+  "MM",
+  "Yuan-ti Malison (Type 1).webp"
+ ],
+ "yuanTiMalditoTipo2": [
+  "MM",
+  "Yuan-ti Malison (Type 2).webp"
+ ],
+ "yuanTiMalditoTipo3": [
+  "MM",
+  "Yuan-ti Malison (Type 3).webp"
+ ],
+ "yuanTiPuroSangue": [
+  "MM",
+  "Yuan-ti Pureblood.webp"
+ ]
+}

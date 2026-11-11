@@ -1,0 +1,197 @@
+{
+ "Warlock|The Undying": {
+  "nome": "O Imortal",
+  "recursos": [
+   {
+    "en": "Among the Dead",
+    "nome": "Entre os Mortos",
+    "desc": "Você aprende o truque poupar os moribundos (conta como truque de bruxo) e tem vantagem em testes de resistência contra doenças. Um morto-vivo que o escolha como alvo direto de ataque ou magia nociva faz um teste de resistência de Sabedoria contra sua CD de magia; se falhar, precisa trocar de alvo ou perder a ação, e se passar fica imune por 24 horas (efeitos em área não exigem o teste). Ele também fica imune por 24 horas se você o atacar ou o afetar com magia nociva."
+   },
+   {
+    "en": "Defy Death",
+    "nome": "Desafiar a Morte",
+    "desc": "Ao ter sucesso em um teste de resistência contra a morte ou estabilizar alguém com poupar os moribundos, você recupera 1d8 + modificador de Constituição PV (mínimo 1). Uma vez por descanso longo."
+   },
+   {
+    "en": "Undying Nature",
+    "nome": "Natureza Imortal",
+    "desc": "Você pode prender a respiração indefinidamente e não precisa comer, beber nem dormir, mas ainda precisa descansar para reduzir exaustão e aproveita descansos curtos e longos normalmente. Envelhece 1 ano a cada 10 e é imune a envelhecimento mágico."
+   },
+   {
+    "en": "Indestructible Life",
+    "nome": "Vida Indestrutível",
+    "desc": "No seu turno, como ação bônus, recupere 1d8 + seu nível de bruxo em PV; se encostar uma parte decepada do seu corpo no lugar ao usar o recurso, ela se reconecta. Uma vez por descanso curto ou longo."
+   }
+  ]
+ },
+ "Barbarian|Path of the Battlerager": {
+  "nome": "Caminho do Guerreiro Furioso",
+  "recursos": [
+   {
+    "en": "Battlerager Armor",
+    "nome": "Armadura do Guerreiro Furioso",
+    "desc": "Vestindo armadura de espinhos e em Fúria, você pode usar uma ação bônus para atacar com os espinhos um alvo a até 1,5 m, causando 1d4 de dano perfurante (ataque e dano usam Força). Ao agarrar uma criatura com a ação Atacar e vencer o teste, ela sofre 3 de dano perfurante."
+   },
+   {
+    "en": "Restriction—Dwarves Only",
+    "nome": "Restrição: Apenas Anões",
+    "desc": "Nos Reinos Esquecidos, só anões podem seguir este caminho. O mestre pode remover a restrição em sua campanha."
+   },
+   {
+    "en": "Reckless Abandon",
+    "nome": "Abandono Imprudente",
+    "desc": "Ao usar Ataque Descuidado durante a Fúria, você recebe PV temporários iguais ao seu modificador de Constituição (mínimo 1). Os que sobrarem somem quando a Fúria acaba."
+   },
+   {
+    "en": "Battlerager Charge",
+    "nome": "Investida do Guerreiro Furioso",
+    "desc": "Durante a Fúria, você pode usar a ação Disparada como ação bônus."
+   },
+   {
+    "en": "Spiked Retribution",
+    "nome": "Retaliação Espinhosa",
+    "desc": "Se uma criatura a até 1,5 m acertar você com um ataque corpo a corpo enquanto você está em Fúria, não incapacitado e vestindo armadura de espinhos, ela sofre 3 de dano perfurante."
+   }
+  ]
+ },
+ "Cleric|Arcana Domain": {
+  "nome": "Domínio Arcano",
+  "recursos": [
+   {
+    "en": "Arcane Initiate",
+    "nome": "Iniciado Arcano",
+    "desc": "Você ganha proficiência em Arcanismo e aprende dois truques à sua escolha da lista de mago, que contam como truques de clérigo para você."
+   },
+   {
+    "en": "Channel Divinity: Arcane Abjuration",
+    "nome": "Canalizar Divindade: Abjuração Arcana",
+    "desc": "Como ação, gaste um uso de Canalizar Divindade para forçar um celestial, elemental, fada ou corruptor a até 9 m, que possa ver ou ouvir você, a fazer um teste de resistência de Sabedoria; se falhar, fica expulso por 1 minuto ou até sofrer dano, fugindo de você sem poder usar reações. A partir do 5º nível, se a criatura estiver fora do seu plano natal e tiver ND baixo o bastante para o seu nível, ela é banida por 1 minuto (como banimento, sem concentração)."
+   },
+   {
+    "en": "Spell Breaker",
+    "nome": "Quebra-Magia",
+    "desc": "Ao curar um aliado com uma magia de 1º círculo ou superior, você também pode encerrar uma magia sobre ele cujo círculo seja igual ou menor que o do espaço de magia usado na cura."
+   },
+   {
+    "en": "Blessed Strikes",
+    "nome": "Golpes Abençoados",
+    "desc": "Recurso opcional que substitui Conjuração Potente. Uma vez por turno (até o início do seu próximo turno), quando uma criatura sofre dano de um truque ou ataque com arma seu, você causa 1d8 de dano radiante adicional a ela."
+   },
+   {
+    "en": "Potent Spellcasting",
+    "nome": "Conjuração Potente",
+    "desc": "Você soma seu modificador de Sabedoria ao dano dos seus truques de clérigo."
+   },
+   {
+    "en": "Arcane Mastery",
+    "nome": "Maestria Arcana",
+    "desc": "Escolha quatro magias da lista de mago, uma de cada círculo (6º, 7º, 8º e 9º), e adicione-as às suas magias de domínio: ficam sempre preparadas e contam como magias de clérigo."
+   }
+  ]
+ },
+ "Monk|Way of the Long Death": {
+  "nome": "Caminho da Longa Morte",
+  "recursos": [
+   {
+    "en": "Touch of Death",
+    "nome": "Toque da Morte",
+    "desc": "Sempre que você deixa com 0 PV uma criatura a até 1,5 m, recebe PV temporários iguais a seu nível de monge + modificador de Sabedoria (no mínimo 1)."
+   },
+   {
+    "en": "Hour of Reaping",
+    "nome": "Hora da Colheita",
+    "desc": "Com uma ação, toda criatura a até 9 m que consiga ver você faz um teste de resistência de Sabedoria. Quem falhar fica amedrontado por você até o fim do seu próximo turno."
+   },
+   {
+    "en": "Mastery of Death",
+    "nome": "Domínio da Morte",
+    "desc": "Quando cair a 0 PV, você pode gastar 1 ki, sem usar ação, para ficar com 1 PV."
+   },
+   {
+    "en": "Touch of the Long Death",
+    "nome": "Toque da Longa Morte",
+    "desc": "Com uma ação, toque uma criatura a até 1,5 m e gaste de 1 a 10 ki. Ela faz um teste de resistência de Constituição e sofre 2d10 de dano necrótico por ki gasto se falhar, ou metade se passar."
+   }
+  ]
+ },
+ "Paladin|Oath of the Crown": {
+  "nome": "Juramento da Coroa",
+  "recursos": [
+   {
+    "en": "Champion Challenge",
+    "nome": "Desafio do Campeão",
+    "desc": "Canalizar Divindade, ação bônus: criaturas à sua escolha que você veja a até 9 m fazem teste de resistência de Sabedoria. Quem falhar não pode se afastar voluntariamente mais de 9 m de você; o efeito acaba se você ficar incapacitado, morrer ou se a criatura estiver a mais de 9 m."
+   },
+   {
+    "en": "Channel Divinity",
+    "nome": "Canalizar Divindade",
+    "desc": "No 3º nível, você ganha duas opções de Canalizar Divindade: Desafio do Campeão e Virar a Maré."
+   },
+   {
+    "en": "Oath Spells",
+    "nome": "Magias de Juramento",
+    "desc": "Você recebe magias de juramento adicionais, sempre preparadas, nos níveis de paladino indicados pelo juramento."
+   },
+   {
+    "en": "Tenets of the Crown",
+    "nome": "Dogmas da Coroa",
+    "desc": "Código de conduta do juramento: respeitar a lei acima de tudo, manter lealdade à palavra dada, agir pela ordem mesmo contra grandes adversidades e assumir a responsabilidade pelos próprios atos e deveres."
+   },
+   {
+    "en": "Turn the Tide",
+    "nome": "Virar a Maré",
+    "desc": "Canalizar Divindade, ação bônus: cada criatura à sua escolha a até 9 m que possa ouvi-lo e esteja com metade dos PV ou menos recupera 1d6 + seu modificador de Carisma PV (mínimo 1)."
+   },
+   {
+    "en": "Divine Allegiance",
+    "nome": "Lealdade Divina",
+    "desc": "Reação: quando uma criatura a até 1,5 m de você sofre dano, você recebe esse dano no lugar dela. O dano recebido não pode ser reduzido nem evitado de forma alguma."
+   },
+   {
+    "en": "Unyielding Spirit",
+    "nome": "Espírito Inflexível",
+    "desc": "Você tem vantagem em testes de resistência para evitar ficar paralisado ou atordoado."
+   },
+   {
+    "en": "Exalted Champion",
+    "nome": "Campeão Exaltado",
+    "desc": "Ação, por 1 hora: você tem resistência a dano de concussão, perfurante e cortante de armas não mágicas; aliados a até 9 m têm vantagem em testes contra a morte; você e aliados a até 9 m têm vantagem em testes de resistência de Sabedoria. Termina se você ficar incapacitado ou morrer; uma vez por descanso longo."
+   }
+  ]
+ },
+ "Fighter|Purple Dragon Knight (Banneret)": {
+  "nome": "Cavaleiro do Dragão Púrpura (Porta-Estandarte)",
+  "recursos": [
+   {
+    "en": "Rallying Cry",
+    "nome": "Grito de Convocação",
+    "desc": "Ao usar Retomar o Fôlego, escolha até três aliados a até 18 m que possam ver ou ouvir você. Cada um recupera PV iguais ao seu nível de guerreiro."
+   },
+   {
+    "en": "Restriction: Knighthood",
+    "nome": "Restrição: Cavalaria",
+    "desc": "Ligado a uma ordem de cavaleiros de Cormyr. Em outros cenários, use o nome Porta-Estandarte para este arquétipo."
+   },
+   {
+    "en": "Royal Envoy",
+    "nome": "Enviado Real",
+    "desc": "Você ganha proficiência em Persuasão; se já a tiver, escolha Adestrar Animais, Intuição, Intimidação ou Atuação. Seu bônus de proficiência é dobrado em testes de Persuasão."
+   },
+   {
+    "en": "Inspiring Surge",
+    "nome": "Surto Inspirador",
+    "desc": "Ao usar Surto de Ação, um aliado a até 18 m que possa ver ou ouvir você pode usar a reação para fazer um ataque com arma corpo a corpo ou à distância."
+   },
+   {
+    "en": "Bulwark",
+    "nome": "Baluarte",
+    "desc": "Ao usar Indomável para rolar de novo um teste de resistência de Inteligência, Sabedoria ou Carisma, sem estar incapacitado, um aliado a até 18 m que falhou contra o mesmo efeito e possa ver ou ouvir você também rola de novo, ficando com o novo resultado."
+   },
+   {
+    "en": "Inspiring Surge",
+    "nome": "Surto Inspirador",
+    "desc": "O Surto Inspirador passa a afetar dois aliados a até 18 m em vez de um."
+   }
+  ]
+ }
+}

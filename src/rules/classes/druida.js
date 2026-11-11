@@ -64,9 +64,9 @@ export default {
         // Sempre preparadas, por terreno e nível de druida.
         magiasDoCirculo: {
           artico: { 3: ['imobilizarPessoa', 'crescimentoDeEspinhos'], 5: ['tempestadeDeGranizo', 'lentidao'], 7: ['liberdadeDeMovimento', 'tempestadeDeGelo'], 9: ['comunhaoComANatureza', 'coneDeFrio'] },
-          costa: { 3: ['imagemEspelhada', 'passoNebuloso'], 5: ['respirarNaAgua', 'andarNaAgua'], 7: ['controlarAgua', 'liberdadeDeMovimento'], 9: ['conjurarElemental', 'videncia'] },
+          costa: { 3: ['imagemEspelhada', 'passoNebuloso'], 5: ['respirarNaAgua', 'andarNaAgua'], 7: ['controlarAAgua', 'liberdadeDeMovimento'], 9: ['conjurarElemental', 'videncia'] },
           deserto: { 3: ['borrao', 'silencio'], 5: ['criarAlimentoAgua', 'protecaoContraEnergia'], 7: ['praga', 'terrenoAlucinatorio'], 9: ['pragaDeInsetos', 'muralhaDePedra'] },
-          floresta: { 3: ['peleDeArvore', 'patasDeAranha'], 5: ['convocarRelampagos', 'crescimentoDePlantas'], 7: ['adivinhacao', 'liberdadeDeMovimento'], 9: ['comunhaoComANatureza', 'caminharEntreArvores'] },
+          floresta: { 3: ['peleDeArvore', 'patasDeAranha'], 5: ['convocarRelampagos', 'crescimentoDePlantas'], 7: ['adivinhacao', 'liberdadeDeMovimento'], 9: ['comunhaoComANatureza', 'caminharEmArvores'] },
           planicie: { 3: ['invisibilidade', 'passosSemPegadas'], 5: ['luzDoDia', 'velocidade'], 7: ['adivinhacao', 'liberdadeDeMovimento'], 9: ['sonho', 'pragaDeInsetos'] },
           montanha: { 3: ['patasDeAranha', 'crescimentoDeEspinhos'], 5: ['relampago', 'fundirSeComPedra'], 7: ['moldarRocha', 'peleDePedra'], 9: ['atravessarParedes', 'muralhaDePedra'] },
           pantano: { 3: ['flechaAcida', 'escuridao'], 5: ['andarNaAgua', 'nuvemFetida'], 7: ['liberdadeDeMovimento', 'localizarCriatura'], 9: ['pragaDeInsetos', 'videncia'] },

@@ -33,6 +33,7 @@ import { SPELLS, dadosDaMagia } from '../rules/spells.js';
 import { spellAttackBonus, spellSaveDc } from '../rules/abilities.js';
 import { Fx, quadro } from './fx.js';
 import { desenharVolumeObscuro } from './zonas25d.js';
+import { pintarZonaComArte, zonaTemArte } from './fx.js';
 import { EFEITOS } from '../art/efeitos.js';
 
 export const CASA = 64;          // o lado da casa, em pixels
@@ -128,6 +129,15 @@ export const COR_DA_ZONA = {
   // Silêncio: um véu azul-gelo e parado, sem brilho; a Muralha de Vento: faixa de ar claro.
   silencio: { fill: 'rgba(120,150,190,.26)', stroke: 'rgba(190,215,245,.7)' },
   muralhaDeVento: { fill: 'rgba(214,236,248,.15)', stroke: 'rgba(240,250,255,.6)' },
+  muralhaDeFogo: { fill: 'rgba(224,85,60,.25)', stroke: 'rgba(255,170,90,.7)' },
+  // A de PEDRA tem arte de ladrilho por cima desta cor; ela fica como o fundo que aparece enquanto
+  // a imagem não chegou, e por isso é cheia e opaca, como a pedra que vai cobri-la.
+  muralhaDePedra: { fill: 'rgba(96,92,88,.92)', stroke: 'rgba(168,160,150,.95)' },
+  muralhaDeForca: { fill: 'rgba(170,140,255,.14)', stroke: 'rgba(206,186,255,.75)' },
+  muralhaDeGelo: { fill: 'rgba(150,210,240,.30)', stroke: 'rgba(222,244,255,.85)' },
+  muralhaDeEspinhos: { fill: 'rgba(92,78,46,.34)', stroke: 'rgba(150,120,70,.7)' },
+  nuvemMortal: { fill: 'rgba(90,150,70,.32)', stroke: 'rgba(143,214,90,.65)' },
+  guardiaoDaFe: { fill: 'rgba(255,233,168,.12)', stroke: 'rgba(255,233,168,.55)' },
   // Lote 11: a imagem quase não pinta o chão (o volume é que conta); a luz é um calor leve; o mato, um verde fraco.
   ilusaoMenor: { fill: 'rgba(199,180,255,.10)', stroke: 'rgba(199,180,255,.45)' },
   luzDoDia: { fill: 'rgba(255,240,170,.05)', stroke: 'rgba(255,244,190,.18)' },
@@ -663,7 +673,12 @@ export class TabuleiroTopo {
   desenharLeitura(ctx) {
     // O chão que uma magia deixou (Graxa, Teia) enquanto dura, e a BORDA da aura de quem a conjurou.
     const zonas = new Map();
-    for (const z of this.enc.zonas ?? []) for (const k of z.casas) zonas.set(k, COR_DA_ZONA[z.spellId] ?? COR_DA_ZONA.graxa);
+    const comArte = (this.enc.zonas ?? []).filter((z) => !z.obscuro && zonaTemArte(z));
+    for (const z of this.enc.zonas ?? []) {
+      // A zona com arte não leva o traço casa a casa, que vira uma grade por cima do desenho: ela ganha um contorno só, depois da arte.
+      const cor = COR_DA_ZONA[z.spellId] ?? COR_DA_ZONA.graxa;
+      for (const k of z.casas) zonas.set(k, zonaTemArte(z) && !z.obscuro ? { fill: cor.fill, stroke: null } : cor);
+    }
     for (const a of this.enc.auras ?? []) {
       const casas = new Set(this.enc.casasDaAura(a).map((t) => `${t.x},${t.y}`));
       for (const k of casas) {
@@ -676,6 +691,11 @@ export class TabuleiroTopo {
     for (const [k, z] of zonas) {
       const [x, y] = k.split(',').map(Number);
       this.fillDiamond(ctx, x, y, z.fill, z.stroke);
+    }
+    // Por cima da cor, a arte da magia, recortada nas casas da zona. As que escondem são pintadas depois da máscara.
+    for (const z of comArte) {
+      pintarZonaComArte(ctx, this, z);
+      this.contornoDeCasas(ctx, z.casas, (x, y) => z.casas.has(`${x},${y}`), (COR_DA_ZONA[z.spellId] ?? COR_DA_ZONA.graxa).stroke);
     }
     // O ALCANCE da arma ou da magia em contorno, como o do passo: dourado até o alcance normal, tracejado laranja até o
     // longo (desvantagem). O chão fica limpo.
@@ -1839,6 +1859,10 @@ export class TabuleiroTopo {
         return { kind: 'spell', actor, spell, rotulo: `Mover ${spell.name}`, origem: zona.centro, alcance: spell.zona.movel, limite: spell.zona.movel };
       }
       return {
+        // A forma escolhida e as dobras marcadas vêm para a prévia: sem elas ela mostraria a reta
+        // de sempre e a magia sairia em anel ou em L — a prévia tem de ser o que a magia PEGA.
+        opcao: modo.opcao ?? null,
+        dobras: modo.dobras?.length ? modo.dobras : null,
         kind: 'spell',
         actor,
         spell,
@@ -1877,9 +1901,10 @@ export class TabuleiroTopo {
     const actor = m.actor;
     // O círculo escolhido conta: a Névoa em círculo maior tem área maior.
     const circulo = this.overlay.mode?.circulo ?? m.spell.level;
-    const casas = this.enc.casasDaZona(actor, m.spell, this.enc.areaDaMagia(actor, m.spell, this.hover, circulo) ?? []);
+    const extra = { escalas: m.dobras ?? null, opcao: m.opcao ?? null };
+    const casas = this.enc.casasDaZona(actor, m.spell, this.enc.areaDaMagia(actor, m.spell, this.hover, circulo, extra) ?? []);
     if (!casas.length) return null;
-    const ok = this.enc.canCast(actor, m.spell.id, { point: this.hover, circulo }).ok;
+    const ok = this.enc.canCast(actor, m.spell.id, { point: this.hover, circulo, ...extra }).ok;
     // A mesma conta do motor: quem dorme, quem queima, quem Esculpir poupa.
     const papeis = new Map();
     let inimigos = 0;
@@ -1942,7 +1967,7 @@ export class TabuleiroTopo {
         this.marcar(a, x, y, fill, borda ? cor.stroke : null);
       }
       // O volume: a esfera escura (Escuridão, Hadar) ou a nuvem de tufos (Névoa).
-      desenharVolumeObscuro(a, this, z);
+      if (!pintarZonaComArte(a, this, z)) desenharVolumeObscuro(a, this, z);
     }
     a.restore();
     a.globalCompositeOperation = 'destination-out';

@@ -31,6 +31,8 @@ import { makePortrait } from '../art/sheet.js';
 let aberta = null;   // a narrativa da vez; uma só por vez
 
 addEventListener('keydown', (e) => {
+  // Quem digita numa caixa da narrativa (`view/pergunta.js`) não está dando atalho: 1, 2 e Enter são dela.
+  if (e.target?.classList?.contains('narrativa-pergunta')) return;
   if (!aberta) return;
   e.stopImmediatePropagation();
   if (e.key === 'Enter' || e.key === ' ') {
@@ -96,6 +98,8 @@ export function narrarLocal(root, {
   // Numa sala (J-20): `nota` diz quem decide; `soLeitura` mostra as escolhas sem deixar clicar (decide outro jogador); `aoVotar`
   // faz do clique um VOTO: a escolha fica marcada e o painel espera a apuração (quem o fecha é o `sinal`).
   nota = null, soLeitura = false, aoVotar = null, assumirApos = null,
+  // `campoTexto: { dica, maximo }`: uma caixa de texto na última página. A narrativa passa a resolver com `{ valor, texto }`.
+  campoTexto = null,
 }) {
   return new Promise((resolve) => {
     let i = 0;
@@ -106,6 +110,16 @@ export function narrarLocal(root, {
     const folha = el('article', { class: 'narrativa-folha' });
     caixa.append(folha);
     root.append(caixa);
+
+    // Fora do `desenhar`: virar a página ou trocar para "só leitura" não pode apagar o que já se digitou.
+    const campo = campoTexto ? el('input', {
+      type: 'text', class: 'narrativa-pergunta', autocomplete: 'off', maxlength: String(campoTexto.maximo ?? 200),
+      placeholder: campoTexto.dica ?? '', 'aria-label': campoTexto.dica ?? 'Escreva',
+    }) : null;
+    campo?.addEventListener('keydown', (ev) => {
+      ev.stopPropagation();
+      if (ev.key === 'Enter') { ev.preventDefault(); folha.querySelector('.narrativa-opcao[data-numero="1"]')?.click(); }
+    });
 
     const aoAbortar = () => fechar(undefined);
     function fechar(valor) {
@@ -127,7 +141,7 @@ export function narrarLocal(root, {
       let opcoes = null;
       const clicar = (esc, el_) => {
         audio.play('click');
-        if (!aoVotar) { fechar(esc.valor); return; }
+        if (!aoVotar) { fechar(campo ? { valor: esc.valor, texto: campo.value } : esc.valor); return; }
         if (votei) return;
         votei = true;
         aoVotar(esc.valor);
@@ -174,7 +188,8 @@ export function narrarLocal(root, {
       const corpo = [
         p.teste && el('p', { class: `narrativa-teste ${p.teste.passou ? 'passou' : 'falhou'}` },
           `${p.teste.quem} · ${p.teste.pericia}: ${p.teste.total} contra CD ${p.teste.cd} — ${p.teste.passou ? 'sucesso' : 'falha'}${p.teste.fontes?.length ? ` (${p.teste.fontes.join('; ')})` : ''}`),
-        ...(p.texto ?? []).map((t) => (typeof t === 'string'
+        // entrada vazia (o `cond ? texto : null` de quem monta a página) não vira parágrafo nem derruba a página
+        ...(p.texto ?? []).filter(Boolean).map((t) => (typeof t === 'string'
           ? el('p', {}, t)
           : el('p', { class: 'narrativa-fala' }, el('strong', {}, t.nome), ' ', t.texto))),
       ].filter(Boolean);
@@ -188,12 +203,14 @@ export function narrarLocal(root, {
           ? el('div', { class: 'narrativa-com-retrato' }, el('span', { class: 'narrativa-retrato' }, retrato), el('div', {}, ...corpo))
           : corpo,
         p.conteudo,
+        ultima && campo,
         opcoes,
         paginas.length > 1 && el('p', { class: 'narrativa-pagina' }, `${i + 1} de ${paginas.length}`),
         botoes.length && el('div', { class: 'narrativa-botoes' }, ...botoes),
       ].flat().filter(Boolean));
       if (votei) for (const b of folha.querySelectorAll('.narrativa-opcao, .narrativa-btn')) if (!b.closest('.narrativa-voto')) b.disabled = true;
-      (folha.querySelector('.narrativa-btn.primario') ?? folha.querySelector('.narrativa-opcao:not([disabled])'))?.focus();
+      if (campo) campo.disabled = leitura;
+      ((campo && !leitura ? campo : null) ?? folha.querySelector('.narrativa-btn.primario') ?? folha.querySelector('.narrativa-opcao:not([disabled])'))?.focus();
     }
 
     aberta = {
@@ -226,6 +243,8 @@ let porta = narrarLocal;
 
 /** Troca a implementação de `narrar`; sem argumento, volta à tela local. */
 export const definirPorta = (nova = null) => { porta = nova ?? narrarLocal; };
+/** A conversa pergunta isto antes de oferecer a caixa de texto; os testes em Node respondem que não (`stub-narrativa.mjs`). */
+export const aceitaCampoDeTexto = () => true;
 
 /** Assinatura que as cenas conhecem: `narrar(root, { formato, paginas, escolhas, pular, lista })`. */
 export const narrar = (root, opts) => porta(root, opts);

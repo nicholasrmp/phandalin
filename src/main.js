@@ -1,6 +1,8 @@
 import { tocarSurtoFx } from "./view/surto-fx.js";
 import "./style.css";
 import "./view/layout.css";
+import "./view/tema-obsidiana.css";
+import "./view/tema-obsidiana-telas.css";
 
 import { makeRng, seedFromString } from "./core/rng.js";
 import { Battlefield, key, distanceFt } from "./core/grid.js";
@@ -32,6 +34,7 @@ import {
   apurar,
   apurarLugar,
   TEMPO_DA_VOTACAO_MS,
+  TEMPO_DA_AJUDA_MS,
 } from "./game/decisao.js";
 import { definirPortaDaVila } from "./view/vila.js";
 import { definirPortaDaLoja, abrirLojaLocal } from "./view/loja.js";
@@ -76,6 +79,15 @@ import { criarRuaMarcarrubra } from "./game/capitulo3-rua.js";
 import { criarMansao } from "./game/capitulo3-mansao.js";
 import { criarEstrada } from "./game/capitulo4-estrada.js";
 import { criarPoco } from "./game/capitulo4-poco.js";
+import { criarCovilAgatha } from "./game/capitulo4-agatha.js";
+import { criarLutaDaVila5 } from "./game/obelisco5-lutas.js";
+import { criarGiganteTerreo } from "./game/obelisco5-terreo.js";
+import { criarZorzulaPosto } from "./game/zorzula-posto.js";
+import { criarZorzulaSantuario } from "./game/zorzula-santuario.js";
+import { criarZorzulaMinas } from "./game/zorzula-minas.js";
+import { criarLugarDoCap6 } from "./game/obelisco6-lugares.js";
+import { criarTalhundereth } from "./game/talhundereth.js";
+import { criarCriptaTalhund } from "./game/cripta-talhund.js";
 import { criarCume } from "./game/capitulo4-cume.js";
 import { criarCastelo } from "./game/capitulo4-castelo.js";
 import { abrirRegiao } from "./game/regiao.js";
@@ -129,7 +141,9 @@ import { TabuleiroTopo } from "./view/tabuleiro-topo.js";
 // quadrada, parede livre, ficha redonda. O isométrico saiu em 2026-11-05.
 const Tabuleiro = TabuleiroTopo;
 import { Hud } from "./view/hud.js";
+import { ativarIconesDeTraco } from "./art/icons.js";
 import { criarFicha, aplicarAparencia } from "./view/ficha.js";
+import { criarFichaDaCriatura } from "./view/ficha-criatura.js";
 import { criarMenu } from "./view/menu.js";
 import {
   criarArmazenamento,
@@ -167,6 +181,26 @@ import {
 import { SaveManager } from "./app/persistence/SaveManager.js";
 import { codificarExplorado, restaurarExplorado } from "./rules/nevoa.js";
 import { CombatAdapter } from "./app/combat/CombatAdapter.js";
+
+// TEMA OBSIDIANA (`view/tema-obsidiana.css`, `view/tema-obsidiana-telas.css`): o padrão. `?tema=classico`, ou
+// `phandalin.tema = classico` no armazenamento, devolve o pergaminho, para comparar.
+const TEMA_OBSIDIANA = (() => {
+  let tema = new URLSearchParams(location.search).get("tema");
+  try { tema ??= localStorage.getItem("phandalin.tema"); } catch { /* sem armazenamento: o padrão */ }
+  return tema !== "classico";
+})();
+document.documentElement.classList.toggle("obsidiana", TEMA_OBSIDIANA);
+// Os ÍCONES (`public/icones-traco.json`, os desenhos da game-icons.net no tratamento Esmalte), nos DOIS temas: o
+// pixel saiu do jogo a pedido do dono. Eles chegam depois da abertura; até chegarem (e se não chegarem) o que aparece
+// é o pixel antigo, que fica no código só como reserva.
+fetch("/icones-traco.json")
+  .then((r) => (r.ok ? r.json() : null))
+  .then((dados) => {
+    if (!dados) return;
+    ativarIconesDeTraco(dados);
+    window.__app?.refresh?.();
+  })
+  .catch(() => { /* sem o arquivo: o pixel fica */ });
 
 /** O `localStorage`, ou um armazém em memória onde ele é bloqueado (aba anônima): o jogo roda, só não guarda. */
 function armazemDoNavegador() {
@@ -220,6 +254,7 @@ class App {
         this.refresh();
       },
       onAbrirFicha: (c) => this.ficha?.abrir(c, "ficha"),
+      onFichaDaCriatura: (c) => this.fichaDaCriatura?.abrir(c),
       // Explorando, as magias de utilidade saem pelo relógio, não pela rodada.
       explorando: () =>
         this.partidaRemota?.aberta()
@@ -235,6 +270,8 @@ class App {
     // A ficha pendura o próprio véu em `root` e cuida do teclado dela enquanto
     // está aberta. O que ela não faz é se abrir sozinha nem saber as regras do
     // encontro — isso é daqui.
+    // A ficha da criatura (o inimigo e a invocação): a figura inteira e o que o grupo sabe dela.
+    this.fichaDaCriatura = criarFichaDaCriatura(this, root);
     this.ficha = criarFicha(root, {
       // Reaproveita a dica rica do HUD; sem isto a ficha cai no `title` do navegador.
       dica: (node, dados) => this.hud.ligarDica(node, dados),
@@ -325,6 +362,13 @@ class App {
     addEventListener("keydown", (e) => {
       if (!this.enc || this.menu?.estaAberto()) return;
       if (e.key === "Escape") {
+        // Mirando uma muralha de forma livre, o Esc desfaz a última DOBRA e mantém a mira: só o
+        // segundo Esc sai do modo, senão tirar uma dobra errada custaria escolher a magia de novo.
+        if (this.mode?.dobras?.length) {
+          this.mode.dobras.pop();
+          this.refresh();
+          return;
+        }
         // Sem ação escolhida, o Esc desfaz a última escala da régua (`rules/rota.js`).
         if (!this.mode && this.selected && this.escalasDe(this.selected).length) this.tirarEscala(this.selected);
         this.mode = null;
@@ -618,6 +662,24 @@ class App {
               ? criarEstrada
               : mapa.cena === "poco"
                 ? criarPoco
+                : mapa.cena === "agatha"
+                  ? criarCovilAgatha
+                  : mapa.cena === "cap5luta"
+                    ? criarLutaDaVila5
+                    : mapa.cena === "gigante5"
+                      ? criarGiganteTerreo
+                    : mapa.cena === "zorzula"
+                      ? criarZorzulaPosto
+                    : mapa.cena === "santuario"
+                      ? criarZorzulaSantuario
+                    : mapa.cena === "minas"
+                      ? criarZorzulaMinas
+                    : mapa.cena === "cap6lugar"
+                      ? criarLugarDoCap6
+                    : mapa.cena === "talhundereth"
+                      ? criarTalhundereth
+                    : mapa.cena === "cripta"
+                      ? criarCriptaTalhund
                 : mapa.cena === "cume"
                   ? criarCume
                   : mapa.cena === "arvoreTrovao"
@@ -1843,7 +1905,18 @@ class App {
     if (c?.id) this._ator = { id: c.id, ate: Date.now() + 10_000 };
   }
 
+  /**
+   * A conversa inteira é de quem a começou: os 10 s de `marcarAtor` servem para a caminhada até o NPC, e digitar uma
+   * pergunta leva mais que isso. Sem isto, a segunda caixa da conversa ia para o líder.
+   */
+  prenderAtor(id) {
+    const antes = this._atorPreso ?? null;
+    this._atorPreso = id ?? null;
+    return antes;
+  }
+
   atorAtual() {
+    if (this._atorPreso && this.enc?.side === "party") return this._atorPreso;
     return this._ator &&
       this._ator.ate > Date.now() &&
       this.enc?.side === "party"
@@ -1864,11 +1937,29 @@ class App {
       p.decide = { modo: "leitura" };
       return;
     }
+    // A oferta de ajuda num teste: só os outros jogadores votam, e o primeiro "Ajudar" já decide.
+    if (p.ajuda) {
+      const presentes = new Set(visao.jogadores.filter((j) => j.conectado).map((j) => j.id));
+      const votantes = (p.ajuda.votantes ?? []).filter((id) => presentes.has(id));
+      const titulo = `Alguém ajuda? (${Math.round(TEMPO_DA_AJUDA_MS / 1000)} s)`;
+      this._ajudante = null;
+      this.decisao = {
+        id: msg.id, modo: "votacao", votantes, desempate: null, ajuda: true, titulo, votos: new Map(), n: p.escolhas.length,
+        bloqueadas: new Set(), fim: Date.now() + TEMPO_DA_AJUDA_MS,
+        timer: setTimeout(() => this.fecharVotacao(), TEMPO_DA_AJUDA_MS),
+      };
+      p.decide = { modo: "votacao", votantes, titulo, ate: TEMPO_DA_AJUDA_MS };
+      return;
+    }
     const ator = this.atorAtual();
     // Página com tela interativa do anfitrião (o descanso, subir de nível): quem a conduz é ele, sem votação.
-    const d = p.paginas.some((pg) => pg.temConteudo)
+    const dEscolhido = p.paginas.some((pg) => pg.temConteudo)
       ? { modo: "ator", pub: visao.anfitriao }
       : quemDecide({ ator, visao });
+    // Frase escrita não se vota: sem herói dono da cena, quem escreve é o líder, o mesmo que desempataria a votação.
+    const d = p.campoTexto && dEscolhido.modo === "votacao"
+      ? { modo: "ator", pub: dEscolhido.desempate }
+      : dEscolhido;
     const nome = (pub) =>
       visao.jogadores.find((j) => j.id === pub)?.nome ?? "?";
     const heroi = ator
@@ -1910,6 +2001,16 @@ class App {
       titulo,
       ate: d.modo === "votacao" ? TEMPO_DA_VOTACAO_MS : null,
     };
+  }
+
+  /** O jogador cujo voto ofereceu ajuda no último teste. */
+  quemAjudou() {
+    return this._ajudante ?? null;
+  }
+
+  /** Mostra aos convidados que o NPC está pensando; `null` tira o aviso. A tela do anfitrião cuida da dela. */
+  avisarPensando(texto) {
+    if (this.salaDaPartida) this.menu.enviarCru({ tipo: "narrativa", msg: { tipo: "pensando", id: 0, texto } });
   }
 
   /** O anfitrião vê a própria conexão (a dos outros está na faixa de jogadores): só aparece quando algo vai mal. */
@@ -2006,6 +2107,7 @@ class App {
       return d.pub === v.voce
         ? { nota }
         : { nota, soLeitura: true, assumirApos: 60_000 };
+    if (d.ajuda && !d.votantes.includes(v.voce)) return { nota, soLeitura: true };
     return { nota, aoVotar: (indice) => this.registrarVoto(v.voce, indice) };
   }
 
@@ -2021,13 +2123,19 @@ class App {
       return;
     d.votos.set(pub, indice);
     this.publicarVoto();
-    if (d.votantes.every((p) => d.votos.has(p))) this.fecharVotacao();
+    if ((d.ajuda && indice === 1) || d.votantes.every((p) => d.votos.has(p))) this.fecharVotacao();
   }
 
   fecharVotacao() {
     const d = this.decisao;
     if (!d || d.modo !== "votacao") return;
     clearTimeout(d.timer);
+    // Ajuda não é maioria: basta um querer. Quem foi fica guardado para a conversa dar o crédito ao herói dele.
+    if (d.ajuda) {
+      this._ajudante = [...d.votos].find(([, i]) => i === 1)?.[0] ?? null;
+      this.esperasDeResposta?.get(d.id)?.({ indice: this._ajudante ? 1 : 0 });
+      return;
+    }
     const indice = apurar({
       votos: d.votos,
       nEscolhas: d.n,
@@ -2061,7 +2169,7 @@ class App {
   }
 
   /** A resposta de outro jogador a uma narrativa aberta: vale se ele é quem decide, ou como voto na votação. */
-  receberResposta({ id, indice, continuar, de }) {
+  receberResposta({ id, indice, continuar, texto, de }) {
     const d = this.decisao;
     if (!d || d.id !== id) return;
     // Texto sem escolha: qualquer jogador vira a última página e a cena segue para todos (J-09).
@@ -2078,7 +2186,7 @@ class App {
         indice < d.n &&
         !d.bloqueadas.has(indice)
       )
-        this.esperasDeResposta?.get(id)?.({ indice });
+        this.esperasDeResposta?.get(id)?.({ indice, texto });
     } else if (d.modo === "votacao") {
       this.registrarVoto(de, indice);
     }
@@ -2397,7 +2505,7 @@ class App {
               Math.abs(t.y - ev.actor.pos.y),
             ) * 90;
           setTimeout(() => {
-            board?.fx.quadros(t, "vinhas", { fps: 12, altura: 16 });
+            board?.fx.quadros(t, "vinhas", { fps: 12 });
             board?.fx.motes(t, {
               color: "#9ec45e",
               count: 3,
@@ -2964,12 +3072,34 @@ class App {
       if (
         !(this.mode?.kind === "spell" && this.mode.spellId === action.spellId)
       ) {
-        this.mode = {
-          ...action,
-          circulo: this.enc.circuloDeConjuracao(c, spell),
-          alvos: [],
+        const entrar = (opcao = null) => {
+          this.mode = {
+            ...action,
+            circulo: this.enc.circuloDeConjuracao(c, spell),
+            alvos: [],
+            opcao,
+            // As dobras da muralha de forma livre (Ctrl+clique), vazias ao entrar na mira.
+            dobras: [],
+          };
+          this.refresh();
         };
-        this.refresh();
+        // A MURALHA DE FOGO escolhe a FORMA antes de mirar — reta ou anel, e qual lado é o quente.
+        if (spell.opcoesMudamAArea) {
+          const lista = opcoesDaMagia(spell) ?? [];
+          abrirMenuContexto(this.root, {
+            x: NaN,
+            y: NaN,
+            titulo: spell.name,
+            subtitulo: "escolha a forma",
+            opcoes: lista.map((o) => ({
+              rotulo: o.rotulo,
+              detalhe: o.detalhe,
+              fazer: () => entrar(o.id),
+            })),
+          });
+          return;
+        }
+        entrar();
         return;
       }
     }
@@ -3103,15 +3233,62 @@ class App {
   tryCast(
     c,
     spellId,
-    { target = null, point = null, targets = null, opcao = null } = {},
+    {
+      target = null,
+      point = null,
+      targets = null,
+      opcao = null,
+      escalas = null,
+    } = {},
   ) {
-    // Delegar para o CombatAdapter
+    // A FORMA escolhida antes de mirar (a Muralha de Fogo) e as DOBRAS marcadas com Ctrl+clique (a
+    // Muralha de Vento) moram no modo de alvo: saem daqui, e não de cada um dos dez cliques que
+    // conjuram, porque um deles esqueceria de as repassar e a magia sairia com outra forma.
+    const modo =
+      this.mode?.kind === "spell" && this.mode.spellId === spellId
+        ? this.mode
+        : null;
     return this.combatAdapter.tryCast(c, spellId, {
       target,
       point,
       targets,
-      opcao,
+      opcao: opcao ?? modo?.opcao ?? null,
+      escalas: escalas ?? (modo?.dobras?.length ? modo.dobras : null),
     });
+  }
+
+  /** As dobras marcadas da muralha que está na mira (nenhuma se a mira não é de muralha livre). */
+  dobrasDaMuralha() {
+    if (this.mode?.kind !== "spell") return null;
+    const s = getSpell(this.mode.spellId);
+    return s?.muralhaLivre ? (this.mode.dobras ?? []) : null;
+  }
+
+  /** Ctrl+clique mirando uma muralha de forma livre: põe a dobra na casa, ou tira, se já era uma. */
+  marcarDobra(c, spell, tile) {
+    const pontos = this.mode.dobras ?? (this.mode.dobras = []);
+    const i = pontos.findIndex((p) => p.x === tile.x && p.y === tile.y);
+    if (i >= 0) pontos.splice(i, 1);
+    else {
+      // O teto é o comprimento da muralha: mais dobras que casas não é forma, é rabisco.
+      if (pontos.length >= Math.min(MAX_ESCALAS, spell.areaFt / 5 - 1)) {
+        this.refuse(c, `no máximo ${Math.min(MAX_ESCALAS, spell.areaFt / 5 - 1)} dobras`);
+        return;
+      }
+      if (this.enc.field.blocksSight(tile.x, tile.y)) {
+        this.refuse(c, "a dobra não cabe dentro da parede");
+        return;
+      }
+      const d = distanceFt(c.pos, tile);
+      if (d > spell.rangeFt) {
+        this.refuse(c, `a dobra está a ${d} pés, e a magia chega a ${spell.rangeFt}`);
+        return;
+      }
+      pontos.push({ x: tile.x, y: tile.y });
+    }
+    audio.play?.("click");
+    this.refresh();
+    this.onTileHover(tile);
   }
 
   onTileClick(tile, ev) {
@@ -3183,6 +3360,12 @@ class App {
       }
       const magia =
         this.mode.kind === "spell" ? getSpell(this.mode.spellId) : null;
+      // Ctrl+clique mirando uma muralha de forma livre marca uma DOBRA: o livro deixa dar a ela a
+      // forma que se quiser, desde que ela faça um caminho contínuo pelo chão, e as dobras são isso.
+      if (magia?.muralhaLivre && (ev?.ctrlKey || ev?.metaKey)) {
+        this.marcarDobra(c, magia, tile);
+        return;
+      }
       // Revivificar mira o CORPO, que `at` não devolve (morto não ocupa casa).
       if (magia?.kind === "reviver") {
         const corpo = this.enc.combatants.find(
@@ -3236,6 +3419,18 @@ class App {
         return;
       }
       if (!occupant) {
+        // A MURALHA É ALVO. A de Pedra e a de Gelo têm CA e PV por trecho, e derrubar um trecho abre
+        // um vão — é a diferença entre esperar a concentração cair e resolver o obstáculo. O alvo
+        // aqui é uma CASA vazia, e por isso ele entra antes do `return` que engolia o clique no chão.
+        if (this.mode.kind === "attack" && this.enc.muralhaEm(tile.x, tile.y)) {
+          const r = this.enc.golpearMuralha(c, tile, this.mode.weaponId);
+          if (!r.ok) this.refuse(c, r.why);
+          else {
+            this.mode = null;
+            this.afterAct(c);
+          }
+          return;
+        }
         // Dissipar Magia também mira uma casa de zona.
         if (magia?.shape || magia?.kind === "dissipar")
           this.tryCast(c, this.mode.spellId, { point: tile });
@@ -3480,7 +3675,9 @@ class App {
     if (!tile && this.mode?.kind !== "featureAlvo") this.hud.setHint(""); // o cursor saiu do tabuleiro ou foi para uma parede: a dica antiga não fica
     this.definirAlvo(tile ? this.enc.at(tile.x, tile.y) : null);
     // as escalas da régua ficam no tabuleiro enquanto valem, com ou sem o cursor em cima de uma casa
-    this.board?.setOverlay({ escalas: c ? this.escalasDe(c) : [], rota: null });
+    // As dobras da muralha na mira ocupam o lugar das escalas da régua: é o mesmo desenho de marca
+    // na casa, e as duas nunca aparecem juntas (uma é de andar, a outra é de mirar).
+    this.board?.setOverlay({ escalas: this.dobrasDaMuralha() ?? (c ? this.escalasDe(c) : []), rota: null });
 
     if (!c || this.enc.side !== "party" || this.mode) {
       this.board?.setOverlay({ path: null });
@@ -3535,6 +3732,21 @@ class App {
       this.hud.setHint(this.dicaDaHabilidadeAlvo(c));
       return;
     }
+    // O trecho de muralha não é criatura e não aparece em `at`: a dica dele vem antes da guarda
+    // que exige alvo, senão mirar a parede não diria nada.
+    const muro = c && this.mode?.kind === "attack" ? this.enc.muralhaEm(tile.x, tile.y) : null;
+    if (muro) {
+      const pv = muro.pvDoTrecho.get(`${tile.x},${tile.y}`) ?? 0;
+      const vuln = muro.objeto.vulneravel;
+      const arma = this.enc.weaponAttackProfile(c, this.mode.weaponId);
+      const dobra = vuln && vuln === (arma.type ?? "").toLowerCase();
+      this.hud.setHint(
+        `${muro.nome} — CA ${muro.objeto.ca} · ${pv} PV neste trecho` +
+          (vuln ? ` · vulnerável a ${vuln}${dobra ? ` (${arma.name} vale em dobro)` : ""}` : "") +
+          " · clique para golpear",
+      );
+      return;
+    }
     if (!c || !target || !this.mode) {
       this.hud.setHint("");
       return;
@@ -3586,7 +3798,15 @@ class App {
     }
     if (s.zona?.movel && c.magiasAtivas?.[s.id]?.zona)
       return `Mover ${s.name} — clique no destino (até ${(s.zona.movel / 5) * 1.5} m de onde está, sem gastar espaço)`;
-    if (s.shape) return `${s.name}${circ} — aponte a área e clique`;
+    if (s.shape) {
+      const forma = this.mode.opcao
+        ? ` · ${(opcoesDaMagia(s) ?? []).find((o) => o.id === this.mode.opcao)?.rotulo ?? this.mode.opcao}`
+        : "";
+      const dobras = s.muralhaLivre
+        ? ` · Ctrl+clique dobra a muralha (${this.mode.dobras?.length ?? 0}), Esc desfaz`
+        : "";
+      return `${s.name}${circ}${forma} — aponte a área e clique${dobras}`;
+    }
     if (s.mira === "casa")
       return `${s.name}${circ} — clique na casa de chegada (até ${(s.rangeFt / 5) * 1.5} m)`;
     if (s.kind === "reviver")
@@ -3737,6 +3957,8 @@ class App {
     const palco = root.querySelector(".palco");
     if (!coluna || !palco) return;
     root.classList.add("layout-livre");
+    // TEMA OBSIDIANA: na tela de combate, o mapa em tela cheia e os painéis escuros por cima (`view/tema-obsidiana.css`).
+    if (TEMA_OBSIDIANA) root.classList.add("obsidiana");
 
     // O minimapa sai da tela: o tabuleiro já mostra o mapa inteiro. O HUD
     // continua atualizando o elemento, só que fora do documento.

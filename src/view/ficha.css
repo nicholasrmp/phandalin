@@ -46,7 +46,9 @@
   display: flex;
   flex-direction: column;
   width: min(1120px, 100%);
-  max-height: 92vh;
+  /* Altura fixa, como a ficha do Foundry: com max-height a janela encolhia na aba curta (a História) e crescia na
+     longa, e cada troca de aba a fazia pular na tela. */
+  height: min(820px, 92vh);
   background: var(--papelada);
   border: 2px solid var(--gold-escuro);
   border-radius: 12px;
@@ -66,7 +68,7 @@
 }
 
 .ficha-cabeca-retrato {
-  width: 56px; height: 56px;
+  width: 70px; height: 70px;
   display: grid; place-items: center;
   background: var(--soquete);
   border: 2px solid var(--gold);
@@ -119,7 +121,8 @@
 .ficha-fechar:hover { color: var(--red); border-color: var(--red); }
 
 /* ---- corpo ---- */
-.ficha-rolagem { overflow: auto; padding: 12px; }
+.ficha-rolagem {
+  flex: 1; min-height: 0; overflow: auto; padding: 12px; }
 
 .ficha-colunas {
   display: grid;
@@ -595,6 +598,39 @@
   .boneco-palco { padding: 98px 104px; }
   .boneco-palco .encaixe { width: 92px; }
 }
+
+/* ---- a vida e a experiência na cabeça ---- */
+.ficha-cabeca-meio { min-width: 0; display: grid; gap: 3px; }
+.ficha-medidores { display: grid; grid-template-columns: repeat(2, minmax(0, 220px)); gap: 4px 14px; margin-top: 4px; }
+.ficha-medidor { display: grid; gap: 2px; }
+.ficha-medidor-trilho { height: 6px; background: var(--soquete); border-radius: 2px; overflow: hidden; }
+.ficha-medidor-trilho i { display: block; height: 100%; border-radius: 2px; background: #3d8b4b; }
+.ficha-medidor.vida.media .ficha-medidor-trilho i { background: #c08a2a; }
+.ficha-medidor.vida.baixa .ficha-medidor-trilho i { background: #a83420; }
+.ficha-medidor.xp .ficha-medidor-trilho i { background: var(--gold); }
+.ficha-medidor-txt { font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+/* ---- a aba das magias ---- */
+.espacos { display: grid; gap: 5px; }
+.espacos-linha { display: grid; grid-template-columns: 82px 1fr auto; align-items: center; gap: 10px; font-size: 12.5px; }
+.espacos-circulo { color: var(--muted); }
+.espacos-pips { display: flex; flex-wrap: wrap; gap: 5px; }
+.espacos-pips i {
+  width: 11px; height: 11px; transform: rotate(45deg);
+  border: 1px solid var(--gold-escuro); background: transparent;
+}
+.espacos-pips i.cheio { background: var(--gold); border-color: var(--gold); }
+.espacos-conta { font-variant-numeric: tabular-nums; color: var(--muted); }
+.ficha-vazio { margin: 16px; color: var(--muted); }
+
+/* ---- a aba da história ---- */
+.bloco.historia p { margin: 0 0 9px; font-size: 13.5px; line-height: 1.55; }
+.historia-origem { font-style: italic; color: var(--muted); }
+.historia-tracos { display: grid; grid-template-columns: 74px 1fr; gap: 8px 12px; margin: 0; font-size: 13px; line-height: 1.45; }
+.historia-tracos dt { font-family: var(--serif); font-weight: 700; color: var(--gold-escuro); }
+.historia-tracos dd { margin: 0; }
+.historia-prof { display: grid; grid-template-columns: 90px 1fr; gap: 10px; padding: 4px 0; font-size: 13px; border-bottom: 1px solid var(--line); }
+.historia-prof span:first-child { color: var(--muted); }
 
 /* Aberta na vila: por cima da tela da vila (85) e da loja (87). */
 .ficha-overlay.na-vila { z-index: 88; }

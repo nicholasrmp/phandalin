@@ -137,21 +137,17 @@ export const NPC_LOOKS = {
     face: { testa: 0.34, macas: 2, mandibula: 1.08, queixo: 'redondo', nariz: 'arrebitada', boca: 'larga' },
   },
 
-  // SILHUETA: vulto magro e dobrado para a frente, com uma bossa no alto das
-  // costas mais alta que o ombro e uma calva cercada de barba branca.
-  //
-  // Dos três plebeus humanos de Phandalin, Elmar é o que resolve a silhueta pela
-  // POSTURA: a corcunda de quem passou quarenta anos levantando saca de farinha
-  // é a única curva acima da linha do ombro em todo o elenco amigo.
+  // ELMINA BARTHEN (o Obelisco; na Mina era o Elmar, um velho corcunda). Moça humana de avental e corda no ombro: a
+  // silhueta é a do fardo de corda nas costas e do avental, sem arma. O id do look continua `elmar`, que é o que o
+  // save e as conversas guardam.
   elmar: {
-    species: 'humano', build: 'magro', heightMul: 0.97,
-    skin: '#d4a480', hair: '#d8d2c4', hairStyle: 'bald', beard: true,
-    outfit: '#6d7a52', outfitDark: '#454f30', trim: '#8a7a4a',
-    metal: '#9aa0a8', leather: '#5a4630', eyes: '#7a8290',
-    armorStyle: 'leather', helm: false, shield: false,
-    stance: 'curvado', marca: 'corcunda',
-    facial: 'idoso',
-    face: { testa: 0.42, arcada: 2, macas: 0, mandibula: 0.9, queixo: 'pontudo', nariz: 'fina', boca: 'fina' },
+    species: 'humano', build: 'magro', heightMul: 0.95,
+    skin: '#e0b090', hair: '#7a4a2a', hairStyle: 'long', beard: false,
+    outfit: '#6d7a52', outfitDark: '#454f30', trim: '#c8b080',
+    metal: '#9aa0a8', leather: '#5a4630', eyes: '#6a7a4a',
+    armorStyle: 'leather', helm: false, shield: false, weapon: null,
+    stance: 'solto', marca: ['avental', 'mochila'],
+    face: { testa: 0.4, arcada: 1, macas: 2, mandibula: 0.9, queixo: 'pontudo', nariz: 'fina', boca: 'fina' },
   },
 
   // SILHUETA: figura de base larga e pernas abertas, com duas tranças caindo
@@ -225,13 +221,11 @@ export const NPC_LOOKS = {
   // SILHUETA: figura alta de pernas abertas com duas pontas de orelha curtas,
   // um arco apoiado no chão e um fardo nas costas.
   //
-  // Meio-elfo é a espécie certa aqui por um motivo de leitura, não de ficha: ele
-  // é o veterano velho do elenco, e sem as duas pontas de orelha o jogador
-  // confundiria a silhueta dele com a de Sildar, que também é humano grisalho e
-  // também abre as pernas.
+  // DROW, pelo Obelisco (na Mina era meio-elfo): pele cinza-escura e cabelo branco. As pontas de orelha continuam
+  // separando a silhueta dele da de Sildar, e a pele escura o separa de todo o resto da vila.
   daran: {
-    species: 'meioElfo', build: 'normal', heightMul: 1.0,
-    skin: '#d7ab84', hair: '#c4bcae', hairStyle: 'short', beard: true,
+    species: 'drow', build: 'normal', heightMul: 1.0,
+    skin: '#55505e', hair: '#e6e2da', hairStyle: 'long', beard: false,
     outfit: '#44563e', outfitDark: '#2a3626', trim: '#8a6a3a',
     metal: '#a4acb6', leather: '#6a4a2c', eyes: '#6a9a7a',
     armorStyle: 'leather', helm: false, shield: false, weapon: 'bow',
@@ -309,14 +303,15 @@ export const NPC_LOOKS = {
     face: { testa: 0.42, macas: 2, mandibula: 0.86, queixo: 'pontudo', olhoGap: 1, olhoH: 2, olhoW: 3, nariz: 'fina', narizW: 0.74, boca: 'fina' },
   },
 
-  // SILHUETA: figura imóvel sob um cone de aba larga, com um fardo nas costas,
-  // um cajado vertical mais alto que ela e barba branca até o peito.
+  // SILHUETA: figura imóvel sob um cone de aba larga, com um fardo nas costas e
+  // um cajado vertical mais alto que ela. REIDOTH É MULHER no Obelisco (na Mina
+  // era um velho de barba): idosa, de cabelo branco comprido e solto.
   //
   // Cone MAIS fardo é uma combinação que ninguém mais tem: Iarno tem o cone sem
   // o fardo, Gundren e Daran têm o fardo sem o cone. É o eremita que anda.
   reidoth: {
     species: 'humano', build: 'magro', heightMul: 1.06,
-    skin: '#c89a70', hair: '#dad4c6', hairStyle: 'long', beard: true,
+    skin: '#c89a70', hair: '#dad4c6', hairStyle: 'long', beard: false,
     outfit: '#4a5a38', outfitDark: '#2e3a22', trim: '#8a7442',
     metal: '#9aa0a8', leather: '#5a4428', eyes: '#8aa86a', glow: '#b8e07a',
     armorStyle: 'robe', helm: false, shield: false, weapon: 'staff',

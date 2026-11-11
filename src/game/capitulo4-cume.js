@@ -6,7 +6,8 @@
 //     grita e o bando sai. Pego desprevenido e calado antes de agir, nada se
 //     ouve na caverna;
 //   - a caverna: sem alarme, o grupo pode entrar de surpresa (outro teste de
-//     grupo, na boca). Brughor, os orcs e o ogro Gog. Os orcs fogem quando o
+//     grupo, na boca). Brughor, os bugbears e o ogro Gog (o Obelisco; na Mina eram
+//     seis orcs e um orc de vigia). Os bugbears fogem quando o
 //     Brughor cai; o ogro não;
 //   - o baú e o XP do livro (1.250), e as flags que o Harbin e o Kost leem.
 // Os 62 pe do baú entram como 31 po (o jogo não tem peça de electro).
@@ -15,11 +16,11 @@
 //   - Furtividade em GRUPO (SRD): o grupo passa se metade passar — o valor que
 //     conta é o da metade de cima. Exigir que todos passassem fazia o vigia ver
 //     o grupo quatro vezes em cinco;
-//   - avisados, saem em levas: dois orcs na hora, o Brughor com mais um na
+//   - avisados, saem em levas: dois bugbears na hora, o Brughor com mais um na
 //     rodada 2, os três que dormiam na 4, e o ogro na 6;
-//   - três orcs e o ogro dormem nas camas: pegos na caverna, perdem a primeira
+//   - dois bugbears e o ogro dormem nas camas: pegos na caverna, perdem a primeira
 //     rodada mesmo que o grupo seja notado;
-//   - quando o Brughor cai, os orcs que ainda iam sair da caverna também
+//   - quando o Brughor cai, os bugbears que ainda iam sair da caverna também
 //     desistem (o vigia foge junto);
 //   - a caverna tem penumbra (a fogueira do fundo), não breu.
 //
@@ -44,6 +45,18 @@ const dentro = (p, r) => p.x >= r.x0 && p.x <= r.x1 && p.y >= r.y0 && p.y <= r.y
 // porque a caixa delas pegaria chão de fora. Quem pergunta "está dentro?" pergunta ao conjunto.
 const CASAS_DA_CAVERNA = new Set(CUME.casasDaCaverna.map((p) => `${p.x},${p.y}`));
 const naCaverna = (p) => CASAS_DA_CAVERNA.has(`${p.x},${p.y}`);
+// O CANTO NOROESTE DA CAVERNA (o terço de cima e da esquerda da caixa dela): é onde o Obelisco põe o desenho.
+const casasNoroeste = (() => {
+  let memo = null;
+  return () => {
+    if (memo) return memo;
+    const cs = CUME.casasDaCaverna;
+    const [x0, x1] = [Math.min(...cs.map((p) => p.x)), Math.max(...cs.map((p) => p.x))];
+    const [y0, y1] = [Math.min(...cs.map((p) => p.y)), Math.max(...cs.map((p) => p.y))];
+    memo = new Set(cs.filter((p) => p.x <= x0 + (x1 - x0) / 3 && p.y <= y0 + (y1 - y0) / 3).map((p) => `${p.x},${p.y}`));
+    return memo;
+  };
+})();
 
 export function criarCume(app, config) {
   void config;
@@ -59,18 +72,27 @@ export function criarCume(app, config) {
   const casaPerto = (p) => enc.casaLivreMaisProxima(p) ?? p;
   const painel = (texto, extra = {}) => narrar(root, { formato: 'painel', paginas: [{ texto: [].concat(texto), ...extra }] });
 
-  // ---------------------------------------------------------- os orcs ----
-  const vigia = salvo.vigia ? null : makeMonster('orc', { ...CUME.vigia }, { nameSuffix: 'de vigia' });
-  if (vigia) vigia.facingVec = { dx: 0, dy: -1 };        // de costas para o campo
+  // ------------------------------------------------------ o bando ----
+  // O OBELISCO trocou o bando: vigia BUGBEAR; na caverna o Brughor (um orc de 18 PV), QUATRO bugbears e o ogro Gog. Na
+  // Mina eram um orc de vigia e seis orcs com o Brughor.
+  const vigia = salvo.vigia ? null : makeMonster('bugbear', { ...CUME.vigia }, { nameSuffix: 'de vigia' });
+  // DE COSTAS PARA O CAMPO, e isto é escolha medida, não descuido. No livro ele monta guarda; aqui o mapa
+  // não deixa. A encosta da FA tem 18x24 casas e quase nenhum anteparo: MEDIDO, o vigia é visto de 311 das
+  // 347 casas livres, e o grupo já chega a 85 pés dele COM linha de visão. Virado para fora, ele nota quem
+  // vem de qualquer lugar e a cena perde a única coisa que a torna interessante — a aproximação furtiva que o
+  // próprio capítulo oferece. Virado para dentro, a escolha volta a ser do jogador: calá-lo antes do grito,
+  // ou não. Quem repintar o mapa com cobertura de verdade pode virá-lo.
+  if (vigia) vigia.facingVec = { dx: 0, dy: -1 };
   const caverna = [];
   if (!salvo.vencido) {
-    const chefe = makeMonster('brughor', { ...CUME.brughor });
-    chefe.chefe = true;
+    // O Brughor do Obelisco é um orc comum de 18 PV (o bloco nosso, de ND 2, saiu da cena).
+    const chefe = makeMonster('orc', { ...CUME.brughor });
+    Object.assign(chefe, { name: 'Brughor Machado-Mordedor', look: 'brughor', maxHp: 18, hp: 18, chefe: true });
     caverna.push(chefe);
-    // Onde cada um espera vem do mapa (`CUME.orcs`, medido na planta da FA): A e B acordados perto da boca;
-    // C acordado junto do fogo, de costas; D, E e F dormindo na palha.
-    CUME.orcs.forEach(({ x, y, dorme }, i) => {
-      const o = makeMonster('orc', { x, y }, { nameSuffix: 'ABCDEF'[i] });
+    // Onde cada um espera vem do mapa (`CUME.orcs`, medido na planta da FA): os quatro primeiros postos — A e B
+    // acordados perto da boca, C acordado junto do fogo, de costas, D dormindo na palha.
+    CUME.orcs.slice(0, 4).forEach(({ x, y, dorme }, i) => {
+      const o = makeMonster('bugbear', { x, y }, { nameSuffix: 'ABCD'[i] });
       o.dormindo = dorme;
       caverna.push(o);
     });
@@ -143,8 +165,8 @@ export function criarCume(app, config) {
     return {
       agora: vivos(orcs.slice(0, 2)),
       ondas: [
-        { rodada: 2, units: vivos([brughor, orcs[2]]).map(na), aviso: 'Da boca da caverna sai o chefe, um orc enorme de machado nas duas mãos, berrando ordens.' },
-        { rodada: 4, units: vivos(orcs.slice(3)).map(na), aviso: 'Mais três saem tropeçando, ainda amarrando as botas.' },
+        { rodada: 2, units: vivos([brughor, orcs[2]]).map(na), aviso: 'Da boca da caverna sai o chefe, um orc de machado nas duas mãos, berrando ordens, com um bugbear atrás.' },
+        { rodada: 4, units: vivos(orcs.slice(3)).map(na), aviso: 'Mais um bugbear sai tropeçando, ainda amarrando as botas.' },
         { rodada: 6, units: vivos([gog]).map(na), aviso: 'O chão treme. O último a sair é um ogro, de clava no ombro, sorrindo como quem foi chamado para o jantar.' },
       ],
     };
@@ -164,7 +186,7 @@ export function criarCume(app, config) {
   async function entrarNaCaverna() {
     furtividade = testeDeGrupo();
     await narrar(root, { formato: 'painel', paginas: [{ texto: [
-      'A boca da caverna fede a gordura queimada e couro molhado. Lá dentro, a luz baixa de uma fogueira no fundo mostra o bando: três roncando nas camas de palha, dois resmungando perto da entrada, um de costas, sacudindo ossos num copo de chifre. E, encostado na parede, um volume que respira devagar e só pode ser um ogro.'] }],
+      'A boca da caverna fede a gordura queimada e couro molhado. Lá dentro, a luz baixa de uma fogueira no fundo mostra o bando: um bugbear roncando na palha, dois resmungando perto da entrada, outro de costas, sacudindo ossos num copo de chifre, e um orc de machado que grita com todos eles. E, encostado na parede, um volume que respira devagar e só pode ser um ogro.'] }],
     escolhas: [{ rotulo: 'Às armas!', valor: 'luta', primaria: true }] });
     salvo.alarme = true;
     luta([...(vigia && !vigia.dead ? [vigia] : []), ...caverna.filter((f) => !f.dead)], 'nossa');
@@ -180,7 +202,7 @@ export function criarCume(app, config) {
       const visto = herois().find((h) => podeVer(enc, vigia, h) && furtividade < passivePerception(vigia)
         && distanceFt(h.pos, vigia.pos) <= 90);
       if (visto) {
-        await alarme(`O orc de vigia se vira, vê ${visto.name} e enche o peito para berrar em orc.`);
+        await alarme(`O bugbear de vigia se vira, vê ${visto.name} e enche o peito para berrar em goblin.`);
         return;
       }
       // À vista dele, sem ser visto: dá para calá-lo antes que grite. De perto,
@@ -189,7 +211,7 @@ export function criarCume(app, config) {
       if (perto && !estado.perguntou) {
         estado.perguntou = true;
         const r = await narrar(root, { formato: 'painel', paginas: [{ texto: [
-          `Na boca da caverna, um orc encostado na pedra limpa as unhas com a ponta de uma faca, virado para dentro. Não ouviu nada. ${perto.name} tem ele na mira.`,
+          `Na boca da caverna, um bugbear encostado na pedra limpa as unhas com a ponta de uma faca, virado para dentro. Não ouviu nada. ${perto.name} tem ele na mira.`,
           'Se cair antes de abrir a boca, ninguém lá dentro vai saber. Se não cair, vai gritar.'] }],
           escolhas: [
             { rotulo: 'Esperar', valor: 'espera' },
@@ -216,7 +238,7 @@ export function criarCume(app, config) {
     if (m === vigia && estado.lutando && estado.lutando.length === 1 && !salvo.alarme) {
       salvo.alarme = true;
       const { agora, ondas } = ondasDaCaverna();
-      enc.say('acao', 'O orc de vigia dá meia-volta e corre para a caverna, berrando. Lá de dentro, respondem.');
+      enc.say('acao', 'O bugbear de vigia dá meia-volta e corre para a caverna, berrando. Lá de dentro, respondem.');
       const alcance = enc.reachableFor(m);
       let melhor = null;
       for (const n of alcance.values()) {
@@ -235,14 +257,14 @@ export function criarCume(app, config) {
       estado.lutando = [vigia, ...caverna];
       return true;
     }
-    // O chefe caiu: os orcs fogem — os que estão lutando e os que ainda iam
-    // sair da caverna. O ogro, não.
+    // O chefe caiu: os bugbears fogem — os que estão lutando e os que ainda iam
+    // sair da caverna. O ogro, não (o Obelisco: Gog luta até morrer).
     if (brughor && (brughor.dead || brughor.hp <= 0)) {
       if (!salvo.chefeCaiu) {
         salvo.chefeCaiu = true;
-        levas?.remover((u) => u.defId === 'orc');
+        levas?.remover((u) => u.defId === 'bugbear');
       }
-      if (m.defId === 'orc' && m.side === 'foes' && !m.fugiu) {
+      if (m.defId === 'bugbear' && m.side === 'foes' && !m.fugiu) {
         m.fugiu = true;
         if (m === vigia) salvo.vigia = 'fugiu';
         enc.combatants.splice(enc.combatants.indexOf(m), 1);
@@ -277,27 +299,35 @@ export function criarCume(app, config) {
     if (outcome !== 'vitoria') {
       estado.encerrado = true;
       await narrar(root, { formato: 'tela', paginas: [{ titulo: 'O Cume da Wyvern', texto: [
-        'Os orcs dividem o que sobrou de vocês e voltam a falar de Phandalin, mais animados do que antes.'] }] });
+        'O bando divide o que sobrou de vocês e volta a falar de Phandalin, mais animado do que antes.'] }] });
       app.encerrarPartida();
       return;
     }
     // Só o vigia caiu, sem alarme: silêncio — o bando nem desconfia.
     if (estado.lutando?.length === 1 && !salvo.alarme) {
-      await painel('O orc tomba sem um som, e a faca dele faz mais barulho que ele ao bater na pedra. Da caverna, nada além de roncos.');
+      await painel('O bugbear tomba sem um som, e a faca dele faz mais barulho que ele ao bater na pedra. Da caverna, nada além de roncos.');
       prepararExploracao();
       return;
     }
     salvo.vencido = true;
     feitos.cumeLimpo = true;
     await painel([
-      caverna.some((f) => f.fugiu) ? 'Com o chefe no chão, os orcs que sobraram correm encosta abaixo e não olham para trás.' : 'O último deles cai. A caverna fica em silêncio, a não ser pelo vento na boca dela.',
+      caverna.some((f) => f.fugiu) ? 'Com o chefe no chão, os bugbears que sobraram correm encosta abaixo e não olham para trás.' : 'O último deles cai. A caverna fica em silêncio, a não ser pelo vento na boca dela.',
       'O acampamento é de vocês. E, no fundo da caverna, um baú que ninguém se deu ao trabalho de fechar.',
       camp.poco?.kost === 'acordo' ? '(O Hamun Kost, no Poço da Coruja Velha, vai querer saber disto.)' : null,
     ].filter(Boolean));
-    // 1.600, que é a soma dos blocos (vigia, seis orcs, Brughor e o ogro). O
-    // número antigo, 1.250, pagava 350 a menos do que o bando vale — e a
-    // campanha inteira já entrega o grupo no 3º nível para a fase toda.
-    await darXpDoLivro(1600, 'O Cume da Wyvern');
+    // 1.250, QUE É O NÚMERO DO LIVRO. Esteve em 1.600 por um tempo — a soma dos nossos blocos (vigia, seis
+    // orcs, Brughor e o ogro) —, com o argumento de que 1.250 pagaria 350 a menos do que o bando vale. O
+    // argumento é bom e mesmo assim foi desfeito, por uma razão simples: a função se chama `darXpDoLivro` e
+    // TODAS as outras oito cenas da aventura pagam o número do livro. Uma exceção numa cena só não é decisão
+    // de equilíbrio, é inconsistência — e quem subir de nível meia sessão mais cedo no Cume vai sentir falta
+    // no Castelo. Se um dia se quiser pagar a soma dos blocos, que se pague em todas.
+    //
+    // E MEDIDO, porque trocar número de XP empurra tudo o que vem depois: `src/dev/medir-progressao.mjs` soma
+    // a campanha inteira para quatro heróis. São 87 XP a menos por herói, o acumulado no fim do capítulo 4
+    // cai de 3.249 para 3.162, e os dois caem na MESMA faixa — acima dos 2.700 do 4º nível e longe dos 6.500
+    // do 5º. A troca não mudou o nível do grupo em ponto nenhum da campanha.
+    await darXpDoLivro(1250, 'O Cume da Wyvern');
     prepararExploracao();
   }
 
@@ -312,9 +342,27 @@ export function criarCume(app, config) {
         motivo: longe(5) ?? (salvo.vencido ? null : 'o bando ainda está aqui'),
         fazer: async () => {
           salvo.bau = true;
-          guardar(c, 'moedaDeCobre', 750); guardar(c, 'moedaDePrata', 180); guardar(c, 'moedaDeOuro', 61);
+          // O Obelisco: 180 pp, 15 pe e três vidrinhos de perfume de 5 po (a Mina dava bem mais).
+          guardar(c, 'moedaDePrata', 180 + 75);
           guardar(c, 'frascoDePerfume', 3);
-          await painel(`Pilhagem de quem passou por muita fazenda: um monte de cobre (750), prata (180), electro (62) e algum ouro (30), tudo jogado junto, e três vidrinhos de perfume embrulhados num lenço bordado. ${c.name} guarda tudo.`);
+          await painel(`Pilhagem de quem passou por umas fazendas ao norte: prata (180) e um punhado de electro (15, que valem 75 de prata), e três vidrinhos de perfume embrulhados num lenço bordado. ${c.name} guarda tudo.`);
+        },
+      });
+    }
+    // O FIO DO OBELISCO no acampamento: na parede NOROESTE da caverna, um desenho riscado pelos goblins de fora — um
+    // goblin magricela com um cristal saindo do crânio (o Ruxithid do capítulo 5, que o grupo ainda não conhece).
+    if (CASAS_DA_CAVERNA.has(`${tile.x},${tile.y}`) && casasNoroeste().has(`${tile.x},${tile.y}`) && !salvo.desenho) {
+      ops.push({
+        rotulo: 'Olhar o desenho na rocha', icone: 'acao-procurar', detalhe: 'na parede noroeste',
+        motivo: longe(5) ?? (salvo.vencido ? null : 'o bando ainda está aqui'),
+        fazer: async () => {
+          salvo.desenho = true;
+          const t = 'Goblins de fora: na caverna do Cume da Wyvern, um desenho tosco riscado na parede mostra um goblin magricela com um cristal saindo do crânio. Não é um Cragmaw.';
+          if (!(vila.pistas ??= []).includes(t)) vila.pistas.push(t);
+          await painel([
+            'Na parede do noroeste, acima da altura de um bugbear sentado, alguém riscou um desenho tosco com carvão e ponta de faca: um goblin comprido e magricela, de braços finos demais, e saindo do alto da cabeça dele uma pedra pontuda, um cristal, desenhado com mais cuidado que o resto.',
+            'Não é um Cragmaw, e não é coisa que um bugbear desenhe. A fuligem da fogueira cobriu metade, mas ninguém se deu ao trabalho de apagar.',
+          ]);
         },
       });
     }
@@ -344,7 +392,7 @@ export function criarCume(app, config) {
     await painel([
       'O cume não acaba: pedra rachada, ravina atrás de ravina, mato duro que arranha a canela. Daqui de cima se vê a Trilha de Triboar inteira — e daqui de baixo não se vê nada.',
       `${lider.name} toma a frente (${SKILL_NAME[pericia]}). ${horas === 1 ? 'Não leva uma hora' : `Leva ${horas} horas, para cima e para baixo`} até achar o que procurava: uma pegada larga demais para ser de gente, e mais adiante, presa num espinho, uma tira de couro com um dente amarrado.`,
-      'O rastro sobe a encosta de pedra do tor, depois de um bosque, e some na boca escura de uma caverna aberta na rocha.',
+      'O rastro sobe a encosta de pedra do tor, depois de um bosque, e some na boca escura de uma caverna aberta na rocha. Antes de a boca aparecer já se sente o que vem dela: fumaça de lenha queimada devagar, fraca e constante, do jeito que só cheira fogo que alguém mantém aceso.',
     ], { teste: { quem: lider.name, pericia: SKILL_NAME[pericia], total: r.total, cd: 15, passou: r.total >= 15 } });
   }
 
@@ -360,7 +408,7 @@ export function criarCume(app, config) {
     depoisDaConversa: () => {},
     motivoSemDescanso: (tipo) => {
       if (!estado.explorando) return 'só fora da luta';
-      if (tipo === 'longo' && !salvo.vencido) return 'com um bando de orcs logo ali? Não';
+      if (tipo === 'longo' && !salvo.vencido) return 'com um bando de saqueadores logo ali? Não';
       return null;
     },
     textoDoDescanso: () => ['Um descanso atrás das pedras, de olho na boca da caverna.'],

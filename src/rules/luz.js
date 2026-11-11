@@ -29,7 +29,7 @@
 // iluminado de longe. É a escolha tática da caverna.
 
 import { distanceFt, key } from '../core/grid.js';
-import { hasCondition, CONDITIONS } from './conditions.js';
+import { hasCondition, CONDITIONS, alcanceDaVisaoVerdadeira } from './conditions.js';
 
 export const CLARO = 2;
 export const PENUMBRA = 1;
@@ -105,6 +105,14 @@ export function definirEscuridao(field, nivel) {
   return true;
 }
 
+/**
+ * SOB A LUZ DO SOL? O mapa sem grade de luz e com a cena clara (abaixo de 0,35) é o ar livre de dia — a caverna, a
+ * masmorra e o casarão têm grade de luz e nunca são sol. É o que a Sensibilidade à Luz Solar (drow, aparição) pergunta.
+ */
+export const soboSol = (field) => !field?.luz && (field?.escuridao ?? 0) < 0.35;
+export const SENSIVEIS_AO_SOL = ['sunlightSensitivity', 'sensibilidadeALuzSolar'];
+export const sofreComOSol = (c, field) => Boolean(c?.traits?.some((t) => SENSIVEIS_AO_SOL.includes(t))) && soboSol(field);
+
 /** A luz do mapa que só acende no escuro (o lampião da rua, a janela acesa) está apagada com a cena clara. */
 export const acesaNaEscuridao = (f, field) => f.soNoEscuro == null || (field?.escuridao ?? 0) >= f.soNoEscuro;
 
@@ -121,7 +129,12 @@ const MONSTROS_COM_VISAO = /\b(goblin|bugbear|hobgoblin|orc|klarg|yeemik|droop|g
 export function visaoNoEscuro(c) {
   // A magia Visão no Escuro soma-se à natural: vale o maior dos dois alcances.
   const magia = hasCondition(c, 'visaoNoEscuro') ? CONDITIONS.visaoNoEscuro.alcanceFt : 0;
-  return Math.max(magia, visaoNatural(c));
+  // VISÃO UMBRAL (Perseguidor Sombrio, Xanathar): 18 m, ou +9 m em quem já via no escuro.
+  // OLHOS DO ESCURO (Magia das Sombras): 36 m.
+  // OLHOS DA NOITE (Crepúsculo, Tasha): 90 m.
+  const natural = Math.max(visaoNatural(c), c.features?.includes('eyesOfTheDark') ? 120 : 0, c.features?.includes('eyesOfNight') ? 300 : 0, hasCondition(c, 'semblanteAstral') ? 120 : 0);
+  const umbral = c.features?.includes('umbralSight') ? (natural > 0 ? natural + 30 : 60) : natural;
+  return Math.max(magia, umbral);
 }
 
 function visaoNatural(c) {
@@ -130,8 +143,11 @@ function visaoNatural(c) {
   // O TERCEIRO OLHO (Adivinhação, 10º) e a PEDRA DO TRANSMUTADOR: visão no escuro até 18 m.
   if (c.features?.includes('thirdEye') || c.features?.includes('stoneDarkvision')) return Math.max(60, c.visaoNoEscuro ?? 0);
   if (c.visaoNoEscuro != null) return c.visaoNoEscuro;
-  if (c.senses?.darkvisionFt || c.senses?.truesightFt) {
-    return Math.max(c.senses.darkvisionFt ?? 0, c.senses.truesightFt ?? 0);
+  const verdadeira = alcanceDaVisaoVerdadeira(c);
+  // VISÃO ÀS CEGAS (o morcego pelo eco, o monte errante, a gosma): no alcance dela, o escuro não esconde nada
+  const cega = c.senses?.blindsightFt ?? 0;
+  if (c.senses?.darkvisionFt || verdadeira || cega) {
+    return Math.max(c.senses?.darkvisionFt ?? 0, verdadeira, cega);
   }
   if (c.kind === 'pc') return ANCESTRAIS_COM_VISAO.test(`${c.ancestry ?? ''} ${c.raca ?? ''}`) ? 60 : 0;
   return MONSTROS_COM_VISAO.test(`${c.id ?? ''} ${c.name ?? ''}`) ? 60 : 0;
@@ -165,13 +181,14 @@ export function casasEscondidas(enc) {
 export const temEscuridaoEm = (enc) => temEscuridao(enc.field) || Boolean(casasEscondidas(enc));
 
 /** Emite luz: tocha acesa ou o truque Luz. */
-export const emiteLuz = (c) => !c.dead && Boolean(c.tochaAcesa || hasCondition(c, 'luzMagica') || hasCondition(c, 'luzesDancantes') || hasCondition(c, 'brilhoCaos'));
+export const emiteLuz = (c) => !c.dead && Boolean(c.tochaAcesa || c.luzPropria || hasCondition(c, 'luzMagica') || hasCondition(c, 'luzesDancantes') || hasCondition(c, 'brilhoCaos'));
 
 /** As fontes de luz agora: tochas e truques Luz de quem está vivo, e as do mapa. */
 export function fontesDeLuz(enc) {
   const fontes = [];
   for (const c of enc.combatants) {
-    if (emiteLuz(c)) fontes.push({ pos: c.pos, ...(c.tochaAcesa ? TOCHA : hasCondition(c, 'luzMagica') || hasCondition(c, 'brilhoCaos') ? LUZ_MAGICA : LUZINHAS) });
+    // a LUZ PRÓPRIA da criatura (o azer, o magmin: `luzPropria` do bloco)
+    if (emiteLuz(c)) fontes.push({ pos: c.pos, ...(c.tochaAcesa ? TOCHA : c.luzPropria ? { claro: c.luzPropria.claro, penumbra: c.luzPropria.penumbra, tipo: 'fogo' } : hasCondition(c, 'luzMagica') || hasCondition(c, 'brilhoCaos') ? LUZ_MAGICA : LUZINHAS) });
   }
   // A luz do mapa que alguém apagou (`game/fogo.js`) continua no mapa — para poder ser acesa de novo —, mas não acende nada.
   // E a que só acende no escuro (`soNoEscuro`) espera a cena escurecer.
@@ -248,7 +265,15 @@ export function comoVe(enc, obs, pos, fontes = null) {
   return distanceFt(obs.pos, pos) <= visaoNoEscuro(obs) ? PENUMBRA : ESCURO;
 }
 
-export const podeVer = (enc, obs, alvo) => comoVe(enc, obs, alvo.pos) > ESCURO;
+export const podeVer = (enc, obs, alvo) => {
+  if (comoVe(enc, obs, alvo.pos) <= ESCURO) return false;
+  // VISÃO UMBRAL (Perseguidor Sombrio): no breu, quem só o enxerga pela visão no escuro não o vê.
+  if (alvo.features?.includes('umbralSight') && temEscuridao(enc.field) && nivelDeLuz(enc.field, alvo.pos.x, alvo.pos.y, fontesDeLuz(enc)) <= ESCURO) {
+    const d = distanceFt(obs.pos, alvo.pos);
+    if (!(alcanceDaVisaoVerdadeira(obs) >= d) && !((obs.senses?.blindsightFt ?? 0) >= d)) return false;
+  }
+  return true;
+};
 
 /**
  * Vantagem e desvantagem pela luz, no formato de `attackModifiers`. `fonte`

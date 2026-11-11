@@ -26,6 +26,9 @@ vi.mock("../../../app/combat/TurnManager.js", () => ({
   TurnManager: vi.fn().mockImplementation(() => ({
     endTurn: vi.fn(() => ({ ok: true })),
     getCurrentCombatant: vi.fn(),
+    // A fase é do LADO: quem responde "pode agir?" é `ehAVezDe`, e não a comparação
+    // com um "combatente atual" que este motor não tem.
+    ehAVezDe: vi.fn(() => true),
     getCurrentRound: vi.fn(() => 1),
     isOver: vi.fn(() => false),
     countActiveCombatants: vi.fn(() => 2),
@@ -153,7 +156,7 @@ describe("CombatManager", () => {
 
   describe("attack", () => {
     beforeEach(() => {
-      manager.turnManager.getCurrentCombatant.mockReturnValue(hero);
+      manager.turnManager.ehAVezDe.mockImplementation((c) => c === hero);
     });
 
     it("deve executar ataque com sucesso", () => {
@@ -163,7 +166,7 @@ describe("CombatManager", () => {
     });
 
     it("deve retornar erro se não é o turno", () => {
-      manager.turnManager.getCurrentCombatant.mockReturnValue(foe);
+      manager.turnManager.ehAVezDe.mockImplementation((c) => c === foe);
       const result = manager.attack(hero, foe, "sword");
       expect(result.ok).toBe(false);
       expect(result.why).toContain("turno");
@@ -209,7 +212,7 @@ describe("CombatManager", () => {
 
   describe("castSpell", () => {
     beforeEach(() => {
-      manager.turnManager.getCurrentCombatant.mockReturnValue(hero);
+      manager.turnManager.ehAVezDe.mockImplementation((c) => c === hero);
     });
 
     it("deve lançar magia com sucesso", () => {
@@ -219,7 +222,7 @@ describe("CombatManager", () => {
     });
 
     it("deve retornar erro se não é o turno", () => {
-      manager.turnManager.getCurrentCombatant.mockReturnValue(foe);
+      manager.turnManager.ehAVezDe.mockImplementation((c) => c === foe);
       const result = manager.castSpell(hero, "fireball");
       expect(result.ok).toBe(false);
     });
@@ -233,7 +236,7 @@ describe("CombatManager", () => {
 
   describe("useItem", () => {
     beforeEach(() => {
-      manager.turnManager.getCurrentCombatant.mockReturnValue(hero);
+      manager.turnManager.ehAVezDe.mockImplementation((c) => c === hero);
     });
 
     it("deve usar item com sucesso", () => {
@@ -243,7 +246,7 @@ describe("CombatManager", () => {
     });
 
     it("deve retornar erro se não é o turno", () => {
-      manager.turnManager.getCurrentCombatant.mockReturnValue(foe);
+      manager.turnManager.ehAVezDe.mockImplementation((c) => c === foe);
       const result = manager.useItem(hero, "potion");
       expect(result.ok).toBe(false);
     });
@@ -251,7 +254,7 @@ describe("CombatManager", () => {
 
   describe("useFeature", () => {
     beforeEach(() => {
-      manager.turnManager.getCurrentCombatant.mockReturnValue(hero);
+      manager.turnManager.ehAVezDe.mockImplementation((c) => c === hero);
     });
 
     it("deve usar habilidade com sucesso", () => {
@@ -261,7 +264,7 @@ describe("CombatManager", () => {
     });
 
     it("deve retornar erro se não é o turno", () => {
-      manager.turnManager.getCurrentCombatant.mockReturnValue(foe);
+      manager.turnManager.ehAVezDe.mockImplementation((c) => c === foe);
       const result = manager.useFeature(hero, "second-wind");
       expect(result.ok).toBe(false);
     });
@@ -269,7 +272,7 @@ describe("CombatManager", () => {
 
   describe("enterTargeting", () => {
     beforeEach(() => {
-      manager.turnManager.getCurrentCombatant.mockReturnValue(hero);
+      manager.turnManager.ehAVezDe.mockImplementation((c) => c === hero);
     });
 
     it("deve entrar em modo targeting", () => {
@@ -280,7 +283,7 @@ describe("CombatManager", () => {
     });
 
     it("deve retornar erro se não é o turno", () => {
-      manager.turnManager.getCurrentCombatant.mockReturnValue(foe);
+      manager.turnManager.ehAVezDe.mockImplementation((c) => c === foe);
       const spell = { id: "fireball" };
       const result = manager.enterTargeting(spell, hero);
       expect(result.ok).toBe(false);
@@ -304,6 +307,8 @@ describe("CombatManager", () => {
 
   describe("endTurn", () => {
     beforeEach(() => {
+      manager.turnManager.ehAVezDe.mockImplementation((c) => c === hero);
+      // `endTurn` pergunta QUEM está por jogar, e não "é a vez dele?".
       manager.turnManager.getCurrentCombatant.mockReturnValue(hero);
     });
 
@@ -366,12 +371,12 @@ describe("CombatManager", () => {
 
   describe("isCurrentTurn", () => {
     it("deve retornar true se é o turno do combatente", () => {
-      manager.turnManager.getCurrentCombatant.mockReturnValue(hero);
+      manager.turnManager.ehAVezDe.mockImplementation((c) => c === hero);
       expect(manager.isCurrentTurn(hero)).toBe(true);
     });
 
     it("deve retornar false se não é o turno", () => {
-      manager.turnManager.getCurrentCombatant.mockReturnValue(foe);
+      manager.turnManager.ehAVezDe.mockImplementation((c) => c === foe);
       expect(manager.isCurrentTurn(hero)).toBe(false);
     });
   });

@@ -148,9 +148,9 @@ export default {
     },
   },
 
-  // Os bugbears da sala 9, com todo o grupo de manto. A conversa é com Mosk (`arvoreDosBugbears`: oi, servos, sabem,
+  // Os bugbears da sala 9, com todo o grupo de manto. A conversa é com Nosk (`arvoreDosBugbears`: oi, servos, sabem,
   // confessa, desconfiam). Falhar uma conversa de ameaça aqui acaba em luta ('desconfiam'), como já acabava.
-  Mosk: {
+  Nosk: {
     nos: {
       // A leitura (SAB) só mostra o gesto: a chave no cinto. A informação continua atrás da Intimidação, mas agora com onde apertar.
       'x:mosk-nervoso': {

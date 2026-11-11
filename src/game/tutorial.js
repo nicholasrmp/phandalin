@@ -7,7 +7,7 @@ export const DICAS = {
   combate: {
     titulo: 'Começa a luta',
     texto: ['O combate é por turnos: primeiro age o seu grupo (todos os heróis, na ordem que você quiser), depois os inimigos.',
-      'Cada herói tem **Movimento**, uma **Ação**, uma **Ação bônus** e uma **Reação** por rodada. Eles aparecem no canto de baixo à direita.'],
+      'Cada herói tem **Movimento**, uma **Ação**, uma **Ação bônus** e uma **Reação** por rodada. Eles aparecem na barra de baixo, ao lado do retrato do herói.'],
   },
   acoes: {
     titulo: 'Mover e atacar',

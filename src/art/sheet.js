@@ -7,6 +7,29 @@ import { resolveLook } from './looks.js';
 import { folhaImportada, carregarFolhas } from './folhas/index.js';
 import { retratoPintado } from './retratos/index.js';
 import { ehArte, pintarArte } from './arte-propria.js';
+import { CRIATURAS_COM_FICHA } from './fichas-de-criatura.js';
+
+// A criatura que só tem FICHA (o token do 5etools, `public/fichas/`) e nenhum look desenhado: os blocos que vieram do
+// Obelisco. O tabuleiro já desenhava a ficha; o retrato da HUD pedia a folha e quebrava ("Look desconhecido") na
+// primeira luta com um deles — a cobra do esconderijo derrubou a ordem de turno inteira.
+const SO_FICHA = new Set(CRIATURAS_COM_FICHA);
+const temLook = (k) => { try { resolveLook(k); return true; } catch { return false; } };
+
+function retratoDaFicha(id, lado) {
+  const canvas = document.createElement('canvas');
+  canvas.width = lado * S;
+  canvas.height = lado * S;
+  canvas.style.width = `${lado}px`;
+  canvas.style.height = `${lado}px`;
+  const img = new Image();
+  img.onload = () => {
+    const ctx = canvas.getContext('2d');
+    ctx.imageSmoothingEnabled = true;
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+  };
+  img.src = `/fichas/${id}.webp`;
+  return canvas;
+}
 
 const cache = new Map();
 
@@ -225,6 +248,7 @@ function imagemDa(sheet, anim) {
  * aparecer menor dentro do quadro é informação, não defeito.
  */
 export function makePortrait(lookKey, lado = 40) {
+  if (SO_FICHA.has(lookKey) && !temLook(lookKey)) return retratoDaFicha(lookKey, lado);
   // O herói criado pelo jogador não tem folha: o retrato sai da imagem que ele mandou (`art/arte-propria.js`).
   if (ehArte(lookKey)) {
     const canvas = document.createElement('canvas');

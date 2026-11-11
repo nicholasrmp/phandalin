@@ -1,3 +1,4 @@
+import { raioDoMapa, telecinesiaDoMestre, magiaDoAndarilho, feiticariaPsionica, tentaculosAgarradores, pergaminhoDoEscrivao } from './subclasses-livros.js';
 // PASSIVAS de classe e traços raciais: as regras puras que o motor de combate consulta.
 //
 // POR QUE ISTO NÃO MORA NO combat.js
@@ -12,7 +13,7 @@
 //   { condicao: 'amedrontado', tipoDano: 'veneno', magico: true }
 // Quem chama preenche só o que sabe; o que falta é "não sei", e "não sei" nunca dá vantagem.
 
-const ENFEITICADO = new Set(['enfeiticado', 'sugerido', 'hipnotizado', 'coroaDaLoucura', 'cativado']);
+const ENFEITICADO = new Set(['enfeiticado', 'sugerido', 'hipnotizado', 'coroaDaLoucura', 'cativado', 'coroaPsionica']);
 
 /** O que a magia diz do seu efeito, no formato de `contra`. */
 // ------------------------------------------------------------------ queda ----
@@ -58,6 +59,10 @@ export function contraDaMagia(spell, conjurador = null) {
     planta: PLANTAS_QUE_PRENDEM.includes(spell.id),
     condicao: spell.onFail?.condition ?? spell.applies?.condition ?? spell.condition ?? null,
     tipoDano: spell.damageType ?? null,
+    // Quem conjura (o Matador de Magos olha a distância) e se a magia mira UMA criatura só (o Mestre em Escudos).
+    conjurador,
+    magiaId: spell.id,
+    alvoUnico: !spell.shape && !spell.area && !(spell.alvos > 1) && !spell.autoJuntos,
   };
 }
 
@@ -66,18 +71,29 @@ export function contraDaMagia(spell, conjurador = null) {
  * `hab` é o atributo do teste; `contra`, o contexto (ver acima).
  */
 export function vantagemPorTraco(actor, hab, contra = null) {
-  const f = actor?.features;
-  if (!f?.length || !contra) return [];
+  // O monstro guarda os traços em `traits`, e não em `features`: sem juntar os dois, a Resistência a Magia do
+  // quasit nunca seria lida, porque o bloco dele não tem `features` nenhuma.
+  const f = [...(actor?.features ?? []), ...(actor?.traits ?? [])];
+  if (!f.length || !contra) return [];
   const motivos = [];
   const cond = contra.condicao ?? null;
   if (f.includes('brave') && cond === 'amedrontado') motivos.push('Corajoso');
+  // OS TRAÇOS DE MONSTRO com o mesmo efeito, pelo nome do bloco: Bravura (o cavaleiro), Devoção Sombria (o cultista),
+  // Ascendência Feérica (o drow), Astúcia Gnômica (o gnomo das profundezas) e Pés Firmes (o esqueleto anão).
+  if (f.includes('bravura') && cond === 'amedrontado') motivos.push('Bravura');
+  if (f.includes('devocaoSombria') && (cond === 'amedrontado' || ENFEITICADO.has(cond))) motivos.push('Devoção Sombria');
+  if (f.includes('ascendenciaFeerica') && ENFEITICADO.has(cond)) motivos.push('Ascendência Feérica');
+  if (f.includes('pesFirmes') && cond === 'caido' && ['str', 'dex'].includes(hab)) motivos.push('Pés Firmes');
   // VONTADE DE AÇO (Caçador, 7º): vantagem contra amedrontado.
   if (f.includes('steelWill') && cond === 'amedrontado') motivos.push('Vontade de Aço');
   if (f.includes('feyAncestry') && ENFEITICADO.has(cond)) motivos.push('Ancestral Feérico');
+  // FORTITUDE MENTAL (os goblins psíquicos do Obelisco): vantagem contra enfeitiçado e amedrontado.
+  if (f.includes('fortitudeMental') && (cond === 'amedrontado' || ENFEITICADO.has(cond))) motivos.push('Fortitude Mental');
   const veneno = contra.tipoDano === 'veneno' || cond === 'envenenado';
   if (veneno && f.includes('dwarvenResilience')) motivos.push('Resiliência Anã');
   if (veneno && f.includes('stoutResilience')) motivos.push('Resiliência Robusta');
   if (contra.magico && ['int', 'wis', 'cha'].includes(hab) && f.includes('gnomeCunning')) motivos.push('Esperteza Gnômica');
+  if (contra.magico && ['int', 'wis', 'cha'].includes(hab) && f.includes('astuciaGnomica')) motivos.push('Astúcia Gnômica');
   // NIMBO SAGRADO (paladino, 20º): vantagem contra magias de corruptores e mortos-vivos.
   if (contra.magico && actor.conditions?.some((c) => c.id === 'nimboSagrado') && ['corruptor', 'morto-vivo'].includes(contra.fonteTipo)) motivos.push('Nimbo Sagrado');
   // CONTRACANTO: o bardo que canta dá vantagem a quem ouve, contra medo e encantamento.
@@ -86,6 +102,11 @@ export function vantagemPorTraco(actor, hab, contra = null) {
   if (contra.planta && f.includes('landsStride')) motivos.push('Passo da Terra');
   // RESISTÊNCIA A MAGIA (mago de Abjuração, 14º): vantagem nas resistências contra magias.
   if (contra.magico && f.includes('spellResistance')) motivos.push('Resistência a Magia');
+  // RESISTÊNCIA A MAGIA DE MONSTRO (o quasit, e o que mais vier do Obelisco): vantagem contra magia e
+  // contra efeito mágico, em TODA resistência — o do mago de Abjuração acima é o mesmo traço com outro dono.
+  if (contra.magico && f.includes('resistenciaAMagia')) motivos.push('Resistência a Magia');
+  // IMUNIDADE À MAGIA LIMITADA (o rakshasa): a magia baixa nem o toca (`livro-motor.js`); contra o resto, vantagem
+  if (contra.magico && f.includes('imunidadeMagicaLimitada')) motivos.push('Imunidade à Magia Limitada');
   return motivos;
 }
 
@@ -187,6 +208,8 @@ export function gravarAssinaturas(c, magias) {
  */
 export function margemDeCritico(atacante) {
   const f = atacante?.features;
+  // CONQUISTADOR INVENCÍVEL (Conquista, 20º): crítico com 19.
+  if ((atacante?.conditions ?? []).some((c) => c.id === 'conquistadorInvencivel')) return f?.includes('superiorCritical') ? 18 : 19;
   if (f?.includes('superiorCritical')) return 18;
   if (f?.includes('improvedCritical')) return 19;
   return 20;
@@ -256,7 +279,16 @@ export const CONDICOES_DE_ENCANTO = ['enfeiticado', 'sugerido', 'hipnotizado', '
  */
 export function danoPorResistencia(alvo, hab, metadeNoSucesso, sucesso, total, incapacitado = false) {
   const metade = Math.floor(total / 2);
+  // MESTRE EM ESCUDOS (talento): de escudo, quem passa na Destreza que cortaria o dano pela metade gasta a reação e não
+  // sofre nada. Automático, e só quando há dano a poupar.
+  if (hab === 'dex' && metadeNoSucesso && sucesso && !incapacitado && metade > 0 && alvo.shield && !alvo.reactionUsed
+    && (alvo.talentos ?? []).includes('mestreEmEscudos') && !alvo.features?.includes('evasion')) {
+    alvo.reactionUsed = true;
+    return 0;
+  }
   if (hab === 'dex' && metadeNoSucesso && !incapacitado && alvo.features?.includes('evasion')) return sucesso ? 0 : metade;
+  // EVITAR (o demilich): a evasão em QUALQUER resistência, não só na de Destreza
+  if (metadeNoSucesso && !incapacitado && alvo.traits?.includes('evasaoTotal')) return sucesso ? 0 : metade;
   return sucesso ? (metadeNoSucesso ? metade : 0) : total;
 }
 
@@ -314,6 +346,14 @@ export const MAGIAS_DE_CARACTERISTICA = {
   shadowStep: ['passoDasSombras'],
   shadowArts: ['ilusaoMenor'],
   lightCantrip: ['luz'],
+  telekineticMaster: ['telecinesia'],
+  swarmkeeperMagic: ['maoMagica'],
+  feyReinforcements: ['invocarFeerico'],
+  psionicSpells: ['lascaMental'],
+  graspingTentacles: ['tentaculosNegrosDeEvard'],
+  draconicGift: ['taumaturgia'],
+  giantPower: ['taumaturgia'],
+  amongTheDead: ['pouparOsMoribundos'],
 };
 
 /**
@@ -334,6 +374,8 @@ export const MAGIAS_DE_KI = {
   breathOfWinter: { magias: [['coneDeFrio', 6]] },
   eternalMountainDefense: { magias: [['peleDePedra', 5]] },
   riverOfHungryFlame: { magias: [['muralhaDeFogo', 5]] },
+  // GOLPE DO ARCO ABRASADOR (Alma Solar, Xanathar): Mãos Flamejantes de ação bônus depois de atacar; o teto é metade do nível.
+  searingArcStrike: { teto: 'metade', magias: [['arcoAbrasador', 2]] },
 };
 
 /** O limite de ki que um monge de `nivel` gasta numa só magia (Discípulo dos Elementos). */
@@ -356,6 +398,12 @@ export function darMagiasDeCaracteristica(c, SPELLS) {
       if (SPELLS[id] && !c.magiasDeCaracteristica.includes(id) && !c.spellcasting.cantrips?.includes(id)) c.magiasDeCaracteristica.push(id);
     }
   }
+  // INICIADO ARCANO (Domínio Arcano) e CEIFADOR (Domínio da Morte): os truques escolhidos, que contam como de clérigo.
+  for (const id of [...(c.truquesArcanos ?? []), ...(c.truqueDoCeifador ? [c.truqueDoCeifador] : [])]) {
+    if (!SPELLS[id]) continue;
+    garantir();
+    if (!c.spellcasting.cantrips?.includes(id) && !c.magiasDeCaracteristica.includes(id)) c.magiasDeCaracteristica.push(id);
+  }
   // ACÓLITO DA NATUREZA: o truque de druida escolhido.
   if (c.features?.includes('acolyteCantrip') && c.truqueDaNatureza && SPELLS[c.truqueDaNatureza]) {
     garantir();
@@ -366,7 +414,7 @@ export function darMagiasDeCaracteristica(c, SPELLS) {
     garantir();
     for (const [id, custo] of def.magias) {
       if (!SPELLS[id] || c.magiasDeKi.some((m) => m.magia === id)) continue;
-      c.magiasDeKi.push({ magia: id, custo, fixo: Boolean(def.fixo) });
+      c.magiasDeKi.push({ magia: id, custo, fixo: Boolean(def.fixo), ...(def.teto ? { teto: def.teto } : {}) });
       if (!c.magiasDeCaracteristica.includes(id)) c.magiasDeCaracteristica.push(id);
     }
   }
@@ -380,7 +428,7 @@ export function usoLivreDe(c, spell, pedido = null) {
   const racial = c.magiasRaciais?.find((m) => m.magia === spell.id && tem(m.recurso));
   if (racial) {
     const circulo = racial.circulo ?? spell.level;
-    if (pedido == null || pedido === circulo) return { tipo: 'racial', circulo, recurso: racial.recurso, rotulo: 'magia da raça, uma vez por descanso longo' };
+    if (pedido == null || pedido === circulo) return { tipo: 'racial', circulo, recurso: racial.recurso, rotulo: racial.rotulo ?? 'magia da raça, uma vez por descanso longo' };
   }
   if (c.features?.includes('spellMastery') && c.maestriaDeMagia?.includes(spell.id) && (pedido == null || pedido === spell.level)) {
     return { tipo: 'maestria', circulo: spell.level, rotulo: 'Maestria em Magia, à vontade' };
@@ -390,7 +438,8 @@ export function usoLivreDe(c, spell, pedido = null) {
   if (ki) {
     const circulo = pedido != null && pedido >= spell.level && !ki.fixo ? pedido : spell.level;
     const custo = ki.custo + (circulo - spell.level);
-    if (custo <= kiMaximoPorMagia(c.level ?? 1) && (c.resources?.ki ?? 0) >= custo) {
+    const teto = ki.teto === 'metade' ? Math.floor((c.level ?? 1) / 2) : kiMaximoPorMagia(c.level ?? 1);
+    if (custo <= teto && (c.resources?.ki ?? 0) >= custo) {
       return { tipo: 'ki', circulo, recurso: 'ki', custo, rotulo: `${custo} de ki` };
     }
     return null;
@@ -398,11 +447,22 @@ export function usoLivreDe(c, spell, pedido = null) {
   // INVOCAÇÕES do bruxo que dão uma magia: à vontade, ou uma vez por descanso longo.
   const inv = c.magiasDeInvocacao?.find((m) => m.magia === spell.id && (m.tipo === 'avontade' || tem(m.recurso)));
   if (inv && (pedido == null || pedido === (inv.circulo ?? spell.level))) {
-    return { tipo: 'invocacao', circulo: inv.circulo ?? spell.level, recurso: inv.recurso, rotulo: inv.tipo === 'avontade' ? 'invocação, à vontade' : 'invocação, uma vez por descanso longo' };
+    return { tipo: 'invocacao', circulo: inv.circulo ?? spell.level, recurso: inv.recurso, rotulo: inv.rotulo ?? (inv.tipo === 'avontade' ? 'invocação, à vontade' : 'invocação, uma vez por descanso longo') };
   }
   const assinatura = c.magiasAssinatura?.find((m) => m.magia === spell.id && tem(m.recurso));
   if (assinatura && (pedido == null || pedido === spell.level)) {
     return { tipo: 'assinatura', circulo: spell.level, recurso: assinatura.recurso, rotulo: 'Magia de Assinatura, uma vez por descanso curto' };
+  }
+  // MAPA ESTELAR (Estrelas, Tasha): o Raio Guiado sem espaço. MESTRE TELECINÉTICO (Guerreiro Psiônico): a Telecinésia.
+  // REFORÇOS FEÉRICOS e ANDARILHO NEBULOSO (Andarilho Feérico): o Invocar Feérico e o Passo Nebuloso.
+  // TASHA (4º lote): a Feitiçaria Psiônica, os Tentáculos Agarradores e o pergaminho do Escrivão Mestre.
+  const doLivro = raioDoMapa(c, spell, pedido) ?? telecinesiaDoMestre(c, spell) ?? magiaDoAndarilho(c, spell, pedido)
+    ?? tentaculosAgarradores(c, spell, pedido) ?? pergaminhoDoEscrivao(c, spell, pedido) ?? feiticariaPsionica(c, spell, pedido);
+  if (doLivro) return doLivro;
+  // OLHOS DO ESCURO (Magia das Sombras, Xanathar): a Escuridão por 2 pontos de feitiçaria, quando não há espaço de 2º ou mais.
+  if (spell.id === 'escuridao' && c.features?.includes('eyesOfTheDark') && (c.resources?.sorceryPoints ?? 0) >= 2
+    && !(c.spellcasting?.slots ?? []).some((n, i) => i >= 2 && n > 0) && (pedido == null || pedido === spell.level)) {
+    return { tipo: 'pontos', circulo: spell.level, recurso: 'sorceryPoints', custo: 2, rotulo: '2 pontos de feitiçaria' };
   }
   return null;
 }

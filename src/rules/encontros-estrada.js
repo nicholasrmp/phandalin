@@ -32,13 +32,15 @@
 
 import { XP_POR_NIVEL } from './progressao.js';
 
+// A TABELA DO OBELISCO (2026-11-08): 1d4+2 stirges, 2d4 goblins com um CHEFE GOBLIN (`chefe`, a mais), 1d4+3
+// hobgoblins, e os ORCS saem para entrar dois BUGBEARS batedores do bando do Cume da Wyvern.
 export const ENCONTROS = [
-  { id: 'stirge', nome: 'stirges', um: 'uma stirge', dia: [1, 2], noite: [1, 3], qtd: [1, 8, 2] },
+  { id: 'stirge', nome: 'stirges', um: 'uma stirge', dia: [1, 2], noite: [1, 3], qtd: [1, 4, 2] },
   { id: 'ghoul', nome: 'carniçais', um: 'um carniçal', dia: null, noite: [4, 4], qtd: [1, 4, 1] },
   { id: 'ogro', nome: 'ogros', um: 'um ogro', dia: [3, 4], noite: null, qtd: [0, 0, 1] },
-  { id: 'goblin', nome: 'goblins', um: 'um goblin', dia: [5, 6], noite: [5, 5], qtd: [1, 6, 3] },
-  { id: 'hobgoblin', nome: 'hobgoblins', um: 'um hobgoblin', dia: [7, 8], noite: [6, 6], qtd: [1, 4, 2] },
-  { id: 'orc', nome: 'orcs', um: 'um orc', dia: [9, 10], noite: [7, 8], qtd: [1, 4, 2] },
+  { id: 'goblin', nome: 'goblins', um: 'um goblin', dia: [5, 6], noite: [5, 5], qtd: [2, 4, 0], chefe: 'goblinChefe' },
+  { id: 'hobgoblin', nome: 'hobgoblins', um: 'um hobgoblin', dia: [7, 8], noite: [6, 6], qtd: [1, 4, 3] },
+  { id: 'bugbear', nome: 'bugbears batedores', um: 'um bugbear', dia: [9, 10], noite: [7, 8], qtd: [0, 0, 2] },
   { id: 'lobo', nome: 'lobos', um: 'um lobo', dia: [11, 11], noite: [9, 10], qtd: [1, 4, 2] },
   { id: 'corujaUrso', nome: 'ursos-coruja', um: 'um urso-coruja', dia: [12, 12], noite: [11, 12], qtd: [0, 0, 1] },
 ];
@@ -66,14 +68,14 @@ export function sortearEncontro(rng, periodo, { ajuste = 0 } = {}) {
   const [n, f, b] = e.qtd;
   let qtd = b;
   for (let i = 0; i < n; i++) qtd += rolar(rng, f);
-  return { id: e.id, nome: e.nome, um: e.um ?? e.nome, qtd, periodo };
+  return { id: e.id, nome: e.nome, um: e.um ?? e.nome, qtd, periodo, chefe: e.chefe ?? null };
 }
 
 
 // ------------------------------------------------- antes das armas saírem ----
 
 /** Quem conversa: tem o que ganhar em não brigar hoje. */
-export const NEGOCIAVEIS = new Set(['goblin', 'hobgoblin', 'orc']);
+export const NEGOCIAVEIS = new Set(['goblin', 'hobgoblin', 'bugbear']);
 
 /**
  * A que distância os dois lados se veem, em pés. No aberto, 2d6 × 3 m; no mato

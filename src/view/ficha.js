@@ -30,6 +30,8 @@
 import './ficha.css';
 import { CARACTERISTICAS, estadoDaCaracteristica } from '../rules/classes/caracteristicas.js';
 import { maxHpEfetivo } from '../rules/conditions.js';
+import { XP_POR_NIVEL, NIVEL_MAXIMO } from '../rules/progressao.js';
+import { heroiPorId } from '../game/herois.js';
 
 import { makeFigure, makePortrait } from '../art/sheet.js';
 import { LOOKS } from '../art/looks.js';
@@ -47,6 +49,8 @@ import {
   motivoParaRecusar, equipar, cargaDe,
 } from '../rules/equipment.js';
 import { getSpell } from '../rules/spells.js';
+import { infoDoTalentoPhb } from '../rules/talentos-phb.js';
+import { TALENTOS_DE_ORIGEM } from '../game/criacao.js';
 import { spellMod, limiteDePreparacao, fontesDePreparacao } from '../rules/party.js';
 import { chanceD20, pct } from '../rules/odds.js';
 import { formatModifier } from '../core/dice.js';
@@ -70,6 +74,8 @@ const el = (tag, attrs = {}, ...children) => {
   return node;
 };
 
+// o treino de armadura e de arma, como a classe o escreve (`classes/*.js armaduras/armas`)
+const TREINO = { leve: 'leves', 'média': 'médias', pesada: 'pesadas', escudo: 'escudo', simples: 'simples', marcial: 'marciais' };
 const SIGLA_ATRIBUTO = { str: 'FOR', dex: 'DES', con: 'CON', int: 'INT', wis: 'SAB', cha: 'CAR' };
 
 // O que cada talento FAZ, em uma frase. Um nome de talento sem a frase é um
@@ -222,23 +228,51 @@ export function criarFicha(root, handlers = {}) {
 
   // ---- cabeça -------------------------------------------------------------
 
+  /** As abas que este personagem tem: a de Magias só para quem conjura, a de História só para herói. */
+  function abasDe(p) {
+    return [
+      ['ficha', 'ficha', 'Ficha'],
+      p.spellcasting ? ['magias', 'item-livroDeMagias', 'Magias'] : null,
+      ['inventario', 'mochila', 'Inventário'],
+      p.invocado ? null : ['historia', 'acao-procurar', 'História'],
+    ].filter(Boolean);
+  }
+
   function cabeca() {
-    const retrato = makePortrait(personagem.look, 52);
+    const retrato = makePortrait(personagem.look, 64);
     retrato.className = 'pixel';
-    const botaoAba = (id, icone, texto) => el('button', {
+    const botaoAba = ([id, icone, texto]) => el('button', {
       class: `ficha-aba${aba === id ? ' on' : ''}`,
       onclick: () => { aba = id; encaixeAberto = null; render(); },
     }, temIcone(icone) ? iconCanvas(icone, 16) : null, texto);
 
+    // A VIDA e a EXPERIÊNCIA na cabeça, como no Foundry: os dois números que mudam a cada luta ficam à vista em
+    // qualquer aba, em vez de só no bloco de derivados da primeira.
+    const max = maxHpEfetivo(personagem);
+    const pv = Math.max(0, Math.ceil(personagem.hp ?? max));
+    const fracao = Math.min(1, pv / max);
+    const nivelMax = personagem.level >= NIVEL_MAXIMO;
+    const xpBase = XP_POR_NIVEL[personagem.level] ?? 0;
+    const xpProx = nivelMax ? xpBase : XP_POR_NIVEL[personagem.level + 1];
+    const xp = personagem.xp ?? xpBase;
+    const fracaoXp = nivelMax ? 1 : Math.max(0, Math.min(1, (xp - xpBase) / Math.max(1, xpProx - xpBase)));
+    const barra = (classe, f, texto) => el('div', { class: `ficha-medidor ${classe}` },
+      el('div', { class: 'ficha-medidor-trilho' }, el('i', { style: { width: `${Math.round(f * 100)}%` } })),
+      el('span', { class: 'ficha-medidor-txt' }, texto));
+
     return el('div', { class: 'ficha-cabeca' },
       el('div', { class: 'ficha-cabeca-retrato' }, retrato),
-      el('div', {},
+      el('div', { class: 'ficha-cabeca-meio' },
         el('div', { class: 'ficha-nome' }, personagem.name),
         el('div', { class: 'ficha-linhagem' },
-          personagem.invocado ? `Invocado · ${personagem.ancestry}` : `${personagem.className} ${personagem.ancestry} · nível ${personagem.level}`)),
-      el('div', { class: 'ficha-abas' },
-        botaoAba('ficha', 'ficha', 'Ficha'),
-        botaoAba('inventario', 'mochila', 'Inventário')),
+          personagem.invocado ? `Invocado · ${personagem.ancestry}` : `${personagem.className} ${personagem.ancestry} · nível ${personagem.level}`),
+        el('div', { class: 'ficha-medidores' },
+          barra(`vida${fracao <= 0.33 ? ' baixa' : fracao <= 0.66 ? ' media' : ''}`, fracao,
+            `${pv} / ${max} PV${personagem.tempHp ? ` · +${personagem.tempHp} temp.` : ''}`),
+          personagem.invocado ? null : barra('xp', fracaoXp,
+            nivelMax ? `${xp.toLocaleString('pt-BR')} XP · nível máximo`
+              : `${xp.toLocaleString('pt-BR')} / ${xpProx.toLocaleString('pt-BR')} XP para o ${personagem.level + 1}º`))),
+      el('div', { class: 'ficha-abas' }, abasDe(personagem).map(botaoAba)),
       el('button', { class: 'ficha-fechar', title: 'Fechar (Esc)', onclick: () => fechar() }, '×'));
   }
 
@@ -397,19 +431,33 @@ export function criarFicha(root, handlers = {}) {
           el('p', { class: 'talento-texto' }, t[1] + extra),
           aviso ? el('p', { class: 'talento-aviso' }, aviso) : null));
     }).filter(Boolean);
+    // OS TALENTOS (o de origem e os do Livro do Jogador, tomados no lugar do aumento): o nome e o que fazem no jogo.
+    for (const id of personagem.talentos ?? []) {
+      const origem = TALENTOS_DE_ORIGEM.find((t) => t.id === id);
+      const phb = infoDoTalentoPhb(id);
+      const nome = origem?.nome ?? phb?.nome;
+      const texto = origem?.resumo ?? phb?.noJogo;
+      if (!nome) continue;
+      const elementos = id === 'adeptoElemental' && personagem.elementosDoAdepto?.length ? ` Elementos: ${personagem.elementosDoAdepto.join(', ')}.` : '';
+      // o ícone do talento só existe em traço (`talento-<id>`, tema Obsidiana); no clássico ele segue sem ícone
+      const icTalento = temIcone(`talento-${id}`) ? `talento-${id}` : null;
+      lista.push(el('div', { class: `talento${icTalento ? ' com-icone' : ''}` },
+        icTalento ? iconCanvas(icTalento, 32) : null,
+        el('div', { class: 'talento-corpo' },
+          el('div', { class: 'talento-nome' }, `Talento: ${nome}`),
+          el('p', { class: 'talento-texto' }, texto + elementos))));
+    }
     if (!lista.length) return null;
     return el('section', { class: 'bloco' },
       el('h3', { class: 'bloco-tit' }, 'Talentos de classe'),
       lista);
   }
 
-  function blocoConjuracao() {
-    const sc = personagem.spellcasting;
-    if (!sc) return null;
+  /** O chip de uma magia, com a dica rica (dano, alcance, ataque ou resistência). */
+  function chipDeMagia() {
     const dc = spellSaveDc(personagem);
     const atk = spellAttackBonus(personagem);
-
-    const chip = (sid) => {
+    return (sid) => {
       const s = getSpell(sid);
       return comDica(
         el('div', { class: `chip${s.level === 0 ? ' truque' : ''}` },
@@ -425,32 +473,23 @@ export function criarFicha(root, handlers = {}) {
             s.rangeFt ? ['Alcance', `${s.rangeFt} pés`] : null,
             s.kind === 'attack' ? ['Ataque de magia', formatModifier(atk)] : null,
             s.save ? ['Resistência', `${s.save} CD ${dc}`] : null,
+            s.concentration ? ['Concentração', 'sim'] : null,
           ],
           texto: s.desc,
-          custo: s.foraDeCombate ? '10 minutos' : s.castTime === 'bonus' ? 'Ação bônus' : 'Ação',
+          custo: s.foraDeCombate ? '10 minutos' : s.castTime === 'bonus' ? 'Ação bônus' : s.castTime === 'reaction' ? 'Reação' : 'Ação',
         },
       );
     };
+  }
 
-    const espacos = [];
-    for (let lvl = 1; lvl < (sc.slots?.length ?? 0); lvl++) {
-      const max = sc.slotsMax?.[lvl] ?? 0;
-      if (!max) continue;
-      espacos.push(`${lvl}º ${sc.slots[lvl] ?? 0}/${max}`);
-    }
-
-    return el('section', { class: 'bloco' },
-      el('h3', { class: 'bloco-tit' }, 'Conjuração'),
-      el('div', { class: 'derivados' },
-        numero('Atributo', SIGLA_ATRIBUTO[sc.ability], ABILITY_NAME[sc.ability]),
-        numero('CD', String(dc), 'das resistências', {
-          dica: { nome: 'CD das magias', texto: '8 + proficiência + modificador de conjuração. É contra isto que o alvo resiste.' },
-        }),
-        numero('Ataque', formatModifier(atk), 'de magia'),
-        numero('Espaços', espacos.length ? espacos.join(' · ') : '—', 'restantes')),
-      el('div', { class: 'sub-rot' }, 'Truques — sempre prontos, não ocupam vaga'),
-      el('div', { class: 'chips' }, (sc.cantrips ?? []).map(chip)),
-      blocoPreparacao(chip));
+  function numerosDaConjuracao() {
+    const sc = personagem.spellcasting;
+    return el('div', { class: 'derivados' },
+      numero('Atributo', SIGLA_ATRIBUTO[sc.ability], ABILITY_NAME[sc.ability]),
+      numero('CD', String(spellSaveDc(personagem)), 'das resistências', {
+        dica: { nome: 'CD das magias', texto: '8 + proficiência + modificador de conjuração. É contra isto que o alvo resiste.' },
+      }),
+      numero('Ataque', formatModifier(spellAttackBonus(personagem)), 'de magia'));
   }
 
   /**
@@ -538,7 +577,81 @@ export function criarFicha(root, handlers = {}) {
   function painelFicha() {
     return el('div', { class: 'ficha-colunas' },
       el('div', { class: 'ficha-coluna' }, blocoAtributos(), blocoResistencias(), blocoPericias()),
-      el('div', { class: 'ficha-coluna' }, ...[blocoDerivados(), blocoTalentos(), blocoConjuracao()].filter(Boolean)));
+      el('div', { class: 'ficha-coluna' }, ...[blocoDerivados(), blocoTalentos()].filter(Boolean)));
+  }
+
+  // ---- aba das magias -----------------------------------------------------
+
+  /**
+   * A conjuração tem aba própria: na primeira ela era o último bloco da segunda coluna, abaixo de todos os talentos,
+   * e o mago rolava a ficha inteira para achar quantos espaços sobravam. Aqui os espaços vêm primeiro, um losango por
+   * espaço (cheio = sobra, vazio = gasto), e as magias preparadas por círculo, antes da escolha do que preparar.
+   */
+  function painelMagias() {
+    const sc = personagem.spellcasting;
+    if (!sc) return el('p', { class: 'ficha-vazio' }, `${personagem.name} não conjura magias.`);
+    const linhas = [];
+    for (let lvl = 1; lvl < (sc.slots?.length ?? 0); lvl++) {
+      const max = sc.slotsMax?.[lvl] ?? 0;
+      if (!max) continue;
+      const tem = sc.slots[lvl] ?? 0;
+      linhas.push(el('div', { class: 'espacos-linha' },
+        el('span', { class: 'espacos-circulo' }, `${lvl}º círculo`),
+        el('span', { class: 'espacos-pips', 'aria-label': `${tem} de ${max}` },
+          Array.from({ length: max }, (_, i) => el('i', { class: i < tem ? 'cheio' : '' }))),
+        el('span', { class: 'espacos-conta' }, `${tem}/${max}`)));
+    }
+    const porCirculo = new Map();
+    for (const id of sc.prepared ?? []) {
+      const s = getSpell(id);
+      if (!s || s.level === 0) continue;
+      if (!porCirculo.has(s.level)) porCirculo.set(s.level, []);
+      porCirculo.get(s.level).push(id);
+    }
+    const chip = chipDeMagia();
+    return el('div', { class: 'ficha-colunas' },
+      el('div', { class: 'ficha-coluna' },
+        el('section', { class: 'bloco' },
+          el('h3', { class: 'bloco-tit' }, 'Conjuração'),
+          numerosDaConjuracao(),
+          linhas.length ? el('div', { class: 'sub-rot' }, 'Espaços de magia') : null,
+          linhas.length ? el('div', { class: 'espacos' }, linhas) : null),
+        el('section', { class: 'bloco' },
+          el('h3', { class: 'bloco-tit' }, 'Prontas para conjurar'),
+          el('div', { class: 'sub-rot' }, 'Truques — sempre prontos, não ocupam vaga'),
+          el('div', { class: 'chips' }, (sc.cantrips ?? []).map(chip)),
+          ...[...porCirculo.keys()].sort((a, b) => a - b).flatMap((lvl) => [
+            el('div', { class: 'sub-rot' }, `${lvl}º círculo`),
+            el('div', { class: 'chips' }, porCirculo.get(lvl).map(chip))]))),
+      el('div', { class: 'ficha-coluna' },
+        el('section', { class: 'bloco' },
+          el('h3', { class: 'bloco-tit' }, 'Preparar'),
+          blocoPreparacao(chip))));
+  }
+
+  // ---- aba da história ----------------------------------------------------
+
+  /** Quem ele é: a origem, a história, o motivo e os quatro traços do antecedente, os mesmos da tela de escolher heróis. */
+  function painelHistoria() {
+    const h = heroiPorId(personagem.id) ?? null;
+    const tracos = h ? [['Traço', h.traco], ['Ideal', h.ideal], ['Vínculo', h.vinculo], ['Defeito', h.defeito]].filter(([, v]) => v) : [];
+    const prof = (rot, xs) => (xs?.length ? el('div', { class: 'historia-prof' }, el('span', {}, rot), el('span', {}, xs.join(', '))) : null);
+    return el('div', { class: 'ficha-colunas' },
+      el('div', { class: 'ficha-coluna' },
+        el('section', { class: 'bloco historia' },
+          el('h3', { class: 'bloco-tit' }, h?.antecedente ? `História · ${h.antecedente}` : 'História'),
+          h?.origem ? el('p', { class: 'historia-origem' }, h.origem) : null,
+          ...(h?.historia ?? []).map((t) => el('p', {}, t)),
+          h?.motivo ? el('p', { class: 'historia-motivo' }, el('strong', {}, 'Por que está na estrada. '), h.motivo) : null,
+          !h ? el('p', { class: 'ficha-vazio' }, 'Este herói não tem história escrita.') : null)),
+      el('div', { class: 'ficha-coluna' },
+        tracos.length ? el('section', { class: 'bloco' },
+          el('h3', { class: 'bloco-tit' }, 'Personalidade'),
+          el('dl', { class: 'historia-tracos' }, ...tracos.flatMap(([k, v]) => [el('dt', {}, k), el('dd', {}, v)]))) : null,
+        el('section', { class: 'bloco' },
+          el('h3', { class: 'bloco-tit' }, 'Treinamento'),
+          prof('Armaduras', (personagem.armorTraining ?? []).map((x) => TREINO[x] ?? x)),
+          prof('Armas', (personagem.weaponTraining ?? []).map((x) => TREINO[x] ?? nomeDeId(x) ?? x)))));
   }
 
   // ---- aba do inventário --------------------------------------------------
@@ -896,7 +1009,8 @@ export function criarFicha(root, handlers = {}) {
     if (!personagem) return;
     janela.replaceChildren(
       cabeca(),
-      el('div', { class: 'ficha-rolagem' }, aba === 'inventario' ? painelInventario() : painelFicha()),
+      el('div', { class: 'ficha-rolagem' }, aba === 'inventario' ? painelInventario()
+        : aba === 'magias' ? painelMagias() : aba === 'historia' ? painelHistoria() : painelFicha()),
       pe(),
     );
   }
@@ -917,7 +1031,10 @@ export function criarFicha(root, handlers = {}) {
     // elas levam para a aba correspondente em vez de não fazer nada.
     if (e.key === 'Tab' || k === 'i') {
       e.preventDefault();
-      aba = k === 'i' ? 'inventario' : (aba === 'ficha' ? 'inventario' : 'ficha');
+      // Tab corre as abas que o personagem tem, na ordem da cabeça (Shift+Tab volta)
+      const ids = abasDe(personagem).map(([id]) => id);
+      const passo = e.shiftKey ? -1 : 1;
+      aba = k === 'i' ? 'inventario' : ids[(ids.indexOf(aba) + passo + ids.length) % ids.length];
       encaixeAberto = null;
       render();
     }
@@ -929,7 +1046,7 @@ export function criarFicha(root, handlers = {}) {
   function abrir(novo, abaInicial = 'ficha') {
     if (!novo) return;
     personagem = garantirInventario(novo);
-    aba = abaInicial === 'inventario' ? 'inventario' : 'ficha';
+    aba = abasDe(personagem).some(([id]) => id === abaInicial) ? abaInicial : 'ficha';
     encaixeAberto = null;
     aviso = avisoDeArmadura(personagem, personagem.armor);
     render();

@@ -306,6 +306,7 @@ export function criarMenu(root, {
       secao('Criação', 'Nicholas (nicholasrmp).'),
       secao('Programação', 'Escrita com o Claude Code, da Anthropic.'),
       secao('Arte', 'Personagens, efeitos e ícones desenhados por código para o jogo. Goblins, ladrilhos do chão e objetos de cenário gerados com o PixelLab, e o logotipo com o OpenArt, escolhidos e ajustados à mão.'),
+      secao('Ícones', 'No tema Obsidiana, os ícones de traço são de game-icons.net (Lorc, Delapouite e colaboradores), sob a licença Creative Commons Attribution 3.0 (https://creativecommons.org/licenses/by/3.0/). Fontes Signika e Cinzel, sob a SIL Open Font License.'),
       secao('Som', 'Sintetizado em tempo real pelo navegador (Web Audio). Nenhum arquivo de áudio.'),
       secao('Regras', 'This work includes material taken from the System Reference Document 5.1 ("SRD 5.1") by Wizards of the Coast LLC, available at https://www.dndbeyond.com/srd. The SRD 5.1 is licensed under the Creative Commons Attribution 4.0 International License, available at https://creativecommons.org/licenses/by/4.0/legalcode.'),
       secao('Cenário', 'Phandalin é conteúdo de fã não oficial, permitido sob a Fan Content Policy da Wizards of the Coast. Não é aprovado nem endossado pela Wizards. Partes dos materiais usados são propriedade da Wizards of the Coast. ©Wizards of the Coast LLC. Todo o texto de aventura, diálogo, encontro e mapa do jogo foi escrito do zero para este projeto.'),

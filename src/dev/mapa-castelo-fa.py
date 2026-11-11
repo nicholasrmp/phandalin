@@ -688,7 +688,8 @@ def main():
     mapa = {
         'terreno': terreno,
         'luz': luz,
-        'luzes': base.get('luzes', []),
+        # O braseiro apagado de (13,8): `hidden` na cena da FA, o que no Foundry quer dizer apagado. Com a lista de `apagada` o grupo pode acendê-lo (`game/fogo.js`).
+        'luzes': base.get('luzes', []) + [{'pos': {'x': 13, 'y': 8}, 'claro': 10, 'penumbra': 10, 'tipo': 'braseiro', 'cor': '#885f0c', 'apagada': True}],
         'paredes': base['paredes'],
         'tracos': base['tracos'],
         **({'tracosTipo': base['tracosTipo']} if base.get('tracosTipo') else {}),
@@ -914,7 +915,7 @@ def main():
     reservado = {f"{c['x']},{c['y']}" for cs in postos.values() for c in cs}
     reservado |= {f"{q['x']},{q['y']}" for q in pontos.get('armadilha', [])}
     reservado |= {f"{q['x']},{q['y']}" for q in mapa['grupo']}
-    reservado |= {f"{l['pos']['x']},{l['pos']['y']}" for l in mapa['luzes']}
+    reservado |= {f"{l['pos']['x']},{l['pos']['y']}" for l in mapa['luzes'] if not l.get('apagada')}
     reservado |= {f"{o['x']},{o['y']}" for o in mapa.get('interativos', [])}
     reservado |= {f"{q['x']},{q['y']}" for q in pontos_cena.values() if q}
     # as DUAS casas de cada porta: móvel na soleira deixa a porta sem lado nenhum para abrir, e

@@ -33,11 +33,16 @@ export function achadoDoRecipiente(x, y) {
 // cabeça: a torre a 29 m a noroeste, a estátua a 18 m a noroeste, a casa de esquina a 11 m a sudeste, a
 // estalagem a 17 m a sudeste, o celeiro a 12 m a sudoeste, o armazém a 24 m a sudoeste, a cabana ocidental a
 // 41 m a oeste.
+// O QUE SE VÊ DO ALTO DA VELHA GUARNIÇÃO (área 11). Os rumos e as distâncias são MEDIDOS no mapa a partir
+// de (47,4), o centro dela — e tiveram de ser refeitos: até 2026-11-06 a guarnição era a construção que o
+// gerador chamava de `guarda`, em (43,24), no centro-sul da aldeia. Medido o de-para contra o mapa oficial
+// do livro, a área 11 é a construção do CANTO NORDESTE, e de lá a aldeia inteira fica a sudoeste. A torre do
+// dragão passou de "a noroeste, a trinta metros" para "a oeste, a vinte".
 export const VISTA_DO_ALTO = [
-  'Lá de cima a aldeia deixa de ser rua e vira planta. A cinza que parecia um tapete é um rio: desce a rua principal e contorna as casas, e onde ela some é onde o mato ganhou.',
-  'A noroeste, a uns trinta metros, a torre de pedra escura, de pé entre as copas; um fio de fumaça esverdeada escorre dela em vez de subir. No meio do caminho até lá, a estátua no largo, de lança erguida e sem cabeça de quem a olhe.',
-  'Perto, a sudeste, a casa de esquina — a única por aqui com a porta entulhada por dentro — e, logo depois dela, o casarão comprido da estalagem. A sudoeste, o celeiro de telhado inteiro, e mais longe um galpão em que a teia sai pelas frestas e brilha quando o vento mexe.',
-  'A oeste, no fim de tudo, uma cabana com fumaça fina saindo da chaminé. Alguém mora lá, ou morava hoje de manhã.',
+  'Lá de cima a aldeia deixa de ser rua e vira planta. A cinza que parecia um tapete é um rio: desce a rua principal e contorna as casas, e onde ela some é onde o mato ganhou. Daqui do canto nordeste dá para ver tudo o que resta de Árvore Trovão de uma vez — e tudo o que resta cabe num olhar.',
+  'A oeste, perto, a uns vinte metros: a torre de pedra escura, de pé entre as copas, com um fio de fumaça esverdeada escorrendo dela em vez de subir. Entre ela e aqui, a sudoeste e bem mais perto, o largo da praça, e no meio dele a estátua de pedra que o mato ainda não tomou.',
+  'Ao sul, a uns vinte e cinco metros, a cabana do tecelão, e no mato ao sul dela alguma coisa que se mexe sem vento. Mais longe, a sudoeste, o casarão do armazém com o telhado meio caído — de onde estou dá para ver que o vão da porta está cerrado de teia, de alto a baixo.',
+  'O resto da aldeia é uma fileira a sudoeste, de quarenta e tantos metros: a taverna de telhado afundado no fim da rua, a ferraria velha, a fazenda já engolida pelo capim. E a sudeste, sozinha e com a porta entulhada por dentro, a única casa daqui que alguém fechou de propósito.',
 ];
 
 export const EXAMES = {
@@ -139,6 +144,8 @@ export const EMPURRAR_ESTATUA = {
 export const ACHADO_DO_CASULO = {
   chave: 'casuloElfo',
   rotulo: 'Cortar o casulo e revistar',
-  itens: [['pocaoDeCura', 1], ['moedaDeOuro', 23], ['moedaDePrata', 35]],
-  texto: 'A seda cede ao corte como corda velha. O elfo era um viajante de couro batido; ainda leva uma poção de cura no cinto e uma bolsa pesada nas costas: vinte e três peças de ouro e trinta e cinco de prata. A teia estava seca, mas o corpo não: as aranhas o guardavam para depois.',
+  // O Obelisco: o elfo morto veste uma armadura de couro +1 e traz uma espada curta na bainha.
+  itens: [['pocaoDeCura', 1], ['moedaDeOuro', 23], ['moedaDePrata', 35], ['armaduraMais1', 1]],
+  armas: ['espadaCurta'],
+  texto: 'A seda cede ao corte como corda velha. O elfo era um viajante; o gibão de couro dele tem um brilho que couro velho não tem, e na bainha da cintura ainda há uma espada curta. No cinto, uma poção de cura; nas costas, uma bolsa pesada: vinte e três peças de ouro e trinta e cinco de prata. A teia estava seca, mas o corpo não: as aranhas o guardavam para depois.',
 };

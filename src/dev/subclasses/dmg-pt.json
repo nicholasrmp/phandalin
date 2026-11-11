@@ -1,0 +1,82 @@
+{
+ "Paladin|Oathbreaker": {
+  "nome": "Quebrador de Juramento",
+  "recursos": [
+   {
+    "en": "Channel Divinity",
+    "nome": "Canalizar Divindade",
+    "desc": "A partir do 3º nível, o paladino ganha duas opções de Canalizar Divindade: Controlar Mortos-Vivos e Aspecto Aterrador."
+   },
+   {
+    "en": "Control Undead",
+    "nome": "Controlar Mortos-Vivos",
+    "desc": "Com uma ação, escolha um morto-vivo visível a até 9 m. Se ele falhar num teste de resistência de Sabedoria, obedece às suas ordens por 24 horas ou até você usar esta opção de novo. Mortos-vivos com nível de desafio igual ou maior que seu nível de paladino são imunes."
+   },
+   {
+    "en": "Dreadful Aspect",
+    "nome": "Aspecto Aterrador",
+    "desc": "Com uma ação, cada criatura escolhida a até 9 m que possa ver você faz um teste de resistência de Sabedoria. Quem falhar fica amedrontado por 1 minuto e pode repetir o teste se terminar o turno a mais de 9 m de você."
+   },
+   {
+    "en": "Oathbreaker Spells",
+    "nome": "Magias do Quebrador de Juramento",
+    "desc": "Você recebe magias de juramento adicionais, sempre preparadas, nos níveis de paladino indicados na tabela da subclasse."
+   },
+   {
+    "en": "Aura of Hate",
+    "nome": "Aura de Ódio",
+    "desc": "Você e os corruptores e mortos-vivos a até 3 m somam seu modificador de Carisma (mínimo +1) às rolagens de dano de armas corpo a corpo. Cada criatura só recebe este bônus de um paladino por vez. No 18º nível, o alcance passa a 9 m."
+   },
+   {
+    "en": "Supernatural Resistance",
+    "nome": "Resistência Sobrenatural",
+    "desc": "Você tem resistência a dano de concussão, perfurante e cortante vindo de armas não mágicas."
+   },
+   {
+    "en": "Dread Lord",
+    "nome": "Senhor do Pavor",
+    "desc": "Com uma ação, cria uma aura sombria de 9 m de raio por 1 minuto (1 vez por descanso longo): luz plena vira penumbra, e inimigos amedrontados por você que começam o turno nela sofrem 4d10 de dano psíquico. Você e aliados escolhidos na aura impõem desvantagem aos ataques de criaturas que dependem da visão. Enquanto durar, com uma ação bônus faça um ataque mágico corpo a corpo com as sombras contra uma criatura na aura, causando 3d10 + modificador de Carisma de dano necrótico."
+   }
+  ]
+ },
+ "Cleric|Death Domain": {
+  "nome": "Domínio da Morte",
+  "recursos": [
+   {
+    "en": "Bonus Proficiency",
+    "nome": "Proficiência Adicional",
+    "desc": "Você ganha proficiência com armas marciais."
+   },
+   {
+    "en": "Reaper",
+    "nome": "Ceifador",
+    "desc": "Você aprende um truque de necromancia à sua escolha, de qualquer lista de magias. Seus truques de necromancia de alvo único podem atingir duas criaturas dentro do alcance, desde que estejam a até 1,5 m uma da outra."
+   },
+   {
+    "en": "Channel Divinity: Touch of Death",
+    "nome": "Canalizar Divindade: Toque da Morte",
+    "desc": "Ao acertar uma criatura com um ataque corpo a corpo, você pode gastar um uso de Canalizar Divindade para causar dano necrótico extra igual a 5 + o dobro do seu nível de clérigo."
+   },
+   {
+    "en": "Inescapable Destruction",
+    "nome": "Destruição Inescapável",
+    "desc": "O dano necrótico das suas magias de clérigo e das suas opções de Canalizar Divindade ignora resistência a dano necrótico."
+   },
+   {
+    "en": "Blessed Strikes",
+    "nome": "Golpes Abençoados",
+    "desc": "Recurso opcional que substitui Golpe Divino. Quando uma criatura sofre dano de um truque ou ataque com arma seu, você pode causar 1d8 de dano radiante extra nela; uma vez por rodada, até o início do seu próximo turno."
+   },
+   {
+    "en": "Divine Strike",
+    "nome": "Golpe Divino",
+    "desc": "Uma vez por turno, ao acertar uma criatura com um ataque com arma, você causa 1d8 de dano necrótico extra. No 14º nível, o dano sobe para 2d8."
+   },
+   {
+    "en": "Improved Reaper",
+    "nome": "Ceifador Aprimorado",
+    "desc": "Suas magias de necromancia de 1º a 5º círculo de alvo único podem atingir duas criaturas dentro do alcance, a até 1,5 m uma da outra. Se a magia consome componentes materiais, você precisa fornecê-los para cada alvo."
+   }
+  ]
+ }
+}

@@ -1,0 +1,681 @@
+{
+ "goblinCapturado": {
+  "repete": [
+   "Já falou, goblin já falou! Por que pergunta, pergunta de novo?",
+   "Goblin disse, disse sim! Não mata, não mata goblin!",
+   "De novo? Goblin já contou tudo, tudo que sabe!"
+  ],
+  "voltou": [
+   "Você, você de novo! Goblin lembra, lembra sim!",
+   "Ai, ai, voltou! Goblin quietinho, goblin bonzinho!",
+   "Você outra vez! Não mata, não mata goblin!"
+  ],
+  "lembra": [
+   "Você disse: \"{frase}\". Goblin ouviu, ouviu sim!",
+   "Goblin lembra, lembra! Falou: \"{frase}\". Não mata!",
+   "Foi isso, isso: \"{frase}\". Goblin não esquece!"
+  ],
+  "naoLembra": [
+   "Ninguém falou nada, nada! Goblin só amarrado, só tremendo!",
+   "Dito? Nada dito, nada! Goblin não ouviu ninguém!",
+   "Ninguém disse nada pro goblin ainda! Não mata, não mata!"
+  ]
+ },
+ "marcarrubra": {
+  "repete": [
+   "Já falei, droga. Tão surdos, vocês?",
+   "De novo? Não vou cuspir a mesma coisa duas vezes.",
+   "Perguntem quanto quiserem. A resposta não muda, não."
+  ],
+  "voltou": [
+   "Vocês de novo? Nem preso eu tenho sossego.",
+   "Ah, voltaram. Achei que tinham desistido de mim.",
+   "Olha só quem apareceu. Vieram me encher outra vez?"
+  ],
+  "lembra": [
+   "Vocês disseram: \"{frase}\". Acha que esqueci? Não sou burro.",
+   "Foi isso: \"{frase}\". Agora me deixem em paz.",
+   "\"{frase}\". Foi o que vocês falaram, e daí?"
+  ],
+  "naoLembra": [
+   "Dito o quê? Ninguém abriu a boca comigo ainda.",
+   "Vocês nem falaram nada, e já querem que eu lembre?",
+   "Antes? Não teve antes. Só cara feia e corda."
+  ]
+ },
+ "iarno": {
+  "repete": [
+   "Já respondi, meus caros. A repetição não melhora a resposta, apenas a plateia.",
+   "Memória curta é um infortúnio. Recomendo atenção na próxima vez.",
+   "Que encantador. Perguntam de novo, como se eu fosse mudar de ideia."
+  ],
+  "voltou": [
+   "Ah, meus caros, de volta. Sentiram falta da boa conversa?",
+   "Vejam só quem retorna. Sente-se, se as cordas me permitissem oferecer.",
+   "Novamente vocês. Que persistência admirável, meus caros."
+  ],
+  "lembra": [
+   "Vocês disseram: \"{frase}\". Não foi das falas mais brilhantes, meus caros.",
+   "Se bem me recordo, foi \"{frase}\". Eu jamais esqueço uma deselegância.",
+   "Ouvi claramente: \"{frase}\". Pena que não soou melhor da primeira vez."
+  ],
+  "naoLembra": [
+   "Dito antes? Meus caros, ninguém se dignou a falar comigo ainda.",
+   "Não houve conversa alguma. Só o silêncio e estas cordas indelicadas.",
+   "Lamento, meus caros. Até agora, vocês nada disseram que valesse lembrar."
+  ]
+ },
+ "bugbears": {
+  "repete": [
+   "Já falei. Não vou gastar boca duas vezes com gente pequena.",
+   "Surdo ou burro? Eu já respondi.",
+   "Pergunta de novo e arranco tua orelha inútil."
+  ],
+  "voltou": [
+   "Você de novo. Que tédio.",
+   "Hum. O pequeno voltou.",
+   "Ainda vivo, é? Fala logo."
+  ],
+  "lembra": [
+   "Você disse: \"{frase}\". Grande coisa.",
+   "Falou \"{frase}\". Eu ouvi, infelizmente.",
+   "\"{frase}\". Foi isso. Agora some."
+  ],
+  "naoLembra": [
+   "Você não disse nada. Nem precisa.",
+   "Ninguém falou nada comigo. Ainda bem.",
+   "Falou o quê? Nada. Para de me encher."
+  ]
+ },
+ "toblen": {
+  "repete": [
+   "Ora, já falei disso agorinha! Quer um caneco enquanto pensa?",
+   "De novo? Meus ouvidos são bons, os seus é que andam cansados.",
+   "Já respondi, amigo. Sente aí, que a sopa ainda está quente."
+  ],
+  "voltou": [
+   "Olha só quem voltou! Entre, entre, a casa é sua.",
+   "Ah, você de novo! Que bom, já estava sentindo falta.",
+   "Bem-vindo de volta! Sente perto do fogo, vou buscar algo."
+  ],
+  "lembra": [
+   "Você disse: \"{frase}\". Eu escuto tudo nesta sala, sabe?",
+   "Lembro sim, foi \"{frase}\". Quer um pão enquanto conversamos?",
+   "Pelo que ouvi, foi \"{frase}\". Memória de estalajadeiro não falha."
+  ],
+  "naoLembra": [
+   "Dito antes? Você nem abriu a boca ainda, amigo!",
+   "Ninguém me falou nada ainda. Mas puxe um banco, converse!",
+   "Hum, não me disse coisa alguma. Que tal começar com um ensopado?"
+  ]
+ },
+ "elmar": {
+  "repete": [
+   "Ora, rapaz, a poeira mal assentou e você já pergunta de novo.",
+   "Hum, já falamos disso, rapaz. Agora há pouco, enquanto eu contava as sacas.",
+   "Paciência, rapaz. A resposta não mudou desde a última vez que perguntou."
+  ],
+  "voltou": [
+   "Ah, você de novo, rapaz. Bem, entre, entre, cuidado com o barril.",
+   "Olha só quem voltou. Deixe a ferragem encostada ali, por favor.",
+   "Rapaz! Eu estava justamente arrumando as prateleiras. Que bom te ver."
+  ],
+  "lembra": [
+   "Deixe-me pensar... a vela estava acesa... ah, sim, você disse: \"{frase}\".",
+   "Hum, eu anotei mentalmente, entre um troco e outro: \"{frase}\".",
+   "Lembro sim, rapaz. Foi bem quando a porta rangeu. Você disse: \"{frase}\"."
+  ],
+  "naoLembra": [
+   "Dito antes? Rapaz, você mal tirou a poeira das botas. Não disse nada ainda.",
+   "Hum, eu estava contando pregos, mas tenho certeza: você não me falou nada.",
+   "Nada, rapaz. Até agora só ouvi o vento na porta e o ranger do balcão."
+  ]
+ },
+ "linene": {
+  "repete": [
+   "Já respondi. Não cobro duas vezes pela mesma resposta.",
+   "Isso eu já disse. Presta atenção, que meu tempo custa.",
+   "De novo? Ouviu da primeira vez, eu vi."
+  ],
+  "voltou": [
+   "Você de novo. Bom, cliente que volta é cliente.",
+   "Voltou. Fala logo o que precisa.",
+   "Ah, você. Entra, mas sem enrolar."
+  ],
+  "lembra": [
+   "Você disse: \"{frase}\". Anotei, como anoto tudo.",
+   "Foi isso: \"{frase}\". Nem mais, nem menos.",
+   "Palavra por palavra: \"{frase}\". Memória boa é ferramenta de ofício."
+  ],
+  "naoLembra": [
+   "Você não me disse nada ainda. Nada anotado.",
+   "Dito? Ninguém falou nada comigo. Começa agora.",
+   "Não tem nada no livro. Você ainda não abriu a boca."
+  ]
+ },
+ "halia": {
+  "repete": [
+   "Já respondi, querido. Talvez a pergunta certa seja outra, não acha?",
+   "Repetir não muda a resposta. Mas me diga: o que realmente o preocupa?",
+   "Curioso perguntar duas vezes. Algo na primeira resposta não lhe agradou?"
+  ],
+  "voltou": [
+   "Ah, de volta. Sabia que retornaria, as pessoas sempre retornam.",
+   "Que gentileza aparecer de novo. Imagino que traga novidades, não?",
+   "Bem-vindo outra vez. Sente-se, conversas boas merecem conforto."
+  ],
+  "lembra": [
+   "Você disse: \"{frase}\". Eu anoto tudo, é o meu ofício.",
+   "Se bem me lembro, foi \"{frase}\". Mudou de ideia, por acaso?",
+   "Palavras suas: \"{frase}\". Interessante como soam diferentes agora, não?"
+  ],
+  "naoLembra": [
+   "Dito antes? Ainda não trocamos palavra alguma, meu caro.",
+   "Curioso. Não me disse nada até agora. Pretende começar?",
+   "Minhas anotações estão vazias a seu respeito. Por enquanto, claro."
+  ]
+ },
+ "sildar": {
+  "repete": [
+   "Já respondi isso, aventureiro. Agora há pouco.",
+   "Aventureiro, a resposta não mudou desde então.",
+   "Ouça melhor da próxima vez, aventureiro. Já falei."
+  ],
+  "voltou": [
+   "Aventureiro. De volta, então.",
+   "Ah, aventureiro. Bom ver você inteiro.",
+   "Aventureiro. Fale, estou ouvindo."
+  ],
+  "lembra": [
+   "Você disse: \"{frase}\". Lembro bem, aventureiro.",
+   "Aventureiro, suas palavras foram: \"{frase}\".",
+   "Foi isto, aventureiro: \"{frase}\"."
+  ],
+  "naoLembra": [
+   "Aventureiro, você ainda não me disse nada.",
+   "Nada foi dito ainda, aventureiro. Nada.",
+   "Não houve conversa entre nós, aventureiro. Ainda não."
+  ]
+ },
+ "irmaGaraele": {
+  "repete": [
+   "Ouça da primeira vez. A sorte raramente concede uma segunda chance.",
+   "Não repetirei. Reflita sobre o que já ouviu, e que a Senhora o guie."
+  ],
+  "voltou": [
+   "Ah, você de novo. Que a sorte o acompanhe; seja breve.",
+   "Bem-vindo de volta. A moeda da Senhora gira; não a faça esperar."
+  ],
+  "lembra": [
+   "Você disse: \"{frase}\". Guarde melhor suas próprias palavras.",
+   "Foram estas suas palavras: \"{frase}\". Precisas, ao menos.",
+   "Lembro bem: \"{frase}\". Prossiga, o tempo é escasso."
+  ],
+  "naoLembra": [
+   "Você ainda não me disse nada. Comece, e seja direto.",
+   "Não houve conversa alguma. Fale, se tem algo a dizer."
+  ]
+ },
+ "daran": {
+  "repete": [
+   "Já respondi isso. Não ouviu, ou não gostou da resposta?",
+   "Perguntar de novo não muda o que eu disse. O que te incomoda?",
+   "Paciência é virtude de quem pega trabalho. Pense no que já ouviu."
+  ],
+  "voltou": [
+   "Ah, você de novo. Ainda inteiro, pelo que vejo.",
+   "Voltou, então. O trabalho foi duro ou leve?",
+   "Bem-vindo de volta. Sente-se um pouco antes de falar."
+  ],
+  "lembra": [
+   "Você disse: \"{frase}\". Ainda pensa assim?",
+   "Lembro bem. Foi \"{frase}\". Por que pergunta?",
+   "Suas palavras foram \"{frase}\". Pesam diferente agora?"
+  ],
+  "naoLembra": [
+   "Dito antes? Você ainda nem abriu a boca comigo.",
+   "Nada foi dito. Por que não começa agora?",
+   "Não houve conversa ainda. O que tem em mente?"
+  ]
+ },
+ "qelline": {
+  "repete": [
+   "Já te respondi isso agorinha, meu bem. Presta atenção.",
+   "De novo? Eu disse o que sei, não tenho mais.",
+   "Pergunta igual, resposta igual. Não vou mudar de ideia."
+  ],
+  "voltou": [
+   "Ah, você de novo. Pode falar, só não paro o serviço.",
+   "Olha quem voltou. Senta aí, se quiser.",
+   "De volta, é? Fala, estou ouvindo."
+  ],
+  "lembra": [
+   "Você disse: \"{frase}\". Lembro bem.",
+   "Foi isso que ouvi de você: \"{frase}\".",
+   "Você falou \"{frase}\". Não esqueci, não."
+  ],
+  "naoLembra": [
+   "Dito antes? Você nem tinha aberto a boca comigo ainda.",
+   "Ninguém me disse nada até agora, meu bem.",
+   "Não houve conversa nenhuma entre nós. Nada pra lembrar."
+  ]
+ },
+ "harbin": {
+  "repete": [
+   "O chefe da vila já tratou desse assunto, cidadão. Com toda a clareza possível.",
+   "Ora, ora... o chefe da vila não costuma responder duas vezes à mesma questão.",
+   "Tenha a bondade de prestar atenção, sim? O chefe da vila tem muitos afazeres."
+  ],
+  "voltou": [
+   "Ah, novamente por aqui. O chefe da vila recebe-o, naturalmente.",
+   "Pois bem, outra vez diante do chefe da vila. Sem problemas, espero?",
+   "Ah, é você de novo. Entre, entre, mas com discrição, por favor."
+  ],
+  "lembra": [
+   "Segundo os registros do chefe da vila, você disse: \"{frase}\".",
+   "Se a memória deste humilde chefe não falha, foi: \"{frase}\".",
+   "Consta que você declarou, com essas palavras: \"{frase}\"."
+  ],
+  "naoLembra": [
+   "O chefe da vila não tem registro de conversa alguma até agora.",
+   "Perdão, mas ainda não trocamos palavra, cidadão. Nada consta.",
+   "Dito antes? Nada foi dito ao chefe da vila, oficialmente ou não."
+  ]
+ },
+ "grista": {
+  "repete": [
+   "Já falei. Não vou gastar saliva duas vezes.",
+   "Ouvido entupido? Já respondi, ora.",
+   "De novo? Presta atenção da primeira vez."
+  ],
+  "voltou": [
+   "Você de novo. Hum.",
+   "Voltou, é? Fala logo.",
+   "Ah, é você. Que foi agora?"
+  ],
+  "lembra": [
+   "Você disse: \"{frase}\". Satisfeito?",
+   "Falou \"{frase}\". Eu escuto, não sou surda.",
+   "Foi \"{frase}\". Agora me deixa esfregar isto."
+  ],
+  "naoLembra": [
+   "Você não me disse nada ainda.",
+   "Dito? Ninguém me falou coisa nenhuma.",
+   "Nada. Você só ficou aí parado me olhando."
+  ]
+ },
+ "vigia": {
+  "repete": [
+   "Já disse... já disse... o olho não repete... o olho tem fome...",
+   "De novo? De novo... palavras não enchem barriga... traga carne...",
+   "O olho respondeu... respondeu... você esquece fácil... carne esquece também?"
+  ],
+  "voltou": [
+   "Ah... você de novo... de novo... trouxe carne para o olho?",
+   "O olho lembra de você... lembra... cheiro de carne quente...",
+   "Voltou... voltou... o olho estava vigiando... esperando..."
+  ],
+  "lembra": [
+   "Você disse... disse... \"{frase}\"... o olho guardou... agora, carne...",
+   "\"{frase}\"... foi isso... isso... o olho escuta tudo...",
+   "O olho lembra... \"{frase}\"... palavras... só palavras... cadê a carne?"
+  ],
+  "naoLembra": [
+   "Nada... nada... você não disse nada ao olho... só cheiro...",
+   "Silêncio... só silêncio... o olho ouviu só sua barriga...",
+   "Disse? Não disse... não... o olho só ouviu fome..."
+  ]
+ },
+ "bebados": {
+  "repete": [
+   "Já falei, surdo! Enche o caneco e para de perguntar!",
+   "De novo? Tu tá mais bêbado que eu, rapaz!",
+   "Ô, pergunta outra vez e eu te jogo os dados na cara!"
+  ],
+  "voltou": [
+   "Olha quem voltou! Senta aí, mas a rodada é tua!",
+   "Ah, tu de novo! Chega mais, os dados tão quentes!",
+   "Eita, o sumido apareceu! Traz bebida ou nem senta!"
+  ],
+  "lembra": [
+   "Tu falou \"{frase}\", eu ouvi, mesmo com essa zoeira!",
+   "Foi isso aí: \"{frase}\". Agora paga uma rodada!",
+   "Hic! Tu disse \"{frase}\", ou tô sonhando de bêbado?"
+  ],
+  "naoLembra": [
+   "Falou o quê? Tu nem abriu a boca comigo ainda!",
+   "Ninguém me disse nada, cara nova! Quem é tu, hein?",
+   "Dito antes? Tu tá doido, acabou de chegar aqui!"
+  ]
+ },
+ "mirna": {
+  "repete": [
+   "Já respondi isso, moço. A cabeça anda cansada, mas não a minha.",
+   "Você não ouviu? Não tenho forças pra dizer tudo de novo.",
+   "Eu já falei. Pergunte outra coisa, que as crianças estão com fome."
+  ],
+  "voltou": [
+   "Ah, é você de novo. Que bom ver um rosto bom.",
+   "Você voltou. As crianças ficaram mais calmas te vendo.",
+   "De novo por aqui? Fique, não incomoda."
+  ],
+  "lembra": [
+   "Você disse: \"{frase}\". Eu escutei, mesmo com tudo isso.",
+   "Foi isso que você falou: \"{frase}\". Não esqueci.",
+   "Lembro sim. Você disse \"{frase}\", e eu guardei."
+  ],
+  "naoLembra": [
+   "Dito? Você nem falou comigo ainda.",
+   "Não me disse nada, moço. Eu me lembraria.",
+   "Ninguém me falou nada. Só estou aqui com os meus."
+  ]
+ },
+ "venomfang": {
+  "repete": [
+   "Já respondi, querida visita. Repetir-me seria uma descortesia que não pretendo cometer.",
+   "Sua memória falha tão depressa? Que pena. Costumo digerir quem me cansa.",
+   "Ouvi a pergunta da primeira vez. Ouça a resposta, ou ouça meu estômago."
+  ],
+  "voltou": [
+   "Ah, você de novo. Que coragem encantadora, ou que fome de perigo.",
+   "Voltou inteiro, que gentileza sua. Nem todos os meus convidados retornam assim.",
+   "Bem-vindo outra vez à minha mesa. Ainda não decidi de que lado dela."
+  ],
+  "lembra": [
+   "Você disse: \"{frase}\". Guardo cada palavra, como guardo cada moeda.",
+   "Lembro perfeitamente, visita: \"{frase}\". Dragões não esquecem nada, nem ninguém.",
+   "Foi assim, com essa voz trêmula: \"{frase}\". Delicioso, não acha?"
+  ],
+  "naoLembra": [
+   "Lembrar o quê? Você ainda não me disse nada digno de memória.",
+   "Nada foi dito, pequena visita. O silêncio, até agora, foi sua melhor qualidade.",
+   "Não houve conversa alguma. Comece, se ousar, antes que eu perca a paciência."
+  ]
+ },
+ "reidoth": {
+  "repete": [
+   "Já respondi. Escute melhor desta vez.",
+   "Pergunta de novo? A resposta não mudou.",
+   "Já disse. Palavras não crescem com a repetição."
+  ],
+  "voltou": [
+   "Você de novo. Bom, ainda está inteiro.",
+   "Voltou. Esta vila não poupa ninguém, cuidado.",
+   "Ah, você. Sente-se perto do fogo."
+  ],
+  "lembra": [
+   "Você disse: \"{frase}\". Lembro bem.",
+   "Suas palavras foram: \"{frase}\".",
+   "Disse \"{frase}\". Nada mais."
+  ],
+  "naoLembra": [
+   "Você ainda não me disse nada.",
+   "Nada foi dito. Fale agora, se quiser.",
+   "Silêncio, até aqui. Só o vento falou."
+  ]
+ },
+ "favric": {
+  "repete": [
+   "Já respondi, irmão! Mas adoro sua curiosidade. Isso é sinal de vocação!",
+   "De novo? Ótimo! Quem pergunta duas vezes está quase pronto pra se juntar.",
+   "Ah, você ouviu sim. Só quer me ouvir sorrir outra vez, não é?"
+  ],
+  "voltou": [
+   "Você voltou! Eu sabia, eu sabia! As asas sempre chamam de volta.",
+   "Ora, ora, meu amigo predileto! Já sentiu o chamado também?",
+   "Que bom te ver de novo! Sente aí, sente, temos muito a conversar."
+  ],
+  "lembra": [
+   "Você disse: \"{frase}\". Palavras de quem tem fogo no peito, viu?",
+   "Lembro sim! Foi \"{frase}\". Guardei com carinho, como relíquia.",
+   "\"{frase}\". Foi isso. Eu anoto tudo que meus futuros irmãos dizem."
+  ],
+  "naoLembra": [
+   "Dito? Ainda não disse nada, amigo! Mas fale, fale, estou todo ouvidos!",
+   "Hum, você ainda não me contou nada... ou contou? Não, acho que não.",
+   "Nada ainda! Mas a primeira palavra é sempre a mais bonita, sabia?"
+  ]
+ },
+ "gundren": {
+  "repete": [
+   "Já falei isso, sócio! Tempo é ouro, vamos andando.",
+   "De novo? Anão não repete conversa, repete lucro!",
+   "Ouviu da primeira vez, eu vi. Próxima pergunta, rápido!"
+  ],
+  "voltou": [
+   "Ah, meu sócio favorito! Fala logo, fala logo.",
+   "Você de novo! Ótimo, ótimo, tenho pressa.",
+   "Olha quem voltou! Negócio bom sempre volta."
+  ],
+  "lembra": [
+   "Você disse: \"{frase}\". Anão não esquece trato, sócio.",
+   "Foi isso: \"{frase}\". Guardei feito pepita no bolso.",
+   "Lembro sim! \"{frase}\". Agora, vamos ao que interessa."
+  ],
+  "naoLembra": [
+   "Dito? Você nem abriu a boca ainda, sócio!",
+   "Nada foi falado. Comece logo, que tempo é ouro.",
+   "Conversa nenhuma ainda. Desembucha, rápido!"
+  ]
+ },
+ "nundro": {
+  "repete": [
+   "Já falei. Minha voz não sobra pra gastar duas vezes.",
+   "Ouviu da primeira vez. Não vou repetir.",
+   "Pergunta de novo, resposta igual... só que eu não dou."
+  ],
+  "voltou": [
+   "Você de novo... ainda estou aqui.",
+   "Ah, é você. Fala baixo, por favor.",
+   "Voltou, então. Tô respirando ainda."
+  ],
+  "lembra": [
+   "Você disse: \"{frase}\". Não esqueci.",
+   "Foi isso: \"{frase}\". Minha cabeça dói, mas guarda.",
+   "\"{frase}\"... foi o que ouvi de você."
+  ],
+  "naoLembra": [
+   "Ninguém me disse nada ainda. Só o silêncio.",
+   "Lembrar o quê? Você nem falou comigo.",
+   "Não ouvi palavra nenhuma. Nada pra lembrar."
+  ]
+ },
+ "targor": {
+  "repete": [
+   "Já respondi. Repetir custa tempo, e tempo eu não desperdiço.",
+   "Ouvidos fracos são um defeito. Anote isso, não minha resposta.",
+   "Pergunta igual, resposta igual. Faça a conta sozinho."
+  ],
+  "voltou": [
+   "Você de novo. Vejamos quanto vale desta vez.",
+   "Voltou. Interessante. Seja breve.",
+   "Ah. Lembro de você. Continue."
+  ],
+  "lembra": [
+   "Você disse: \"{frase}\". Eu guardo tudo.",
+   "Suas palavras foram \"{frase}\". Pesei cada uma.",
+   "\"{frase}\". Foi isso. Não esqueço o que me dizem."
+  ],
+  "naoLembra": [
+   "Você não disse nada. Silêncio não entra na conta.",
+   "Nada foi dito. Não invente dívidas comigo.",
+   "Ainda não falou. Comece, e eu lembrarei."
+  ]
+ },
+ "goblinEstrada": {
+  "repete": [
+   "Goblin já falou! Goblin não muda história, juro, juro!",
+   "De novo? Cabeça de goblin dói com tanta pergunta igual!",
+   "Goblin respondeu já, chefe! Goblin não mente duas vezes, não!"
+  ],
+  "voltou": [
+   "Ah, chefe voltou! Goblin ainda vivo, goblin agradece!",
+   "Você de novo? Goblin bonzinho, goblin quieto, viu?",
+   "Chefe lembra de goblin! Goblin feliz, goblin ouvindo!"
+  ],
+  "lembra": [
+   "Goblin lembra, sim! Chefe disse: \"{frase}\". Goblin ouviu tudinho!",
+   "Chefe falou \"{frase}\", goblin guardou na cabeça, guardou!",
+   "Foi isso: \"{frase}\". Goblin tem memória boa, não mata goblin!"
+  ],
+  "naoLembra": [
+   "Disse? Ninguém disse nada pra goblin ainda, chefe!",
+   "Goblin não ouviu nada! Ninguém falou com goblin, juro!",
+   "Hã? Chefe nem falou nada ainda, goblin só esperando!"
+  ]
+ },
+ "kost": {
+  "repete": [
+   "Já respondi. A resposta não mudou desde então.",
+   "Pergunta repetida não gera dado novo.",
+   "Registrei a pergunta antes. E respondi. Anote desta vez."
+  ],
+  "voltou": [
+   "Variável conhecida. Retornou ao experimento.",
+   "Você de novo. Útil ou curioso, ainda não sei.",
+   "Reconheço você. Prossiga."
+  ],
+  "lembra": [
+   "Você disse: \"{frase}\". Está registrado.",
+   "Minhas anotações conferem: \"{frase}\".",
+   "Palavras exatas: \"{frase}\". Nada se perde comigo."
+  ],
+  "naoLembra": [
+   "Nada foi dito. Não há registro algum.",
+   "Você ainda não me disse nada. Página em branco.",
+   "Sem dados anteriores. Começamos agora."
+  ]
+ },
+ "nezznar": {
+  "repete": [
+   "Já respondi. Paciência é virtude, mas a minha tem limites.",
+   "Perguntar de novo não muda a resposta. Apenas desperdiça meu tempo.",
+   "Ouvidos lentos são um atraso que não pretendo tolerar."
+  ],
+  "voltou": [
+   "Ah, o atraso retorna. Fale baixo e seja breve.",
+   "Você de novo. Espero que traga algo útil desta vez.",
+   "Voltou. Pois bem, ainda pode me servir de algo."
+  ],
+  "lembra": [
+   "Você disse: \"{frase}\". Eu guardo cada palavra, mesmo as inúteis.",
+   "Suas palavras foram: \"{frase}\". Não esqueço o que pode me servir.",
+   "Foi \"{frase}\" o que disse. Lembre-se disso antes de mim."
+  ],
+  "naoLembra": [
+   "Você não me disse nada. Silêncio é tudo que ouvi.",
+   "Nada foi dito. Não invente conversas que nunca existiram.",
+   "Ainda não falou comigo. Não desperdice meu tempo com enganos."
+  ]
+ },
+ "mormesk": {
+  "repete": [
+   "Já respondi. Minhas palavras também são minhas, e não as dou duas vezes.",
+   "Perguntar de novo não te faz dono da resposta.",
+   "O que eu disse continua dito. Guarde-o, como eu guardo o que é meu."
+  ],
+  "voltou": [
+   "Você de novo, no que é meu.",
+   "Voltou. Quem autorizou seus passos aqui dentro?",
+   "Reconheço essa presença. Ainda não tem nada que me pertença, espero."
+  ],
+  "lembra": [
+   "Você disse: \"{frase}\". Agora essas palavras também são minhas.",
+   "Guardei o que disse: \"{frase}\". Nada escapa ao meu baú.",
+   "Foram suas palavras: \"{frase}\". Eu as conservo, como tudo que tenho."
+  ],
+  "naoLembra": [
+   "Nada me disseram. Meu baú de palavras está vazio.",
+   "Ninguém me deu palavra alguma. Não guardo o que não recebi.",
+   "Silêncio é tudo que possuo de você até agora."
+  ]
+ },
+ "espectador": {
+  "repete": [
+   "Ah, de novo? Sem problema, meu turno mal começou, tenho paciência de sobra!",
+   "Hum, essa eu acabei de responder. Meus olhos menores até anotaram!",
+   "Pergunta repetida! Gosto de visitantes atentos, mas já falei isso agorinha."
+  ],
+  "voltou": [
+   "Ora, você de novo! Que bom, o turno estava tranquilo demais.",
+   "Bem-vindo de volta! Meus cinco olhos já sentiam sua falta.",
+   "Ah, rosto conhecido! Hoje está sendo um dia movimentado, hein?"
+  ],
+  "lembra": [
+   "Claro que lembro! Você disse: \"{frase}\". Nada escapa destes olhos.",
+   "Você me disse: \"{frase}\". Guardei com todo o cuidado, como manda o serviço.",
+   "Foi isto: \"{frase}\". Memória de guardião, recém-invocado e afiado!"
+  ],
+  "naoLembra": [
+   "Dito antes? Ninguém falou comigo ainda. Turno silencioso até agora!",
+   "Hum, meus olhos não registraram palavra alguma sua. Começamos agora mesmo!",
+   "Nada foi dito ainda, garanto. Mas estou todo ouvidos... bem, todo olhos."
+  ]
+ },
+ "droop": {
+  "repete": [
+   "Droop já falou, chefe! Droop já falou! Chefe não ouviu Droop?",
+   "De novo? Droop disse, Droop disse. Não bate no Droop, chefe.",
+   "Chefe esqueceu? Droop não esqueceu. Droop já respondeu, já respondeu."
+  ],
+  "voltou": [
+   "Chefe voltou! Chefe voltou! Droop lembra do chefe, sim, sim.",
+   "Ah, é o chefe de novo. Droop fica quietinho, fica quietinho.",
+   "Chefe! Droop conhece chefe. Chefe não bate no Droop, né?"
+  ],
+  "lembra": [
+   "Droop lembra, lembra! Chefe disse: \"{frase}\". Droop acha que foi isso.",
+   "Chefe falou assim: \"{frase}\". Droop ouviu, Droop ouviu direitinho.",
+   "Hum, hum... \"{frase}\". Foi isso, chefe? Droop acha que foi."
+  ],
+  "naoLembra": [
+   "Disse? Chefe não disse nada pro Droop. Nada, nada.",
+   "Droop não ouviu nada, chefe. Ninguém falou com Droop ainda.",
+   "Nada! Ninguém falou nada pro Droop. Droop jura, jura!"
+  ]
+ },
+ "yeemik": {
+  "repete": [
+   "Yeemik já respondeu! Ouvido de humano é mole como lama?",
+   "Yeemik não repete ordens. Escute direito, soldado. Agora, a cabeça do chefe!",
+   "De novo? Yeemik perde paciência. Menos perguntas, mais cabeça do chefe!"
+  ],
+  "voltou": [
+   "Ah, voltou! Yeemik sabia. Veio falar da cabeça do chefe?",
+   "Apresente-se! Yeemik lembra de você. Fale rápido.",
+   "Olha só quem volta para Yeemik. Sentido! Yeemik escuta."
+  ],
+  "lembra": [
+   "Yeemik tem memória de oficial. Você disse: \"{frase}\". Agora, a barganha!",
+   "Você falou para Yeemik: \"{frase}\". Yeemik não esquece nada.",
+   "Registrado por Yeemik: \"{frase}\". Isso traz a cabeça do chefe?"
+  ],
+  "naoLembra": [
+   "Dito antes? Você não disse nada para Yeemik ainda. Fale logo!",
+   "Yeemik não ouviu palavra nenhuma sua. Comece, soldado, e comece bem.",
+   "Nada foi dito a Yeemik. Silêncio não compra humano nenhum."
+  ]
+ },
+ "klarg": {
+  "repete": [
+   "Klarg já falou! Klarg fala duas vezes? Não! Klarg arranca orelha surda primeiro.",
+   "Pergunta de novo? Klarg ouviu isso. Klarg não gostou. Klarg range os dentes.",
+   "Ouvido entupido, é? Klarg limpa com a ponta da lança, bem devagar."
+  ],
+  "voltou": [
+   "Você de novo! Klarg lembra da sua cara. Cara feia, mas Klarg lembra.",
+   "Voltou? Corajoso ou burro? Klarg acha burro. Fala logo!",
+   "Ah, o pequeno voltou! Serrote cheirou você antes de Klarg ver."
+  ],
+  "lembra": [
+   "Klarg lembra! Você disse: \"{frase}\". Klarg nunca esquece nada!",
+   "O que você falou? Klarg sabe! Foi \"{frase}\". Klarg guardou na cabeça.",
+   "Você disse \"{frase}\". Klarg ouviu tudo, Klarg sempre ouve!"
+  ],
+  "naoLembra": [
+   "Dito antes? Ninguém disse nada pra Klarg! Quer inventar coisa? Klarg morde mentiroso.",
+   "Klarg não ouviu nada! Ninguém falou com Klarg ainda. Fala agora, ou cala!",
+   "O que foi dito? Nada! Boca fechada até agora. Klarg sabe, Klarg vigia."
+  ]
+ }
+}

@@ -1,11 +1,20 @@
 // Simula, em Node, a EMBOSCADA DOS GOBLINS contra o grupo pronto de 1º nível: vitórias, quem cai, PV que sobra
 // e rodadas. A política é a de `balance.js` (competente, sem fugir), que serve de piso, não de teto.
 //
-//   node src/dev/simular-emboscada.mjs [amostra]
+//   node --import ./src/dev/cena-node/register.mjs src/dev/simular-emboscada.mjs [amostra] [--livro]
 //
 // Existe porque o `balance.js` só roda o mapa padrão, e a emboscada tem mapa, posições, surpresa e reforços
 // próprios: mudar qualquer um deles sem remedir é chutar. Os números citados nos comentários de
 // `game/encounter.js` saem daqui, com estas sementes.
+//
+// DESDE 2026-11-08 a cena É o livro (4 goblins, sem lobo), e as duas colunas dão o mesmo número. A bandeira fica
+// para a próxima vez que a cena se afastar dele.
+//
+// `--livro` troca o nosso bando pelo DO LIVRO: QUATRO goblins na moita e nenhum lobo de reforço. A nossa cena
+// põe três goblins e manda dois lobos na rodada 2 — mesmo orçamento de XP, forma diferente —, e a pergunta
+// "isso ficou mais fácil ou mais difícil que o livro?" não tinha resposta no mapa de hoje: os números que o
+// comentário citava (9,9% e 2,8% de derrota) eram da planta anterior, e o próprio comentário avisava. Com a
+// bandeira as duas colunas saem das MESMAS sementes, e só o bando muda.
 import { makeRng } from '../core/rng.js';
 import { Battlefield } from '../core/grid.js';
 import { Encounter } from '../rules/combat.js';
@@ -13,10 +22,23 @@ import { makeParty } from '../rules/party.js';
 import { takeMonsterTurn } from '../rules/ai.js';
 import { hasCondition } from '../rules/conditions.js';
 import { mapaDo, buildFoes, reinforcementsFor } from '../game/encounter.js';
+import { makeMonster } from '../rules/monsters.js';
 import { playCharacter } from './balance.js';
 
-const N = Number(process.argv[2] ?? 400);
+const N = Number(process.argv.find((a) => /^\d+$/.test(a)) ?? 400);
+const LIVRO = process.argv.includes('--livro');
 const m = mapaDo('emboscada');
+
+/** O bando do livro: quatro goblins de arco na moita, dois de cada lado, e reforço nenhum. */
+function bandoDoLivro() {
+  const arco = { arma: 'Arco curto' };
+  const onde = [[15, 6, 'A', 1], [18, 6, 'B', 1], [16, 11, 'C', -1], [19, 11, 'D', -1]];
+  return onde.map(([x, y, sufixo, dy]) => {
+    const f = makeMonster('goblin', { x, y }, { nameSuffix: sufixo, ...arco, ...(sufixo === 'A' || sufixo === 'C' ? { tatica: 'atirador' } : {}) });
+    f.facingVec = { dx: 0, dy };
+    return f;
+  });
+}
 
 function uma(semente) {
   const rng = makeRng(semente);
@@ -26,9 +48,9 @@ function uma(semente) {
   const enc = new Encounter({
     battlefield: field,
     party,
-    foes: buildFoes('emboscada'),
+    foes: LIVRO ? bandoDoLivro() : buildFoes('emboscada'),
     rng,
-    reinforcements: (rodada) => reinforcementsFor(rodada, 'emboscada'),
+    reinforcements: (rodada) => (LIVRO ? null : reinforcementsFor(rodada, 'emboscada')),
     emboscada: m.emboscada,
   });
   const hpTotal = party.reduce((s, c) => s + c.maxHp, 0);
@@ -62,6 +84,7 @@ const pct = (f) => Math.round((lutas.filter(f).length / N) * 100);
 const media = (f) => +(lutas.reduce((s, d) => s + f(d), 0) / N).toFixed(2);
 
 console.log({
+  bando: LIVRO ? 'o do LIVRO: 4 goblins, sem lobos' : 'o da cena: 4 goblins, como o livro (desde o Obelisco, 2026-11-08)',
   amostra: N,
   vitorias: `${pct((d) => d.venceu)}%`,
   travou: `${pct((d) => d.travou)}%`,

@@ -467,7 +467,7 @@ h2 {
   border-radius: 8px;
   padding: 6px 8px;
   display: flex; flex-direction: column; gap: 4px;
-  cursor: help;
+  cursor: pointer;
 }
 .inimigo.down { opacity: .45; filter: grayscale(.6); }
 .inimigo-topo { display: flex; justify-content: space-between; align-items: baseline; gap: 6px; }
@@ -1071,3 +1071,7 @@ h2 {
   color: #17304a; background: #bfe6ff; border: 1px solid #6aa6d4;
 }
 .ficha.etereo { filter: saturate(.6); }
+
+/* O ÍCONE DE TRAÇO (game-icons.net, Esmalte) é vetor desenhado na densidade da tela: liso, não em blocos como o pixel
+   antigo. Vale nos dois temas, e vence as regras de `image-rendering: pixelated` das folhas de cada tela. */
+canvas.icone.traco { image-rendering: auto !important; }

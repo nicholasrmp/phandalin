@@ -36,6 +36,7 @@ import {
   magiasForaDoHeroi, sondarMente, motivoDeMortoMudo, falaPorMensagem, chaveDoNpc, infoDoItem, tempoDeConjuracao,
   conhecidosDoGrupo,
 } from '../rules/utilidade.js';
+import { contarDosLivros } from './magias-fora-livros.js';
 import { NPCS } from '../rules/npcs.js';
 import { PENSAMENTOS, MORTOS, MUDOS, ANIMAIS, eAnimal } from './magias-fora-dados.js';
 import {
@@ -103,7 +104,7 @@ function contar(x, c, r, { alvo = null, opcao = null } = {}) {
   const t = [];
   if (r.ritual) t.push(`${c.name} conjura ${r.spell.name} como ritual: dez minutos de gestos e murmúrios, e nenhum espaço gasto.`);
   const dc = res.dc;
-  const novas = contarNovas(x, c, r, { alvo, opcao });
+  const novas = contarNovas(x, c, r, { alvo, opcao }) ?? contarDosLivros(x, c, r, { alvo });
   if (novas) {
     t.push(...novas, ...(r.fim ?? []));
     return t;
@@ -472,14 +473,15 @@ export async function escolherEConjurar(app, c, spellId) {
     opts.opcao = o;
   }
   if (u.escolhe === 'perguntas') {
-    // Até três, uma por vez: o livro dá três perguntas de sim ou não.
+    // Até três, uma por vez: o livro dá três perguntas de sim ou não (a Adivinhação, uma; o Contatar Outro Plano, cinco).
     const todas = perguntasDaComunhao(app, x.estado, herois);
     const feitas = [];
-    for (let i = 0; i < 3; i++) {
+    const quantas = u.perguntas ?? 3;
+    for (let i = 0; i < quantas; i++) {
       const restam = todas.filter((q) => !feitas.includes(q.id));
       if (!restam.length) break;
       const o = await escolher(app, spell.name,
-        feitas.length ? `Mais uma? (${3 - feitas.length} restante(s))` : 'Pergunte — três, de sim ou não.',
+        feitas.length ? `Mais uma? (${quantas - feitas.length} restante(s))` : quantas === 1 ? 'Pergunte — uma, de sim ou não.' : `Pergunte — ${quantas}, de sim ou não.`,
         [...restam.map((q) => ({ rotulo: q.pergunta, valor: q.id })), ...(feitas.length ? [{ rotulo: 'Basta', valor: '' }] : [])]);
       if (!o) { if (!feitas.length) return null; break; }
       feitas.push(o);

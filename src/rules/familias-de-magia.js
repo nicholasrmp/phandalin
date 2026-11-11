@@ -48,7 +48,7 @@ export const ESCOLAS = Object.freeze(['abjuracao', 'adivinhacao', 'conjuracao', 
 export const KINDS_COM_RAMO = Object.freeze([
   'heal', 'healGrupo', 'curaReuso', 'reviver', 'restaurar', 'estabilizar', 'frutos',
   'armadura', 'reacao', 'tempHp', 'teleporte', 'disparada', 'levitar', 'sleep', 'acalmar',
-  'invocar', 'animarMortos', 'debuff', 'marca', 'attack', 'matar', 'buff', 'aura', 'mira', 'ampliar', 'save',
+  'invocar', 'animarMortos', 'debuff', 'marca', 'attack', 'matar', 'buff', 'aura', 'mira', 'ampliar', 'save', 'livro',
 ]);
 /** Kinds que são utilidade de verdade, e por isso caem nela de propósito. */
 export const KINDS_DE_UTILIDADE = Object.freeze(['utilidade', 'rastro', 'dissipar']);
@@ -121,7 +121,8 @@ export function tipoDoDano(spell) {
  */
 export function familiaDaMagia(spell) {
   const escola = escolaDe(spell);
-  const base = { tipo: null, escola, origem: spell.origem ?? null };
+  // `id` viaja junto porque o som tira dele a NOTA da magia (`core/audio.js tomDaMagia`).
+  const base = { tipo: null, escola, origem: spell.origem ?? null, id: spell.id ?? '', tom: spell.tom ?? null };
   const de = (familia) => ({ ...base, familia });
 
   if (spell.origem === 'sopro') return { ...base, familia: 'sopro', tipo: spell.damageType ?? null };
@@ -140,6 +141,12 @@ export function familiaDaMagia(spell) {
   if (['sleep', 'acalmar'].includes(k)) return de('calma');
   if (['invocar', 'animarMortos'].includes(k)) return de('invocacao');
   if (['debuff', 'marca', 'attack', 'matar'].includes(k)) return de('maldicao');
+  // AS MAGIAS DOS LIVROS de efeito próprio (`livro-motor.js`): a família pelo que o efeito faz
+  if (k === 'livro') {
+    const FAMILIA_DO_EFEITO = { prismatico: 'dano', tempestade: 'dano', curaEmMassa: 'cura', palavraCurar: 'cura', peca: 'invocacao', telecinese: 'movimento' };
+    const f = FAMILIA_DO_EFEITO[spell.efeito] ?? 'maldicao';
+    return f === 'dano' ? { ...base, familia: 'dano', tipo: spell.efeito === 'tempestade' ? 'trovejante' : 'fogo' } : de(f);
+  }
 
   if (k === 'buff') {
     // Movimento antes de defesa: Velocidade tem bônus de CA e é, antes de tudo,

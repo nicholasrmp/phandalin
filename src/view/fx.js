@@ -11,6 +11,7 @@
 // Cada primitiva é uma peça de vocabulário. As "frases" — o que cada arma e
 // cada magia mostram — ficam em `visuals.js`.
 
+import { ANIMADAS } from '../art/efeitos-animados.js';
 import { EFEITOS } from '../art/efeitos.js';
 import '../art/efeitos-variantes.js';
 import { PALETA } from '../art/icons.js';
@@ -341,7 +342,362 @@ export function cilindroCamadas(cor, raio, altura) {
 }
 
 /** Quantos quadros tem um efeito (0 se ele não existe). */
+/**
+ * A bolha de proteção, a esfera de zona e o círculo mágico, vistos de cima: um disco com borda. As camadas de `domoCamadas` eram o hemisfério
+ * de perfil do isométrico. O anel tracejado é o do cilindro de runas, o que diz "círculo" e não "esfera".
+ */
+function discoDeCima(ctx, sx, sy, raio, cor, alfa, op, tracejado) {
+  const arte = imagemDeArte(tracejado ? 'circulo' : BOLHAS[cor]);
+  if (arte) {
+    const lado = (raio * 2) / FOLGA_DA_ARTE;
+    ctx.save();
+    ctx.globalAlpha = alfa;
+    ctx.translate(sx, sy);
+    // O círculo de runas roda devagar: é o que diz que ele está ativo.
+    if (tracejado) ctx.rotate(performance.now() / 9000);
+    ctx.drawImage(arte, -lado / 2, -lado / 2, lado, lado);
+    ctx.restore();
+    return;
+  }
+  const def = DOMO_CORES[cor] ?? (cor === 'brilho' ? { rgb: [255, 255, 255] } : DOMO_CORES.ouro);
+  const [r, g, b] = def.rgb;
+  const borda = def.borda ?? [r, g, b].map((v) => Math.round(v + (255 - v) * 0.45));
+  ctx.save();
+  ctx.globalAlpha = alfa;
+  ctx.fillStyle = `rgba(${r},${g},${b},${(def.escuro ? 0.55 : 0.2) * op})`;
+  ctx.beginPath();
+  ctx.arc(sx, sy, raio, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = `rgb(${borda[0]},${borda[1]},${borda[2]})`;
+  ctx.lineWidth = 2;
+  if (tracejado) ctx.setLineDash([8, 5]);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.globalAlpha = alfa * 0.45;
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.arc(sx, sy, Math.max(1, raio - 5), 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.restore();
+}
+
 export const temEfeito = (nome) => EFEITOS[nome]?.quadros.length ?? 0;
+
+// AS ARTES VISTAS DE CIMA (`public/efeitos/`, geradas no OpenArt, `dev/importar-arte-efeito.py`): uma imagem só, com transparência, que o
+// código faz nascer, girar e sumir (`Fx.arte`). Têm o tamanho real da magia, em casas, o que a folha de pixels de 84 px não conseguia.
+const ARTES = ['bola-de-fogo', 'bolha-ouro', 'bolha-violeta', 'chamas', 'choque', 'circulo', 'escuridao', 'graxa', 'luz', 'nevoa', 'nuvem-mortal',
+  'silencio', 'sono', 'teia', 'tempestade', 'tentaculos', 'vento', 'vinhas', 'cometa-fogo', 'raio-fogo', 'raio-gelo', 'conjuracao', 'estouro-gelo',
+  'dardo-arcano', 'lanca-luz', 'bolota-veneno', 'flecha-acido', 'relampago', 'estouro-arcano', 'estouro-veneno', 'estouro-acido', 'cone-gelo', 'cone-fogo', 'cone-veneno', 'cone-sombra', 'cone-flechas', 'cone-cores',
+  'faixa-fogo', 'faixa-acido', 'faixa-eletrico', 'faixa-vento', 'pedra',
+  'cura', 'bencao', 'maldicao', 'protecao', 'psiquico', 'necrotico', 'eletrico', 'portal', 'nevoa-prata', 'correntes', 'terror', 'hipnose', 'espinhos',
+  'meteoro', 'poder', 'ar', 'morte', 'gelo-aura', 'adagas', 'luar', 'sigilo'];
+const imagensDeArte = new Map();
+function imagemDeArte(nome) {
+  let im = imagensDeArte.get(nome);
+  if (!im && typeof Image !== 'undefined') {
+    im = new Image();
+    im.src = `/efeitos/${nome}.webp`;
+    imagensDeArte.set(nome, im);
+  }
+  return im?.complete && im.naturalWidth ? im : null;
+}
+/** A cor do domo que tem arte. As imagens enchem 90% do quadrado, daí o raio dividido. */
+const BOLHAS = { ouro: 'bolha-ouro', violeta: 'bolha-violeta' };
+const FOLGA_DA_ARTE = 0.9;
+
+// AS ARTES QUE MEXEM (`public/efeitos/anim/`, `dev/importar-video-efeito.py`): vídeo do OpenArt virado em folha de quadros com transparência. A tabela
+// mora em `art/efeitos-animados.js`, que o importador ajuda a preencher. Quem não está nela, ou cuja folha não chegou, usa a imagem parada.
+const folhasAnimadas = new Map();
+function folhaAnimada(nome) {
+  if (!ANIMADAS[nome]) return null;
+  let im = folhasAnimadas.get(nome);
+  if (!im && typeof Image !== 'undefined') {
+    im = new Image();
+    im.src = `/efeitos/anim/${nome}.webp`;
+    folhasAnimadas.set(nome, im);
+  }
+  return im?.complete && im.naturalWidth ? im : null;
+}
+
+// Tudo junto são 16 MB: uma por vez, depois da abertura, para o jogo não esperar por magia que talvez nem saia. A imagem parada vem antes da folha, e
+// é ela que aparece se a magia sair antes de a folha chegar.
+if (typeof Image !== 'undefined' && typeof setTimeout !== 'undefined') {
+  const fila = [...ARTES.map((n) => () => { imagemDeArte(n); return imagensDeArte.get(n); }), ...Object.keys(ANIMADAS).map((n) => () => { folhaAnimada(n); return folhasAnimadas.get(n); })];
+  const proxima = () => {
+    const carregar = fila.shift();
+    if (!carregar) return;
+    const im = carregar();
+    if (!im || im.complete) { setTimeout(proxima, 0); return; }
+    im.addEventListener('load', proxima, { once: true });
+    im.addEventListener('error', proxima, { once: true });
+  };
+  setTimeout(proxima, 1500);
+}
+
+/** Uma folha tingida, uma vez por cor: a mesma conta de `arteTingida`. */
+const folhasTingidas = new Map();
+function folhaTingida(nome, cor) {
+  const im = folhaAnimada(nome);
+  if (!im) return null;
+  const chave = `${nome}|${cor}`;
+  let cv = folhasTingidas.get(chave);
+  if (!cv) {
+    cv = document.createElement('canvas');
+    cv.width = im.naturalWidth;
+    cv.height = im.naturalHeight;
+    const c = cv.getContext('2d');
+    c.drawImage(im, 0, 0);
+    c.globalCompositeOperation = 'source-atop';
+    c.globalAlpha = 0.7;
+    c.fillStyle = cor;
+    c.fillRect(0, 0, cv.width, cv.height);
+    folhasTingidas.set(chave, cv);
+  }
+  return cv;
+}
+
+/**
+ * Desenha uma arte centrada na origem do contexto. `k` (0 a 1) leva a folha do começo ao fim, para o que acontece uma vez; `t`, em segundos, faz ela
+ * girar em laço, para o que dura. Sem folha, vale a imagem parada, e aí devolve `false` para quem quiser mexer nela de outro jeito.
+ */
+function desenharArteEm(ctx, nome, x, y, w, h, { k = null, t = 0, tinta = null } = {}) {
+  const anim = ANIMADAS[nome];
+  const folha = anim && (tinta ? folhaTingida(nome, tinta) : folhaAnimada(nome));
+  if (folha) {
+    const { n, colunas, fps = 8 } = anim;
+    // No laço, vai e volta: o último quadro não salta de volta para o primeiro.
+    const passo = Math.floor(t * fps) % Math.max(1, 2 * n - 2);
+    const i = k != null ? Math.min(n - 1, Math.floor(k * n)) : (passo < n ? passo : 2 * n - 2 - passo);
+    const q = folha.width / colunas;
+    ctx.drawImage(folha, (i % colunas) * q, Math.floor(i / colunas) * q, q, q, x, y, w, h);
+    return true;
+  }
+  const im = tinta ? arteTingida(nome, tinta) : imagemDeArte(nome);
+  if (im) ctx.drawImage(im, x, y, w, h);
+  return false;
+}
+
+function desenharArteCentrada(ctx, nome, lado, opcoes = {}) {
+  return desenharArteEm(ctx, nome, -lado / 2, -lado / 2, lado, lado, opcoes);
+}
+const temArte = (nome) => Boolean(folhaAnimada(nome) || imagemDeArte(nome));
+
+/** O impacto em pixels de cada natureza e a arte vista de cima que o substitui, em toda receita que o pede. Sem a imagem, valem os quadros. */
+const ARTE_DO_IMPACTO = {
+  'fogo-impacto': { nome: 'chamas', raio: 0.75, gira: 0.3 },
+  'gelo-impacto': { nome: 'estouro-gelo', raio: 0.8 },
+  'veneno-impacto': { nome: 'estouro-veneno', raio: 0.8 },
+  'acido-impacto': { nome: 'estouro-acido', raio: 0.8 },
+  'arcano-impacto': { nome: 'estouro-arcano', raio: 0.7 },
+  'luz-impacto': { nome: 'luz', raio: 0.85 },
+  // Tudo o que aparece sobre uma figura, por família. `dur` mais longo: é um efeito que se lê, não um estouro.
+  cura: { nome: 'cura', raio: 0.9, dur: 1 },
+  estabilizar: { nome: 'cura', raio: 0.7, dur: 0.9 },
+  'bom-fruto': { nome: 'cura', raio: 0.6, dur: 0.9 },
+  'necrotico-mao': { nome: 'necrotico', raio: 0.85, dur: 0.7 },
+  'vida-falsa': { nome: 'necrotico', raio: 0.8, dur: 0.9 },
+  'eletrico-faisca': { nome: 'eletrico', raio: 0.7, dur: 0.45 },
+  'corrente-de-relampagos': { nome: 'eletrico', raio: 0.9, dur: 0.5 },
+  'raio-queda': { nome: 'eletrico', raio: 1, dur: 0.55 },
+  bencao: { nome: 'bencao', raio: 0.85, dur: 1 },
+  maldicao: { nome: 'maldicao', raio: 0.85, dur: 1 },
+  'armadura-arcana': { nome: 'protecao', raio: 0.85, dur: 0.9, tinta: '#a579d8' },
+  resistencia: { nome: 'protecao', raio: 0.85, dur: 0.9 },
+  'resistencia-verde': { nome: 'protecao', raio: 0.85, dur: 0.9, tinta: '#6ee89a' },
+  'resistencia-fogo': { nome: 'protecao', raio: 0.85, dur: 0.9, tinta: '#ff9a4a' },
+  'resistencia-acido': { nome: 'protecao', raio: 0.85, dur: 0.9, tinta: '#d4e04a' },
+  'resistencia-trovao': { nome: 'protecao', raio: 0.85, dur: 0.9, tinta: '#c9d4ff' },
+  'pele-de-pedra': { nome: 'protecao', raio: 0.85, dur: 0.9, tinta: '#8f8678' },
+  psiquico: { nome: 'psiquico', raio: 0.85, dur: 0.8 },
+  'coroa-loucura': { nome: 'psiquico', raio: 0.85, dur: 1 },
+  'sugestao-espiral': { nome: 'psiquico', raio: 0.85, dur: 1 },
+  acalmar: { nome: 'psiquico', raio: 1.2, dur: 1.1, tinta: '#8fb8e8' },
+  'nevoa-prateada': { nome: 'nevoa-prata', raio: 0.9, dur: 0.9 },
+  fantasma: { nome: 'nevoa-prata', raio: 0.9, dur: 1 },
+  'porta-dimensional': { nome: 'portal', raio: 0.8, dur: 0.7 },
+  'banimento-vortice': { nome: 'portal', raio: 0.95, dur: 1.1, tinta: '#8f6ad0' },
+  meteoros: { nome: 'meteoro', raio: 1.6, dur: 0.9 },
+  'luz-orbe': { nome: 'luar', raio: 0.7, dur: 0.9 },
+  'plantas-brotar': { nome: 'vinhas', raio: 1, dur: 1 },
+  'chicote-espinhos': { nome: 'vinhas', raio: 0.7, dur: 0.5 },
+  'asas-voo': { nome: 'ar', raio: 0.85, dur: 1 },
+  'penas-queda': { nome: 'ar', raio: 0.85, dur: 1 },
+  'egide-escudo': { nome: 'bolha-ouro', raio: 0.9, dur: 0.8 },
+  'golpe-divino': { nome: 'luz', raio: 0.9, dur: 0.8 },
+  'sol-clarao': { nome: 'luz', raio: 1.3, dur: 1 },
+  'espinhos-chao': { nome: 'espinhos', raio: 0.8, dur: 0.9 },
+  'corrente-aco': { nome: 'correntes', raio: 0.8, dur: 1 },
+  'correntes-prender': { nome: 'correntes', raio: 0.9, dur: 1 },
+  'elo-aneis': { nome: 'correntes', raio: 0.8, dur: 1, tinta: '#ffe9a8' },
+  'nevoa-escura': { nome: 'escuridao', raio: 0.85, dur: 1 },
+  'nevoa-cinza': { nome: 'nevoa', raio: 1, dur: 1 },
+  'rastro-nevoa': { nome: 'nevoa', raio: 0.7, dur: 0.8 },
+  'sono-nevoa': { nome: 'sono', raio: 0.9, dur: 1 },
+  'medo-espectro': { nome: 'terror', raio: 0.9, dur: 0.9 },
+  hipnose: { nome: 'hipnose', raio: 1.5, dur: 1.2 },
+  lufada: { nome: 'vento', raio: 1, dur: 0.8 },
+  'duelo-sigilo': { nome: 'sigilo', raio: 0.85, dur: 0.9, tinta: '#ffc83a' },
+  'contramagica-x': { nome: 'sigilo', raio: 0.9, dur: 0.7, tinta: '#ff8a7a' },
+  'dissipar-sigilo': { nome: 'sigilo', raio: 0.9, dur: 0.8 },
+  'maldicao-quebra': { nome: 'sigilo', raio: 0.85, dur: 0.8, tinta: '#ffe9a8' },
+  'arma-ataque': { nome: 'poder', raio: 0.75, dur: 0.6 },
+  'orientacao-estrela': { nome: 'poder', raio: 0.75, dur: 0.9 },
+  aumentar: { nome: 'poder', raio: 1, dur: 0.9, cresce: [0.4, 1.3] },
+  reduzir: { nome: 'poder', raio: 1, dur: 0.9, cresce: [1.3, 0.4] },
+  aprimorar: { nome: 'poder', raio: 0.85, dur: 0.9 },
+  'flechas-saraivada': { nome: 'adagas', raio: 0.8, dur: 0.6 },
+};
+
+/** A arte da graxa saiu âmbar, e o preto virar alfa ainda a clareia: sem isto, a poça é laranja. */
+export const TINTA_DA_GRAXA = '#3a2a14';
+
+/** O que cada zona que dura mostra no chão. A cor de `COR_DA_ZONA` fica por baixo, e a arte fica recortada nas casas dela: o que se vê é o que a regra pega. */
+const ARTE_DA_ZONA = {
+  graxa: [{ nome: 'graxa', alfa: 0.9, tinta: TINTA_DA_GRAXA }],
+  teia: [{ nome: 'teia', alfa: 0.95 }],
+  emaranhar: [{ nome: 'vinhas', alfa: 0.9 }],
+  plantasConstritoras: [{ nome: 'vinhas', alfa: 0.9 }],
+  crescimentoDeEspinhos: [{ nome: 'espinhos', alfa: 1 }],
+  nuvemDeAdagas: [{ nome: 'adagas', alfa: 0.95 }],
+  nuvemFetida: [{ nome: 'nuvem-mortal', alfa: 0.8, gira: 0.01, respira: 0.1 }],
+  raioLunar: [{ nome: 'luar', alfa: 0.85, respira: 0.1 }],
+  esferaFlamejante: [{ nome: 'chamas', alfa: 0.9, gira: 0.04, respira: 0.1 }],
+  // A arte `tempestade` é de raios; o granizo é gelo no chão.
+  tempestadeDeGranizo: [{ nome: 'estouro-gelo', alfa: 0.65, gira: 0.01 }],
+  silencio: [{ nome: 'silencio', alfa: 0.7 }],
+  muralhaDeVento: [{ nome: 'vento', alfa: 0.7, gira: 0.06 }],
+  circuloMagico: [{ nome: 'circulo', alfa: 0.85, gira: 0.01 }],
+  muralhaDeFogo: [{ nome: 'chamas', alfa: 0.9, gira: 0.03, respira: 0.1 }],
+  muralhaDeEspinhos: [{ nome: 'espinhos', alfa: 1 }],
+  muralhaDeGelo: [{ nome: 'gelo-aura', alfa: 0.9, respira: 0.06 }],
+  // A Muralha de Força é INVISÍVEL no livro, e invisível no tabuleiro seria injogável: o jogador
+  // precisa ver onde ela está para contornar. Fica um brilho fraco, que é o mínimo para ela existir
+  // na tela sem virar parede opaca — a `desc` da magia diz que no livro não se vê.
+  muralhaDeForca: [{ nome: 'protecao', alfa: 0.3, gira: 0.012 }],
+  // A de PEDRA é a única em LADRILHO (`porCasa`), e não figura: alvenaria esticada por vinte casas
+  // daria blocos de 3 m, e a mesma figura repetida em cada casa daria papel de parede. Em ladrilho
+  // a textura se ancora na GRADE e corre por cima da muralha inteira, então a junta continua de uma
+  // casa para a outra. `escala` é quantas casas a textura cobre antes de repetir: em 2 dá cerca de
+  // quatro blocos por casa, que é pedra de parede e não paralelepípedo de rua.
+  muralhaDePedra: [{ nome: 'pedra', alfa: 0.97, respira: 0.03, porCasa: true, escala: 2 }],
+  nuvemMortal: [{ nome: 'nuvem-mortal', alfa: 0.85, gira: 0.01, respira: 0.08 }],
+  guardiaoDaFe: [{ nome: 'bencao', alfa: 0.7, respira: 0.1 }],
+  nevoaObscurecente: [{ nome: 'nevoa', alfa: 0.85, gira: 0.008, respira: 0.08 }],
+  escuridao: [{ nome: 'escuridao', alfa: 0.95, gira: 0.01 }],
+  fomeDeHadar: [{ nome: 'escuridao', alfa: 0.95, gira: 0.01 }, { nome: 'tentaculos', alfa: 0.9, gira: -0.015 }],
+};
+
+/**
+ * Pinta a arte de uma zona, recortada nas casas dela. Devolve `false` se a zona não tem arte, ou se a imagem ainda não chegou, para quem chamou
+ * cair no desenho antigo. Sem tempo de vida: o tabuleiro chama a cada quadro enquanto a zona existir.
+ */
+export const zonaTemArte = (z) => Boolean(ARTE_DA_ZONA[z.spellId]);
+
+/**
+ * A zona pintada como LADRILHO: a textura se repete ancorada na GRADE DO MAPA, e não na zona, então
+ * ela corre contínua por cima de todas as casas da muralha — a junta de uma casa encaixa na da
+ * vizinha, e andar a câmera não desliza a pedra. A âncora é o canto da casa (0,0), que é a mesma em
+ * todo quadro.
+ */
+function pintarZonaEmLadrilho(ctx, board, z, camadas, casas) {
+  let pintou = false;
+  const t = board.time ?? 0;
+  ctx.save();
+  ctx.beginPath();
+  for (const [x, y] of casas) {
+    const c = board.center(x, y);
+    ctx.rect(c.sx - board.casa / 2, c.sy - board.casa / 2, board.casa, board.casa);
+  }
+  ctx.clip();
+  const o = board.centerF(0, 0);
+  for (const { nome, alfa = 1, respira = 0, escala = 2 } of camadas) {
+    const im = imagemDeArte(nome);
+    if (!im?.naturalWidth) continue;
+    const padrao = ctx.createPattern(im, 'repeat');
+    if (!padrao) continue;
+    pintou = true;
+    const k = (board.casa * escala) / im.naturalWidth;
+    // `setTransform` pode não existir em navegador antigo; sem ela o ladrilho fica preso ao canvas,
+    // que é pior mas não quebra.
+    padrao.setTransform?.(new DOMMatrix().translate(o.sx - board.casa / 2, o.sy - board.casa / 2).scale(k));
+    ctx.globalAlpha = Math.max(0, Math.min(1, alfa + Math.sin(t * 1.4) * respira));
+    ctx.fillStyle = padrao;
+    for (const [x, y] of casas) {
+      const c = board.center(x, y);
+      ctx.fillRect(c.sx - board.casa / 2, c.sy - board.casa / 2, board.casa, board.casa);
+    }
+  }
+  ctx.restore();
+  return pintou;
+}
+
+export function pintarZonaComArte(ctx, board, z) {
+  const camadas = ARTE_DA_ZONA[z.spellId];
+  if (!camadas || !z.casas?.size) return false;
+  const casas = [...z.casas].map((k) => k.split(',').map(Number));
+  // O LADRILHO sai por outra porta: ele não tem centro nem raio, ele tem a grade.
+  if (camadas[0]?.porCasa) return pintarZonaEmLadrilho(ctx, board, z, camadas, casas);
+  const mx = casas.reduce((a, [x]) => a + x, 0) / casas.length;
+  const my = casas.reduce((a, [, y]) => a + y, 0) / casas.length;
+  const xs = casas.map(([x]) => x);
+  const ys = casas.map(([, y]) => y);
+  const largura = Math.max(...xs) - Math.min(...xs) + 1;
+  const altura = Math.max(...ys) - Math.min(...ys) + 1;
+  // A zona redonda ou quadrada mostra a arte inteira: quem diz onde a regra pega é o contorno. Só a que é uma tira (muralha) ou uma forma rala é que recorta, senão a arte redonda sairia da linha.
+  const compacta = casas.length >= largura * altura * 0.5 && Math.min(largura, altura) * 2 >= Math.max(largura, altura);
+  const raio = compacta ? Math.max(largura, altura) / 2 : Math.max(...casas.map(([x, y]) => Math.hypot(x - mx, y - my))) + 0.71;
+  const { sx, sy } = compacta ? board.centerF((Math.min(...xs) + Math.max(...xs)) / 2, (Math.min(...ys) + Math.max(...ys)) / 2) : board.centerF(mx, my);
+  const lado = (raio * board.casa * 2) / FOLGA_DA_ARTE;
+  const t = board.time ?? 0;
+  let pintou = false;
+  ctx.save();
+  if (!compacta) {
+    ctx.beginPath();
+    for (const [x, y] of casas) {
+      const c = board.center(x, y);
+      ctx.rect(c.sx - board.casa / 2, c.sy - board.casa / 2, board.casa, board.casa);
+    }
+    ctx.clip();
+  }
+  for (const { nome, alfa = 1, gira = 0, respira = 0, tinta = null } of camadas) {
+    if (!temArte(nome)) continue;
+    pintou = true;
+    ctx.save();
+    ctx.globalAlpha = Math.max(0, Math.min(1, alfa + Math.sin(t * 1.4) * respira));
+    ctx.translate(sx, sy);
+    ctx.rotate(gira * t * Math.PI * 2);
+    desenharArteCentrada(ctx, nome, lado, { t, tinta });
+    ctx.restore();
+  }
+  ctx.restore();
+  return pintou;
+}
+
+/** Uma arte branca tingida, uma vez por cor. */
+const artesTingidas = new Map();
+function arteTingida(nome, cor) {
+  const im = imagemDeArte(nome);
+  if (!im) return null;
+  const chave = `${nome}|${cor}`;
+  let cv = artesTingidas.get(chave);
+  if (!cv) {
+    cv = document.createElement('canvas');
+    cv.width = im.naturalWidth;
+    cv.height = im.naturalHeight;
+    const c = cv.getContext('2d');
+    c.drawImage(im, 0, 0);
+    c.globalCompositeOperation = 'source-atop';
+    c.globalAlpha = 0.7;
+    c.fillStyle = cor;
+    c.fillRect(0, 0, cv.width, cv.height);
+    artesTingidas.set(chave, cv);
+  }
+  return cv;
+}
+
+/** A velocidade de um voo, em casas por segundo: a duração vem da distância, e um tiro longo não atravessa o mapa num piscar. */
+const CASAS_POR_SEGUNDO = 13;
+export const duracaoDoVoo = (de, para) => Math.max(0.28, Math.min(0.95, Math.hypot(para.x - de.x, para.y - de.y) / CASAS_POR_SEGUNDO));
 const EASE_IN_OUT = (k) => (k < 0.5 ? 2 * k * k : 1 - ((-2 * k + 2) ** 2) / 2);
 const TAU = Math.PI * 2;
 
@@ -877,11 +1233,15 @@ export class Fx {
   // `cresce: [de, ate]`: a figura se estica de uma escala à outra ao longo do efeito (a onda necrótica que se abre). É a única
   // exceção ao 1:1 dos quadros, e só para anéis que se expandem.
   // `chao: true`: desenha na camada do chão, por BAIXO das figuras (anéis e manchas que se deitam no tabuleiro).
-  quadros(tile, nome, { fps = 14, altura = CHEST, sumir = 0, de = null, entrar = 0, cresce = null, chao = false } = {}) {
+  quadros(tile, nome, { fps = 14, sumir = 0, de = null, entrar = 0, cresce = null, chao = false } = {}) {
+    const arte = ARTE_DO_IMPACTO[nome];
+    if (arte && temArte(arte.nome)) {
+      return this.arte(tile, arte.nome, { raio: arte.raio, dur: arte.dur ?? 0.5, entra: 0.05, sai: 0.3, gira: arte.gira ?? 0, tinta: arte.tinta ?? null, cresce: arte.cresce ?? [0.5, 1.05], laco: Boolean(arte.dur) });
+    }
     const n = temEfeito(nome);
     if (!n) return this;
     const anim = n / fps;
-    return this.add({ kind: 'quadros', tile: { ...tile }, nome, n, anim, dur: anim + sumir, altura, de: de && { ...de }, entrar, cresce, chao });
+    return this.add({ kind: 'quadros', tile: { ...tile }, nome, n, anim, dur: anim + sumir, de: de && { ...de }, entrar, cresce, chao });
   }
 
   /**
@@ -890,6 +1250,317 @@ export class Fx {
    */
   // `id`: de quem a bolha protege — ela acompanha a figura se ela andar.
   // `op`: força do véu (esfera grande = véu fraco; ver `domoCamadas`).
+  /**
+   * O que voa de quem lança até o alvo, visto de cima: reto, acelerando, com a cabeça na frente e fagulhas que ficam para trás no caminho.
+   * `tamanho` é o comprimento da arte em casas; `fagulha` a cor do rastro. Devolve a duração, para quem chama marcar o impacto.
+   */
+  voo(de, para, nome, { tamanho = 2.4, fagulha = '#ffb35a', curva = 0 } = {}) {
+    const dur = duracaoDoVoo(de, para);
+    const sementes = Array.from({ length: 26 }, () => ({ em: Math.random(), lado: (Math.random() - 0.5) * 22, vida: 0.18 + Math.random() * 0.3, s: 1.5 + Math.random() * 2.5 }));
+    this.add({ kind: 'voo', de: { ...de }, para: { ...para }, nome, tamanho, fagulha, curva, sementes, dur: dur + 0.45, voa: dur });
+    return dur;
+  }
+
+  desenharVoo(ctx, board, it) {
+    const a = board.centerF(it.de.x, it.de.y);
+    const b = board.centerF(it.para.x, it.para.y);
+    const ang = Math.atan2(b.sy - a.sy, b.sx - a.sx);
+    // `curva`, em casas: o quanto o caminho abre para o lado no meio, para os dardos de uma salva não voarem um em cima do outro.
+    const abre = (it.curva ?? 0) * board.casa;
+    const pos = (e) => {
+      const lado = Math.sin(Math.PI * e) * abre;
+      return { x: a.sx + (b.sx - a.sx) * e - Math.sin(ang) * lado, y: a.sy + (b.sy - a.sy) * e + Math.cos(ang) * lado };
+    };
+    const rumo = (e) => {
+      const p = pos(Math.max(0, e - 0.02));
+      const q = pos(Math.min(1, e + 0.02));
+      return Math.atan2(q.y - p.y, q.x - p.x);
+    };
+    const prog = Math.min(1, it.t / it.voa);
+    const anda = (k) => k * k * (1.6 - 0.6 * k);   // sai devagar da mão e chega com força
+    // O rastro fica parado no caminho e se apaga, depois de a cabeça passar.
+    ctx.save();
+    ctx.fillStyle = it.fagulha;
+    for (const f of it.sementes) {
+      const quando = f.em * it.voa;
+      const idade = it.t - quando;
+      if (idade < 0 || idade > f.vida) continue;
+      const p = pos(anda(f.em));
+      const k = idade / f.vida;
+      ctx.globalAlpha = 1 - k;
+      const nx = -Math.sin(ang); const ny = Math.cos(ang);
+      ctx.beginPath();
+      ctx.arc(p.x + nx * f.lado * (0.4 + k), p.y + ny * f.lado * (0.4 + k), f.s * (1 - k * 0.5), 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+    if (it.t >= it.voa) return;
+    const im = imagemDeArte(it.nome);
+    if (!im) return;
+    const p = pos(anda(prog));
+    const lado = it.tamanho * board.casa;
+    ctx.save();
+    ctx.globalAlpha = Math.min(1, it.t / 0.06);
+    ctx.translate(p.x, p.y);
+    ctx.rotate(rumo(anda(prog)));
+    // A cabeça da arte está na direita: ela vai à frente do ponto, e a cauda aponta para quem lançou.
+    ctx.drawImage(im, -lado * 0.72, -lado / 2, lado, lado);
+    ctx.restore();
+  }
+
+  /**
+   * O CONE de uma magia, visto de cima. A arte tem a ponta no meio da borda ESQUERDA e abre para a direita, então ela nasce em quem conjura,
+   * gira para onde ele aponta e cresce até o alcance. `casas` é o comprimento do cone — e, num cone do livro, também a largura da boca.
+   */
+  cone(de, para, nome, { casas = 3, dur = 0.8, abre = 0.22, sai = 0.3, tinta = null, recorte = null, semVideo = false } = {}) {
+    return this.add({ kind: 'cone', de: { ...de }, para: { ...para }, nome, casas, dur, abre, sai, tinta, semVideo, recorte: recorte?.map((t) => ({ x: t.x, y: t.y })) ?? null });
+  }
+
+  desenharCone(ctx, board, it, k) {
+    if (!temArte(it.nome)) return;
+    const a = board.centerF(it.de.x, it.de.y);
+    const b = board.centerF(it.para.x, it.para.y);
+    if (a.sx === b.sx && a.sy === b.sy) return;
+    const t = k * it.dur;
+    // A língua sai da mão e alcança a ponta: o cone cresce em comprimento, não aparece inteiro de uma vez.
+    const cresce = 0.3 + 0.7 * EASE_OUT(Math.min(1, t / it.abre));
+    const lado = it.casas * board.casa * cresce;
+    const alfa = Math.min(1, t / 0.05) * Math.min(1, it.sai ? (it.dur - t) / it.sai : 1);
+    const ang = Math.atan2(b.sy - a.sy, b.sx - a.sx);
+    // ANIMAR POR CÓDIGO, de graça: um JATO é material correndo da ponta para a boca, e a arte do cone é uma cunha com a ponta na origem.
+    // Então escalar a arte a partir da ponta dá uma cunha menor ENCAIXADA na maior: três cópias crescendo de 0,45 até 1 e sumindo ao
+    // chegar, defasadas em um terço de ciclo, viram pulsos que viajam para fora. A cópia inteira fica por baixo, para o cone não piscar.
+    const PULSOS = 3;
+    const CICLO = 0.42;
+    const jato = (ctx2) => {
+      const base = ctx2.globalAlpha || 1;
+      if (!it.semVideo) { desenharArteEm(ctx2, it.nome, 0, -lado / 2, lado, lado, { k, tinta: it.tinta }); return; }
+      ctx2.save();
+      ctx2.globalAlpha = base;
+      desenharArteEm(ctx2, it.nome, 0, -lado / 2, lado, lado, { k, tinta: it.tinta });
+      ctx2.restore();
+      for (let i = 0; i < PULSOS; i += 1) {
+        const e = ((t / CICLO) + i / PULSOS) % 1;         // 0 na ponta, 1 na boca
+        const l2 = lado * (0.45 + 0.55 * e);
+        ctx2.save();
+        ctx2.globalAlpha = base * 0.3 * Math.min(1, e * 4) * (1 - e);   // nasce e some ao chegar
+        desenharArteEm(ctx2, it.nome, 0, -l2 / 2, l2, l2, { k, tinta: it.tinta });
+        ctx2.restore();
+      }
+    };
+    // Sem parede no caminho, o cone desenha direto: é o caso comum e não paga canvas auxiliar.
+    if (!it.recorte?.length) {
+      ctx.save();
+      ctx.globalAlpha = alfa;
+      ctx.translate(a.sx, a.sy);
+      ctx.rotate(ang);
+      jato(ctx);
+      ctx.restore();
+      return;
+    }
+    // Com parede, a arte passa pela máscara das casas que a magia REALMENTE pega: o cone para onde a regra para.
+    const R = Math.ceil(lado) + board.casa;
+    const aux = (this._auxCone ??= document.createElement('canvas'));
+    if (aux.width < 2 * R) { aux.width = 2 * R; aux.height = 2 * R; }
+    const c = aux.getContext('2d');
+    c.setTransform(1, 0, 0, 1, 0, 0);
+    c.clearRect(0, 0, aux.width, aux.height);
+    c.globalCompositeOperation = 'source-over';
+    c.save();
+    c.translate(R, R);
+    c.rotate(ang);
+    jato(c);
+    c.restore();
+    // A máscara tem um pixel por casa e sobe ampliada e suavizada: a borda sai em degradê, não em escada.
+    const xs = it.recorte.map((t) => t.x); const ys = it.recorte.map((t) => t.y);
+    const x0 = Math.min(...xs); const y0 = Math.min(...ys);
+    const nx = Math.max(...xs) - x0 + 1; const ny = Math.max(...ys) - y0 + 1;
+    const m = (it._mask ??= document.createElement('canvas'));
+    if (m.width !== nx || m.height !== ny) {
+      m.width = nx; m.height = ny;
+      const mc = m.getContext('2d');
+      mc.fillStyle = '#fff';
+      for (const t of it.recorte) mc.fillRect(t.x - x0, t.y - y0, 1, 1);
+    }
+    c.globalCompositeOperation = 'destination-in';
+    c.imageSmoothingEnabled = true;
+    const p0 = board.center(x0, y0);
+    c.drawImage(m, p0.sx - board.casa / 2 - a.sx + R, p0.sy - board.casa / 2 - a.sy + R, nx * board.casa, ny * board.casa);
+    ctx.save();
+    ctx.globalAlpha = alfa;
+    ctx.drawImage(aux, 0, 0, 2 * R, 2 * R, a.sx - R, a.sy - R, 2 * R, 2 * R);
+    ctx.restore();
+  }
+
+  /** Um traço que liga dois pontos na hora (o relâmpago): a arte esticada de ponta a ponta, tremendo, sem voar. `largura` em casas. */
+  /**
+   * Uma FAIXA de magia esticada de um ponto ao outro: o relâmpago, a muralha, a lufada, o sopro de dragão em linha. `largura` em casas.
+   * `pisca` é o relâmpago, que vira e some a cada 60 ms. Sem ele a faixa fica firme e ganha movimento de graça (abaixo).
+   */
+  feixe(de, para, nome, { largura = 1.2, dur = 0.4, pisca = true, entra = 0 } = {}) {
+    return this.add({ kind: 'feixe', de: { ...de }, para: { ...para }, nome, largura, dur, pisca, entra });
+  }
+
+  desenharFeixe(ctx, board, it, k) {
+    const im = imagemDeArte(it.nome);
+    if (!im) return;
+    const a = board.centerF(it.de.x, it.de.y);
+    const b = board.centerF(it.para.x, it.para.y);
+    const larg = it.largura * board.casa;
+    const comp = Math.hypot(b.sx - a.sx, b.sy - a.sy) * (it.entra ? Math.min(1, it.t / it.entra) : 1);
+    ctx.save();
+    ctx.translate(a.sx, a.sy);
+    ctx.rotate(Math.atan2(b.sy - a.sy, b.sx - a.sx));
+    if (it.pisca) {
+      // Vira a cada 60 ms: é o que faz a mesma imagem parecer um raio vivo, e não um risco parado.
+      const passo = Math.floor(it.t / 0.06);
+      ctx.globalAlpha = Math.min(1, (1 - k) * 2.5) * (passo % 3 === 2 ? 0.7 : 1);
+      ctx.scale(1, passo % 2 ? -1 : 1);
+      ctx.drawImage(im, 0, -larg / 2, comp, larg);
+      ctx.restore();
+      return;
+    }
+    // A FAIXA SE REPETE, NÃO SE ESTICA. Uma muralha de 12 casas por 1,1 esticaria uma arte quase quadrada onze vezes, e o que era labareda
+    // vira barra. Então a arte entra no tamanho natural dela e se repete ao longo do comprimento, espelhada a cada passo para a emenda não
+    // virar padrão. E as duas PONTAS e as duas bordas saem em degradê: sem isso a faixa é um retângulo colado no mapa.
+    const passo = Math.max(larg * 0.9, larg * (im.naturalWidth / im.naturalHeight));
+    const quantos = Math.max(1, Math.ceil(comp / passo));
+    const aux = (this._auxFaixa ??= document.createElement('canvas'));
+    const W = Math.max(1, Math.ceil(comp));
+    const H = Math.max(1, Math.ceil(larg));
+    if (aux.width < W || aux.height < H) { aux.width = Math.max(aux.width, W); aux.height = Math.max(aux.height, H); }
+    const c = aux.getContext('2d');
+    c.setTransform(1, 0, 0, 1, 0, 0);
+    c.clearRect(0, 0, aux.width, aux.height);
+    c.globalCompositeOperation = 'source-over';
+    // Duas camadas: a de baixo firme, a de cima espelhada e pulsando. É o movimento de graça, sem vídeo.
+    const onda = 0.5 + 0.5 * Math.sin(it.t * 4.4);
+    for (const [espelha, alfa] of [[false, 1], [true, onda * 0.75]]) {
+      c.save();
+      c.globalAlpha = alfa;
+      for (let i = 0; i < quantos; i += 1) {
+        c.save();
+        c.translate(i * passo, H / 2);
+        if ((i % 2 === 1) !== espelha) c.scale(-1, 1);
+        if (espelha) c.scale(1, -1);
+        c.drawImage(im, (i % 2 === 1) !== espelha ? -passo : 0, -H / 2, passo, H);
+        c.restore();
+      }
+      c.restore();
+    }
+    // O degradê das pontas e das bordas, que tira o corte reto.
+    c.globalCompositeOperation = 'destination-in';
+    const pontas = c.createLinearGradient(0, 0, W, 0);
+    const d = Math.min(0.22, (larg * 0.8) / Math.max(1, comp));
+    pontas.addColorStop(0, 'rgba(0,0,0,0)');
+    pontas.addColorStop(d, 'rgba(0,0,0,1)');
+    pontas.addColorStop(1 - d, 'rgba(0,0,0,1)');
+    pontas.addColorStop(1, 'rgba(0,0,0,0)');
+    c.fillStyle = pontas;
+    c.fillRect(0, 0, W, H);
+    const bordas = c.createLinearGradient(0, 0, 0, H);
+    // A borda longa esfuma pouco: a muralha tem extensão definida, e comer 16% de cada lado a deixava fina. O corte reto que incomodava
+    // estava nas PONTAS, e é lá que o degradê precisa ser largo.
+    bordas.addColorStop(0, 'rgba(0,0,0,0)');
+    bordas.addColorStop(0.07, 'rgba(0,0,0,1)');
+    bordas.addColorStop(0.93, 'rgba(0,0,0,1)');
+    bordas.addColorStop(1, 'rgba(0,0,0,0)');
+    c.fillStyle = bordas;
+    c.fillRect(0, 0, W, H);
+    const fim = Math.min(1, (it.dur - it.t) / 0.35);
+    ctx.globalAlpha = Math.max(0, fim) * Math.min(1, it.t / 0.08);
+    ctx.drawImage(aux, 0, 0, W, H, 0, -larg / 2, comp, larg);
+    ctx.restore();
+  }
+
+  /** O brilho em volta de quem conjura, na cor da magia, girando para dentro. */
+  conjuracao(tile, { cor = '#c7b4ff', dur = 0.55, raio = 0.9, id = null } = {}) {
+    return this.add({ kind: 'conjuracao', tile: { ...tile }, cor, dur, raio, id, fase: Math.random() * 6.28 });
+  }
+
+  desenharConjuracao(ctx, board, it, k) {
+    const im = arteTingida('conjuracao', it.cor);
+    if (!im) return;
+    const w = it.id != null ? this.positionFor(it.id) : null;
+    const { sx, sy } = board.centerF(w ? w.x : it.tile.x, w ? w.y : it.tile.y);
+    const lado = (it.raio * board.casa * 2 * (1.25 - 0.35 * k)) / FOLGA_DA_ARTE;
+    ctx.save();
+    ctx.globalAlpha = 0.8 * Math.min(1, k * 6) * Math.min(1, (1 - k) * 2.5);
+    ctx.translate(sx, sy);
+    ctx.rotate(it.fase + k * 2.4);
+    ctx.drawImage(im, -lado / 2, -lado / 2, lado, lado);
+    ctx.restore();
+  }
+
+  /**
+   * Uma arte vista de cima. `raio` em casas é o tamanho da magia; `cresce` o de onde até onde ela escala; `gira` em voltas por segundo;
+   * `sombra` escurece o chão debaixo (a imagem é só luz, então o breu precisa disto); `ganho` a desenha mais vezes, para arte muito fina;
+   * `noChao` a põe por baixo das fichas.
+   */
+  arte(tile, nome, { raio = 1, dur = 0.9, entra = 0.12, sai = 0.4, gira = 0, cresce = null, sombra = 0, ganho = 1, noChao = false, tinta = null, laco = false, recorte = null } = {}) {
+    return this.add({ kind: 'arte', tile: { ...tile }, nome, tinta, laco, recorte, raio, dur, entra, sai, gira, cresce, sombra, ganho, noChao, fase: Math.random() * Math.PI * 2 });
+  }
+
+  desenharArte(ctx, board, it, k) {
+    if (!temArte(it.nome)) return;
+    const { sx, sy } = board.centerF(it.tile.x, it.tile.y);
+    const escala = it.cresce ? it.cresce[0] + (it.cresce[1] - it.cresce[0]) * EASE_OUT(Math.min(1, k * 1.5)) : 1;
+    const r = it.raio * board.casa * escala;
+    const lado = (r * 2) / FOLGA_DA_ARTE;
+    const t = k * it.dur;
+    const alfa = Math.min(1, it.entra ? t / it.entra : 1) * Math.min(1, it.sai ? (it.dur - t) / it.sai : 1);
+    ctx.save();
+    if (it.sombra) {
+      const g = ctx.createRadialGradient(sx, sy, r * 0.5, sx, sy, r);
+      g.addColorStop(0, `rgba(8,4,16,${it.sombra * alfa})`);
+      g.addColorStop(1, 'rgba(8,4,16,0)');
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(sx, sy, r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    // `recorte`: as casas que a magia pega. A arte é redonda e a área pode ser cone ou ter parede no meio, então ela passa por uma máscara dessas casas.
+    // A máscara tem um pixel por casa e é ampliada com suavização: a borda some em degradê, em vez de escada.
+    if (it.recorte?.length) {
+      const lado2 = Math.ceil(lado);
+      const aux = (this._auxArte ??= document.createElement('canvas'));
+      if (aux.width < lado2) { aux.width = lado2; aux.height = lado2; }
+      const a = aux.getContext('2d');
+      a.setTransform(1, 0, 0, 1, 0, 0);
+      a.clearRect(0, 0, aux.width, aux.height);
+      a.globalCompositeOperation = 'source-over';
+      a.translate(lado2 / 2, lado2 / 2);
+      a.rotate(it.fase + it.gira * t * Math.PI * 2);
+      desenharArteCentrada(a, it.nome, lado, it.laco ? { t, tinta: it.tinta } : { k, tinta: it.tinta });
+      a.setTransform(1, 0, 0, 1, 0, 0);
+      a.globalCompositeOperation = 'destination-in';
+      a.imageSmoothingEnabled = true;
+      const casas = lado2 / board.casa;
+      const n = 2 * Math.ceil(casas / 2 + 1);
+      const mascara = (it._mascara ??= document.createElement('canvas'));
+      if (mascara.width !== n) {
+        mascara.width = n;
+        mascara.height = n;
+        const m = mascara.getContext('2d');
+        m.fillStyle = '#fff';
+        for (const c of it.recorte) m.fillRect(c.x - Math.floor(it.tile.x) + Math.floor(n / 2), c.y - Math.floor(it.tile.y) + Math.floor(n / 2), 1, 1);
+      }
+      // A casa (tile.x, tile.y) arredondada para baixo está no pixel n/2 da máscara; o centro da arte é o centro fracionário de tile.
+      const ox = lado2 / 2 - (n / 2 + 0.5 + (it.tile.x - Math.floor(it.tile.x))) * board.casa;
+      const oy = lado2 / 2 - (n / 2 + 0.5 + (it.tile.y - Math.floor(it.tile.y))) * board.casa;
+      a.drawImage(mascara, ox, oy, n * board.casa, n * board.casa);
+      ctx.globalAlpha = alfa;
+      ctx.drawImage(aux, 0, 0, lado2, lado2, sx - lado2 / 2, sy - lado2 / 2, lado2, lado2);
+      ctx.restore();
+      return;
+    }
+    ctx.globalAlpha = alfa;
+    ctx.translate(sx, sy);
+    ctx.rotate(it.fase + it.gira * t * Math.PI * 2);
+    for (let i = 0; i < it.ganho; i += 1) desenharArteCentrada(ctx, it.nome, lado, it.laco ? { t, tinta: it.tinta } : { k, tinta: it.tinta });
+    ctx.restore();
+  }
+
   domo(tile, { cor = 'ouro', dur = 1.4, raio = 36, altura = 68, id = null, op = 1 } = {}) {
     return this.add({ kind: 'domo', tile: { ...tile }, cor, dur, raio, altura, id, f: tile.f ?? 1, op });
   }
@@ -899,7 +1570,7 @@ export class Fx {
     for (let i = 0; i < count; i++) {
       const a = (i / count) * Math.PI * 2 + Math.random() * 0.5;
       const speed = spread * (0.4 + Math.random() * 0.8);
-      parts.push({ vx: Math.cos(a) * speed, vy: Math.sin(a) * speed * 0.55 - 40, size: 2 + Math.random() * 3 });
+      parts.push({ vx: Math.cos(a) * speed, vy: Math.sin(a) * speed, size: 2 + Math.random() * 3 });
     }
     return this.add({ kind: 'impact', tile: { ...tile }, color, parts, dur });
   }
@@ -958,7 +1629,7 @@ export class Fx {
     const parts = [];
     for (let i = 0; i < count; i++) {
       const a = (i / count) * Math.PI * 2 + Math.random() * 0.4;
-      parts.push({ a, vx: Math.cos(a) * spread * (0.5 + Math.random()), vy: Math.sin(a) * spread * 0.5 - 30, len: 5 + Math.random() * 6, rot: Math.random() * 3 });
+      parts.push({ a, vx: Math.cos(a) * spread * (0.5 + Math.random()), vy: Math.sin(a) * spread, len: 5 + Math.random() * 6, rot: Math.random() * 3 });
     }
     return this.add({ kind: 'shards', tile: { ...tile }, color, dur, parts });
   }
@@ -1037,9 +1708,17 @@ export class Fx {
 
   drawGround(ctx, board) {
     this.prepararChao(ctx, board);
+    // Sem o laço de profundidade do isométrico, a tela de chão entra inteira, por baixo das fichas.
+    if (this._chao) {
+      ctx.save();
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.drawImage(this._chao, 0, 0);
+      ctx.restore();
+    }
     for (const it of this.items) {
       const k = Math.min(1, it.t / it.dur);
-
+      if (it.kind === 'arte' && it.noChao) this.desenharArte(ctx, board, it, k);
+      if (it.kind === 'conjuracao') this.desenharConjuracao(ctx, board, it, k);
 
       if (it.kind === 'ring') {
         const r = it.fecha ? it.radius * (1 - EASE_OUT(k) * 0.85) : it.radius * EASE_OUT(k);
@@ -1049,7 +1728,7 @@ export class Fx {
         ctx.strokeStyle = it.color;
         ctx.lineWidth = it.width;
         ctx.beginPath();
-        ctx.ellipse(sx, sy, r, r * 0.5, 0, 0, Math.PI * 2);
+        ctx.arc(sx, sy, r, 0, Math.PI * 2);
         ctx.stroke();
         ctx.restore();
       }
@@ -1075,13 +1754,13 @@ export class Fx {
         ctx.globalAlpha = k < 0.55 ? 0.8 : 0.8 * (1 - (k - 0.55) / 0.45);
         ctx.fillStyle = it.color;
         ctx.beginPath();
-        ctx.ellipse(sx, sy, r, r * 0.42, 0, 0, Math.PI * 2);
+        ctx.arc(sx, sy, r, 0, Math.PI * 2);
         ctx.fill();
         // Brilho em cima da poça: sem ele a mancha lê como buraco.
         ctx.globalAlpha *= 0.5;
         ctx.fillStyle = '#ffffff';
         ctx.beginPath();
-        ctx.ellipse(sx - r * 0.3, sy - r * 0.12, r * 0.3, r * 0.1, 0, 0, Math.PI * 2);
+        ctx.ellipse(sx - r * 0.3, sy - r * 0.3, r * 0.3, r * 0.2, 0, 0, Math.PI * 2);
         ctx.fill();
         ctx.restore();
       }
@@ -1097,13 +1776,13 @@ export class Fx {
         ctx.strokeStyle = it.color;
         ctx.lineWidth = 5 * (1 - k * 0.6);
         ctx.beginPath();
-        ctx.ellipse(0, 0, it.radius, it.radius * 0.3, 0, varre - 0.8, varre + 0.2);
+        ctx.arc(0, 0, it.radius, varre - 0.8, varre + 0.2);
         ctx.stroke();
         ctx.globalAlpha *= 0.5;
         ctx.fillStyle = '#d8c9a8';
         for (let i = 0; i < 5; i++) {
           const a = varre - 0.8 + (i / 5) * 0.9;
-          ctx.fillRect(Math.cos(a) * it.radius, Math.sin(a) * it.radius * 0.3 - i, 3, 3);
+          ctx.fillRect(Math.cos(a) * it.radius, Math.sin(a) * it.radius, 3, 3);
         }
         ctx.restore();
       }
@@ -1120,7 +1799,7 @@ export class Fx {
           const len = 10 + 26 * EASE_OUT(k);
           ctx.beginPath();
           ctx.moveTo(sx, sy);
-          ctx.lineTo(sx + Math.cos(a) * len, sy + Math.sin(a) * len * 0.5);
+          ctx.lineTo(sx + Math.cos(a) * len, sy + Math.sin(a) * len);
           ctx.stroke();
         }
         ctx.restore();
@@ -1202,7 +1881,7 @@ export class Fx {
 
   /**
    * A esfera fixa de uma zona, no formato de `domosAtivos`: centro (o da zona,
-   * ou a média das casas), raio pela casa mais distante (~45 px por casa) em
+   * ou a média das casas), raio pela casa mais distante em
    * degraus de 8 px, e as duas diagonais pelas casas de trás e da frente.
    * Cacheada por zona e rotação; só o fade-in (0,5 s) depende do tempo.
    */
@@ -1217,7 +1896,7 @@ export class Fx {
       const cy = z.centro ? z.centro.y : cs.reduce((n, c) => n + c[1], 0) / cs.length;
       let casas = Math.max(...cs.map(([x, y]) => Math.hypot(x - cx, y - cy))) + 0.5;
       if (cor === 'sol') casas = Math.min(casas, 6.5);
-      let raio = Math.max(16, 8 * Math.round((casas * 45) / 8));
+      let raio = Math.max(16, 8 * Math.round((casas * board.casa) / 8));
       if (cor === 'sol') raio = Math.min(raio, 288);
       let altura = 4 * Math.round(Math.min(170, Math.max(40, raio * 0.8)) / 4);
       if (cor === 'sol') altura = 4 * Math.round(raio * 0.55 / 4);
@@ -1251,49 +1930,34 @@ export class Fx {
    */
   desenharDomo(ctx, board, o, camada) {
     const { it } = o;
+    const { sx, sy } = board.centerF(o.x, o.y);
+    // De cima, a esfera é um disco: quem o desenha é a camada de trás, e a de frente só leva o glifo que paira.
     if (it.fixo) {
-      // Esfera de zona: sem inflar, sem lampejo, sem fade-out (a zona some e a
-      // esfera some com ela); só aparece em 0,5 s na primeira vez.
-      const d = it.cilindro ? cilindroCamadas(it.cor, it.raio, it.altura) : domoCamadas(it.cor, it.raio, it.altura, it.op);
-      const { sx, sy } = board.centerF(o.x, o.y);
-      ctx.save();
-      ctx.imageSmoothingEnabled = false;
       const surgir = Math.min(1, (board.time - it.vistoEm) / 0.5);
       // Armadilha pisca a 2 Hz: o perigo chama a atenção sem esconder a casa.
-      ctx.globalAlpha = surgir * (it.pisca ? (Math.floor(board.time * 4) % 2 ? 1 : 0.5) : 1);
-      ctx.drawImage(d[camada], Math.round(sx - d.ox), Math.round(sy - d.oy));
+      const alfa = surgir * (it.pisca ? (Math.floor(board.time * 4) % 2 ? 1 : 0.5) : 1);
+      if (camada === 'tras') discoDeCima(ctx, sx, sy, it.raio, it.cor, alfa, it.op ?? 1, it.cilindro);
       if (camada === 'frente' && it.glifo && it.cilindro) {
         const bob = Math.round(Math.sin(board.time * 3 + o.x * 1.7 + o.y) * 2);
-        desenharGlifo(ctx, it.glifo, sx, sy - it.altura - 12 + bob, DOMO_CORES[it.cor]?.borda ?? DOMO_CORES[it.cor]?.rgb ?? [255, 255, 255]);
+        ctx.save();
+        ctx.imageSmoothingEnabled = false;
+        ctx.globalAlpha = alfa;
+        desenharGlifo(ctx, it.glifo, sx, sy - 12 + bob, DOMO_CORES[it.cor]?.borda ?? DOMO_CORES[it.cor]?.rgb ?? [255, 255, 255]);
+        ctx.restore();
       }
-      ctx.restore();
       return;
     }
+    if (camada !== 'tras') return;
     const t = it.t;
     let e = 1;
-    let extra = 0;
     let alfa = 1;
     if (t < 0.25) e = 1.06 * EASE_OUT(t / 0.25);
     else if (t < 0.35) e = 1.06 - 0.06 * ((t - 0.25) / 0.1);
     const fim = it.dur * 0.65;
-    if (t > fim) {
-      const k = Math.min(1, (t - fim) / (it.dur - fim));
-      alfa = 1 - k;
-      extra = k;
-    }
-    const altura = 4 * Math.round((it.altura * e + 4 * extra) / 4);
-    if (altura < 8) return;
-    const raio = 2 * Math.round((it.raio * (0.7 + 0.3 * e) + 3 * extra) / 2);
-    const d = domoCamadas(it.cor, raio, altura, it.op ?? 1);
-    const { sx, sy } = board.centerF(o.x, o.y);
-    const x0 = Math.round(sx - d.ox);
-    const y0 = Math.round(sy - d.oy);
-    ctx.save();
-    ctx.imageSmoothingEnabled = false;
-    ctx.globalAlpha = alfa;
-    ctx.drawImage(d[camada], x0, y0);
-    if (camada === 'tras' && t >= 0.3 && t < 0.38) ctx.drawImage(d.brilho, x0, y0);
-    ctx.restore();
+    if (t > fim) alfa = 1 - Math.min(1, (t - fim) / (it.dur - fim));
+    discoDeCima(ctx, sx, sy, it.raio * e, it.cor, alfa, it.op ?? 1, false);
+    // O lampejo de quando a bolha fecha.
+    if (t >= 0.3 && t < 0.38) discoDeCima(ctx, sx, sy, it.raio * e, 'brilho', 0.6, 1, false);
   }
 
   /**
@@ -1357,8 +2021,9 @@ export class Fx {
   desenharOnda(ctx, board, it, k) {
     const { sx, sy } = board.centerF(it.tile.x, it.tile.y);
     const kk = EASE_OUT(Math.min(1, k));
-    const rx = it.raio * 45;
-    const ry = it.raio * 22.6;
+    // De cima, o raio em casas é o mesmo para os dois lados.
+    const rx = it.raio * board.casa;
+    const ry = rx;
     // Alfa em degraus (sem contínuo): o pixel art não tem meio-tom.
     // O alfa é 0 ou 1 (nada de meio-tom): o que apaga vira trama, e o que some vira ausência.
     const degrau = (v) => (v > 0.45 ? 1 : 0);
@@ -1593,14 +2258,22 @@ export class Fx {
       const s = it.cresce[0] + (it.cresce[1] - it.cresce[0]) * Math.min(1, k);
       const w = Math.round(cv.width * s);
       const h = Math.round(cv.height * s);
-      ctx.drawImage(cv, Math.round(sx - w / 2), Math.round(sy - it.altura - h / 2), w, h);
+      ctx.drawImage(cv, Math.round(sx - w / 2), Math.round(sy - h / 2), w, h);
     } else {
-      ctx.drawImage(cv, Math.round(sx - cv.width / 2), Math.round(sy - it.altura - cv.height / 2));
+      ctx.drawImage(cv, Math.round(sx - cv.width / 2), Math.round(sy - cv.height / 2));
     }
     ctx.restore();
   }
 
   drawOver(ctx, board) {
+    // O tabuleiro de cima não tem o laço de profundidade que chamava as camadas: os domos entram aqui, por cima das fichas.
+    for (const o of this.domosAtivos(board)) this.desenharDomo(ctx, board, o, 'tras');
+    for (const it of this.items) {
+      if (it.kind === 'arte' && !it.noChao) this.desenharArte(ctx, board, it, Math.min(1, it.t / it.dur));
+      if (it.kind === 'voo') this.desenharVoo(ctx, board, it);
+      if (it.kind === 'feixe') this.desenharFeixe(ctx, board, it, Math.min(1, it.t / it.dur));
+      if (it.kind === 'cone') this.desenharCone(ctx, board, it, Math.min(1, it.t / it.dur));
+    }
     for (const it of this.items) {
       const k = Math.min(1, it.t / it.dur);
       const at = (tile) => board.centerF(tile.x, tile.y);
@@ -1613,7 +2286,7 @@ export class Fx {
             it.from.y + (it.to.y - it.from.y) * e,
           );
           const lift = Math.sin(e * Math.PI) * 40 * it.arc;
-          let y = p.sy - CHEST - lift;
+          let y = p.sy - lift;
           const ang = Math.atan2(it.to.y - it.from.y, it.to.x - it.from.x);
 
           if (it.trail && it.past) {
@@ -1623,7 +2296,7 @@ export class Fx {
               ctx.globalAlpha = Math.max(0, 1 - q.age / 0.22) * 0.5;
               ctx.fillStyle = it.color;
               const s = 5 * (1 - q.age / 0.22);
-              ctx.fillRect(qp.sx - s / 2, qp.sy - CHEST - q.lift - s / 2, s, s);
+              ctx.fillRect(qp.sx - s / 2, qp.sy - q.lift - s / 2, s, s);
             }
             ctx.restore();
           }

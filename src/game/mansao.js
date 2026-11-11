@@ -23,7 +23,8 @@ export const MAPA_MANSAO = {
       },
       "claro": 15,
       "penumbra": 15,
-      "tipo": "fogueira"
+      "tipo": "fogueira",
+      "sobreposicao": "luzMansao0"
     },
     {
       "pos": {
@@ -32,7 +33,8 @@ export const MAPA_MANSAO = {
       },
       "claro": 5,
       "penumbra": 5,
-      "tipo": "vela"
+      "tipo": "vela",
+      "sobreposicao": "luzMansao1"
     },
     {
       "pos": {
@@ -41,7 +43,8 @@ export const MAPA_MANSAO = {
       },
       "claro": 15,
       "penumbra": 15,
-      "tipo": "tocha"
+      "tipo": "tocha",
+      "sobreposicao": "luzMansao2"
     },
     {
       "pos": {
@@ -50,7 +53,8 @@ export const MAPA_MANSAO = {
       },
       "claro": 15,
       "penumbra": 15,
-      "tipo": "tocha"
+      "tipo": "tocha",
+      "sobreposicao": "luzMansao3"
     },
     {
       "pos": {
@@ -59,7 +63,8 @@ export const MAPA_MANSAO = {
       },
       "claro": 15,
       "penumbra": 15,
-      "tipo": "tocha"
+      "tipo": "tocha",
+      "sobreposicao": "luzMansao4"
     },
     {
       "pos": {
@@ -68,7 +73,8 @@ export const MAPA_MANSAO = {
       },
       "claro": 15,
       "penumbra": 15,
-      "tipo": "tocha"
+      "tipo": "tocha",
+      "sobreposicao": "luzMansao5"
     },
     {
       "pos": {
@@ -77,7 +83,8 @@ export const MAPA_MANSAO = {
       },
       "claro": 15,
       "penumbra": 15,
-      "tipo": "tocha"
+      "tipo": "tocha",
+      "sobreposicao": "luzMansao6"
     },
     {
       "pos": {
@@ -86,7 +93,8 @@ export const MAPA_MANSAO = {
       },
       "claro": 15,
       "penumbra": 15,
-      "tipo": "tocha"
+      "tipo": "tocha",
+      "sobreposicao": "luzMansao7"
     },
     {
       "pos": {
@@ -95,7 +103,8 @@ export const MAPA_MANSAO = {
       },
       "claro": 15,
       "penumbra": 15,
-      "tipo": "tocha"
+      "tipo": "tocha",
+      "sobreposicao": "luzMansao8"
     },
     {
       "pos": {
@@ -104,7 +113,8 @@ export const MAPA_MANSAO = {
       },
       "claro": 15,
       "penumbra": 15,
-      "tipo": "tocha"
+      "tipo": "tocha",
+      "sobreposicao": "luzMansao9"
     },
     {
       "pos": {
@@ -113,14 +123,116 @@ export const MAPA_MANSAO = {
       },
       "claro": 15,
       "penumbra": 15,
-      "tipo": "tocha"
+      "tipo": "tocha",
+      "sobreposicao": "luzMansao10"
+    }
+  ],
+  "sobreposicoes": [
+    {
+      "id": "luzMansao0",
+      "url": "/mapas/fa/mansao-acesa-0.webp",
+      "x": 11,
+      "y": 1,
+      "w": 15,
+      "h": 15,
+      "ligada": true
+    },
+    {
+      "id": "luzMansao1",
+      "url": "/mapas/fa/mansao-acesa-1.webp",
+      "x": 5,
+      "y": 0,
+      "w": 7,
+      "h": 6,
+      "ligada": true
+    },
+    {
+      "id": "luzMansao2",
+      "url": "/mapas/fa/mansao-acesa-2.webp",
+      "x": 10,
+      "y": 0,
+      "w": 15,
+      "h": 10,
+      "ligada": true
+    },
+    {
+      "id": "luzMansao3",
+      "url": "/mapas/fa/mansao-acesa-3.webp",
+      "x": 14,
+      "y": 0,
+      "w": 15,
+      "h": 13,
+      "ligada": true
+    },
+    {
+      "id": "luzMansao4",
+      "url": "/mapas/fa/mansao-acesa-4.webp",
+      "x": 10,
+      "y": 7,
+      "w": 15,
+      "h": 13,
+      "ligada": true
+    },
+    {
+      "id": "luzMansao5",
+      "url": "/mapas/fa/mansao-acesa-5.webp",
+      "x": 17,
+      "y": 6,
+      "w": 13,
+      "h": 14,
+      "ligada": true
+    },
+    {
+      "id": "luzMansao6",
+      "url": "/mapas/fa/mansao-acesa-6.webp",
+      "x": 17,
+      "y": 9,
+      "w": 13,
+      "h": 11,
+      "ligada": true
+    },
+    {
+      "id": "luzMansao7",
+      "url": "/mapas/fa/mansao-acesa-7.webp",
+      "x": 0,
+      "y": 0,
+      "w": 14,
+      "h": 12,
+      "ligada": true
+    },
+    {
+      "id": "luzMansao8",
+      "url": "/mapas/fa/mansao-acesa-8.webp",
+      "x": 0,
+      "y": 0,
+      "w": 11,
+      "h": 13,
+      "ligada": true
+    },
+    {
+      "id": "luzMansao9",
+      "url": "/mapas/fa/mansao-acesa-9.webp",
+      "x": 0,
+      "y": 4,
+      "w": 12,
+      "h": 15,
+      "ligada": true
+    },
+    {
+      "id": "luzMansao10",
+      "url": "/mapas/fa/mansao-acesa-10.webp",
+      "x": 0,
+      "y": 8,
+      "w": 12,
+      "h": 12,
+      "ligada": true
     }
   ],
   "terreno": [
     "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
     "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
     "RR^^Le^mLLL^sLLLLLgRpLpRRRRRRR",
-    "RR^^LLLLLLL^LL^RLLgRLpLRRRRRRR",
+    "RR^^LLLLLLL^LL^RLLgR&pLRRRRRRR",
     "RR^^LLLKLzLLLLsRLL^RLL&RRRRRRR",
     "RR^LL^RRRRRR__RRLLLLLLsRRRRRRR",
     "RRRRLLLLLRxx___RQLLQLLLRRRRRRR",
@@ -1672,15 +1784,21 @@ export const MANSAO = {
     },
     {
       "tipo": "prop",
+      "x": 20,
+      "y": 3,
+      "variante": "trapos"
+    },
+    {
+      "tipo": "prop",
       "x": 22,
       "y": 9,
-      "variante": "pilarQuebrado"
+      "variante": "pilarAnao"
     },
     {
       "tipo": "prop",
       "x": 26,
       "y": 9,
-      "variante": "pilarQuebrado"
+      "variante": "pilarAnao"
     },
     {
       "tipo": "prop",

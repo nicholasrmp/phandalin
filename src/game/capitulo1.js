@@ -5,15 +5,17 @@
 //               Cada herói escolhido ganha a sua linha (o "porquê" da
 //               história dele), então a abertura muda com o grupo.
 //   exploração  o grupo anda livre pela estrada, sem iniciativa. Depois da
-//               curva, a quinze metros, os cavalos mortos. Três goblins,
-//               dois ao norte e um ao sul, esperam alguém chegar aos cavalos e atacam
-//               (ou quando esbarram em alguém, ou se o grupo passa reto).
-//   combate     uma rolagem de Furtividade para os três contra a Percepção
+//               curva, a quinze metros, dois cavalos soltos na estrada (os de
+//               Gundren e de Sildar, no Obelisco; na Mina estavam mortos).
+//               Quatro goblins, dois de cada lado, esperam alguém chegar aos
+//               cavalos e atacam (ou quando esbarram em alguém, ou se o grupo
+//               passa reto).
+//   combate     uma rolagem de Furtividade para os quatro contra a Percepção
 //               passiva de cada herói decide quem fica surpreso; o grupo não
-//               tem como surpreendê-los. Os três ficam no alto do barranco
+//               tem como surpreendê-los. Eles ficam no alto do barranco
 //               e atiram — a IA prefere terreno alto com arma à distância —, e
-//               quem desce é quem perde o tiro. Caída METADE do bando, o resto
-//               foge pela trilha do norte.
+//               quem desce é quem perde o tiro. Lutam até sobrar UM, que foge
+//               pela trilha do norte (o livro).
 //   depois      os cavalos (se ninguém os examinou), os rastros (Sobrevivência
 //               CD 10), o goblin capturado vivo para interrogar — que pode
 //               guiar o grupo desviando das armadilhas — e a escolha: a trilha
@@ -84,9 +86,9 @@ export function criarCapitulo1(app, config) {
         {
           titulo: 'Neverwinter',
           texto: [
-            'A taverna perto das docas cheira a peixe frito e a chuva que não passa. Num canto, um anão de barba ruiva e nariz queimado de sol espalha papéis pela mesa e paga rodadas para quem senta perto. Chama-se Gundren Buscapedra, e tem pressa.',
-            'Ele precisa de gente para levar uma carroça de suprimentos até a Barthen Provisões, um posto de troca em Phandalin — vila sem lei a dois dias de viagem a sudeste. Gundren vai na frente, a cavalo, com o guerreiro Sildar Hallwinter, porque tem "negócios" a acertar antes. Paga dez peças de ouro a cada um, na entrega.',
-            'Entre um gole e outro, deixa escapar que ele e os irmãos acharam algo grande nas colinas. Quando alguém pergunta o quê, ele muda de assunto rápido demais.',
+            'Dez peças de ouro cada um, na entrega. É assim que a conversa começa, antes mesmo dos nomes — o anão põe a bolsa na mesa, deixa que se ouça o peso dela e só então se apresenta: Gundren Buscapedra, barba ruiva, nariz queimado de sol, pressa de quem já devia ter partido ontem.',
+            'A taverna perto das docas cheira a peixe frito e a chuva que não passa, e a mesa dele está coberta de papéis que ele vira para baixo quando alguém se aproxima demais. O serviço é simples: uma carroça de suprimentos até a Barthen Provisões, em Phandalin, dois dias a sudeste. Vila sem lei, ele admite, dando de ombros, como quem diz que é por isso que paga bem.',
+            'Ele não vai na carroça. Vai na frente, a cavalo, com um guerreiro de cabelo grisalho chamado Sildar Hallwinter, porque tem negócios a acertar antes — e a palavra negócios sai com uma pausa dos dois lados. Perguntado o que ele e os irmãos andaram achando nas colinas, o anão ri alto, serve outra rodada e fala do tempo.',
           ],
         },
         {
@@ -126,7 +128,7 @@ export function criarCapitulo1(app, config) {
       formato: 'painel',
       paginas: [{
         texto: [
-          'Depois de uma curva, a uns quinze metros, dois cavalos mortos atravessados na estrada, cheios de flechas de penas pretas. A mata aperta aqui: um barranco alto e mato fechado dos dois lados.',
+          'Depois de uma curva, a uns quinze metros, dois cavalos soltos no meio da estrada, ainda de sela, fuçando um monte de coisas reviradas no chão. Em volta, flechas de penas pretas cravadas na terra e trapos rasgados. A mata aperta aqui: um barranco alto e mato fechado dos dois lados.',
           'Explorem a estrada: cliquem num herói e depois no chão para andar. Cheguem perto dos cavalos para examiná-los. (Para pegar alguém vivo, botão direito no herói: golpes não letais.)',
         ],
       }],
@@ -154,7 +156,7 @@ export function criarCapitulo1(app, config) {
         formato: 'painel',
         paginas: [{
           texto: [
-            `${c.name} se agacha ao lado dos cavalos. São os de Gundren e de Sildar, mortos há coisa de um dia pelas flechas. Os alforjes foram esvaziados, e ao lado há um tubo de guardar mapa, vazio.`,
+            `${c.name} chega perto dos cavalos, que nem se assustam. São os de Gundren e de Sildar: as selas são deles. Os alforjes foram esvaziados e revirados, e no chão, entre as coisas espalhadas, há um tubo de couro de guardar mapa, aberto e vazio.`,
             'Um assobio corta o ar. Dos dois lados da estrada, o mato se levanta.',
           ],
         }],
@@ -179,8 +181,9 @@ export function criarCapitulo1(app, config) {
   }
 
   // --------------------------------------------------- o último foge ----
-  // Na aventura, caídos três goblins, o último foge pela trilha do norte — e
-  // é a trilha dele que leva ao esconderijo.
+  // O livro: os goblins lutam até a morte, até sobrar UM, e esse foge pela trilha do norte — a trilha dele leva ao
+  // esconderijo. A regra de antes (fugir quando metade caía) era nossa: com ela a fuga quase sempre acontecia; com
+  // a do livro, o último às vezes cai antes de chegar à saída, e aí quem leva ao esconderijo são os rastros.
   const SAIDA = { x: 19, y: 0 };
   function evento(ev) {
     if ((ev.type !== 'died' && ev.type !== 'downed') || !escondidos.includes(ev.target)) return;
@@ -194,12 +197,10 @@ export function criarCapitulo1(app, config) {
     // último goblin morria antes de chegar à saída. E é essa fuga que leva o
     // grupo ao esconderijo e abre o interrogatório, ou seja, o conteúdo da
     // cena dependia de um caso que não acontecia.
-    if (caidos >= 2 && emPe.length) {
-      for (const g of emPe) {
-        if (g.fugindo) continue;
-        g.fugindo = true;
-        enc.say('acao', `${g.name} vê o bando cair, larga tudo e corre para a trilha do norte.`);
-      }
+    void caidos;
+    if (emPe.length === 1 && !emPe[0].fugindo) {
+      emPe[0].fugindo = true;
+      enc.say('acao', `${emPe[0].name} se vê sozinho, larga tudo e corre para a trilha do norte.`);
     }
   }
   enc.antesDoTurno = (m) => {
@@ -310,8 +311,27 @@ export function criarCapitulo1(app, config) {
         conta: {
           ao: (ctx) => { ctx.flags.sabeDoEsconderijo = true; ctx.flags.sabeDoCastelo = true; },
           fala: [
-            'Tá bom, tá bom! O esconderijo é perto, pela trilha. Menos de vinte goblins lá. O chefe é Klarg, um bugbear grandão. Klarg obedece ao Rei Grol, do Castelo Dentefino — longe, no noroeste, na Floresta de Neverwinter.',
-            'Uns dias atrás veio recado do Rei Grol: alguém chamado Aranha Negra paga para pegar o anão, Gundren, e mandar ele e as coisas dele para o castelo. Klarg fez. O anão e o mapa já foram para o Rei Grol. O humano que andava com ele ficou no esconderijo, na caverna de comer.',
+            'O anão já foi! Já foi, não tá mais aqui! Levaram ele e as coisas dele para o Rei Grol, no Castelo Dentefino, longe, no noroeste, dentro da floresta. O outro, o humano de cabelo cinza, esse ficou. Está na caverna de comer, amarrado.',
+            'Por que levaram? Porque mandaram. Veio recado do rei: tem um que se chama Aranha Negra, e o Aranha Negra paga para ter o anão e o que o anão carrega. Klarg fez na hora. Klarg é o chefe daqui, bugbear grandão, e Klarg gosta de fazer o que o rei manda antes dos outros fazerem.',
+            'Quantos? Menos que vinte. Bem menos, se contar os que prestam. E é perto, por esta trilha mesmo, e tem laço e tem buraco no caminho, e eu sei onde — eu sei onde!',
+          ],
+          opcoes: [
+            { texto: 'Mais alguém anda por estas trilhas?', vai: 'estranhos', uma: true },
+            { texto: 'Leva a gente até o esconderijo, desviando das armadilhas.', fim: 'guia' },
+            { texto: 'Deixar ele amarrado e seguir.', fim: 'larga' },
+          ],
+        },
+        // O FIO DO OBELISCO: os goblins de fora, como os Cragmaw os conhecem — de vista, e com medo.
+        estranhos: {
+          ao: (ctx) => {
+            ctx.flags.goblinsDeFora = true;
+            const vila = ((app.campanha ??= {}).vila ??= { pistas: [], missoes: {} });
+            const t = 'Goblins de fora: um goblin Cragmaw fala de goblins de crânio comprido, que às vezes se juntam às emboscadas com as armas cercadas de um brilho verde, riem e vão embora. Os Cragmaw têm medo deles.';
+            if (!(vila.pistas ??= []).includes(t)) vila.pistas.push(t);
+          },
+          fala: [
+            'Os outros? Os outros não são Cragmaw. Cabeça comprida, assim, esticada para trás. Aparecem do nada no meio de uma emboscada, brigam junto, e quando batem a arma deles brilha verde, verde de doer o olho.',
+            'Depois riem — riem de um jeito que goblin não ri — e vão embora sem levar nada, sem dizer de onde vêm. Hoje não vieram. Goblin tem medo deles. Vocês também deviam ter.',
           ],
           opcoes: [
             { texto: 'Leva a gente até o esconderijo, desviando das armadilhas.', fim: 'guia' },
@@ -389,7 +409,7 @@ export function criarCapitulo1(app, config) {
     const paginas = [];
     if (outcome === 'vitoria' && !estado.examinou) {
       paginas.push({ titulo: 'Depois da luta', texto: [
-        'Os cavalos no meio da estrada são os de Gundren e de Sildar, mortos há um dia pelas flechas. Os alforjes foram esvaziados; ao lado, um tubo de guardar mapa, vazio.',
+        'Os cavalos no meio da estrada são os de Gundren e de Sildar. Os alforjes foram esvaziados e revirados; no chão, um tubo de guardar mapa, vazio. Os bichos estão bem — dá para levá-los junto, se o grupo quiser.',
       ] });
     }
 
@@ -508,7 +528,7 @@ export function criarCapitulo1(app, config) {
         titulo: 'Fim do primeiro capítulo',
         texto: [
           outcome === 'vitoria'
-            ? 'Vocês põem a carroça de volta na estrada. Em Phandalin, Elmar Barthen espera a carga — e vai querer saber de Gundren.'
+            ? 'Vocês põem a carroça de volta na estrada. Em Phandalin, Elmina Barthen espera a carga — e vai querer saber de Gundren.'
             : 'Vocês seguem a pé para Phandalin. Lá dá para comprar equipamento novo na Barthen Provisões, descansar e voltar atrás da trilha.',
         ],
       }],
@@ -571,7 +591,7 @@ export function criarCapitulo1(app, config) {
     await narrar(root, {
       formato: 'painel',
       paginas: [{ teste: t, texto: [t.passou
-        ? `${c.name} lê o chão: pegadas pequenas, muitas, de pés descalços e botas gastas. E dois sulcos de algo pesado sendo arrastado, saindo da estrada para o mato ao norte. Quem derrubou os cavalos levou os cavaleiros.`
+        ? `${c.name} lê o chão: pegadas pequenas, muitas, de pés descalços e botas gastas. E dois sulcos de algo pesado sendo arrastado, saindo da estrada para o mato ao norte. Quem derrubou os cavaleiros os levou junto.`
         : `${c.name} procura no chão, mas a terra batida da estrada não conta muita coisa.`] }],
     });
     estado.explorando = true;
@@ -617,8 +637,22 @@ export function criarCapitulo1(app, config) {
             c.actionUsed = true;
             estado.examinou = true;
             await narrar(root, { formato: 'painel', paginas: [{ texto: [
-              'São os cavalos de Gundren e de Sildar, mortos há um dia. Os alforjes foram esvaziados; ao lado, um tubo de guardar mapa, vazio.'] }] });
+              'São os cavalos de Gundren e de Sildar, soltos e assustados. Os alforjes foram esvaziados; no chão, um tubo de guardar mapa, vazio.'] }] });
             app.afterAct();
+          },
+        });
+      }
+      // OS CAVALOS VÊM JUNTO, se o grupo quiser (o Obelisco deixa a escolha aos jogadores).
+      const camp = (app.campanha ??= {});
+      if (estado.explorando && !camp.cavalosDeGundren) {
+        ops.push({
+          rotulo: 'Levar os cavalos', icone: 'acao-usarObjeto', detalhe: 'os de Gundren e de Sildar',
+          motivo: escondidos.some((f) => !f.dead && !f.fugiu && f.hp > 0) ? 'os goblins ainda estão no mato' : longe(10),
+          fazer: async () => {
+            camp.cavalosDeGundren = true;
+            await narrar(root, { formato: 'painel', paginas: [{ texto: [
+              `${c.name} pega as rédeas e amarra os dois cavalos atrás da carroça. Eles vêm sem reclamar — quem vai querer saber deles, em Phandalin, é o Sildar, se aparecer.`] }] });
+            app.refresh();
           },
         });
       }
@@ -680,10 +714,10 @@ export function criarCapitulo1(app, config) {
       // Como na aventura: o grupo vem pela curva, e os cavalos estão a uns
       // vinte metros — medido no mapa, de (8,11) até (18,12).
       //
-      // Dois goblins são ATIRADORES declarados (A e C, em `foesEmboscada`); o
-      // outro a IA também deixa parado no alto, porque a regra do
+      // Dois goblins são ATIRADORES declarados (A e C, em `foesEmboscada`); os
+      // outros a IA também deixa parados no alto, porque a regra do
       // terreno alto com arma à distância vale para todo mundo. Na prática os
-      // três abrem atirando, e isso É a emboscada do livro: o perigo vem de
+      // quatro abrem atirando, e isso É a emboscada do livro: o perigo vem de
       // cima e de longe.
       const LUGARES = [{ x: 8, y: 11 }, { x: 8, y: 12 }, { x: 7, y: 11 }, { x: 7, y: 13 }];
       enc.allOf('party').forEach((c, i) => { if (LUGARES[i]) c.pos = { ...c.pos, ...LUGARES[i] }; });

@@ -587,8 +587,32 @@ def _area(i):
     return {(c['x'], c['y']) for c in AREAS[i]}
 
 
+# A CASA QUE NINGUEM ALCANCA VIRA ROCHA, e nao fica no mapa como chao de mentira.
+#
+# Isto ja era CONTADO aqui desde sempre ("casas de area sem alcance: 6") e nunca foi consertado: seis casas
+# de chao que a chegada nao alcanca nem com toda porta aberta — (5,33), (5,34), (6,34), (30,78), (36,11) e
+# (51,9). A conta de componentes la de cima nao as pega porque ela roda sobre `CHAO`, que inclui o fosso e a
+# agua funda; estas estao cercadas justamente por fosso e rocha, entao em `CHAO` elas fazem parte de um
+# pedaco grande e so o motor, que nao deixa pisar no fosso, as isola. A (36,11), por exemplo, tem rocha nos
+# quatro lados menos o fosso de (35,11).
+#
+# Chao que ninguem pisa e pior que rocha: ele entra na conta de area, na escolha de posto e no desenho, e um
+# dia alguem vai medir alguma coisa com ele dentro. Vira rocha, e o gerador se recusa a escrever se sobrar.
 _ISOLADAS = sorted((c['x'], c['y']) for v in AREAS.values() for c in v if (c['x'], c['y']) not in _ALC and T[c['y']][c['x']] not in 'R|O')
-print('casas de area sem alcance (fora agua e fosso):', len(_ISOLADAS), _ISOLADAS[:30])
+for (_x, _y) in _ISOLADAS:
+    T[_y][_x] = 'R'
+    CHAO.discard((_x, _y))
+    SALA_DE.pop((_x, _y), None)
+    AREA_DE.pop((_x, _y), None)
+for _id in list(AREAS):
+    AREAS[_id] = [c for c in AREAS[_id] if (c['x'], c['y']) not in set(_ISOLADAS)]
+for _nome in list(INTERIOR):
+    INTERIOR[_nome] = {c for c in INTERIOR[_nome] if c not in set(_ISOLADAS)}
+print('casas de area sem alcance viraram rocha:', len(_ISOLADAS), _ISOLADAS[:30])
+_SOBROU = [(c['x'], c['y']) for v in AREAS.values() for c in v
+           if (c['x'], c['y']) not in _ALC and T[c['y']][c['x']] not in 'R|O']
+if _SOBROU:
+    raise SystemExit(f'ainda ha {len(_SOBROU)} casa(s) de chao que ninguem alcanca: {_SOBROU[:10]}')
 print('areas alcancaveis:', {k: str(len([c for c in v if (c['x'], c['y']) in _ALC])) + '/' + str(len(v)) for k, v in sorted(AREAS.items(), key=lambda kv: int(kv[0]))})
 _isoladas = _componentes({c for c in _LIVRE if c not in _ALC})
 for _comp in sorted(_isoladas, key=len, reverse=True)[:3]:
@@ -598,23 +622,89 @@ for _comp in sorted(_isoladas, key=len, reverse=True)[:3]:
     print('ilha de', len(_comp), 'casas, x', min(c[0] for c in _comp), max(c[0] for c in _comp), 'y', min(c[1] for c in _comp), max(c[1] for c in _comp), '| a mais perto do resto:', _m)
 _a3 = _area('3')
 _a9_oeste = {c for c in _area('9') if c[0] <= 31}
+
+
+# ---- O QUE O OBELISCO POE NA ONDA ECO (revisoes/obelisco-de-para-2026-11-08.md) ----------------------------------
+def _centro(cels):
+    cs = sorted(cels)
+    cx = sum(c[0] for c in cs) / len(cs)
+    cy = sum(c[1] for c in cs) / len(cs)
+    return min(cs, key=lambda c: ((c[0] - cx) ** 2 + (c[1] - cy) ** 2, c))
+
+
+def _na_agua(ret, lado, ancora, alcance_da_margem=None):
+    """O bloco `lado` x `lado` inteiro dentro da AGUA FUNDA do retangulo, o mais perto da ancora: o bicho que MORA na
+    agua nasce nela, e nao na margem. Com `alcance_da_margem`, so serve o bloco que alcanca a terra dali (o polvo tem
+    4,5 m de tentaculo e o livro manda ele pegar quem esta na borda)."""
+    x0, y0, x1, y1 = ret
+    ok = []
+    for y in range(y0, y1 + 1):
+        for x in range(x0, x1 + 1):
+            bl = [(x + i, y + j) for j in range(lado) for i in range(lado)]
+            if not all(b in AGUA_FUNDA for b in bl):
+                continue
+            if alcance_da_margem is not None:
+                perto = any(t in _LIVRE and t in _ALC for b in bl
+                            for t in [(b[0] + i, b[1] + j) for i in range(-alcance_da_margem, alcance_da_margem + 1)
+                                      for j in range(-alcance_da_margem, alcance_da_margem + 1)])
+                if not perto:
+                    continue
+            ok.append((x, y))
+    if not ok:
+        raise SystemExit('ERRO: nenhum bloco ' + str(lado) + ' x ' + str(lado) + ' de agua em ' + str(ret))
+    ok.sort(key=lambda c: ((c[0] - ancora[0]) ** 2 + (c[1] - ancora[1]) ** 2, c))
+    return [ok[0]]
+
+
+# AREA 4, a guarita: o Obelisco trocou os NOVE ESQUELETOS da Mina por oito cadaveres que levantam — dois zumbis
+# ogros (Grandes, 2 x 2) e seis zumbis anoes. Os ogros primeiro, que precisam de mais chao.
+_a4 = _area('4')
+_ogros = _grandes(_a4, 2, _centro(_a4))
+_tomadas_ogros = {(x + i, y + j) for (x, y) in _ogros for j in (0, 1) for i in (0, 1)}
+_USADAS.update(_tomadas_ogros)
+
+# AREA 8, a caverna dos fungos: o Obelisco tirou o GAS VENENOSO da Mina e pos dois fungos violeta, um no meio do
+# canteiro central e um no canteiro do norte. Os canteiros sao os pedacos de fungo da area, medidos pela cor.
+_f8 = {c for c in FUNGOS if c in _area('8') and c in _LIVRE and c in _ALC}
+_canteiros = sorted(_componentes(_f8), key=len, reverse=True)
+_meio8 = _centro(_area('8'))
+_central = min(_canteiros, key=lambda k: min((c[0] - _meio8[0]) ** 2 + (c[1] - _meio8[1]) ** 2 for c in k))
+_outros = [k for k in _canteiros if k is not _central and len(k) >= 4]
+_do_norte = min(_outros, key=lambda k: sum(c[1] for c in k) / len(k))
+_fungos_violeta = [_centro(_central), _centro(_do_norte)]
+_USADAS.update(_fungos_violeta)
+
+# AREA 10, o poco escuro: a serpente constritora gigante (Enorme, 3 x 3) mora no lago e sai dele para atacar quem
+# passa por ultimo. Nasce na agua, do lado da margem leste, que e por onde se passa.
+_serpente = _na_agua((7, 21, 13, 34), 3, (12, 27), alcance_da_margem=1)
+
+# AREA 16, a caverna trovejante: o polvo gigante (Grande, 2 x 2) e atraido por luz acima da agua. Nasce no mar, ao
+# alcance dos tentaculos (4,5 m, tres casas) da borda que abraca a parede sul.
+_a16 = _area('16')
+_borda16 = _centro({c for c in _a16 if c in _LIVRE and c in _ALC})
+_polvo = _na_agua((51, 0, W - 1, 23), 2, _borda16, alcance_da_margem=3)
+
 NINHOS = {
-    'stirges': _espalha(_a3, 10),                                   # area 3: pendurados no teto
-    'esqueletos': _espalha(_area('4'), 9),                          # area 4: os ossos da guarita
+    'stirges': _espalha(_a3, 6),                                    # area 3: seis no teto (Obelisco)
+    'zumbisOgros': _ogros,                                           # area 4: os dois ogros (Obelisco)
+    'zumbisGuarita': _espalha(_a4 - _tomadas_ogros, 6),             # area 4: os seis anoes (Obelisco)
+    'fungosVioleta': _fungos_violeta,                               # area 8: central e do norte (Obelisco)
+    'serpente': _serpente,                                          # area 10: no lago (Obelisco)
+    'polvo': _polvo,                                                # area 16: no mar (Obelisco)
     'ghoulsSul': _espalha(_area('6'), 3),                           # area 6: roendo ossos
-    'ghoulsGrande': _espalha(_a9_oeste, 4),                         # area 9: na elevacao oeste (o livro diz 7 ghouls ao todo: 3 na area 6)
+    'ghoulsGrande': _espalha(_a9_oeste, 5),                         # area 9: cinco na elevacao oeste (Obelisco; 3 na area 6)
     'gosma': _grandes(_area('2'), 1, (12, 56)),                     # area 2: nos tuneis
-    'bugbearsNorte': _espalha(INTERIOR['alojNorte'], 5),            # area 11
+    'bugbearsNorte': _espalha(INTERIOR['alojNorte'], 6),            # area 11: seis, um maior (Obelisco)
     'zumbis': _espalha(_area('12'), 8),                             # area 12
     'caveira': _perto((44, 29), 1),                                 # area 12: a caveira flamejante, sobre os mortos
     'mormesk': _perto((67, 54), 1),                                 # area 14: surge do chao
     'espectador': _perto((66, 38), 1),                              # area 15: atras do braseiro
     'bugbearsFenda': _perto((30, 7), 1) + _perto((30, 14), 1),      # area 18: sobem pelas cordas
-    'bugbearGuarda': _perto((24, 10), 1),
+    'bugbearGuarda': _perto((24, 10), 2),                          # area 18: dois de guarda, dois na fenda (Obelisco)
     'vhalak': _perto((26, 13), 1),                                  # area 18: o doppelganger, de drow
     'nezznar': _perto((7, 9), 1),                                   # area 19
     'bugbearsTemplo': _perto((6, 9), 2),
-    'aranhasTemplo': _grandes(INTERIOR['templo'] - set(_USADAS), 4, (9, 5)),
+    'aranhasTemplo': [],                                            # area 19: o Obelisco tirou as aranhas (Nezznar + 2 bugbears)
     'nundro': _perto((15, 6), 1),                                   # area 20
 }
 for _k, _v in NINHOS.items():
@@ -635,10 +725,44 @@ print('bandos:', {k: len(v) for k, v in NINHOS.items()})
 # ao lado nao a enxerga. Quem entra leva tocha.
 L = [[0] * W for _ in range(H)]
 LUZES = []
+# OS FUNGOS ACENDEM A CAVERNA INTEIRA, e nao so a casa em que estao. O livro, area 8: "os fungos
+# verde-brilhantes permitem que as criaturas possam ver TODA A CAVERNA sem ajuda de visao no escuro ou uma
+# fonte de luz". Acendiamos uma casa por fungo, e a area 8 ficava com 124 das 201 casas em penumbra e o resto
+# no breu -- quem entrasse sem tocha nao via a caverna que o livro descreve como visivel.
 for (_x, _y) in FUNGOS:
     L[_y][_x] = 1
-for (_x, _y, _tipo) in ((26, 27, 'braseiro'), (9, 9, 'fogueira'), (65, 37, 'chama verde')):
-    LUZES.append({'pos': {'x': _x, 'y': _y}, 'claro': 30, 'penumbra': 30, 'tipo': 'fogueira'})
+for _c in _area('8'):
+    if T[_c[1]][_c[0]] not in 'R':
+        L[_c[1]][_c[0]] = max(L[_c[1]][_c[0]], 1)
+# ... E A CHAMA VERDE E VERDE. O tipo de cada luz ja estava escrito nesta tupla e a linha seguinte o JOGAVA
+# FORA, escrevendo `'fogueira'` nas tres: o braseiro do alojamento, a fogueira do templo e a chama verde da
+# forja saiam todas laranja, com animacao de fogo. O livro poe fogo verde em dois lugares -- "um braseiro no
+# qual uma estranha luz verde" (15) e "uma caveira envolta por uma chama verde" (12) --, e `rules/luz.js` ja
+# tem o tipo `magica` com pulso. A caveira, que nao tinha luz nenhuma, ganhou a dela.
+#
+# ... E OS BRASEIROS DA CENA DO FOUNDRY DA FA, nas casas que `importar-foundry.py` da. Esta lista ja foi escrita a mao com a
+# moldura ERRADA: a vertical e `ceil(padding * ALTURA)`, 2300 px, e foi usado 1900, entao tudo saia QUATRO CASAS AO SUL (o
+# braseiro pintado em 16,7 virava "tocheiro de parede" em 16,11, dentro da rocha). A figura desmentiu: recortar o desenho em
+# volta de cada luz mostra na hora se ha chama ali. O importador sempre esteve certo; nao se copia coordenada a mao.
+#
+# Das 22 luzes da cena, medidas no desenho e na nossa planta:
+#     27,28  66,38  9,10     sao as nossas 26,27, 65,37 e 9,9, ja acima (a luz deles cai na quina entre quatro casas)
+#     16,7   36,57           braseiros acesos na cena: entram aqui
+#     33,38  41,47  10,72    `hidden` na cena, ou seja, APAGADOS: entram com `apagada`, e o grupo pode acender (`game/fogo.js`)
+#     60,66                  a nevoa verde da caverna dos fungos, que a grade acima ja acende, e nao se apaga
+#     62,46  61,33 e as oito de `starlight` (area 13) nao tem chama no desenho: sao o brilho do teto, e pelo nosso texto a
+#                            caverna so devolve a luz de quem chega. Nao entram, porque nao haveria o que apagar
+#     8,4  9,4               1 pe de alcance: enfeite
+_DA_FA = ((16, 7, 'braseiro', 15, 30), (36, 57, 'braseiro', 15, 30))
+_APAGADAS_NA_FA = ((33, 38, 'braseiro', 20, 40), (41, 47, 'braseiro', 20, 40), (10, 72, 'braseiro', 15, 30))
+for (_x, _y, _tipo, _claro, _pen) in ((26, 27, 'braseiro', 30, 30), (9, 9, 'fogueira', 30, 30),
+                                      (65, 37, 'magica', 30, 30), (NINHOS['caveira'][0]['x'], NINHOS['caveira'][0]['y'], 'magica', 10, 10)) + _DA_FA:
+    _l = {'pos': {'x': _x, 'y': _y}, 'claro': _claro, 'penumbra': _pen, 'tipo': _tipo}
+    if _tipo == 'magica':
+        _l['cor'] = '#5bff8f'      # verde de chama fria, nao o azul da magia comum
+    LUZES.append(_l)
+for (_x, _y, _tipo, _claro, _pen) in _APAGADAS_NA_FA:
+    LUZES.append({'pos': {'x': _x, 'y': _y}, 'claro': _claro, 'penumbra': _pen, 'tipo': _tipo, 'apagada': True})
 
 # A ROCHA TEM VOLUME: as casas de rocha junto de chao sobem UM nivel acima do chao mais alto que tocam (um paredao, com a
 # face de penhasco), em vez de um piso azul chapado; o resto da rocha, que ninguem ve, fica no nivel 0.

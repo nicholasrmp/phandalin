@@ -259,8 +259,9 @@ class Audio {
     const inicio = Math.random() * Math.max(0, src.buffer.duration - dur - 0.1);
     const filter = this.ctx.createBiquadFilter();
     filter.type = type;
-    filter.frequency.setValueAtTime(freq, t0);
-    if (sweepTo) filter.frequency.exponentialRampToValueAtTime(Math.max(40, sweepTo), t0 + dur);
+    const tom = this.tom ?? 1;
+    filter.frequency.setValueAtTime(freq * tom, t0);
+    if (sweepTo) filter.frequency.exponentialRampToValueAtTime(Math.max(40, sweepTo * tom), t0 + dur);
     filter.Q.value = q;
     const g = this.ctx.createGain();
     this.env(g, t0, gain, dur, attack);
@@ -273,8 +274,9 @@ class Audio {
     const t0 = this.now + delay;
     const osc = this.ctx.createOscillator();
     osc.type = type;
-    osc.frequency.setValueAtTime(from, t0);
-    if (to) osc.frequency.exponentialRampToValueAtTime(Math.max(20, to), t0 + dur);
+    const tom = this.tom ?? 1;
+    osc.frequency.setValueAtTime(from * tom, t0);
+    if (to) osc.frequency.exponentialRampToValueAtTime(Math.max(20, to * tom), t0 + dur);
     // Vibrato existe por causa das vozes: é a modulação da altura, não o timbre
     // do oscilador, que separa um rosnado de uma nota grave de serra. O LFO soma
     // no AudioParam, então conviva com o ramp de altura em vez de substituí-lo.
@@ -301,7 +303,16 @@ class Audio {
     if (!this.ctx || this.muted) return;
     if (this.ctx.state === 'suspended') this.ctx.resume();
     const fn = SOUNDS[name];
-    if (fn) fn(this, opts ?? {});
+    if (!fn) return;
+    // A NOTA DA MAGIA: `semitom` sobe ou desce TODAS as alturas deste disparo, sem tocar no gesto. É o que deixa vinte e quatro magias
+    // da mesma família soarem como a mesma família e ainda assim diferentes umas das outras — o som faz o que a arte faz com a cor.
+    // Fica num campo do objeto, e não num parâmetro, para valer nas sessenta funções de som sem reescrever nenhuma.
+    this.tom = 2 ** ((opts?.semitom ?? 0) / 12);
+    try {
+      fn(this, opts ?? {});
+    } finally {
+      this.tom = 1;
+    }
   }
 }
 
@@ -768,6 +779,59 @@ const SOUNDS = {
     a.noise({ delay: 0.1, dur: 1.0, type: 'lowpass', freq: 160, gain: 0.14, attack: 0.3 });
     a.tone({ delay: 1.12, dur: 0.35, type: 'sine', from: vary(80), to: 40, gain: 0.22 });
   },
+  // --- A PORTA ------------------------------------------------------------
+  // O `doorStone` acima é a laje da Mansão: 1,2 s de atrito e um baque. Estes são a porta de MADEIRA do dia a dia, e cada um conta um
+  // evento diferente do menu de porta (`game/portas.js`). O material manda no tempo: madeira resolve em 400 ms, pedra leva três vezes isso.
+
+  // ABRIR: a dobradiça range enquanto a folha gira, e o ranger SOBE — a folha ganha velocidade. Termina sem baque: a porta ficou aberta.
+  doorWood: (a) => {
+    a.noise({ dur: 0.4, type: 'bandpass', freq: vary(520), q: 5, gain: 0.1, attack: 0.1, sweepTo: 900 });
+    a.noise({ delay: 0.05, dur: 0.3, type: 'lowpass', freq: 300, gain: 0.07, attack: 0.12 });
+    a.tone({ delay: 0.3, dur: 0.12, type: 'triangle', from: vary(190), to: 150, gain: 0.05 });
+  },
+  // FECHAR: o contrário, e com FIM. A folha desce de altura e a tranqueta bate: é o estalo no fim que diz "fechou", e sem ele o som fica
+  // igual ao de abrir tocado de trás para a frente.
+  doorShut: (a) => {
+    a.noise({ dur: 0.3, type: 'bandpass', freq: vary(900), q: 5, gain: 0.09, attack: 0.08, sweepTo: 420 });
+    a.noise({ delay: 0.3, dur: 0.05, type: 'bandpass', freq: vary(2000), q: 7, gain: 0.13 });
+    a.tone({ delay: 0.3, dur: 0.18, type: 'sine', from: vary(120), to: 70, gain: 0.15 });
+  },
+  // A CHAVE: metal no metal, os pinos cedendo juntos, e o ferrolho correndo. Sai limpo porque a chave é a ferramenta certa.
+  lockKey: (a) => {
+    a.noise({ dur: 0.06, type: 'bandpass', freq: vary(2400), q: 8, gain: 0.1 });
+    a.noise({ delay: 0.12, dur: 0.05, type: 'bandpass', freq: vary(1700), q: 8, gain: 0.12 });
+    a.tone({ delay: 0.16, dur: 0.16, type: 'triangle', from: vary(300), to: 190, gain: 0.08 });
+  },
+  // A GAZUA QUE CEDE: três pinos caindo em tempos IRREGULARES (é o tateio; em grade soaria como relógio), e o último com o ferrolho junto.
+  lockPick: (a) => {
+    for (let i = 0; i < 3; i += 1) {
+      a.noise({ delay: 0.05 + i * 0.1 + jitter(0.05), dur: 0.03, type: 'bandpass', freq: vary(2800), q: 9, gain: 0.07 });
+    }
+    a.noise({ delay: 0.4, dur: 0.05, type: 'bandpass', freq: vary(1600), q: 7, gain: 0.11 });
+    a.tone({ delay: 0.42, dur: 0.14, type: 'triangle', from: vary(280), to: 180, gain: 0.07 });
+  },
+  // A GAZUA QUE NÃO CEDE: o mesmo tateio e NENHUM ferrolho. A ausência do estalo final é a informação.
+  lockFail: (a) => {
+    a.noise({ dur: 0.22, type: 'bandpass', freq: vary(3000), q: 4, gain: 0.05, attack: 0.05 });
+    a.noise({ delay: 0.14, dur: 0.03, type: 'bandpass', freq: vary(2400), q: 9, gain: 0.05 });
+  },
+  // ARROMBAR E CEDER: o ombro na madeira (grave curto), a fibra RASGANDO (ruído largo que cai) e as lascas. É alto de propósito: o menu
+  // avisa que arrombar faz barulho, e o som tem de cumprir o aviso.
+  doorBash: (a) => {
+    a.noise({ dur: 0.1, type: 'lowpass', freq: 220, gain: 0.3 });
+    a.tone({ dur: 0.22, type: 'sine', from: vary(90), to: 45, gain: 0.22 });
+    a.noise({ delay: 0.04, dur: 0.35, type: 'bandpass', freq: vary(1500), q: 1.2, gain: 0.2, sweepTo: 400 });
+    for (let i = 0; i < 4; i += 1) {
+      a.noise({ delay: 0.12 + jitter(0.25), dur: 0.04, type: 'bandpass', freq: vary(2600), q: 5, gain: 0.06 });
+    }
+  },
+  // ARROMBAR E NÃO CEDER: o mesmo ombro e nada mais. Sem rasgo e sem lasca — a porta aguentou, e o silêncio depois do baque é quem diz isso.
+  doorHold: (a) => {
+    a.noise({ dur: 0.12, type: 'lowpass', freq: 190, gain: 0.26 });
+    a.tone({ dur: 0.26, type: 'sine', from: vary(78), to: 50, gain: 0.18 });
+    a.noise({ delay: 0.1, dur: 0.1, type: 'bandpass', freq: vary(380), q: 3, gain: 0.05 });
+  },
+
   // Dois parciais em razão inarmônica (1 : 2,76): razão inteira soaria como sino
   // de igreja; a razão quebrada é o que faz metal pequeno e chato.
   coin: (a) => {
@@ -882,18 +946,49 @@ export function spellSoundFor(damageType, { origem = 'magia' } = {}) {
  * Esta função só traduz família em timbre; quem decide a família é a regra, e
  * por isso `audio.js` continua sem importar nada.
  */
-export function conjuracaoSoundFor({ familia, tipo = null, escola = '', origem = null } = {}) {
-  if (origem === 'sopro') return { nome: 'breathDragon', opts: {} };
+/**
+ * A nota de uma magia, em semitons. Sai do `id`, então é SEMPRE a mesma para a mesma magia: o jogador aprende que aquela nota é a Bênção,
+ * do mesmo jeito que aprende que o verde girando é cura. Os graus são de uma pentatônica em uma oitava e meia, e por isso duas magias
+ * tocadas juntas nunca batem; uma cromática daria vinte e quatro notas e metade delas soaria errada.
+ */
+export const GRAUS = [-5, -3, 0, 2, 4, 7, 9, 12];
+// Duas notas a mais que só o importador das magias dos livros escolhe (a feita à mão sorteia pelo id entre as oito de
+// cima, e o som dela não muda): com o Xanathar, a maldição passou de cinquenta magias.
+export const GRAUS_EXTRA = [-7, 14];
+export function tomDaMagia(id = '') {
+  let h = 0;
+  for (let i = 0; i < id.length; i += 1) h = (h * 31 + id.charCodeAt(i)) >>> 0;
+  return GRAUS[h % GRAUS.length];
+}
+
+/** As famílias que ganham a nota inteira. */
+const FAMILIAS_COM_NOTA = new Set(['cura', 'protecao', 'reforco', 'movimento', 'maldicao', 'calma', 'invocacao', 'utilidade']);
+/**
+ * O dano ganha uma nota CURTA, de três graus. Lá o timbre é o tipo, e o fogo tem de continuar soando como fogo; mas treze magias de fogo
+ * com a mesma altura exata também não servem. Três graus separam a Bola de Fogo do Raio de Fogo sem tirar nenhuma das duas do fogo.
+ */
+// As duas últimas (−4 e 5) só o importador das magias dos livros escolhe (`importar-magias.mjs notasDasMagias`): a magia
+// feita à mão sorteia entre as três primeiras pelo id, como sempre, e o som dela não muda. Com o Xanathar o fogo passou
+// de 24 magias, e três notas não as separavam.
+export const GRAUS_DO_DANO = [-2, 0, 3, -4, 5];
+/** O sopro tem a altura do ELEMENTO: os dois dragões de ácido soam igual entre si e diferente dos de raio, que é o que a mesa espera. */
+const TOM_DO_SOPRO = { fogo: 0, 'ácido': -3, 'elétrico': 4, veneno: -5, frio: 7 };
+
+// `tom`: a nota que a magia traz escrita — a dos livros, que o importador escolhe entre as menos usadas do timbre dela
+// (`importar-magias.mjs notasDasMagias`), para cem magias novas não se empilharem nas notas que o id sorteia.
+export function conjuracaoSoundFor({ familia, tipo = null, escola = '', origem = null, id = '', tom = null } = {}) {
+  if (origem === 'sopro') return { nome: 'breathDragon', opts: { semitom: TOM_DO_SOPRO[tipo] ?? 0 } };
+  const semitom = FAMILIAS_COM_NOTA.has(familia) ? (tom ?? tomDaMagia(id)) : 0;
   switch (familia) {
-    case 'dano': return { nome: spellSoundFor(tipo, { origem: origem ?? 'magia' }), opts: {} };
-    case 'cura': return { nome: 'castHeal', opts: {} };
-    case 'protecao': return { nome: 'castWard', opts: {} };
-    case 'reforco': return { nome: 'castBoon', opts: {} };
-    case 'movimento': return { nome: 'castAir', opts: {} };
-    case 'maldicao': return { nome: 'castHex', opts: {} };
-    case 'calma': return { nome: 'castLull', opts: {} };
-    case 'invocacao': return { nome: 'castSummon', opts: {} };
-    case 'utilidade': return { nome: 'castUtility', opts: { escola } };
+    case 'dano': return { nome: spellSoundFor(tipo, { origem: origem ?? 'magia' }), opts: { semitom: tom ?? GRAUS_DO_DANO[Math.abs(tomDaMagia(id)) % 3] } };
+    case 'cura': return { nome: 'castHeal', opts: { semitom } };
+    case 'protecao': return { nome: 'castWard', opts: { semitom } };
+    case 'reforco': return { nome: 'castBoon', opts: { semitom } };
+    case 'movimento': return { nome: 'castAir', opts: { semitom } };
+    case 'maldicao': return { nome: 'castHex', opts: { semitom } };
+    case 'calma': return { nome: 'castLull', opts: { semitom } };
+    case 'invocacao': return { nome: 'castSummon', opts: { semitom } };
+    case 'utilidade': return { nome: 'castUtility', opts: { escola, semitom } };
     default: return { nome: 'castGeneric', opts: {} };
   }
 }

@@ -25,12 +25,13 @@ import { podeVer } from '../rules/luz.js';
 import { hasCondition, removeCondition } from '../rules/conditions.js';
 import {
   ativaDe, ativasDoGrupo, encerrar, chaveDoNpc, sentidasPorBemMal, eFeraAmansavel, ladoBemMal,
-  ladoAparente, tipoAparente, FAMILIARES,
+  ladoAparente, tipoAparente, FAMILIARES, UTIL,
   ALCANCE_BEM_MAL,
   destinoDoNpc,
 } from '../rules/utilidade.js';
 import { familiarDe, familiarVirtual } from '../rules/familiar.js';
 import { getSpell } from '../rules/spells.js';
+import { prepararDosLivros } from './magias-fora-livros.js';
 import { ganchosMagicosDaCena } from './armadilhas.js';
 
 /** Pés para metros, em português ("9 m", "7,5 m"). */
@@ -83,6 +84,9 @@ export function bichosDisponiveis(app, c, estado) {
 export function preparar(x, c, spellId, opts) {
   const { app } = x;
   const spell = getSpell(spellId);
+  const doLivro = prepararDosLivros(x, c, spellId, opts);
+  if (doLivro) return doLivro;
+  const ef = UTIL[spellId]?.efeito;
   if (spellId === 'cativar') {
     const ja = opts.criaturas ?? criaturasDaCena(app).filter((m) => m.side !== 'party' && !m.dead && m.hp > 0 && m.pos
       && distanceFt(c.pos, m.pos) <= spell.rangeFt && visivelPara(app, c, m));
@@ -99,19 +103,21 @@ export function preparar(x, c, spellId, opts) {
     const perto = [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => PEDRAS.has(f?.surfaceAt(c.pos.x + dx, c.pos.y + dy)));
     if (!perto) return { erro: 'não há pedra ao lado em que se fundir' };
   }
-  if (spellId === 'alarme' || spellId === 'bocaMagica') {
+  if (spellId === 'alarme' || spellId === 'bocaMagica' || ef === 'alarme') {
     return { opts: { ...opts, dados: { ponto: { x: c.pos.x, y: c.pos.y }, cena: app.capitulo?.lugar } } };
   }
-  if (spellId === 'comunhao') {
+  if (ef === 'comunhao') {
     // As respostas são computadas aqui, onde a cena existe: a regra não
-    // enxerga o mapa nem os ganchos do capítulo.
+    // enxerga o mapa nem os ganchos do capítulo. As magias dos livros mudam QUANTAS (a Adivinhação, uma; o Contatar
+    // Outro Plano, cinco) ou já vêm com as delas (a Comunhão com a Natureza).
+    const u = UTIL[spellId];
     const todas = perguntasDaComunhao(app, x.estado, x.herois());
-    const escolhidas = (opts.opcao ?? []).slice(0, 3);
+    const escolhidas = u.perguntasFixas ?? (opts.opcao ?? []).slice(0, u.perguntas ?? 3);
     const respostas = todas.filter((q) => escolhidas.includes(q.id)).map((q) => ({ pergunta: q.pergunta, sim: q.sim }));
     return { opts: { ...opts, dados: { respostas } } };
   }
-  if (spellId === 'clarividencia') {
-    const sentido = opts.opcao ?? 'ver';
+  if (ef === 'olho') {
+    const sentido = opts.opcao ?? UTIL[spellId]?.sentidoFixo ?? 'ver';
     const ponto = { x: c.pos.x, y: c.pos.y };
     // O OUVIR não marca o mapa: ele dá um NÚMERO, contado na hora em que o
     // olho abre. O `desc` declara que a conta é desse instante.
@@ -330,7 +336,7 @@ export function marcas(x) {
       if (!dono) continue;
       for (const m of sentidasPorBemMal(estado, herois, dono, criaturasDaCena(app))) out.push({ x: m.pos.x, y: m.pos.y, cor: COR[ladoAparente(m)], nome: tipoAparente(m), f: m.pos.f ?? 1 });
     }
-    if (a.efeito === 'localizar' && a.data?.ponto) out.push({ x: a.data.ponto.x, y: a.data.ponto.y, cor: 'marca-alvo', nome: a.data.nome });
+    if ((a.efeito === 'localizar' || (a.efeito === 'localizarCriatura' && a.data?.cena === lugar)) && a.data?.ponto) out.push({ x: a.data.ponto.x, y: a.data.ponto.y, cor: 'marca-alvo', nome: a.data.nome });
     // CLARIVIDÊNCIA: só o VER marca o mapa, e marca no máximo TRÊS.
     //
     // O OUVIR não entra aqui de propósito. Ele promete "só conta quantos são",

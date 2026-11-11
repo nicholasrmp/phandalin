@@ -31,6 +31,8 @@ export function playCharacter(enc, c) {
   const foes = enc.enemiesOf(c);
   if (foes.length === 0) { enc.endTurn(c); return; }
   if (conditionEffects(c).incapacitated) { enc.endTurn(c); return; }
+  // A MEDUSA: com uma no campo, o grupo da simulação não a olha (é o que a mesa faz, e o que o livro sugere).
+  c.desviaOlhar = foes.some((f) => f.traits?.includes('olharPetrificante') && !f.dead);
 
   // Derrubado: levanta antes de tudo. Preso: tenta se soltar se ninguém
   // estiver ao alcance da arma de perto.

@@ -55,24 +55,31 @@ teste('cada bando nasce em casa livre e alcançável, e as Grandes têm as quatr
   abrirPortas(f);
   const alc = f.reachable(ONDA_ECO.chegada, 100000, () => false);
   const TIPOS = {
-    stirges: 'stirge', esqueletos: 'esqueleto', ghoulsSul: 'ghoul', ghoulsGrande: 'ghoul', gosma: 'gelatinaOcre',
+    stirges: 'stirge', zumbisOgros: 'zumbiOgro', zumbisGuarita: 'zumbi', fungosVioleta: 'fungoVioleta',
+    serpente: 'serpenteConstritoraGigante', polvo: 'polvoGigante', ghoulsSul: 'ghoul', ghoulsGrande: 'ghoul', gosma: 'gelatinaOcre',
     bugbearsNorte: 'bugbear', zumbis: 'zumbi', caveira: 'caveiraCandente', mormesk: 'mormesk', espectador: 'spectator',
     bugbearsFenda: 'bugbear', bugbearGuarda: 'bugbear', vhalak: 'doppelganger', nezznar: 'nezznar', bugbearsTemplo: 'bugbear',
     aranhasTemplo: 'aranhaGigante', nundro: 'plebeu',
   };
-  const QUANTOS = { stirges: 10, esqueletos: 9, ghoulsSul: 3, ghoulsGrande: 4, gosma: 1, bugbearsNorte: 5, zumbis: 8, caveira: 1, bugbearsTemplo: 2, aranhasTemplo: 4, bugbearsFenda: 2 };
+  // A guarita, os fungos, o poço e a caverna trovejante são do OBELISCO (revisoes/obelisco-de-para-2026-11-08.md):
+  // dois zumbis ogros e seis anões no lugar dos nove esqueletos da Mina, e três bichos onde a Mina não tinha nenhum.
+  // As contas do OBELISCO (2026-11-08): 6 stirges, 5 ghouls na grande caverna, 6 bugbears no alojamento norte, 2+2 na
+  // caverna desmoronada, e o templo sem as aranhas da Mina.
+  const QUANTOS = { stirges: 6, zumbisOgros: 2, zumbisGuarita: 6, fungosVioleta: 2, serpente: 1, polvo: 1, ghoulsSul: 3, ghoulsGrande: 5, gosma: 1, bugbearsNorte: 6, zumbis: 8, caveira: 1, bugbearsTemplo: 2, aranhasTemplo: 0, bugbearsFenda: 2, bugbearGuarda: 2 };
   for (const [chave, n] of Object.entries(QUANTOS)) assert.equal(ONDA_ECO.ninhos[chave].length, n, `${chave}: o livro põe ${n}`);
   for (const [chave, vagas] of Object.entries(ONDA_ECO.ninhos)) {
     const tipo = TIPOS[chave];
     assert.ok(tipo, `bando sem tipo no teste: ${chave}`);
-    const grande = (makeMonster(tipo, { x: 0, y: 0 }).size ?? '') === 'grande';
+    // A pegada de verdade: a serpente constritora é Enorme, 3 x 3.
+    const lado = makeMonster(tipo, { x: 0, y: 0 }).pos.f ?? 1;
+    const grande = lado > 1;
     for (const p of vagas) {
-      const casas = grande ? [[0, 0], [1, 0], [0, 1], [1, 1]] : [[0, 0]];
+      const casas = Array.from({ length: lado * lado }, (_, k) => [k % lado, Math.floor(k / lado)]);
       for (const [dx, dy] of casas) {
         assert.ok(!f.blocksMove(p.x + dx, p.y + dy), `${chave} nasce em casa bloqueada (${p.x + dx},${p.y + dy})`);
         assert.ok(alc.has(`${p.x + dx},${p.y + dy}`), `${chave} nasce onde não se chega (${p.x + dx},${p.y + dy})`);
       }
-      assert.ok(!(grande && f.paredeNaPegada?.(p.x, p.y, 2)), `${chave} Grande com parede cortando a pegada (${p.x},${p.y})`);
+      assert.ok(!(grande && f.paredeNaPegada?.(p.x, p.y, lado)), `${chave} grande com parede cortando a pegada (${p.x},${p.y})`);
     }
   }
 });
@@ -80,9 +87,15 @@ teste('cada bando nasce em casa livre e alcançável, e as Grandes têm as quatr
 teste('cada bando nasce DENTRO da área que o livro lhe dá', () => {
   const area = (id) => new Set(ONDA_ECO.areas[id].map((c) => `${c.x},${c.y}`));
   const dentroDe = (chave, id) => { const s = area(id); for (const p of ONDA_ECO.ninhos[chave]) assert.ok(s.has(`${p.x},${p.y}`), `${chave} fora da área ${id}: (${p.x},${p.y})`); };
-  dentroDe('stirges', '3'); dentroDe('esqueletos', '4'); dentroDe('ghoulsSul', '6'); dentroDe('ghoulsGrande', '9'); dentroDe('gosma', '2');
+  dentroDe('stirges', '3'); dentroDe('zumbisOgros', '4'); dentroDe('zumbisGuarita', '4'); dentroDe('fungosVioleta', '8');
+  dentroDe('serpente', '10'); dentroDe('ghoulsSul', '6'); dentroDe('ghoulsGrande', '9'); dentroDe('gosma', '2');
   dentroDe('bugbearsNorte', '11'); dentroDe('zumbis', '12'); dentroDe('mormesk', '14'); dentroDe('espectador', '15');
   dentroDe('nezznar', '19'); dentroDe('aranhasTemplo', '19'); dentroDe('nundro', '20');
+  // O POLVO nasce na ÁGUA, e as casas da área 16 são só a borda de pedra: ele tem de estar ao alcance dos
+  // tentáculos (4,5 m, três casas) de alguma casa da borda, que é onde o livro o põe.
+  const borda = ONDA_ECO.areas['16'];
+  const [pv] = ONDA_ECO.ninhos.polvo;
+  assert.ok(borda.some((c) => Math.max(Math.abs(c.x - pv.x), Math.abs(c.y - pv.y)) <= 4), 'o polvo alcança a borda da caverna trovejante');
 });
 
 teste('as portas de pedra: toda folha é uma aresta de porta no mapa', () => {
@@ -149,5 +162,97 @@ teste('o epílogo segue o livro (sem ganchos) e fecha com quem saiu vivo', () =>
   }
   assert.ok(TEXTOS.conclusao({ gundren: true, nundro: true }).join(' ').includes('Gundren e Nundro'), 'com os dois vivos, os dois');
 });
+teste('as vinte áreas do livro existem, não se sobrepõem e cobrem a caverna', () => {
+  // CONFERIDO CONTRA O MAPA OFICIAL em 2026-11-06. O mapa da Caverna Onda Eco está dentro do PDF do livro
+  // (`_referencias/livro/`, página 42, uma imagem de 683x932) com os vinte números em círculos vermelhos.
+  // Achando os círculos por cor e FORMA — matiz vermelho, saturação acima de 118, mancha de 8 px ou mais e
+  // caixa entre 7 e 22 px de lado — saem dezenove deles, e projetando-os na nossa grade de 73 x 90:
+  //
+  //   - DEZOITO dos dezenove caem DENTRO da área que deveriam, cada um numa área diferente;
+  //   - sacudindo o quadro do mapa em +-12 px nas quatro bordas (81 quadros), dezesseis não mudam de área;
+  //   - o único que nenhum círculo aponta é o 11 (Alojamento Norte), que é o círculo que o detector perdeu.
+  //
+  // Ou seja: a planta da Forgotten Adventures é o mapa do livro redesenhado, como a da Mansão e a de Árvore
+  // Trovão, e as vinte áreas estão onde o livro as põe. Este teste guarda o que dá para guardar em Node — a
+  // existência, a disjunção e a cobertura —, porque a projeção depende da imagem, que não entra no repositório.
+  const NOMES = {
+    1: 'Entrada da Caverna', 2: 'Túneis da Mina', 3: 'Velha Entrada', 4: 'Velha Guarita',
+    5: 'Escritório dos Avaliadores', 6: 'Alojamento Sul', 7: 'Depósito Desmoronado',
+    8: 'Caverna dos Fungos', 9: 'Grande Caverna', 10: 'Lago Escuro', 11: 'Alojamento Norte',
+    12: 'Caverna de Fundição', 13: 'Caverna Estrelada', 14: 'Aposentos dos Magos',
+    15: 'Forja das Magias', 16: 'Caverna Barulhenta', 17: 'Velho Córrego',
+    18: 'Caverna Desmoronada', 19: 'Templo de Dumathoin', 20: 'Aposentos do Sacerdote',
+  };
+  const A = ONDA_ECO.areas ?? {};
+  const dono = new Map();
+  for (let n = 1; n <= 20; n += 1) {
+    const cs = A[String(n)];
+    assert.ok(cs && cs.length, `a área ${n} (${NOMES[n]}) existe e tem casa`);
+    for (const c of cs) {
+      const k = `${c.x},${c.y}`;
+      assert.ok(!dono.has(k), `(${k}) está em duas áreas: ${dono.get(k)} e ${n}`);
+      dono.set(k, n);
+    }
+  }
+  // A CAVERNA INTEIRA PERTENCE A ALGUMA ÁREA, fora os corredores entre elas. O número é o que a conta dá
+  // hoje; ele existe para cair se alguém mexer num retângulo e deixar meia caverna órfã.
+  const { f } = campo();
+  let chao = 0;
+  let fora = 0;
+  for (let y = 0; y < f.h; y += 1) for (let x = 0; x < f.w; x += 1) {
+    if (f.blocksMove(x, y)) continue;
+    chao += 1;
+    if (!dono.has(`${x},${y}`)) fora += 1;
+  }
+  assert.ok(fora / chao < 0.20, `${fora} de ${chao} casas de chão (${Math.round(100 * fora / chao)}%) fora de toda área`);
+  // E AS SALAS DE PEDRA LAVRADA SÃO UM SUBCONJUNTO DAS ÁREAS, e não uma lista concorrente: `salas` tem as
+  // treze construções (templo, alojamentos, forja...) e `areas` as vinte do livro, que incluem as cavernas.
+  // Medir cobertura em `salas` dá 79% de chão "sem sala" e não quer dizer nada — a caverna não é sala.
+  for (const [nome, cs] of Object.entries(MAPA_ONDA_ECO.salas ?? {})) {
+    assert.ok(cs.every((c) => dono.has(`${c.x},${c.y}`)), `a sala ${nome} está inteira dentro de uma área do livro`);
+  }
+});
+
+teste('nenhuma casa de chão da caverna fica sem alcance, e todo posto de bando é chão livre', () => {
+  // SEIS CASAS DE CHÃO QUE NINGUÉM ALCANÇAVA viviam no mapa — (5,33), (5,34), (6,34), (30,78), (36,11) e
+  // (51,9) —, e o gerador as CONTAVA desde sempre, numa linha de relatório, sem nunca as consertar. A conta
+  // de componentes dele não as pegava porque roda sobre `CHAO`, que inclui o fosso e a água funda: a (36,11),
+  // por exemplo, tem rocha nos quatro lados menos o fosso de (35,11), então em `CHAO` ela faz parte de um
+  // pedaço grande e só o motor, que não deixa pisar no fosso, a isola.
+  //
+  // Chão que ninguém pisa é pior que rocha: entra na conta de área, na escolha de posto e no desenho. Agora
+  // o gerador o transforma em rocha e se recusa a escrever se sobrar algum.
+  const { m, f } = campo();
+  abrirPortas(f);
+  const alc = f.reachable(ONDA_ECO.chegada, 100000);
+  const presas = [];
+  for (let y = 0; y < f.h; y += 1) for (let x = 0; x < f.w; x += 1) {
+    if (f.blocksMove(x, y)) continue;
+    if (!alc.has(`${x},${y}`)) presas.push(`${x},${y}`);
+  }
+  assert.deepEqual(presas, [], `casas de chão que ninguém alcança: ${presas.slice(0, 10).join(' ')}`);
+
+  // E TODO POSTO DE BANDO é chão livre, alcançável, e de um bicho só: são 55 postos em 17 ninhos.
+  const ocupadas = new Map();
+  let postos = 0;
+  for (const [nome, ps] of Object.entries(ONDA_ECO.ninhos ?? {})) {
+    for (const p2 of ps) {
+      postos += 1;
+      assert.ok(f.inside(p2.x, p2.y), `${nome}: posto fora do mapa (${p2.x},${p2.y})`);
+      assert.ok(!f.blocksMove(p2.x, p2.y), `${nome}: posto em casa bloqueada (${p2.x},${p2.y})`);
+      assert.ok(alc.has(`${p2.x},${p2.y}`), `${nome}: posto que ninguém alcança (${p2.x},${p2.y})`);
+      const k = `${p2.x},${p2.y}`;
+      assert.ok(!ocupadas.has(k), `${nome} e ${ocupadas.get(k)} nascem na mesma casa (${k})`);
+      ocupadas.set(k, nome);
+    }
+  }
+  assert.ok(postos >= 50, `${postos} postos de bando`);
+  // e a saída se alcança: senão a cena não fecha
+  for (const p2 of ONDA_ECO.saida ?? []) {
+    assert.ok(alc.has(`${p2.x},${p2.y}`), `casa de saída inalcançável (${p2.x},${p2.y})`);
+  }
+  void m;
+});
+
 console.log(`\n${total - falhas}/${total} passaram`);
 process.exit(falhas ? 1 : 0);

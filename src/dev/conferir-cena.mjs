@@ -17,14 +17,15 @@ import assert from 'node:assert/strict';
 
 const P = new URL('../', import.meta.url).href;
 const { montarCampo } = await import(P + 'game/campo.js');
-const { ARESTA } = await import(P + 'core/grid.js');
-const { mapaDo, CENAS } = await import(P + 'game/encounter.js');
+const { ARESTA, footprintOf } = await import(P + 'core/grid.js');
+const { mapaDo, CENAS, buildFoes } = await import(P + 'game/encounter.js');
 
 const nome = Object.fromEntries(Object.entries(ARESTA).map(([k, v]) => [v, k]));
 const K = (x, y) => `${x},${y}`;
 
 const TODAS = CENAS ?? ['emboscada', 'ermo', 'ermoNoite', 'rua', 'esconderijo', 'mansao', 'mansaoTunel',
   'poco', 'cume', 'castelo', 'arvoreTrovao', 'ondaEco',
+  'covilAgatha', 'cavernaDoPoco', 'acampamentoSawplee', 'telhadoGigante', 'giganteTerreo', 'zorzulaPosto', 'zorzulaMinas', 'santuarioIndigo', 'casaMarthungrim', 'minaHardyhammer', 'largoDaVaca', 'talhundereth', 'criptaTalhund',
   'casaDaMorte1', 'casaDaMorte2', 'casaDaMorte3', 'casaDaMorte4', 'casaDaMortePorao1', 'casaDaMortePorao2'];
 
 // A CHAMA MORA DENTRO DO QUE A SEGURA, e isso não é defeito: braseiro, fogueira e lareira barram o passo e
@@ -69,6 +70,9 @@ for (const cena of (alvos.length ? alvos : TODAS)) {
 
   // --- LUZ: casa livre (ou móvel declarado), e quem não é chama não ganha botão de apagar
   for (const l of mapa.luzes ?? []) {
+    // A LUZ SEM CHAMA (`semChama`: a lava, a cascata, o cristal, a fumaça) não tem botão de apagar e mora onde o brilho
+    // está — dentro da lava, no sulco da parede. As duas regras abaixo são de CHAMA: não valem para ela.
+    if (l.semChama) continue;
     if (f.blocksMove(l.pos.x, l.pos.y) && !guardaChama(f, mapa, l.pos)) {
       linhas.push(`luz em casa bloqueada em (${l.pos.x},${l.pos.y}): mora dentro de um móvel que não segura fogo`);
     }
@@ -85,6 +89,65 @@ for (const cena of (alvos.length ? alvos : TODAS)) {
     // a peça que é fogo pousa na superfície do fogo (a fogueira do acampamento), e isso é certo
     if (!['prop', 'propBaixo'].includes(sup) && !SEGURA_FOGO.test(sup)) {
       linhas.push(`peça ${o.variante} em (${o.x},${o.y}) com superfície ${sup}: o menu não a vê`);
+    }
+  }
+
+  // --- CHÃO QUE NINGUÉM ALCANÇA, com toda porta aberta.
+  //
+  // Só o FOSSO entra nesta conta, e isso é medido (`testes-conferir-cena.mjs`): o fosso barra o passo, a
+  // água funda NÃO — atravessa-se a nado, devagar, que ela é terreno difícil. Eu supus o contrário ao
+  // escrever isto e o teste me corrigiu.
+  //
+  // `conferir-paredes.mjs` já faz a conta das ILHAS de chão, e sabe o que o roteiro abre (as secretas da
+  // Mansão, as lajes das criptas), por isso ela mora lá. O que FALTAVA é a casa solta que não é ilha de
+  // terreno: a que o FOSSO ou a ÁGUA FUNDA isolam. A conta de componentes de quem gera o mapa roda sobre o
+  // conjunto "chão", que inclui o fosso; só o motor, que não deixa pisar nele, enxerga a diferença.
+  //
+  // Achado assim na Onda Eco: SEIS casas — (5,33), (5,34), (6,34), (30,78), (36,11) e (51,9) —, uma delas
+  // com rocha nos quatro lados menos um fosso. O gerador as CONTAVA desde sempre numa linha de relatório, e
+  // nunca as consertava.
+  const g = montarCampo(mapa);
+  for (let y = 0; y < g.h; y += 1) for (let x = 0; x < g.w; x += 1) {
+    const i = y * g.w + x;
+    if (g.paredeN[i] === ARESTA.porta) g.porAresta(x, y - 1, x, y, ARESTA.aberta);
+    if (g.paredeO[i] === ARESTA.porta) g.porAresta(x - 1, y, x, y, ARESTA.aberta);
+  }
+  const de = (mapa.grupo ?? [])[0];
+  if (de && !g.blocksMove(de.x, de.y)) {
+    const alc = g.reachable(de, 1000000);
+    // só conta a casa que o FOSSO ou a ÁGUA FUNDA isolam: a ilha de terreno é assunto de `conferir-paredes`
+    const porAgua = [];
+    for (let y = 0; y < g.h; y += 1) for (let x = 0; x < g.w; x += 1) {
+      if (g.blocksMove(x, y) || alc.has(`${x},${y}`)) continue;
+      const vizinho = [[1, 0], [-1, 0], [0, 1], [0, -1]]
+        .some(([dx, dy]) => g.inside(x + dx, y + dy) && g.surfaceAt(x + dx, y + dy) === 'fosso');
+      if (vizinho) porAgua.push(`${x},${y}`);
+    }
+    if (porAgua.length) {
+      linhas.push(`${porAgua.length} casa(s) de chão que o fosso isola: ${porAgua.slice(0, 6).join(' ')}`);
+    }
+  }
+
+  // --- O BANDO NASCE EM CASA LIVRE, e um por casa. `buildFoes` devolve o elenco que a cena põe no mapa.
+  //
+  // A PEGADA INTEIRA, e não só a âncora. De Grande para cima a criatura ocupa mais de um quadrado
+  // (`core/grid.js footprintOf`: Grande 2x2, Enorme 3x3, Imenso 4x4), e esta conta olhava só a casa da
+  // âncora. Foi assim que o ogro Gog, do Cume da Wyvern, passou a dormir EM CIMA DO BAÚ do bando: ancorado
+  // em (4,10), a pegada dele cobria (5,11), que é o caixote e barra o passo. O gerador daquela cena ganhou a
+  // mesma prova; aqui ela vale para toda cena cujo elenco sai de `buildFoes`.
+  const ocupadas = new Map();
+  for (const foe of buildFoes(cena) ?? []) {
+    const q = foe.pos;
+    if (!q || !f.inside(q.x, q.y)) { linhas.push(`${foe.name} sem casa válida`); continue; }
+    const lado = footprintOf(foe.size);
+    for (let dy = 0; dy < lado; dy += 1) for (let dx = 0; dx < lado; dx += 1) {
+      const x = q.x + dx; const y = q.y + dy;
+      const onde = lado > 1 ? ` (pegada ${lado}x${lado} de (${q.x},${q.y}))` : '';
+      if (!f.inside(x, y)) { linhas.push(`${foe.name} nasce fora do mapa em (${x},${y})${onde}`); continue; }
+      if (f.blocksMove(x, y)) linhas.push(`${foe.name} nasce em casa bloqueada (${x},${y}, ${f.surfaceAt(x, y)})${onde}`);
+      const k = `${x},${y}`;
+      if (ocupadas.has(k)) linhas.push(`${foe.name} e ${ocupadas.get(k)} se sobrepõem em (${k})${onde}`);
+      ocupadas.set(k, foe.name);
     }
   }
 

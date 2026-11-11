@@ -64,6 +64,12 @@ export const ARMORS = {
     peso: 45, custo: 50, furtividade: 'desvantagem',
     desc: 'Escamas de metal costuradas no couro. Protege bem e tilinta a cada passo.',
   }),
+  // ARMADURA DE ESPINHOS (Guia do Aventureiro da Costa da Espada): a do Furioso de Batalha.
+  armaduraDeEspinhos: media({
+    id: 'armaduraDeEspinhos', name: 'Armadura de espinhos', base: 14, art: 'scale', fonte: 'scag',
+    peso: 45, custo: 75, furtividade: 'desvantagem',
+    desc: 'Couro grosso coberto de pontas de ferro. O Furioso de Batalha a usa como arma.',
+  }),
   peitoral: media({
     id: 'peitoral', name: 'Peitoral', base: 14, art: 'plate',
     peso: 20, custo: 400,
@@ -95,6 +101,13 @@ export const ARMORS = {
     id: 'placas', name: 'Armadura de placas', base: 18, art: 'plate',
     peso: 65, custo: 1500, furtividade: 'desvantagem', forcaMinima: 15,
     desc: 'Chapa moldada da cabeça aos pés. A melhor CA que o dinheiro compra. Exige Força 15.',
+  }),
+  // A Cripta dos Talhund (o Obelisco): as placas com que os sacerdotes eram enterrados. Os mortos anões da cripta
+  // atacam com desvantagem quem as veste (`combat.js attackModifiers`).
+  placasDosTalhund: pesada({
+    id: 'placasDosTalhund', name: 'Placas funerárias dos Talhund', base: 18, art: 'plate',
+    peso: 65, custo: 1500, furtividade: 'desvantagem', forcaMinima: 15, fonte: 'propria',
+    desc: 'Placas anãs gravadas com montanhas e gemas, feitas para vestir um sacerdote morto. Os mortos anões da Cripta dos Talhund atacam com desvantagem quem as veste. Exige Força 15.',
   }),
 };
 

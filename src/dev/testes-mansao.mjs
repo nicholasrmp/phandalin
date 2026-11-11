@@ -1,4 +1,4 @@
-// Testes da CENA da mansão (esconderijo dos Marcarrubra): o manto vermelho como disfarce, o rato que avisa sempre e a
+// Testes da CENA da mansão (esconderijo dos Marcarrubra): o manto vermelho como disfarce, o familiar que avisa sempre e a
 // fuga jogável do Cajavidro. Roda a cena DE VERDADE (`game/capitulo3-mansao.js`) com a interface trocada por stubs:
 //
 //   node --import ./src/dev/cena-node/register.mjs src/dev/testes-mansao.mjs
@@ -9,7 +9,7 @@ const { Battlefield } = await import(P + 'core/grid.js');
 const { Encounter } = await import(P + 'rules/combat.js');
 const { makeParty } = await import(P + 'rules/party.js');
 const { makeRng } = await import(P + 'core/rng.js');
-const { hasCondition } = await import(P + 'rules/conditions.js');
+const { hasCondition, addCondition } = await import(P + 'rules/conditions.js');
 const { mapaDo, buildFoes } = await import(P + 'game/encounter.js');
 const { criarMansao } = await import(P + 'game/capitulo3-mansao.js');
 const { MANSAO } = await import(P + 'game/mansao.js');
@@ -71,6 +71,119 @@ await teste('o rato avisa SEMPRE: Iarno sai do quarto, entra no tabuleiro e foge
   assert.ok(S.cena.explorando, 'a cena segue em exploração');
 });
 
+// O QUADRO "O QUE OS MARCARRUBRA SABEM" DO LIVRO, na mesa dos bêbados. O jogo entregava dois itens dele (o mago
+// do cajado de vidro, o bicho da fenda) num nó único; os presos das jaulas, onde fica a pilhagem, a cripta em
+// que ninguém entra sem manto e o "tem alguém acima do chefe" ficavam de fora. Capturar bandido para
+// interrogar o jogo não tem — só o Cajavidro se rende —, então o quadro sai por onde dá para falar com eles.
+// E DERRUBAR A MESA é a distração que o livro sugere ali, com as pilhas de moeda do jogo de pedrinhas.
+await teste('a mesa dos bêbados entrega o quadro do livro, e derrubá-la espalha o dinheiro', async () => {
+  const S = await nova();
+  vestirTodos(S);
+  S.resposta.fim = 'paz';
+  const estar = S.foes.filter((c) => c.grupo === 'estar');
+  assert.equal(estar.length, 4, 'quatro bêbados na sala 10');
+  espalhar(S, [{ x: estar[0].pos.x, y: estar[0].pos.y + 1 }, { x: estar[1].pos.x, y: estar[1].pos.y + 1 },
+    { x: estar[2].pos.x, y: estar[2].pos.y + 1 }, { x: estar[3].pos.x, y: estar[3].pos.y + 1 }]);
+  await S.cena.depoisDeMover(S.party[0]);
+  const arvore = S.chamadas.map((ch) => ch.arvore).find((a) => a?.nos?.aceitam);
+  assert.ok(arvore, `os bêbados conversaram: ${S.chamadas.length} conversa(s)`);
+  for (const no of ['chefe', 'presos', 'pilhagem', 'ossos', 'acima', 'mesaVirada']) {
+    assert.ok(arvore.nos[no], `o nó ${no} existe`);
+  }
+  // o "quem manda no mago" é apertado, e os bugbears é que sabem o resto
+  const aperto = arvore.nos.aceitam.opcoes.find((o) => o.sucesso === 'acima');
+  assert.equal(aperto.teste.pericia, 'intimidacao', 'apertar é Intimidação');
+  assert.equal(aperto.falha, 'desconfiam', 'e falhar põe a sala em cima deles');
+  // derrubar a mesa marca o estado, e o verbo do dinheiro muda de nome
+  const virar = arvore.nos.aceitam.opcoes.find((o) => o.vai === 'mesaVirada');
+  assert.ok(virar, 'a opção de derrubar a mesa está lá');
+  arvore.nos.mesaVirada.ao();
+  assert.ok(S.app.campanha.mansao.mesaVirada, 'o estado guarda a mesa virada');
+  // e as duas saídas do nó são as do livro: atacar na confusão, ou sair enquanto eles catam
+  assert.deepEqual(arvore.nos.mesaVirada.opcoes.map((o) => o.fim), ['surpresa', 'paz']);
+});
+
+// O DROOP ACORDA COM UMA AÇÃO, como o livro manda. O despertar estava grudado no saque do cinto do Nosk: grupo
+// que vencesse os bugbears e não revirasse nada ficava com o informante — as quatro portas secretas, a senha da
+// cripta, o caminho do Castelo — dormindo para sempre.
+await teste('acordar o Droop é uma ação de quem está encostado nele, e não depende de revirar o Nosk', async () => {
+  const S = await nova();
+  const droop = S.foes.find((c) => c.defId === 'droop');
+  assert.ok(droop, 'o Droop está no elenco');
+  const heroi = S.party[0];
+  const sup = S.enc.field.surfaceAt(droop.pos.x, droop.pos.y);
+  // desacordado, como a chegada do grupo o deixa (`fimDoCombate` do grupo `guardas`)
+  addCondition(droop, 'inconsciente');
+  poe(heroi, droop.pos.x + 1, droop.pos.y);
+  const perto = S.cena.interacoes(droop.pos, sup, heroi);
+  const acordar = perto.find((o) => /Acordar o goblin/.test(o.rotulo));
+  assert.ok(acordar, `o verbo de acordar aparece: ${perto.map((o) => o.rotulo).join(' | ')}`);
+  assert.equal(acordar.motivo, null, 'encostado nele, nada impede');
+  await acordar.fazer();
+  assert.ok(!hasCondition(droop, 'inconsciente'), 'e ele acorda, sem saque nenhum');
+  // acordado, o verbo sai do menu
+  assert.ok(!S.cena.interacoes(droop.pos, sup, heroi).some((o) => /Acordar o goblin/.test(o.rotulo)),
+    'acordado, o verbo não aparece mais');
+  // e de longe vem com motivo de recusa
+  addCondition(droop, 'inconsciente');
+  poe(heroi, droop.pos.x + 4, droop.pos.y);
+  const longe = S.cena.interacoes(droop.pos, sup, heroi).find((o) => /Acordar o goblin/.test(o.rotulo));
+  assert.ok(longe?.motivo, 'a quatro casas o verbo vem com motivo de recusa');
+});
+
+// A ESTRANHA INTUIÇÃO DO VIGIA É UMA RESISTIDA, não uma fala. O traço do bloco é a Intuição dele contra a
+// Enganação do alvo, e quem perde tem um segredo lido em voz alta. O nó `intuicao` da conversa era decoração:
+// nenhum dado caía, e o único traço próprio da criatura não existia como regra em lugar nenhum.
+await teste('o olho rola a Estranha Intuição contra a Enganação de cada herói, e lê verdade do estado do jogo', async () => {
+  const S = await nova();
+  const vigia = S.foes.find((c) => c.defId === 'vigiaCiclopico');
+  assert.ok(vigia, 'o vigia está no elenco');
+  // chega-se à fenda: o vigia puxa conversa, e o stub guarda a árvore que a cena lhe passou
+  S.resposta.fim = 'paz';
+  espalhar(S, [{ x: vigia.pos.x + 2, y: vigia.pos.y }, { x: vigia.pos.x + 3, y: vigia.pos.y },
+    { x: vigia.pos.x + 2, y: vigia.pos.y + 1 }, { x: vigia.pos.x + 3, y: vigia.pos.y + 1 }]);
+  await S.cena.depoisDeMover(S.party[0]);
+  const arvore = S.chamadas.find((ch) => ch.npc === vigia)?.arvore;
+  assert.ok(arvore?.nos?.intuicao, `o vigia conversou e a árvore tem o nó da intuição: ${S.chamadas.map((c) => c.npc?.name).join(',')}`);
+  const fala = arvore.nos.intuicao.fala;
+  assert.equal(typeof fala, 'function', 'a fala ROLA: é função, não texto fixo');
+  const linhas = fala();
+  const resistidas = linhas.filter((l) => /Enganação \d+ contra Intuição \d+/.test(l));
+  assert.equal(resistidas.length, S.party.length, `uma resistida por herói: ${linhas.join(' / ')}`);
+  // e o segredo que ele lê é verdade do estado: de manto vermelho, é o manto que ele vê
+  vestirTodos(S);
+  let viuManto = false;
+  for (let i = 0; i < 20 && !viuManto; i += 1) {
+    viuManto = fala().some((l) => /manto de um homem que não é ele/.test(l));
+  }
+  assert.ok(viuManto, 'de manto, quem perde a resistida tem o manto lido em voz alta');
+});
+
+// O ALARME NÃO TOCA SOZINHO. O familiar está no tabuleiro desde sempre (`foesMansao`, lado neutro) — o Zeond do
+// Obelisco, um quasit invisível, onde a Mina punha um rato. Vivo ele avisa sempre, que é o que o livro manda e o
+// que o teste de cima prova; morto, a oficina fica em silêncio e o mestre, de costas.
+await teste('Zeond morto não avisa: o Cajavidro não sabe de nada e continua na escrivaninha', async () => {
+  const S = await nova();
+  const iarno = iarnoDe(S);
+  const zeond = S.foes.find((c) => c.grupo === 'familiar');
+  assert.ok(zeond, 'o familiar do mago está no elenco da cena');
+  assert.equal(zeond.defId, 'quasit', 'é o quasit do Obelisco, não o rato da Mina');
+  assert.equal(zeond.name, 'Zeond');
+  assert.equal(zeond.side, 'neutro', 'e no lado neutro: na oficina ele não luta, vai avisar');
+  assert.ok(hasCondition(zeond, 'invisivel'), 'e invisível desde o começo');
+  assert.ok(!zeond.familiar, 'sem a marca do familiar do GRUPO (`rules/familiar.js`)');
+  zeond.dead = true;
+  zeond.hp = 0;
+  espalhar(S, [{ x: 3, y: 3 }, { x: 2, y: 2 }, { x: 4, y: 2 }, { x: 4, y: 4 }]);
+  await S.cena.depoisDeMover(S.party[0]);
+  assert.notEqual(S.app.campanha.mansao?.iarno, 'fugiu', 'ninguém avisou: ele não está fugindo');
+  assert.ok(!S.enc.combatants.includes(iarno), 'ele nem entrou no tabuleiro');
+  assert.ok(S.cena.explorando, 'e a cena segue em exploração');
+  // e não avisa num segundo passo tampouco: o familiar resolvido fica resolvido
+  await S.cena.depoisDeMover(S.party[1]);
+  assert.notEqual(S.app.campanha.mansao?.iarno, 'fugiu', 'nem no passo seguinte');
+});
+
 await teste('quem o alcança o vê beber o frasco: luta com Iarno invisível, e sem os guarda-costas', async () => {
   const S = await nova();
   const iarno = iarnoDe(S);
@@ -84,6 +197,24 @@ await teste('quem o alcança o vê beber o frasco: luta com Iarno invisível, e 
   assert.ok(inimigos.includes(iarno));
   assert.ok(!inimigos.some((c) => c.grupo === 'guardaCostas'), 'os guarda-costas ficaram no quarto');
   assert.equal(S.app.campanha.mansao.iarno, null, 'a fuga acabou: ele não "fugiu" mais');
+});
+
+// A POÇÃO QUE ELE BEBE É A DA BOLSA DA CISTERNA. O plano de fuga que o livro lhe dá mora num fio dentro da
+// água — roupa limpa, 50 po, poção de cura e poção de invisibilidade —, e o jogo deixa o grupo achá-lo e grava
+// `salvo.bolsa`. Só que depois o Cajavidro "tirava um frasco do cinto" e sumia do mesmo jeito, bebendo o que já
+// estava na mochila de um herói. Achar a bolsa antes da hora agora vale: ele é alcançado de corpo inteiro.
+await teste('bolsa da cisterna saqueada: o Cajavidro é alcançado e NÃO fica invisível', async () => {
+  const S = await nova();
+  const iarno = iarnoDe(S);
+  // o grupo já puxou a bolsa do fundo da cisterna (Mãos Mágicas, vara ou Percepção CD 15)
+  S.app.campanha.mansao.bolsa = true;
+  espalhar(S, [{ x: 3, y: 3 }, { x: 2, y: 2 }, { x: 4, y: 2 }, { x: 4, y: 4 }]);
+  await S.cena.depoisDeMover(S.party[0]);                         // o rato avisa, ele foge
+  espalhar(S, [{ x: 11, y: 4 }, { x: 12, y: 3 }, { x: 12, y: 4 }, { x: 13, y: 4 }]);
+  await S.cena.depoisDeMover(S.party[0]);                         // e é alcançado
+  assert.ok(!S.cena.explorando, 'a luta começou');
+  assert.ok(!hasCondition(iarno, 'invisivel'), 'sem a poção, ele não some');
+  assert.ok(S.enc.combatants.filter((c) => c.side === 'foes' && !c.dead).includes(iarno), 'e luta ali mesmo');
 });
 
 await teste('quem não o persegue o perde: ele cruza o depósito e a caverna e sai pela cisterna, levando a bolsa', async () => {
@@ -101,17 +232,51 @@ await teste('quem não o persegue o perde: ele cruza o depósito e a caverna e s
   assert.ok(S.cena.explorando);
 });
 
-await teste('os guarda-costas ficam no quarto e lutam sem XP próprio; Iarno não conta mais na luta deles', async () => {
+// QUEM CHEGA PELA SECRETA DO 7 não passa pela oficina, e o Zeond não avisa ninguém: ele está no quarto com o mestre
+// quando a luta começa, e luta do lado dele, invisível. Mas não SEGURA a luta: caídos o Cajavidro e os guarda-costas,
+// ela acaba, mesmo com o diabinho vivo e sem que ninguém o consiga mirar (`naoSeguraALuta`, `combat.js checkEnd`).
+// O ZEOND SEGUE O GRUPO (o Obelisco): depois de avisar o mestre ele não vai embora — vem atrás, invisível, e entra na
+// próxima luta colado a um herói.
+await teste('avisado o mestre, o Zeond segue o grupo invisível e entra na próxima luta', async () => {
+  const S = await nova();
+  const zeond = S.foes.find((c) => c.grupo === 'familiar');
+  espalhar(S, [{ x: 3, y: 3 }, { x: 2, y: 2 }, { x: 4, y: 2 }, { x: 4, y: 4 }]);
+  await S.cena.depoisDeMover(S.party[0]);                         // o Zeond avisa
+  assert.ok(zeond.seguindo && !S.enc.combatants.includes(zeond), 'saiu do tabuleiro, mas segue o grupo');
+  espalhar(S, [{ x: 11, y: 4 }, { x: 12, y: 3 }, { x: 12, y: 4 }, { x: 13, y: 4 }]);   // alcançam o Cajavidro
+  await S.cena.depoisDeMover(S.party[0]);
+  assert.ok(!S.cena.explorando, 'a luta começou');
+  assert.ok(S.enc.combatants.includes(zeond) && zeond.side === 'foes', 'e o Zeond está nela');
+  assert.ok(hasCondition(zeond, 'invisivel'), 'invisível');
+  assert.ok(S.party.some((h) => Math.max(Math.abs(h.pos.x - zeond.pos.x), Math.abs(h.pos.y - zeond.pos.y)) <= 2), 'perto do grupo');
+});
+
+await teste('pela secreta, o Zeond luta do lado do mestre, invisível, e não segura a luta sozinho', async () => {
+  const S = await nova();
+  const iarno = iarnoDe(S);
+  const zeond = S.foes.find((c) => c.grupo === 'familiar');
+  espalhar(S, [{ x: 8, y: 4 }, { x: 9, y: 4 }, { x: 9, y: 3 }, { x: 7, y: 4 }]);
+  await S.cena.depoisDeMover(S.party[0]);
+  assert.ok(!S.cena.explorando, 'entrar no quarto pela secreta abre a luta');
+  assert.notEqual(S.app.campanha.mansao?.iarno, 'fugiu', 'ninguém o avisou');
+  assert.equal(zeond.side, 'foes', 'o Zeond entra do lado do mestre');
+  assert.ok(S.enc.combatants.includes(zeond));
+  assert.ok(hasCondition(zeond, 'invisivel'), 'e continua invisível');
+  for (const f of S.enc.combatants.filter((c) => c.side === 'foes' && c !== zeond)) { f.dead = true; f.hp = 0; }
+  assert.ok(S.enc.checkEnd(), 'caídos os outros, a luta acaba com o diabinho vivo');
+  assert.equal(S.enc.outcome, 'vitoria');
+});
+
+// O QUARTO VAZIO: fugido o Cajavidro, não fica ninguém no quarto (o livro não lhe dá guarda-costas).
+await teste('fugido o Cajavidro, o quarto fica vazio: entrar nele não abre luta nenhuma', async () => {
   const S = await nova();
   espalhar(S, [{ x: 3, y: 3 }, { x: 2, y: 2 }, { x: 4, y: 2 }, { x: 4, y: 4 }]);
   await S.cena.depoisDeMover(S.party[0]);
-  const guardas = S.foes.filter((f) => f.grupo === 'guardaCostas');
-  assert.equal(guardas.length, 2, 'dois guarda-costas separados do chefe');
+  assert.equal(S.foes.filter((f) => f.grupo === 'guardaCostas').length, 0, 'ninguém ficou para trás');
   for (let i = 0; i < 2; i += 1) await S.cena.depoisDeMover(S.party[0]);   // ele se afasta, longe do quarto
   espalhar(S, [{ x: 8, y: 4 }, { x: 6, y: 4 }, { x: 9, y: 3 }, { x: 6, y: 3 }]);
   await S.cena.depoisDeMover(S.party[0]);
-  assert.ok(!S.cena.explorando, 'entrar no quarto abre a luta com eles');
-  assert.ok(guardas.every((g) => S.enc.combatants.includes(g)));
+  assert.ok(S.cena.explorando || !S.enc.combatants.some((c) => c.side === 'foes' && !c.dead && c.grupo === 'guardaCostas'), 'nenhum guarda-costas');
 });
 
 await teste('manto vermelho na sala 10: a conversa abre antes da luta; paz deixa os bêbados neutros e a cena segue', async () => {
@@ -157,14 +322,14 @@ await teste('um herói sem manto estraga o disfarce dos outros: luta, sem conver
   assert.ok(!S.cena.explorando);
 });
 
-await teste('sala 9, de manto: conversa com Mosk; paz deixa os bugbears neutros e põe o Droop no tabuleiro para falar', async () => {
+await teste('sala 9, de manto: conversa com Nosk; paz deixa os bugbears neutros e põe o Droop no tabuleiro para falar', async () => {
   const S = await nova();
   vestirTodos(S);
   S.resposta.fim = 'paz';
   espalhar(S, [{ x: 3, y: 15 }, { x: 2, y: 15 }, { x: 4, y: 15 }, { x: 3, y: 14 }]);
   await S.cena.depoisDeMover(S.party[0]);
   assert.equal(S.chamadas.length, 1, 'uma conversa');
-  assert.equal(S.chamadas[0].npc.name, 'Mosk');
+  assert.equal(S.chamadas[0].npc.name, 'Nosk');
   assert.ok(S.cena.explorando);
   const droop = S.foes.find((f) => f.defId === 'droop');
   assert.ok(S.enc.combatants.includes(droop), 'Droop acordado e no tabuleiro');
@@ -292,7 +457,7 @@ await teste('a ponte do sul é REGIÃO do mapa: cede com quem pisa, e todo mundo
   assert.equal(D.field.surfaceAt(10, 14), 'entulho', 'de volta, a ponte continua caída');
 });
 
-await teste('a cripta tem três sarcófagos (de duas casas) e um anel de platina por sarcófago', async () => {
+await teste('a cripta tem três sarcófagos (de duas casas); o tesouro é o bracelete do Obelisco, no da mulher', async () => {
   assert.equal(MANSAO.sarcofagos.length, 3);
   for (const s of MANSAO.sarcofagos) assert.equal(s.length, 2);
 });

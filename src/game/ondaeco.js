@@ -195,26 +195,26 @@ export const MAPA_ONDA_ECO = {
   "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
   "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR`RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
   "RRRR<<<<<<<<<<<<<<RRRRRRRRRRRR`RRRR`RRR`RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
-  "RRRR<$<<^<<<$<<^<<RRRRRRRRRR`````````R`````RRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
-  "RRRR<^<<<<<<^<&<f<^<RRRRRRRR```OOOOO````````RRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+  "RRRR<$<<^<<<$<<^<<RRRRRRRRRR`````````R^````RRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+  "RRRR<^<<<<<<^<&<f<^<RRRRRRRR```OOOOO``````^`RRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
   "RRRR<<<<<<<<<<<<<<<<RR`R``````ROOOOO`````````RRRRRRRRRRRRRRRRRRRRRRRRRRRR",
   "RRRR&<<<<<<<^<<<<^&<```````````OOOOO``RRRRR```RRRRRRRRRRRRRRRRRRRRRRRRRRR",
   "RRRR<^<<&<&<^<<<<<<<```````````OOOOO``RRRRRR```RRRRRRRRRRRRRRRRRRRRRRRRRR",
-  "RRRR<^<&<F<<<<`````````R``````ROOOORRRRRRRRR``````R\"RRRRRRRRRRRRRRRRRRRRR",
+  "RRRR<^<&<F<<<<`````````R``````ROOOORRRRRRRRR``^```RRRRRRRRRRRRRRRRRRRRRRR",
   "RRRR<<<&<<&<^<````````RR`````R`OOOORRRRRRRRRR`````\"|RR|RRRRRRRRRRRRRRRRRR",
-  "RRRR<^<<&<<<^<RRRRRRRRR``````R`OOROO`RRRRRRRRRR```\"\"||||RRRRRRRRRRRRRRRRR",
+  "RRRR<^<<&<<<^<RRRRRRRRR``````R`OOROORRRRRRRRRRR```\"^||||RRRRRRRRRRRRRRRRR",
   "RRRR<<<<<<<<<<RRRRRRRR```````R`OORRRR``RRRRRRRRR```\"\"|||RRRRRRRRRRRRRRRRR",
-  "RRRR&<<<<<<<$<RRRRRRRR````````````````````RRRRRRR``\"|RR||RRRRRRRRRRRRRRRR",
+  "RRRR&<<<<<<<$<RRRRRRRR```````^`^`````^````RRRRRRR`^\"|RR||RRRRRRRRRRRRRRRR",
   "RRRR<<<<<<<<<<RRRRRRRR````````````````````RRRRRRRR`\"\"|||RRRRRRRRRRRRRRRRR",
   "RRRRRRRR``RRRRRRRRRRRR```````R```````R````RRRRRRRRR`\"||||RRRRRRRRRRRRRRRR",
   "RRRRRRR`$``RRRRRRRRRRR```````````RRRRRR````RRRRRRRR`\"|||RRRRRRRRRRRRRRRRR",
   "RRR`````````````````````````````RRRRRR`````RRRRRRRR\"\"||||RRRR||RRRRRRRRRR",
   "RRRR````````````````````````````RRRRR`````````RRRRR|\"|||||R|||RRRRRRRRRRR",
-  "RRRRRRRRR``RR````````RRR``````RRRRRR``````````RRRRRR\"|||||||||RRRRRRRRRRR",
+  "RRRRRRRRR``RR````````RRR``````RRRRRR``````````RRRRRR&|||||||||RRRRRRRRRRR",
   "RRRRRRRRRRRRRRR`RR```RRR`R`````RRRRR``````````RRRRRR|\"\"\"|||||\"\"\"RRRRRRRRR",
-  "RRRRRRR|||||||R`RR``RRRRRRR``RRRRRRR`````````RRRRRRRRR\"\"\"\"\"\"\"\"\"|\"\"RRRRRRR",
+  "RRRRRRR|||||||R`RR``RRRRRRR``RRRRRRR`````````RRRRRRRRR\"\"\"\"\"&\"\"\"|\"\"RRRRRRR",
   "RRRRRRR|||||||\"`RR``RRRRRRRRRRRRRRRR``````````RRRRRRRR|\"`\"\"\"\"\"\"\"\"|RRRRRRR",
-  "RRRRRRR|||||||\"`RR``RR<<<<<<<<<<RRRR``````````RRRRRRRRR\"`\"|\"|\"``\"\"\"|RRRRR",
+  "RRRRRRR|||||||\"`RR``RR<<<<<<<<<<RRRR``````````RRRRRRRRR\"`\"|\"|\"``\"\"^|RRRRR",
   "RRRRRRR|||||||\"`RR``RR<<<<<<<<<<RRRR``````R```RRRRRRRR```\"RRRRRRRR\"\"RRRRR",
   "RRRRRRR|||||||\"`RR``RR<<<<<<^<<<RRRRRR<<<<<<<<<<<<RRR````RRRRRRRR```RRRRR",
   "RRRRRRR||||||\"\"``````R<<^<&<<<<<RRRRRR^<<<<<<<^<<<R`````RRRRRRRRRR``RRRRR",
@@ -224,58 +224,58 @@ export const MAPA_ONDA_ECO = {
   "RRRRRRR|||||\"```RR``RR<<<<<<<<<<RRR`RR<<^<<<<&^<^<RRRRRRRR`````````RRRRRR",
   "RRRRRRR|||||\"```R```RRRRRRRRRRRRRR``RR<<<[[[[[[<<<``````R``^`````R<<<<RRR",
   "RRRRRRR||||\"\"```RR``RRRRRRRRRRRRRR``RR<<<[[[[[^<<&````````````RRRR<^^<RRR",
-  "RRRRR`R||||\"```RRR``RRRRRRRRRRRRRR``RR<<<[[[^^[<<<R``````````R<^<<<<<<RRR",
-  "RRRRR`\"|||\"\"`RRRRRRRRRRR`````RRRRR``RR<<<[[[[[[<<<RRR````````R<<^<<<<<RRR",
+  "RRRRRRR||||&```RRR``RRRRRRRRRRRRRR``RR<<<[[[^^[<<<R``````````R<^<<<<<<RRR",
+  "RRRRRRR|||\"\"`RRRRRRRRRRR`````RRRRR``RR<<<[[[[[[<<<RRR````````R<<^<<<<<RRR",
   "RRRRRRR\"\"\"\"R`RRRRRRRRRR````````R````RR<<<<<<<<<<<<RRRRRR`````R<<<<<<<<RRR",
   "RRRRRRR`````RRRRRRRRRRR`````````R```RR<<<<<<<<<<<<RRRRRRR```&`<<<<<<<<RRR",
   "RRRRRRR`````RRRRRRRRR`````RR````R````RRRRRRRRR``RRRRRRRR``````<<<^<<<<RRR",
   "RRRR`RRR````RRRRRRRR`````````````````RRRRRRRRR``RRRRRRRRR`````<<<<<<<<RRR",
   "RRRR``RR````RRRRRRR``````````````````````RR`````RRRRRRRRRR```R<^<<<^^<RRR",
-  "RRRR``RR```RRR``RR````````````````f```````R``````RRRRRRR`R```R<<<<<<<<RRR",
+  "RRRR^`RR```RRR``RR````````````````f```````R``````RRRRRRR`R```R<<<<<<<<RRR",
   "RRRR``RR```RRR`RRRR``````````````&```^`````R```````RRRRR````````RRRRRRRRR",
   "RRRR``RR```RRR``RRR``^`````````````````````````````RRRRR``````````````RRR",
   "RRRR```R```RR```RRRR`````````````````&``````^```^^``RRRRR`&````RR`````RRR",
-  "RRRR```R```RR```RRRRR````````````````^``````````````RRRRRR^``````R````RRR",
+  "RRRR```R```RR`&`RRRRR````````````````^``````````````RRRRRR^``````R````RRR",
   "RRRR```R```RR```RRRRRRR````````R``&&````f``````````RRRRRRR```````R````RRR",
   "RRRR```````RR```````RRRR```R`R`R```````&````````````RRRRR`R````````RRRRRR",
   "RRRR```````RRR````````RR``RRRRRRR`````````&````````RRRRR````````````^RRRR",
   "RRRRR``````RRR````````RRRRRRRRRRRRR`R`&`````R`````RRRRR`````````RRRRRRRRR",
   "RRRRR``````RR`````````RR``RRRRRRRRRRR`&``````R`RRRRRRR``````````<<<^<<RRR",
-  "RRRRRRR`````R```RRRR``R```RR``RRRRRRRR```````RRRRRRRR`````R`````<<<<<<RRR",
+  "RRRRRRR^````R```RRRR``R```RR``RRRRRRRR```````RRRRRRRR`````R`````<<<<<<RRR",
   "RRRRRRR``````````RRR``RR```R``RRRR<<RRRRR````R<^<^^<RR````R`````<<<^K<RRR",
   "RRRRRRR``````````R`````````R```RRR<<RRRRRR```R<<<<<<RR```R`R````<<<<<<RRR",
   "RRRRR``````````````````````````RRR<<^<^<RR``RR^<<<<<RR``````````<<<<<<RRR",
   "RRRRR``````RRR```````````````````R<<<<&<RR``RR<<<<^<RRR````````R<<<<^<RRR",
-  "RRRRRRRR```RRR```````````RRR``````<<<<<<RR``RR^<<<^<RRR`R``````R<<<<<<RRR",
+  "RRRRRRRR```RRR``````^````RRR``````<<<<<<RR``RR^<<<^<RRR`R``````R<<<<<<RRR",
   "RRRRRRRR````RR``RR```R```RRRR`````<<<<&<RR``RR<<<<<<RRRRRR```&`R<<<<<<RRR",
   "RRRRRRRRR```RR``RR```````````````R<<f<<<RR``RR``````RRRRRRR````R<<^<<<RRR",
   "RRRRRRRRR```RR``RR``````````````RR<<<<<<RR`````^```RR`^`RRR``^`R<<<<^<RRR",
-  "RRRR````RR``RRRRRR```RRRRR``````RR^<<<<<RR`````````RR&;;`RR^`;`RRRRRRRRRR",
-  "RRRR`````````RRRRR``RRRRR```RR``RR&<<<<<RR``````^``RR`^;;```^;`RRRRRRRRRR",
+  "RRRR&```RR``RRRRRR```RRRRR``````RR^<<<<<RR`````````RR&;;`RR^`;`RRRRRRRRRR",
+  "RRRR`````````RRRRR``RRRRR```RR^`RR&<<<<<RR``````^``RR`^;;```^;`RRRRRRRRRR",
   "RRRRRR```````````````R``````R```RR<<<<&<RR`````^^`RRRR;^;^;^;&&`RRRRRRRRR",
   "RRRRRR```````````````R`R````RR``RR<<<<<<RR```R````RRRR`;;;^;^;^``RRRRRRRR",
   "RRRRRR```RR``````RRRRRRRRRRRRR``RRRRR`RRRR``RRRRRRRRRR`;;^;&;^;;^``RRRRRR",
-  "RRRRRR```RRRR````RRRRRRRRRRRR````RRR^``RRR```RRRRRRR^``;&;;;^;^;^;`RRRRRR",
-  "RRRRRRRRRRRRRR````RRRRR```````````````````````RRRRRR```^;;^;;;;&;^`RRRRRR",
+  "RRRRRR```RRRR````RRRRRRRRRRRR``&`RRR^``RRR```RRRRRRR^``;&;;;^;^;^;`RRRRRR",
+  "RRRRRRRRRRRRRR^```RRRRR```````````````````&```RRRRRR```^;;^;;;;&;^`RRRRRR",
   "RRRRRRRRRRRRRR`````RRRRR``````````````````````RRRRRR^`;;^;;;^^^;^;;``RRRR",
   "RRRRRRRRRRRRRRR``````RRRRRR````````````R``RR`RRRR``&`;;;;&;^;;;^;&;^^`RRR",
-  "RRRRRRRRRRRRRRR```````RRRRR````RRRRR```RRRRRRRRR````^;^&;;;;;;`;;;;^&`RRR",
-  "RRRRRRRRR``^`````RR```RRRRR````RRRR````RRRRRR````````````^;^;;^;;^;```RRR",
-  "RRRRRRR`&^`&^``^``RR````RRR````RRRR````RRR`````````RRRRR`^;;^;;;;;^`RRRRR",
+  "RRRRRRRRRRRRRRR```````RRRRR````RRRRR`&`RRRRRRRRR````^;^&;;;;;;`;;;;^&`RRR",
+  "RRRRRRRRR&&^`````RR```RRRRR````RRRR````RRRRRR````````````^;^;;^;;^;```RRR",
+  "RRRRRRR`&^&&^``^``RR````RRR````RRRR````RRR`````````RRRRR`^;;^;;;;;^`RRRRR",
   "RRRRRRRR```````````RR`````````RR`&^```^`R`````````RRRRRRR`````^^;;;^`RRRR",
-  "RRRRRRRR````````````RR````````````````````````RRRRRRRRRRRR`RRR``;;^^`RRRR",
-  "RRRRRRRRR```OO``````RRRR`````````````&``&``RRRRRRRRRRRRRRRRRRRRR`````RRRR",
+  "RRRRRRRR````````````RR```````^````````````&```RRRRRRRRRRRR`RRR``;;^^`RRRR",
+  "RRRRRRRRR```OO``````RRRR``````&``````&``&``RRRRRRRRRRRRRRRRRRRRR`````RRRR",
   "RRRRRRRRR```OO````````RRRRRRRR``````&``&`RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
   "RRRRRRRRR``````````^``RRRRRRRRRR```&```&`RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
   "RRRRRRRRR`````````````RRRRRRRRRRRR``R```RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
-  "RRRRRRRRR````````````RRRRR<<<<RRRRRRR```RR<<^<RRRRRRRRRRRRRRRRRRRRRRRRRRR",
+  "RRRRRRRRR````````````RRRRR<<<<RRRRRRR`&`RR<<^<RRRRRRRRRRRRRRRRRRRRRRRRRRR",
   "RRRRRRRRRR``````````RRRRRR<^<<RRRRRRRR``RR<<^<RRRRRRRRRRRRRRRRRRRRRRRRRRR",
   "RRRRRRRRRR``````````RRRRRR<<<<^<^<^<RR``RR<^^<RRRRRRRRRRRRRRRRRRRRRRRRRRR",
   "RRRRRRRRRR`````RRRRRRRRRRR<<<<<<<<<<R```RR<^<<RRRRRRRRRRRRRRRRRRRRRRRRRRR",
   "RRRRRRRRR`````RRRRRRRRRRRR^<<<^<<<<<R````R<<<<RRRRRRRRRRRRRRRRRRRRRRRRRRR",
   "RRRRRRRR`````RRRRRRRRRRRRR<<<^<<<<<<``````<<^<RRRRRRRRRRRRRRRRRRRRRRRRRRR",
   "RRRRRRRR````RRRRRRRRRRRRRRRR^<^<^<&<R````R<^^<RRRRRRRRRRRRRRRRRRRRRRRRRRR",
-  "RRRRRR`````RRRRRRRRRRRRRRRRR<<<<<<<<R````R<<<<RRRRRRRRRRRRRRRRRRRRRRRRRRR",
+  "RRRRRR`````RRRRRRRRRRRRRRRRR<<<<<<<<R&```R<<<<RRRRRRRRRRRRRRRRRRRRRRRRRRR",
   "RRRRRR````RRRRRRRRRRRRRRRRRRRRRRRRRRR```RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
   "RRRRRR```RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
   "RRRRR````RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
@@ -291,10 +291,10 @@ export const MAPA_ONDA_ECO = {
   "0001000000000000000011111111000000000000000011000000000000000000000000000",
   "0001000000000000000011010000001000000000000001100000000000000000000000000",
   "0001000000000000000000000000000000000011111000110000000000000000000000000",
-  "0001000000000000000000000000000000000010001100011111100000000000000000000",
-  "0001000000000000000000010000001000011110000100000010111100000000000000000",
-  "0001000000000000000000110000010000011100000110000000110110000000000000000",
-  "0001000000000011111111100000010001000111000011100000000010000001110000000",
+  "0001000000000000000000000000000000000010001100011110000000000000000000000",
+  "0001000000000000000000010000001000011110000100000011111100000000000000000",
+  "0001000000000000000000110000010000011000000110000000110110000000000000000",
+  "0001000000000011111111100000010001001111000011100000000010000001110000000",
   "0001000000000010000001000000010001111001111000110000000011000001010000000",
   "0001000000000010000001000000000000000000001000011000011001000011010000000",
   "0001000000000010000001000000000000000000001000001100000011000010010000000",
@@ -315,10 +315,10 @@ export const MAPA_ONDA_ECO = {
   "0000001000000000100001000000000011001211111111111120011001000010000110000",
   "0000001000000000110011000000000011101211111111111121111111000000000111100",
   "0000001000000000100011111111111111001211100000011100000010000000010000100",
-  "0000111000000000110010000000000001001211100000011100000000000011110000100",
-  "0000101000000001110010033333330001001211100000011120000000000100000000100",
-  "0000100000000111011110332222231111001211100000011121100000000100000000100",
-  "0000111000010100000000322222200100001211111111111120111100000100000000100",
+  "0000001000000000110010000000000001001211100000011100000000000011110000100",
+  "0000001000000001110010033333330001001211100000011120000000000100000000100",
+  "0000001000000111011110332222231111001211100000011121100000000100000000100",
+  "0000001000010100000000322222200100001211111111111120111100000100000000100",
   "0000001000001100000033322222200010001211111111111120000110000000000000100",
   "0001111000001000000332222233200010000222222222002220000100000000000000100",
   "0001011100001000003322222222200000000111111122002000000110000000000000100",
@@ -360,8 +360,8 @@ export const MAPA_ONDA_ECO = {
   "0000000010000000000000111111110000000000011100000000000000000001111111000",
   "0000000010000000000000100000011100000000010000000000000000000000000000000",
   "0000000010000000000000100111111111001000111111100000000000000000000000000",
-  "0000000010000000000001100100001101111000110000100000000000000000000000000",
-  "0000000011000000000011000100000111111100110000100000000000000000000000000",
+  "0000000010000000000001100100001001111000110000100000000000000000000000000",
+  "0000000011000000000011000100001111111100110000100000000000000000000000000",
   "0000000001000000000010000100000000001100110000100000000000000000000000000",
   "0000000011000001111110000100000000001000110000100000000000000000000000000",
   "0000000110000011000000000100000000001000010000100000000000000000000000000",
@@ -432,23 +432,23 @@ export const MAPA_ONDA_ECO = {
   "0000000000000000000000000000000000000000000000000000000000000000000000000",
   "0000000000000000000000000000000000000000000000000000000000000000000000000",
   "0000000000000000000000000000000000000000000000000000000000000000000000000",
-  "0000000000000000000000000000000000000000000000000000000000000000000000000",
-  "0000000000000000000000000000000000000000000000000000000000000100000000000",
-  "0000000000000000000000000000000000000000000000000000001100000100000000000",
-  "0000000000000000000000000000000000000000000000000000001110001100000000000",
-  "0000000000000000000000000000000000000000000000000000001111111100000000000",
-  "0000000000000000000000000000000000000000000000000000000111111100000000000",
-  "0000000000000000000000000000000000000000000000000000000111111011100000000",
-  "0000000000000000000000000000000000000000000000000000000111111111110000000",
-  "0000000000000000000000000000000000000000000000000000000011111111110000000",
+  "0000000000000000000000000000000000000000000000000000000000011110000000000",
+  "0000000000000000000000000000000000000000000000000000011100011110000000000",
+  "0000000000000000000000000000000000000000000000000000011110011110000000000",
+  "0000000000000000000000000000000000000000000000000000011111111110000000000",
+  "0000000000000000000000000000000000000000000000000000001111111111000000000",
+  "0000000000000000000000000000000000000000000000000000001111111111100000000",
   "0000000000000000000000000000000000000000000000000000001111111111111000000",
-  "0000000000000000000000000000000000000000000000000000011111111111111100000",
-  "0000000000000000000000000000000000000000000000000000010011111101111110000",
-  "0000000000000000000000000000000000000000000000000000000001111111111000000",
-  "0000000000000000000000000000000000000000000000000000000001110111111000000",
-  "0000000000000000000000000000000000000000000000000000000000000011111100000",
-  "0000000000000000000000000000000000000000000000000000000000000000111100000",
-  "0000000000000000000000000000000000000000000000000000000000000000000000000",
+  "0000000000000000000000000000000000000000000000000000111111111111111000000",
+  "0000000000000000000000000000000000000000000000000000111111111111111000000",
+  "0000000000000000000000000000000000000000000000000000111111111111111110000",
+  "0000000000000000000000000000000000000000000000000000111111111111111111000",
+  "0000000000000000000000000000000000000000000000000000111111111111111111000",
+  "0000000000000000000000000000000000000000000000000000111111111111111111000",
+  "0000000000000000000000000000000000000000000000000000000011111111111100000",
+  "0000000000000000000000000000000000000000000000000000000001111111111110000",
+  "0000000000000000000000000000000000000000000000000000000000100011111110000",
+  "0000000000000000000000000000000000000000000000000000000000000000111110000",
   "0000000000000000000000000000000000000000000000000000000000000000000000000",
   "0000000000000000000000000000000000000000000000000000000000000000000000000",
   "0000000000000000000000000000000000000000000000000000000000000000000000000",
@@ -474,7 +474,7 @@ export const MAPA_ONDA_ECO = {
    },
    "claro": 30,
    "penumbra": 30,
-   "tipo": "fogueira"
+   "tipo": "braseiro"
   },
   {
    "pos": {
@@ -492,7 +492,66 @@ export const MAPA_ONDA_ECO = {
    },
    "claro": 30,
    "penumbra": 30,
-   "tipo": "fogueira"
+   "tipo": "magica",
+   "cor": "#5bff8f"
+  },
+  {
+   "pos": {
+    "x": 44,
+    "y": 29
+   },
+   "claro": 10,
+   "penumbra": 10,
+   "tipo": "magica",
+   "cor": "#5bff8f"
+  },
+  {
+   "pos": {
+    "x": 16,
+    "y": 7
+   },
+   "claro": 15,
+   "penumbra": 30,
+   "tipo": "braseiro"
+  },
+  {
+   "pos": {
+    "x": 36,
+    "y": 57
+   },
+   "claro": 15,
+   "penumbra": 30,
+   "tipo": "braseiro"
+  },
+  {
+   "pos": {
+    "x": 33,
+    "y": 38
+   },
+   "claro": 20,
+   "penumbra": 40,
+   "tipo": "braseiro",
+   "apagada": true
+  },
+  {
+   "pos": {
+    "x": 41,
+    "y": 47
+   },
+   "claro": 20,
+   "penumbra": 40,
+   "tipo": "braseiro",
+   "apagada": true
+  },
+  {
+   "pos": {
+    "x": 10,
+    "y": 72
+   },
+   "claro": 15,
+   "penumbra": 30,
+   "tipo": "braseiro",
+   "apagada": true
   }
  ]
 };
@@ -2158,10 +2217,6 @@ export const ONDA_ECO = {
   "16": [
    {
     "x": 51,
-    "y": 9
-   },
-   {
-    "x": 51,
     "y": 11
    },
    {
@@ -3557,10 +3612,6 @@ export const ONDA_ECO = {
     "y": 11
    },
    {
-    "x": 36,
-    "y": 11
-   },
-   {
     "x": 22,
     "y": 12
    },
@@ -4669,10 +4720,6 @@ export const ONDA_ECO = {
     "y": 32
    },
    {
-    "x": 5,
-    "y": 33
-   },
-   {
     "x": 7,
     "y": 33
    },
@@ -4703,14 +4750,6 @@ export const ONDA_ECO = {
    {
     "x": 14,
     "y": 33
-   },
-   {
-    "x": 5,
-    "y": 34
-   },
-   {
-    "x": 6,
-    "y": 34
    },
    {
     "x": 7,
@@ -9797,10 +9836,6 @@ export const ONDA_ECO = {
     "y": 78
    },
    {
-    "x": 30,
-    "y": 78
-   },
-   {
     "x": 26,
     "y": 79
    },
@@ -12671,6 +12706,226 @@ export const ONDA_ECO = {
   },
   {
    "tipo": "prop",
+   "x": 29,
+   "y": 13,
+   "variante": "estalagmiteCorda",
+   "piso": "mina"
+  },
+  {
+   "tipo": "prop",
+   "x": 31,
+   "y": 13,
+   "variante": "estalagmiteCorda",
+   "piso": "mina"
+  },
+  {
+   "tipo": "prop",
+   "x": 11,
+   "y": 33,
+   "variante": "ossosAnao",
+   "piso": "conchas"
+  },
+  {
+   "tipo": "prop",
+   "x": 9,
+   "y": 69,
+   "variante": "sacoDeDormir",
+   "piso": "mina"
+  },
+  {
+   "tipo": "prop",
+   "x": 10,
+   "y": 69,
+   "variante": "sacoDeDormir",
+   "piso": "mina",
+   "espelhar": true
+  },
+  {
+   "tipo": "prop",
+   "x": 10,
+   "y": 70,
+   "variante": "sacoDeDormir",
+   "piso": "mina",
+   "espelhar": true
+  },
+  {
+   "tipo": "prop",
+   "x": 20,
+   "y": 55,
+   "variante": "ferramentas",
+   "piso": "mina",
+   "espelhar": true
+  },
+  {
+   "tipo": "prop",
+   "x": 4,
+   "y": 40,
+   "variante": "entulhoMina",
+   "piso": "mina"
+  },
+  {
+   "tipo": "prop",
+   "x": 29,
+   "y": 72,
+   "variante": "carrinhoVazio",
+   "piso": "mina"
+  },
+  {
+   "tipo": "prop",
+   "x": 4,
+   "y": 59,
+   "variante": "montinhoMinerio",
+   "piso": "mina",
+   "espelhar": true
+  },
+  {
+   "tipo": "prop",
+   "x": 14,
+   "y": 44,
+   "variante": "lanterna",
+   "piso": "mina"
+  },
+  {
+   "tipo": "prop",
+   "x": 30,
+   "y": 60,
+   "variante": "entulhoMina",
+   "piso": "mina"
+  },
+  {
+   "tipo": "prop",
+   "x": 14,
+   "y": 65,
+   "variante": "ferramentas",
+   "piso": "mina",
+   "espelhar": true
+  },
+  {
+   "tipo": "prop",
+   "x": 7,
+   "y": 50,
+   "variante": "blocoCaido",
+   "piso": "mina"
+  },
+  {
+   "tipo": "prop",
+   "x": 59,
+   "y": 21,
+   "variante": "conchasPedra",
+   "piso": "conchas"
+  },
+  {
+   "tipo": "prop",
+   "x": 51,
+   "y": 11,
+   "variante": "estalagmiteAlta",
+   "piso": "conchas"
+  },
+  {
+   "tipo": "prop",
+   "x": 52,
+   "y": 19,
+   "variante": "conchasPedra",
+   "piso": "conchas"
+  },
+  {
+   "tipo": "prop",
+   "x": 66,
+   "y": 23,
+   "variante": "pedraDeLiquen",
+   "piso": "conchas",
+   "espelhar": true
+  },
+  {
+   "tipo": "prop",
+   "x": 46,
+   "y": 9,
+   "variante": "blocoCaido",
+   "piso": "mina"
+  },
+  {
+   "tipo": "prop",
+   "x": 37,
+   "y": 13,
+   "variante": "entulhoMina",
+   "piso": "mina"
+  },
+  {
+   "tipo": "prop",
+   "x": 38,
+   "y": 4,
+   "variante": "blocoCaido",
+   "piso": "mina"
+  },
+  {
+   "tipo": "prop",
+   "x": 50,
+   "y": 13,
+   "variante": "colunaNatural",
+   "piso": "mina"
+  },
+  {
+   "tipo": "prop",
+   "x": 42,
+   "y": 5,
+   "variante": "entulhoMina",
+   "piso": "mina",
+   "espelhar": true
+  },
+  {
+   "tipo": "prop",
+   "x": 37,
+   "y": 68,
+   "variante": "lanterna",
+   "piso": "mina"
+  },
+  {
+   "tipo": "prop",
+   "x": 37,
+   "y": 84,
+   "variante": "lanterna",
+   "piso": "mina"
+  },
+  {
+   "tipo": "prop",
+   "x": 30,
+   "y": 73,
+   "variante": "lanterna",
+   "piso": "mina"
+  },
+  {
+   "tipo": "prop",
+   "x": 38,
+   "y": 77,
+   "variante": "ossos",
+   "piso": "mina",
+   "espelhar": true
+  },
+  {
+   "tipo": "prop",
+   "x": 31,
+   "y": 64,
+   "variante": "ossosOrc",
+   "piso": "mina",
+   "espelhar": true
+  },
+  {
+   "tipo": "prop",
+   "x": 42,
+   "y": 72,
+   "variante": "ossosAnao",
+   "piso": "mina"
+  },
+  {
+   "tipo": "prop",
+   "x": 42,
+   "y": 65,
+   "variante": "ossos",
+   "piso": "mina",
+   "espelhar": true
+  },
+  {
+   "tipo": "prop",
    "x": 51,
    "y": 67,
    "variante": "coralAmarelo",
@@ -13062,25 +13317,19 @@ export const ONDA_ECO = {
    {
     "x": 39,
     "y": 78
-   },
-   {
-    "x": 36,
-    "y": 65
-   },
-   {
-    "x": 42,
-    "y": 70
-   },
-   {
-    "x": 30,
-    "y": 69
-   },
-   {
-    "x": 34,
-    "y": 76
    }
   ],
-  "esqueletos": [
+  "zumbisOgros": [
+   {
+    "x": 31,
+    "y": 81
+   },
+   {
+    "x": 26,
+    "y": 79
+   }
+  ],
+  "zumbisGuarita": [
    {
     "x": 30,
     "y": 84
@@ -13104,18 +13353,28 @@ export const ONDA_ECO = {
    {
     "x": 31,
     "y": 80
+   }
+  ],
+  "fungosVioleta": [
+   {
+    "x": 60,
+    "y": 68
    },
    {
-    "x": 29,
-    "y": 77
-   },
+    "x": 56,
+    "y": 61
+   }
+  ],
+  "serpente": [
    {
-    "x": 28,
-    "y": 80
-   },
+    "x": 10,
+    "y": 26
+   }
+  ],
+  "polvo": [
    {
-    "x": 33,
-    "y": 82
+    "x": 57,
+    "y": 19
    }
   ],
   "ghoulsSul": [
@@ -13148,6 +13407,10 @@ export const ONDA_ECO = {
    {
     "x": 31,
     "y": 36
+   },
+   {
+    "x": 18,
+    "y": 40
    }
   ],
   "gosma": [
@@ -13176,6 +13439,10 @@ export const ONDA_ECO = {
    {
     "x": 26,
     "y": 28
+   },
+   {
+    "x": 31,
+    "y": 25
    }
   ],
   "zumbis": [
@@ -13244,6 +13511,10 @@ export const ONDA_ECO = {
    {
     "x": 24,
     "y": 10
+   },
+   {
+    "x": 24,
+    "y": 9
    }
   ],
   "vhalak": [
@@ -13268,24 +13539,7 @@ export const ONDA_ECO = {
     "y": 10
    }
   ],
-  "aranhasTemplo": [
-   {
-    "x": 9,
-    "y": 5
-   },
-   {
-    "x": 5,
-    "y": 13
-   },
-   {
-    "x": 10,
-    "y": 11
-   },
-   {
-    "x": 5,
-    "y": 6
-   }
-  ],
+  "aranhasTemplo": [],
   "nundro": [
    {
     "x": 15,

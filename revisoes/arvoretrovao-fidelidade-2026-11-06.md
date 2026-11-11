@@ -70,12 +70,114 @@ Fica escrito para ninguém repetir.
    com telhado), "ao redor dela não cresce nada" (CINCO copas encostam na torre) e "trinta centímetros de
    cinza" (o terreno não tem uma casa de cinza). O que sobrou dos três é decisão de conteúdo: a guarnição é
    casca sem telhado, e o roteiro faz o grupo SUBIR no telhado dela.
-5. **Os 13 prédios "A CONFERIR"** continuam sem nome medido. A cena da FA tem 0 notas e 0 desenhos; o revisor
-   também não achou a planta do livro no repositório. Resolver isso é cruzar com o mapa do livro, à mão.
+5. ~~Os 13 prédios "A CONFERIR" continuam sem nome medido.~~ **MEDIDO em 2026-11-06, e o resultado é grave:
+   doze dos treze nomes estão errados, e com eles o conteúdo.** Ver a seção abaixo.
+
+## O DE-PARA DOS TREZE PRÉDIOS, medido contra o mapa do livro
+
+O que destravou foi achar que **o mapa oficial está dentro do PDF do livro** (`_referencias/livro/`, página
+30 da numeração do arquivo, uma única imagem JPEG de 802x562). Ele traz os treze números em círculos
+vermelhos, e os círculos se acham pela cor: `r - (g+b)/2 > 45` devolve treze manchas, uma por número.
+
+Projetando os treze sobre a nossa grade de 58 x 38 (o quadro jogável do mapa do livro corresponde à imagem
+inteira da FA), **cada número cai em cima de um prédio nosso diferente, sem colisão, e a ordem em x e em y
+se preserva nos dois**. A planta da Forgotten Adventures é o mapa do livro redesenhado — o mesmo caso da
+Mansão.
+
+| nº | o que o livro põe ali | o nosso prédio | o nome que ele tem hoje |
+|---|---|---|---|
+| 1 | Cabana Ocidental — 2 ramos secos e o baú do comerciante | `casa10` | (área de rua, sem planta) |
+| 2 | Cabana com Ramos — 6 ramos secos | `moinho` | moinho |
+| 3 | O Cavalo Pardo, a taverna — 4 zumbis das cinzas | `ervas` | **a loja da herborista** |
+| 4 | Reduto do Druida — **o Reidoth** | `casa7` | casa7 |
+| 5 | Fazenda de Ramos — 8 ramos secos | `fazenda` | fazenda ✓ |
+| 6 | Armazém Destruído — as aranhas | `escola` | escola |
+| 7 | Torre do Dragão | `torre` | torre ✓ |
+| 8 | Velha Ferraria — 2 zumbis | `celeiro` | celeiro |
+| 9 | Loja do Herborista — a caixa da Mirna | `guarda` | **a velha guarnição** |
+| 10 | Praça da Cidade — a estátua | `casa12` | casa12 |
+| 11 | Velha Guarnição — 5 zumbis | `casa15` | casa15 |
+| 12 | Cabana do Tecelão — 6 ramos | `loja` | loja |
+| 13 | Cultistas de Dragão | `estalagem` | **a estalagem** |
+
+**Só `torre` e `fazenda` estão certos.** Os outros onze nomes foram lidos do desenho, e o conteúdo foi
+pendurado neles — então o conteúdo foi junto:
+
+- **O Reidoth mora na taverna.** Ele está em `ervas`, que é a área 3, O Cavalo Pardo; o Reduto do Druida
+  (área 4) é a nossa `casa7`, onde hoje moram dois ramos secos. Isto também explica o item 2 desta lista: ele
+  "acampa a 20 casas de onde mora" porque mora no prédio errado.
+- **A caixa da Mirna está na guarnição.** Ela está em `ervas` junto com o Reidoth; o livro a põe na Loja do
+  Herborista, que é a nossa `guarda`.
+- **Os três ninhos de zumbi estão trocados entre si**: os 4 do Cavalo Pardo estão na `estalagem` (que é a
+  área 13, dos cultistas), os 2 da ferraria estão em `ferraria` (que o livro não numera), e os 5 da guarnição
+  estão em `guarda` (que é a loja da herborista).
+- **Os ninhos de ramo seco idem**: os 2 da área 1 estão em `casa7` (área 4) e os 6 da área 2 em `celeiro`
+  (área 8).
+- **A estátua** é escolhida por heurística ("a casa de largo mais perto do meio da aldeia") e caiu em
+  (31,20), o meio do mapa; o livro a põe na Praça da Cidade, área 10, no quadrante nordeste.
+- **`prefeito` e `casa10` não são área de rua.** A área 1 é `casa10` e a área 2 são as DUAS cabanas vizinhas
+  ("estas cabanas estão em ruínas, uma ao lado da outra"), que são `prefeito` e `moinho`. As duas que o
+  gerador não conseguiu recortar pela cor são justamente duas das numeradas.
+
+### A prova de que o de-para não depende do quadro lido a olho
+
+O círculo do número é **etiqueta**: fica AO LADO da construção, não em cima dela — a mesma lição dos
+marcadores `.svg` da FA que o CLAUDE.md já registra. Medido: ancorar o quadro pelo círculo do 7 para ele cair
+no centro da nossa torre **piora tudo**, de 5 acertos diretos para 2, com colisão.
+
+O que vale é o vizinho mais perto, e a prova dele é a estabilidade. Sacudindo as quatro bordas do quadro em
+±4 px — 81 quadros — **doze dos treze não mudam de prédio em quadro nenhum**, e a atribuição nunca tem
+colisão. O único que oscila é o 10, a Praça da Cidade, entre `casa12` e `casa20`: e ela não é construção, é o
+largo da estátua.
+
+## O CONSERTO, no mesmo dia
+
+Os treze prédios foram renomeados pelas áreas do livro, e o conteúdo foi atrás:
+
+| o que mudou | antes | agora |
+|---|---|---|
+| Reidoth | na taverna (`ervas`) | **(14,28), dentro do Reduto do Druida** |
+| o acampamento dele (cama, panela, secador) | em `florestal`, a 20 casas | junto dele, no Reduto |
+| a caixa da Mirna | na guarnição | **(43,25), na Loja do Herborista** |
+| o baú do comerciante | em `casa7` | **(4,13), na Cabana Ocidental (área 1)** |
+| os 5 zumbis da guarnição | em `guarda` (= área 9) | na `guarnicao` (área 11) |
+| os 4 do Cavalo Pardo | na `estalagem` (= área 13) | no `cavaloPardo` (área 3) |
+| os 2 da ferraria | na `ferraria` (sem número) | na `velhaFerraria` (área 8) |
+| os 2 ramos da área 1 | em `casa7` (= área 4) | na `cabanaOcidental` |
+| os 6 ramos da área 2 | em `celeiro` (= área 8) | na `cabanaDosRamos` |
+| os 8 ramos da área 5 | no mato do NORDESTE, a 30 casas | **no mato a LESTE da fazenda**, (26,30)-(30,38) |
+| os 6 ramos da área 12 | num retângulo do centro-oeste | **nos arbustos ao SUL do tecelão**, (43,23)-(48,27) |
+| os 6 cultistas e o cofre | em `casa9` | nos `cultistas` (área 13) |
+| a barricada do culto | sobre `casa9` | sobre os `cultistas` |
+| a estátua | (31,20), "o largo mais perto do meio da aldeia" | **(36,12), o largo mais perto da praça (área 10)** |
+
+**A mobília seguiu o NOME e não a construção.** Mover a lista junto com o prédio deixaria o barril de cerveja
+no covil dos cultistas e a bigorna no celeiro. O que manda é o que a peça é: o barril e a cuba foram para a
+taverna, a bigorna para a ferraria, o tear para o tecelão, e o **alçapão para a guarnição** — é ele que o
+capítulo abre para subir.
+
+**E a vista do alto foi remedida.** Os quatro parágrafos davam rumos a partir de (43,24), que era a antiga
+`guarda`; a guarnição de verdade é a construção do canto nordeste, em (47,4). Daí a torre está a **20 m a
+oeste** (era "29 m a noroeste"), a praça e a estátua a 13 e 17 m a sudoeste, o tecelão a 25 m ao sul, o
+armazém a 34 m, e a fileira da taverna, da ferraria e da fazenda a uns 43 m, toda a sudoeste.
+
+**Um defeito novo que o conserto revelou:** três peças de mobília foram parar em soleira de porta, e
+`conferir-paredes` acusou "porta no maciço". A causa é que as listas são as mesmas mas as construções têm
+outro formato — e o gerador da Árvore Trovão, ao contrário do do Castelo, não reservava as duas casas de cada
+porta. Agora reserva.
+
+### O que fica
+
+- **`cabanaOcidental` e `cabanaDoLado` continuam área de rua**, um quadrado de 3x3 em volta da semente. São a
+  área 1 e a outra metade da área 2 — "estas cabanas estão em ruínas, uma ao lado da outra" —, e são
+  justamente as duas que a cor não recorta (o piso de dentro é mais verde que o capim de fora). Quem quiser a
+  planta delas desenha no editor.
+- **Duas construções continuam "A CONFERIR"**, `casaSudeste` e `casaNordeste`: o livro não as numera.
 
 ## Estado da bateria
 
-30 suítes verdes, `cena-node/tesouros` com 12 confirmações, vitest 400/400, `conferir-paredes` 0 achados, e
+31 suítes verdes, `cena-node/tesouros` com 12 confirmações, `testes-cenas` 67/67, vitest 400/400,
+`conferir-paredes` e `conferir-cena` com 0 achados, e
 o gerador reprodutível (duas rodadas, mesmo MD5).
 
 

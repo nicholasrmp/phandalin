@@ -21,7 +21,7 @@ import { averageOf } from '../core/dice.js';
 import { garantirInventario } from '../rules/equipment.js';
 import { guardar, totalEmCobre, cobrar, LOJAS } from '../game/comercio.js';
 import { Battlefield, distanceFt, ARESTA } from '../core/grid.js';
-import { visaoNoEscuro, nivelDeLuz } from '../rules/luz.js';
+import { visaoNoEscuro, nivelDeLuz, definirEscuridao } from '../rules/luz.js';
 import { hasCondition } from '../rules/conditions.js';
 import { skillBonus, passivePerception } from '../rules/abilities.js';
 import { makeRng } from '../core/rng.js';
@@ -32,7 +32,8 @@ import { criarPersonagem } from '../rules/progressao.js';
 import { subirUmNivel } from '../game/nivel.js';
 import { MAPA_ESCONDERIJO, PONTOS_DO_ESCONDERIJO as PE } from '../game/esconderijo.js';
 import { montarCampo } from '../game/campo.js';
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
+import { LOOKS } from '../art/looks.js';
 import { CRIATURAS_COM_FICHA, fichaDe } from '../art/fichas-de-criatura.js';
 import { MAPA_ARVORE_TROVAO, ARVORE_TROVAO } from '../game/arvoretrovao.js';
 import { mudarExaustao, nivelDeExaustao } from '../rules/conditions.js';
@@ -159,6 +160,98 @@ const salaDoEsconderijo = () => montarCampo(mapaDo('esconderijo'));
 const casasDaSala = (f, nome) => [...f.sala].filter(([, n]) => n === nome).map(([c]) => c.split(',').map(Number))
   .filter(([x, y]) => !f.blocksMove(x, y));
 
+// A COBRA DO OBELISCO (área 4): enrolada na laje rachada, e quem sobe pela passagem a alcança antes de pisar na laje
+// — `capitulo2.js cobra()` a acorda com um herói a 15 pés e à vista. Se ela nascesse fora da subida, ou atrás de uma
+// quina, a cena nunca a acordaria e o grupo passaria por cima dela sem luta.
+teste('a cobra do Obelisco está na laje da subida, e quem sobe a vê a 15 pés antes de pisar nela', () => {
+  const f = salaDoEsconderijo();
+  const cobras = bando().filter((c) => c.grupo === 'cobra');
+  assert.equal(cobras.length, 1);
+  const [cobra] = cobras;
+  assert.equal(cobra.defId, 'cobraVenenosaGigante');
+  assert.ok(PE.ressalto.some((p) => p.x === cobra.pos.x && p.y === cobra.pos.y), 'a cobra não está na laje');
+  const naSubida = casasDaSala(f, 'passagem')
+    .filter(([x, y]) => !PE.ressalto.some((p) => p.x === x && p.y === y))
+    .filter(([x, y]) => Math.max(Math.abs(x - cobra.pos.x), Math.abs(y - cobra.pos.y)) * 5 <= 15
+      && f.hasLineOfSight({ x, y }, cobra.pos));
+  assert.ok(naSubida.length >= 2, `só ${naSubida.length} casas da subida, fora da laje, acordam a cobra`);
+});
+
+// NÃO HÁ ENTRADA NO ESCONDERIJO FORA DO OLHO DO POSTO. O gatilho dos vigias (`capitulo2.js olhoDoPosto`) era uma
+// faixa de coordenadas, `y >= 14 && x >= 10`, e a fileira y = 13 ficava de fora: pelo lado seco OESTE da água dava
+// para sair da grama em (9,13), pisar na goela da caverna a QUINZE PÉS do abrigo de ripas, à vista dos dois
+// goblins, e subir inteiro para dentro sem que os vigias existissem — MEDIDO: 191 casas, as sete salas do
+// esconderijo inteiras, `covil`, `pocos` e `chefe` incluídas. A prova é da PLANTA, não do texto da regra:
+// tira do tabuleiro cada casa que o posto nota — leste da água, numa das três salas da boca, a até 20 pés e com
+// linha de visão — e exige que, da chegada do grupo, não se alcance NENHUMA casa de dentro do esconderijo. Quem
+// repintar o mapa e abrir outra porta pelo mato quebra este teste, que é para o que ele serve.
+const OLHO_DO_POSTO_FT = 20;
+teste('não há como entrar no esconderijo sem passar debaixo do olho do posto dos vigias', () => {
+  const f = salaDoEsconderijo();
+  const posto = bando().filter((c) => /vigia/i.test(c.name)).map((c) => c.pos);
+  assert.equal(posto.length, 2, 'o posto dos vigias deixou de ter dois goblins');
+  const sala = (x, y) => f.sala?.get(`${x},${y}`) ?? null;
+  const nota = (x, y) => x >= 10 && ['fora', 'vigias', 'passagem'].includes(sala(x, y))
+    && posto.some((v) => distanceFt(v, { x, y }) <= OLHO_DO_POSTO_FT && f.hasLineOfSight(v, { x, y }));
+
+  const chegada = mapaDo('esconderijo').grupo;
+  for (const p of chegada) {
+    assert.ok(!nota(p.x, p.y), `o grupo chega em (${p.x},${p.y}) já debaixo do olho do posto: a cena abriria em emboscada`);
+  }
+  const fila = chegada.map((p) => [p.x, p.y]);
+  const vi = new Set(fila.map(([x, y]) => `${x},${y}`));
+  while (fila.length) {
+    const [x, y] = fila.shift();
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]]) {
+      const nx = x + dx; const ny = y + dy; const k = `${nx},${ny}`;
+      if (!f.inside(nx, ny) || vi.has(k) || f.blocksMove(nx, ny) || !f.passa(x, y, nx, ny, 'passo')) continue;
+      if (nota(nx, ny)) continue;              // o posto o notou: a rota morre aqui
+      vi.add(k); fila.push([nx, ny]);
+    }
+  }
+  const dentro = [...vi].filter((k) => {
+    const [x, y] = k.split(',').map(Number);
+    return !['fora', null].includes(sala(x, y));
+  });
+  assert.equal(dentro.length, 0,
+    `dá para entrar no esconderijo sem o posto notar, por ${dentro.slice(0, 6).join(' ')}`);
+});
+
+// O MATO DO POSTO DOS VIGIAS (H1/H2 do livro): quem ataca através dele tem três quartos de cobertura (+5), e ele
+// não se atravessa pelo lado oeste do riacho. A segunda regra já sai da planta — todo espinheiro fica a leste da
+// água —, e este teste a guarda: quem repintar o mato do lado de cá do riacho o quebra.
+teste('o mato do posto dos vigias: três quartos de cobertura através dele, e só no esconderijo', () => {
+  const f = montarCampo(mapaDo('esconderijo'));
+  const daClareira = { x: 7, y: 16 };
+  assert.equal(f.coverBetween(daClareira, { x: 14, y: 16 }), 5, 'da clareira (área 1) contra o posto: +5');
+  assert.equal(f.coverBetween({ x: 14, y: 16 }, daClareira), 5, 'do posto contra a clareira: +5');
+  assert.equal(f.coverBetween({ x: 13, y: 16 }, { x: 15, y: 16 }), 0, 'dentro da clareira do posto ninguém se cobre');
+  for (const outro of ['emboscada', 'rua']) {
+    assert.equal(montarCampo(mapaDo(outro)).matas.size, 0, `${outro}: o livro não dá essa cobertura ao mato de lá`);
+  }
+});
+
+teste('o espinheiro do posto não se alcança pelo lado oeste do riacho sem cruzar a água', () => {
+  const m = mapaDo('esconderijo');
+  const f = montarCampo(m);
+  const glifo = (x, y) => m.terreno[y]?.[x];
+  // Da chegada do grupo, andando sem pisar no riacho: nenhuma casa de espinheiro.
+  const fila = m.grupo.map((p) => [p.x, p.y]);
+  const vi = new Set(fila.map(([x, y]) => `${x},${y}`));
+  while (fila.length) {
+    const [x, y] = fila.shift();
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]]) {
+      const nx = x + dx; const ny = y + dy; const k = `${nx},${ny}`;
+      if (!f.inside(nx, ny) || vi.has(k) || f.blocksMove(nx, ny) || !f.passa(x, y, nx, ny, 'passo')) continue;
+      if (glifo(nx, ny) === 'w') continue;     // o riacho: daqui em diante é o lado leste
+      vi.add(k); fila.push([nx, ny]);
+    }
+  }
+  const mato = [...vi].filter((k) => { const [x, y] = k.split(',').map(Number); return glifo(x, y) === '%'; });
+  assert.deepEqual(mato, [], `espinheiro alcançável pelo oeste: ${mato.join(' ')}`);
+  assert.ok([...f.matas].length > 0, 'o esconderijo tem espinheiro');
+});
+
 teste('o túnel e os degraus do canil ficam FORA do alcance da corrente dos lobos', () => {
   // É disso que depende o gatilho próprio do canil: passar pelo túnel não pode
   // acender a briga, senão "Acalmar os lobos" volta a ser letra morta. E o livro: eles não alcançam os degraus.
@@ -189,11 +282,29 @@ teste('não se vê o bando de Klarg do lado dos tanques', () => {
   assert.equal(veem.length, 0, `${veem.length} casas dos tanques enxergam o bando de Klarg: ${veem.map((p) => p.join(',')).join(' ')}`);
 });
 
+// O RETRATO DA HUD (a ordem de turno, o alvo) sai de `makePortrait(look)`, que pedia a folha do pintor e QUEBRAVA
+// com "Look desconhecido" para quem só tem ficha: a primeira luta com a cobra do esconderijo derrubou a ordem de
+// turno inteira. Nenhum teste em Node desenha HUD, então a prova é dupla: todo monstro tem look desenhado OU ficha,
+// e o `makePortrait` consulta a lista das fichas antes de pedir a folha.
+teste('todo monstro tem retrato: um look desenhado ou a ficha, e o makePortrait sabe da ficha', () => {
+  const semNada = Object.values(MONSTERS).filter((m) => {
+    const k = m.look ?? m.id;
+    return !LOOKS[k] && !LOOKS[String(k).split(/[~@]/)[0]] && !CRIATURAS_COM_FICHA.includes(k);
+  }).map((m) => m.id);
+  assert.deepEqual(semNada, [], `monstro sem look e sem ficha: ${semNada.join(', ')}`);
+  const fonte = readFileSync('src/art/sheet.js', 'utf8');
+  const corpo = fonte.slice(fonte.indexOf('export function makePortrait'));
+  assert.match(corpo.slice(0, 400), /SO_FICHA\.has\(lookKey\)/, 'o makePortrait não olha a ficha antes da folha');
+});
+
 teste('toda criatura tem a ficha da galeria no disco, menos as que a galeria não tem', () => {
   // `art/fichas-de-criatura.js` diz quem tem ficha; `src/dev/baixar-fichas.py` as põe em `public/fichas`.
   const SEM_FICHA = new Set();   // a vassoura veio do 5etools: agora toda criatura tem
   for (const id of CRIATURAS_COM_FICHA) assert.ok(existsSync(`public/fichas/${id}.webp`), `falta public/fichas/${id}.webp`);
-  const faltam = Object.keys(MONSTERS).filter((id) => !SEM_FICHA.has(id) && !CRIATURAS_COM_FICHA.includes(id));
+  // a criatura de magia (`monsters/magias.js`) usa a ficha do `look` dela (`fichaDe`)
+  const faltam = Object.keys(MONSTERS).filter((id) => !SEM_FICHA.has(id) && !CRIATURAS_COM_FICHA.includes(id) && !CRIATURAS_COM_FICHA.includes(MONSTERS[id].look));
+  assert.equal(fichaDe({ side: 'party', defId: 'espadaDeMordenkainen', look: 'espadaVoadora' }), '/fichas/espadaVoadora.webp', 'conjurada por herói também: não há folha em pixel');
+  assert.equal(fichaDe({ side: 'foes', defId: 'espadaDeMordenkainen', look: 'espadaVoadora' }), '/fichas/espadaVoadora.webp');
   assert.deepEqual(faltam, [], `criatura sem ficha: ${faltam.join(', ')}`);
   // o herói e o morador com retrato próprio ficam com o retrato
   assert.equal(fichaDe({ side: 'party', defId: 'goblin' }), null);
@@ -265,11 +376,23 @@ teste('a chaminé liga o canil à caverna do chefe pelas duas pontas', () => {
 
 // ---- o elenco do esconderijo -----------------------------------------------
 
-teste('o covil tem quatro goblins e Yeemik, e Sildar amarrado com 1 PV', () => {
+// O ESCONDERIJO DO OBELISCO: o posto dos vigias ganha um chefe goblin, o covil vai a cinco goblins e dois chefes (o
+// Yeemik de bloco cheio e o Errk), e os poços ganham dois lobos.
+teste('o esconderijo do Obelisco: chefe no posto, cinco goblins e dois chefes no covil, lobos nos poços', () => {
+  const vigias = bando().filter((c) => c.grupo === 'vigias');
+  assert.deepEqual(vigias.map((c) => c.defId).sort(), ['goblin', 'goblin', 'goblinChefe']);
+  assert.ok(vigias.find((c) => c.defId === 'goblinChefe').chefeDoPosto);
+  const pocos = bando().filter((c) => c.grupo === 'pocos');
+  assert.deepEqual(pocos.map((c) => c.defId).sort(), ['goblin', 'goblin', 'goblin', 'lobo', 'lobo']);
+});
+
+teste('o covil tem cinco goblins, Yeemik e Errk, e Sildar amarrado com 1 PV', () => {
   const covil = bando().filter((c) => c.grupo === 'covil');
-  assert.equal(covil.filter((c) => c.defId === 'goblin').length, 4);
+  assert.equal(covil.filter((c) => c.defId === 'goblin').length, 5);
   const yeemik = covil.find((c) => c.defId === 'yeemik');
-  assert.equal(yeemik.maxHp, 12);
+  assert.equal(yeemik.maxHp, 21);
+  const errk = covil.find((c) => c.name === 'Errk');
+  assert.equal(errk?.defId, 'goblinChefe');
   const sildar = covil.find((c) => c.npcId === 'sildar');
   assert.equal(sildar.hp, 1);
   assert.equal(sildar.refem, true);
@@ -331,7 +454,8 @@ teste('subir de nível NÃO devolve espaço de magia gasto', () => {
 });
 
 teste('os NPCs indefesos da mansão não morrem de dano de área', () => {
-  const neutros = buildFoes('mansao').filter((c) => c.side === 'neutro' && c.maxHp > 1);
+  // O Zeond é neutro e NÃO é indefeso: é o vigia do mago, um quasit que luta do lado dele — fere-se como monstro.
+  const neutros = buildFoes('mansao').filter((c) => c.side === 'neutro' && c.maxHp > 1 && !c.familiarDoMago);
   assert.ok(neutros.length >= 4, 'a família Dendrar e o Droop');
   for (const n of neutros) assert.equal(n.refem, true, `${n.name} sem refem`);
 });
@@ -339,15 +463,30 @@ teste('os NPCs indefesos da mansão não morrem de dano de área', () => {
 // (O parapeito do fosso saiu com a planta de 30 x 20: o corredor tem 2 de largura e o fosso ocupa as duas fileiras; a travessia é a
 // Acrobacia ou o salto. As medidas da mansão moram em `testes-sala.mjs`.)
 
-teste('o Marcarrubra é bloco nosso, com dados de vida que batem', () => {
+teste('o Marcarrubra é o Rufião do Obelisco, com dados de vida que batem', () => {
   const d = MONSTERS.marcarrubra;
-  assert.equal(d.fonte, 'propria');
+  assert.equal(d.fonte, 'PaBTSO');
   assert.equal(Math.floor(averageOf(d.hpDice)), d.maxHp);
 });
 
-teste('o Cajavidro não luta sozinho', () => {
-  const g = buildFoes('mansao').filter((c) => c.grupo === 'cajavidro');
-  assert.ok(g.length >= 3, `o quarto tem ${g.length} criatura(s): o chefe precisa de guarda-costas`);
+// A MANSÃO DO OBELISCO, sala a sala: três bandidos no alojamento, seis esqueletos na cripta, três Rufiões nas jaulas,
+// quatro bugbears com o Nosk, dois Rufiões e dois bandidos na sala de estar, e o Cajavidro sozinho no quarto, com o
+// bloco dele (dois Estouros Chocantes).
+teste('a Mansão tem o elenco do Obelisco, sala a sala', () => {
+  const b = buildFoes('mansao');
+  const de = (g) => b.filter((c) => c.grupo === g && c.side !== 'neutro').map((c) => c.defId).sort();
+  assert.deepEqual(de('alojamento'), ['bandido', 'bandido', 'bandido']);
+  assert.equal(de('cripta').length, 6);
+  assert.deepEqual(de('jaulas'), ['marcarrubra', 'marcarrubra', 'marcarrubra']);
+  assert.deepEqual(de('guardas'), ['bugbear', 'bugbear', 'bugbear', 'bugbear']);
+  assert.ok(!b.some((c) => c.grupo === 'guardas' && c.dormindo), 'os quatro de pé');
+  assert.deepEqual(de('estar'), ['bandido', 'bandido', 'marcarrubra', 'marcarrubra']);
+  assert.deepEqual(b.filter((c) => c.grupo === 'cajavidro').map((c) => c.name), ['Cajavidro'], 'sozinho no quarto');
+  const ruf = MONSTERS.marcarrubra;
+  assert.deepEqual([ruf.ac, ruf.maxHp, ruf.attacks[0].bonus, ruf.attacks[0].damage, ruf.multiattack], [11, 16, 4, '1d6+2', undefined]);
+  const caja = MONSTERS.cajavidro;
+  assert.equal(caja.multiattack.count, 2);
+  assert.ok(caja.attacks.every((a) => a.name.startsWith('Estouro Chocante') && a.bonus === 5 && a.damage === '1d6+3'));
 });
 
 teste('quem o guardião ignora não entra na lista de alvos dele', () => {
@@ -533,9 +672,26 @@ teste('nenhuma luz de mapa é inerte: apagar qualquer uma muda alguma casa', () 
     const base = grade(luzes);
     for (const l of luzes) {
       // A luz que SÓ ACENDE NO ESCURO (`soNoEscuro`) não acende nada enquanto a cena está clara, e isso é o
-      // trabalho dela: é o lampião do pátio, que espera a noite. Inerte de dia não é defeito; seria defeito a
-      // luz de dentro, no breu, não mudar nada.
-      if (l.soNoEscuro && f.luz[l.pos.y * f.w + l.pos.x] === 2) continue;
+      // trabalho dela: é o lampião do pátio, que espera a noite. Inerte de dia não é defeito.
+      //
+      // Mas ISENTAR não basta, e era o que se fazia: um `soNoEscuro` que não acendesse nada NEM NO ESCURO
+      // passava batido para sempre, que é a mesma luz inerte com outro nome. Então a prova dele é a mesma,
+      // feita de noite: escurece a cena e exige que apagá-lo mude alguma casa.
+      if (l.soNoEscuro && f.luz[l.pos.y * f.w + l.pos.x] === 2) {
+        const noturno = new Battlefield(m.terreno[0].length, m.terreno.length, m.terreno, m.altura, m.objetos, m.paredes);
+        noturno.luz = new Uint8Array(f.luz);
+        definirEscuridao(noturno, 0.8);
+        const gradeDe = (fontes) => {
+          const g = new Array(noturno.w * noturno.h);
+          for (let y = 0; y < noturno.h; y++) for (let x = 0; x < noturno.w; x++) g[y * noturno.w + x] = nivelDeLuz(noturno, x, y, fontes);
+          return g;
+        };
+        const comEla = gradeDe(luzes);
+        const semEla = gradeDe(luzes.filter((o) => o !== l));
+        if (comEla.some((v, i) => semEla[i] < v)) continue;
+        inertes.push(`${cena} ${l.pos.x},${l.pos.y} (${l.tipo}, soNoEscuro, e NEM NO ESCURO acende nada)`);
+        continue;
+      }
       const sem = grade(luzes.filter((o) => o !== l));
       if (base.some((v, i) => sem[i] < v)) continue;
       const chave = `${cena} ${l.pos.x},${l.pos.y}`;
@@ -937,12 +1093,16 @@ teste('cada criatura de Árvore Trovão nasce em casa livre e alcançável', () 
     // Os bandos do livro, nas quantidades dele: zumbis das cinzas 4 / 2 / 5 (áreas
     // 3, 8, 11) e ramos secos 2 / 6 / 8 / 6 (áreas 1, 2, 5, 12).
     zumbis: Array(5).fill('zumbiDasCinzas'),
-    zumbisCavalo: Array(4).fill('zumbiDasCinzas'),
-    zumbisFerraria: Array(2).fill('zumbiDasCinzas'),
+    // O OBELISCO mudou cinco contas (revisoes/obelisco-de-para-2026-11-08.md): o Cavalo Pardo vai a 6, a ferraria
+    // a 4, a cabana com ramos cai a 2, e os dois matos ganham espetos infectados (o arbusto-agulha).
+    zumbisCavalo: Array(6).fill('zumbiDasCinzas'),
+    zumbisFerraria: Array(4).fill('zumbiDasCinzas'),
     ramos1: Array(2).fill('galhoInfectado'),
-    ramos2: Array(6).fill('galhoInfectado'),
-    ramos5: Array(8).fill('galhoInfectado'),
-    ramos12: Array(6).fill('galhoInfectado'),
+    ramos2: Array(2).fill('galhoInfectado'),
+    ramos5: Array(12).fill('galhoInfectado'),
+    agulhas5: Array(2).fill('espetoInfectado'),
+    ramos12: Array(4).fill('galhoInfectado'),
+    agulhas12: Array(2).fill('espetoInfectado'),
     aranhas: ['aranhaGigante', 'aranhaGigante'],
     culto: Array(6).fill('cultista'),
     dragao: ['dragaoVerdeJovem'],
@@ -976,21 +1136,39 @@ teste('cada bando do livro nasce DENTRO do prédio que o livro lhe dá, ou na fr
       assert.ok(cels.some((s) => s.has(`${p.x},${p.y}`)), `${chave} nasce fora de ${ids.join('/')}: (${p.x},${p.y})`);
     }
   };
-  cada('zumbis', ['guarda']);
-  cada('zumbisCavalo', ['estalagem']);
-  cada('zumbisFerraria', ['ferraria']);
-  cada('culto', ['casa9']);
-  cada('ramos1', ['casa7']);
-  cada('ramos2', ['fazenda', 'celeiro']);
-  // O mato (áreas 5 e 12) nasce na franja de fora, não dentro da casa: o livro os
-  // põe "no mato a leste" e "nos arbustos ao sul".
-  const z5 = ARVORE_TROVAO.zonas.matoLeste;
-  for (const p of ARVORE_TROVAO.ninhos.ramos5) {
-    assert.ok(p.x >= z5.x0 && p.x <= z5.x1 && p.y >= z5.y0 && p.y <= z5.y1, `ramos5 fora do mato leste (${p.x},${p.y})`);
+  // O DE-PARA É O DO MAPA DO LIVRO, medido em 2026-11-06 (ver `revisoes/arvoretrovao-fidelidade-...`): os
+  // treze números do mapa oficial projetados na nossa grade caem cada um num prédio diferente, e doze dos
+  // treze não mudam de prédio sacudindo o quadro em +-4 px. Antes disto onze nomes estavam errados, e os
+  // bandos foram junto — os três ninhos de zumbi estavam trocados entre si.
+  cada('zumbis', ['guarnicao']);            // 11, a Velha Guarnição
+  cada('zumbisCavalo', ['cavaloPardo']);    // 3, O Cavalo Pardo
+  cada('zumbisFerraria', ['velhaFerraria']); // 8, a Velha Ferraria
+  cada('culto', ['cultistas']);             // 13
+  cada('ramos1', ['cabanaOcidental']);      // 1, a Cabana Ocidental
+  cada('ramos2', ['cabanaDosRamos']);       // 2, a Cabana com Ramos
+  cada('aranhas', ['armazem']);             // 6, o Armazém Destruído
+  cada('reidoth', ['redutoDoDruida']);      // 4, "aqui é onde monta acampamento"
+  cada('dragao', ['torre']);                // 7
+  // O mato (áreas 5 e 12) nasce na franja de FORA, não dentro da casa, e do lado que o livro diz: "os matos
+  // A LESTE desta ruína" (5) e "nos arbustos AO SUL desta ruína" (12). As duas caixas são medidas do prédio,
+  // e por isso andam com ele — antes eram retângulos da planta antiga, a trinta casas do prédio certo.
+  const naZona = (z, p2) => p2.x >= z.x0 && p2.x <= z.x1 && p2.y >= z.y0 && p2.y <= z.y1;
+  const caixa = (id) => {
+    const cs = ARVORE_TROVAO.celulas[id];
+    return { x0: Math.min(...cs.map((c) => c.x)), x1: Math.max(...cs.map((c) => c.x)),
+      y0: Math.min(...cs.map((c) => c.y)), y1: Math.max(...cs.map((c) => c.y)) };
+  };
+  const z5 = ARVORE_TROVAO.zonas.matoDaFazenda;
+  const fz = caixa('fazenda');
+  assert.ok(z5.x0 > fz.x1, `o mato da área 5 fica A LESTE da fazenda (mato x0=${z5.x0}, fazenda x1=${fz.x1})`);
+  for (const p2 of ARVORE_TROVAO.ninhos.ramos5) {
+    assert.ok(naZona(z5, p2), `ramos5 fora do mato da fazenda (${p2.x},${p2.y})`);
   }
-  const z12 = ARVORE_TROVAO.zonas.tecelagemSul;
-  for (const p of ARVORE_TROVAO.ninhos.ramos12) {
-    assert.ok(p.x >= z12.x0 && p.x <= z12.x1 && p.y >= z12.y0 && p.y <= z12.y1, `ramos12 fora dos arbustos do tecelão (${p.x},${p.y})`);
+  const z12 = ARVORE_TROVAO.zonas.arbustosDoTecelao;
+  const tc = caixa('tecelao');
+  assert.ok(z12.y0 > tc.y1, `os arbustos da área 12 ficam AO SUL do tecelão (arbustos y0=${z12.y0}, tecelão y1=${tc.y1})`);
+  for (const p2 of ARVORE_TROVAO.ninhos.ramos12) {
+    assert.ok(naZona(z12, p2), `ramos12 fora dos arbustos do tecelão (${p2.x},${p2.y})`);
   }
 });
 
@@ -999,8 +1177,11 @@ teste('os dois objetos escondidos (baú da cabana, caixa da herborista) têm cas
   const O = ARVORE_TROVAO.objetos;
   const ocupadas = new Set(Object.values(ARVORE_TROVAO.ninhos).flat().map((p) => `${p.x},${p.y}`));
   const noPredio = (pos, id) => ARVORE_TROVAO.celulas[id].some((c) => c.x === pos.x && c.y === pos.y);
-  assert.ok(noPredio(O.bauMercador, 'casa7'), 'o baú do comerciante fica na cabana ocidental');
-  assert.ok(noPredio(O.caixaMirna, 'ervas'), 'a caixa da Mirna fica na loja do herborista');
+  // O baú é da área 1 ("uma minuciosa busca pelo interior da cabana ocidental... revela o velho baú") e a
+  // caixa da Mirna é da área 9. A caixa estava na TAVERNA, junto com o Reidoth, porque os dois prédios
+  // tinham o nome trocado.
+  assert.ok(noPredio(O.bauMercador, 'cabanaOcidental'), 'o baú do comerciante fica na cabana ocidental (1)');
+  assert.ok(noPredio(O.caixaMirna, 'herborista'), 'a caixa da Mirna fica na loja do herborista (9)');
   for (const pos of [O.bauMercador, O.caixaMirna]) {
     assert.ok(!f.blocksMove(pos.x, pos.y), `casa escondida bloqueada (${pos.x},${pos.y})`);
     assert.ok(!ocupadas.has(`${pos.x},${pos.y}`), `um bando nasce em cima do objeto escondido (${pos.x},${pos.y})`);
@@ -1009,7 +1190,7 @@ teste('os dois objetos escondidos (baú da cabana, caixa da herborista) têm cas
   const baus = [];
   for (let y = 0; y < f.h; y += 1) for (let x = 0; x < f.w; x += 1) if (f.surfaceAt(x, y) === 'bau') baus.push(`${x},${y}`);
   assert.deepEqual(baus, [`${O.bauCulto.x},${O.bauCulto.y}`], 'só o cofre dos cultistas está desenhado no começo');
-  assert.ok(noPredio(O.bauCulto, 'casa9'), 'o cofre fica na casa de esquina, com os cultistas');
+  assert.ok(noPredio(O.bauCulto, 'cultistas'), 'o cofre fica com os cultistas (13)');
 });
 
 teste('o grupo de Árvore Trovão nasce em casa livre, alcançável, e longe da saída', () => {
@@ -1455,14 +1636,14 @@ teste('o Castelo: o bando do Targor fecha a conta de 500 XP, e o baú do urso fi
   assert.equal(hob.xp * 4 + lobo.xp * 2, 500, 'Targor + 3 hobgoblins + 2 lobos dão os 500 XP do livro');
   assert.notEqual(hob.xp * 3 + lobo.xp * 2, 500, 'e três hobgoblins ao todo NÃO dariam');
 
-  // O BAÚ DO URSO ESTÁ NUMA BORDA ALTA, e o texto do chão não pode entregá-lo: é isso que a Percepção
-  // CD 15 do livro cobra ("o baú é difícil de ser visto do chão"). A `arca` da torre do urso ganhou texto
-  // próprio, que descreve a laje pendurada e não um baú ao alcance da mão.
+  // O BAÚ ESTÁ NO NINHO DO GRELL, NUMA BORDA ALTA, e o texto do chão não pode entregá-lo: no Obelisco ele não se
+  // vê do chão e subir até lá pede Atletismo CD 15. A `arca` da torre ganhou texto próprio, que descreve a laje
+  // pendurada e não um baú ao alcance da mão.
   const noChao = EXAMES_DO_CASTELO['arca@torreUrso'];
   assert.ok(noChao, 'a torre do urso tem o Examinar próprio da borda alta');
   assert.notEqual(noChao, EXAMES_DO_CASTELO.arca, 'e ele não é o texto da arca comum');
   assert.ok(!/ba[úu]|arca|tesouro|moeda|ouro/i.test(noChao),
-    'e não entrega o baú de graça: quem o acha é o teste de Percepção');
+    'e não entrega o baú de graça: quem o alcança é o teste de Atletismo');
   assert.ok(/arca/i.test(EXAMES_DO_CASTELO.arca), 'a arca do quarto do rei continua sendo uma arca');
 });
 

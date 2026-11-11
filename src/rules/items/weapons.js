@@ -37,6 +37,15 @@ export const WEAPONS = {
     categoria: 'simples', peso: 0, custo: 0, fonte: 'phb',
   }),
 
+  // ------------------------------------------------------------ magia ----
+  // A espada da LÂMINA SOMBRIA (Guia de Xanathar): só existe enquanto a magia dura (`combat.js beginSide` a tira da
+  // mão quando ela acaba). Quem a conjura é treinado nela (`semTreino`), e ela não se vende.
+  laminaSombria: corpo({
+    id: 'laminaSombria', name: 'Lâmina Sombria', damage: '2d8', type: 'psíquico', finesse: true,
+    rangeFt: 20, longRangeFt: 60, props: ['acuidade', 'leve', 'arremesso'], art: 'sword', semTreino: true,
+    categoria: 'simples', peso: 0, custo: 0, fonte: 'xge',
+  }),
+
   // ---------------------------------------------------- simples, corpo ----
   clava: corpo({
     id: 'clava', name: 'Clava', damage: '1d4', type: 'concussão',
@@ -234,6 +243,50 @@ export const WEAPONS = {
     rangeFt: 100, longRangeFt: 400,
     props: ['munição', 'pesada', 'recarga', 'duas mãos'], art: 'bow',
     categoria: 'marcial', peso: 18, custo: 50, fonte: 'srd',
+  }),
+  // A FORMA DA FERA (bárbaro do Caminho da Fera, Tasha): a arma natural que a Fúria dá — mordida, garras ou cauda (alcance de
+  // 3 m). Não é item; só vale em Fúria (`daFuria`).
+  mordidaDaFera: corpo({ id: 'mordidaDaFera', name: 'Mordida da Fera', damage: '1d8', type: 'perfurante', categoria: 'simples', semTreino: true, naoEItem: true, daFuria: true, art: 'claw', fonte: 'tce', peso: 0, custo: 0 }),
+  garrasDaFera: corpo({ id: 'garrasDaFera', name: 'Garras da Fera', damage: '1d6', type: 'cortante', categoria: 'simples', semTreino: true, naoEItem: true, daFuria: true, art: 'claw', fonte: 'tce', peso: 0, custo: 0 }),
+  caudaDaFera: corpo({ id: 'caudaDaFera', name: 'Cauda da Fera', damage: '1d8', type: 'perfurante', categoria: 'simples', semTreino: true, naoEItem: true, daFuria: true, reachFt: 10, art: 'claw', fonte: 'tce', peso: 0, custo: 0 }),
+  // O RAIO DE SOL do monge da Alma Solar (Xanathar): não é item, é a "arma" que a característica põe na mão — 9 m,
+  // radiante, o dado de Artes Marciais, Destreza. Mágico. Não se compra, não se larga, não se rouba.
+  // LÂMINAS PSÍQUICAS (Lâmina da Alma, Tasha): nascem na mão no golpe e somem depois; arremessadas, não ficam no chão.
+  laminaDaAlma: corpo({
+    id: 'laminaDaAlma', name: 'Lâmina Psíquica', damage: '1d6', type: 'psíquico',
+    finesse: true, rangeFt: 60, longRangeFt: 60, props: ['acuidade', 'arremesso'], art: 'dagger',
+    categoria: 'simples', naoEItem: true, raridade: 'magia', fonte: 'tce', peso: 0, custo: 0,
+  }),
+  laminaDaAlmaSegunda: corpo({
+    id: 'laminaDaAlmaSegunda', name: 'Segunda Lâmina Psíquica', damage: '1d4', type: 'psíquico',
+    finesse: true, rangeFt: 60, longRangeFt: 60, props: ['acuidade', 'arremesso'], art: 'dagger',
+    categoria: 'simples', naoEItem: true, raridade: 'magia', fonte: 'tce', peso: 0, custo: 0,
+  }),
+  // ...e arremessadas: o motor não arremessa arma de perto, então o arremesso é a outra forma da mesma lâmina (18 m, sem
+  // alcance longo, como o livro dá).
+  laminaDaAlmaArremesso: distancia({
+    id: 'laminaDaAlmaArremesso', name: 'Lâmina Psíquica arremessada', damage: '1d6', type: 'psíquico',
+    finesse: true, rangeFt: 60, longRangeFt: 60, props: ['acuidade', 'arremesso'], art: 'dagger',
+    categoria: 'simples', naoEItem: true, raridade: 'magia', fonte: 'tce', peso: 0, custo: 0,
+  }),
+  laminaDaAlmaSegundaArremesso: distancia({
+    id: 'laminaDaAlmaSegundaArremesso', name: 'Segunda Lâmina Psíquica arremessada', damage: '1d4', type: 'psíquico',
+    finesse: true, rangeFt: 60, longRangeFt: 60, props: ['acuidade', 'arremesso'], art: 'dagger',
+    categoria: 'simples', naoEItem: true, raridade: 'magia', fonte: 'tce', peso: 0, custo: 0,
+  }),
+  // ARMADURA DO FURIOSO (Costa da Espada): os espinhos da armadura, em Fúria e de armadura de espinhos.
+  espinhosDaArmadura: corpo({
+    id: 'espinhosDaArmadura', name: 'Espinhos da armadura', damage: '1d4', type: 'perfurante', art: 'claw',
+    categoria: 'simples', semTreino: true, naoEItem: true, daFuria: true, exigeArmadura: 'armaduraDeEspinhos', fonte: 'scag', peso: 0, custo: 0,
+  }),
+  // CUTELO ELEMENTAL (Bigby): a arma da mão, arremessada; o perfil de verdade sai de `subclasses-livros.js armaDoCuteloArremessada`.
+  arremessoDoCutelo: distancia({
+    id: 'arremessoDoCutelo', name: 'Cutelo Elemental arremessado', damage: '1d8', type: 'cortante', rangeFt: 20, longRangeFt: 60, ability: 'str', art: 'axe',
+    categoria: 'simples', semTreino: true, naoEItem: true, daFuria: true, fonte: 'bgg', peso: 0, custo: 0,
+  }),
+  raioSolar: distancia({
+    id: 'raioSolar', name: 'Raio de Sol', damage: '1d4', type: 'radiante', rangeFt: 30, longRangeFt: 30,
+    categoria: 'simples', semTreino: true, raridade: 'magia', naoEItem: true, art: 'magic', fonte: 'xge', peso: 0, custo: 0,
   }),
   arcoLongo: distancia({
     id: 'arcoLongo', name: 'Arco longo', damage: '1d8', type: 'perfurante',

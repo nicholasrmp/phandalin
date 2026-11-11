@@ -54,21 +54,40 @@ ARTE = os.path.join(RAIZ, 'mapas', 'Thundertree', 'FA_Battlemaps', 'Thundertree_
 SEM_TELHADO = os.path.join(ARTE, 'Thundertree_NoRoof_Grid_58x38_200ppi.webp')
 
 # nome -> (semente, caixa, certeza). Do sul para o norte.
+#
+# OS NOMES SÃO OS DO LIVRO, e isso foi MEDIDO em 2026-11-06. O mapa oficial de Árvore Trovão está dentro do
+# PDF do livro (`_referencias/livro/`, uma única imagem de 802x562), com os treze números em círculos
+# vermelhos — e os círculos se acham pela cor, `r - (g+b)/2 > 45` devolve treze manchas. Projetando os treze
+# sobre a nossa grade de 58 x 38, cada um cai num prédio nosso DIFERENTE, sem colisão, e a ordem em x e em y
+# se preserva nas duas plantas: a da Forgotten Adventures é o mapa do livro redesenhado, como a da Mansão.
+#
+# A prova de que o de-para não depende do quadro lido a olho: sacudindo as quatro bordas em +-4 px (81
+# quadros), DOZE dos treze não mudam de prédio em quadro nenhum, e nenhum disputa prédio com outro. O único
+# que oscila é o 10, a Praça da Cidade, que não é construção — é o largo da estátua.
+#
+# O CÍRCULO DO NÚMERO É ETIQUETA, e fica AO LADO da construção, não em cima dela. É a mesma lição dos
+# marcadores `.svg` da FA que o CLAUDE.md já registra. Medido: ancorar o quadro pelo círculo do 7 para ele
+# cair no centro da nossa torre PIORA tudo — de 5 acertos diretos para 2, com colisão. O que vale é o vizinho
+# mais perto, e a estabilidade acima é a prova dele.
+#
+# Antes disto, onze dos treze nomes vinham de leitura do desenho e estavam errados — e o conteúdo, que é
+# pendurado no nome, foi junto: o Reidoth morava na taverna, a caixa da Mirna na guarnição, e os três ninhos
+# de zumbi estavam trocados entre si.
 PREDIOS = [
-    ('torre',      (33, 6),  (27, 2, 37, 10), True),    # o galpão ao lado do anel — ver o comentário em `main`
-    ('fazenda',    (23, 33), (19, 30, 27, 37), False),
-    ('celeiro',    (34, 33), (31, 30, 37, 37), False),
-    ('casa9',      (46, 30), (43, 27, 50, 34), False),
-    ('estalagem',  (53, 31), (50, 27, 57, 36), False),
-    ('guarda',     (41, 27), (39, 24, 44, 30), False),
-    ('escola',     (30, 27), (25, 23, 36, 31), False),
-    ('casa7',      (14, 28), (11, 24, 18, 32), False),
-    ('moinho',     (16, 18), (13, 14, 20, 22), False),
-    ('ervas',      (15, 5),  (12, 2, 21, 8), False),
-    ('casa12',     (40, 13), (38, 10, 42, 16), False),
-    ('loja',       (46, 18), (43, 14, 50, 22), False),
-    ('ferraria',   (54, 13), (51, 10, 57, 16), False),
-    ('casa15',     (50, 6),  (46, 2, 55, 10), False),
+    ('torre',           (33, 6),  (27, 2, 37, 10), True),   # 7  Torre do Dragão
+    ('fazenda',         (23, 33), (19, 30, 27, 37), True),  # 5  Fazenda de Ramos
+    ('velhaFerraria',   (34, 33), (31, 30, 37, 37), True),  # 8  Velha Ferraria
+    ('casaSudeste',     (46, 30), (43, 27, 50, 34), False), # o livro não numera esta
+    ('cultistas',       (53, 31), (50, 27, 57, 36), True),  # 13 Cultistas de Dragão
+    ('herborista',      (41, 27), (39, 24, 44, 30), True),  # 9  Loja do Herborista
+    ('armazem',         (30, 27), (25, 23, 36, 31), True),  # 6  Armazém Destruído
+    ('redutoDoDruida',  (14, 28), (11, 24, 18, 32), True),  # 4  Reduto do Druida
+    ('cabanaDosRamos',  (16, 18), (13, 14, 20, 22), True),  # 2  Cabana com Ramos
+    ('cavaloPardo',     (15, 5),  (12, 2, 21, 8), True),    # 3  O Cavalo Pardo
+    ('praca',           (40, 13), (38, 10, 42, 16), True),  # 10 Praça da Cidade
+    ('tecelao',         (46, 18), (43, 14, 50, 22), True),  # 12 Cabana do Tecelão
+    ('casaNordeste',    (54, 13), (51, 10, 57, 16), False), # o livro não numera esta
+    ('guarnicao',       (50, 6),  (46, 2, 55, 10), True),   # 11 Velha Guarnição
 ]
 # os seis nomes que o roteiro ainda cita e que o desenho não tem construção para: ficam como ÁREA de rua, para
 # `naSala` continuar respondendo, e saem no relatório para você decidir se viram prédio ou somem.
@@ -79,36 +98,74 @@ PREDIOS = [
 # o de fora, e mais verde que o capim da rua de controle (9,5). Não há limiar que as separe, a parede da FA
 # não as fecha (inundar por ela vaza a caixa inteira), e inventar a borda seria chute. Então vão para cá, com
 # o defeito dito em voz alta: quem quiser a planta delas desenha no editor (`/editor.html`, ferramenta 5).
+#
+# `cabanaOcidental` e `cabanaDoLado` são a ÁREA 1 e a outra metade da ÁREA 2 do livro — "estas cabanas estão
+# em ruínas, uma ao lado da outra" —, e são justamente as duas que a cor não recorta. Ficam como área de rua
+# até alguém desenhar a planta delas no editor, com o defeito dito em voz alta em vez de escondido.
 SEM_PREDIO = {
-    'tecelagem': (24, 20), 'embaixada': (36, 18), 'pescaria': (8, 24),
+    'casaOeste': (24, 20), 'embaixada': (36, 18), 'pescaria': (8, 24),
     'casa19': (28, 12), 'casa20': (44, 6), 'florestal': (20, 25),
-    'prefeito': (10, 15), 'casa10': (4, 13),
+    'cabanaDoLado': (10, 15), 'cabanaOcidental': (4, 13),
 }
 
 # os moradores, por ninho: quantos e em que sala. O capítulo lê `ARVORE_TROVAO.ninhos`.
 # OS BANDOS, do livro — e isto NÃO é chute: `testes-cenas.mjs` já guardava o de-para e as quantidades, de
 # quando a planta era a antiga. Zumbis das cinzas 5/4/2 (áreas 3, 8, 11), ramos secos 2/6/8/6 (áreas 1, 2, 5,
 # 12), duas aranhas, seis cultistas e o dragão. Fui procurar no teste em vez de adivinhar de novo.
+# O OBELISCO MUDOU AS CONTAS de cinco áreas (revisoes/obelisco-de-para-2026-11-08.md): o Cavalo Pardo vai de 4 a
+# 6 zumbis das cinzas, a ferraria de 2 a 4, a cabana com ramos cai de 6 para 2 galhos, e as duas áreas de mato
+# ganham arbustos-agulha (ver MATO).
 NINHOS = {
-    'zumbis': ('guarda', 5),
-    'zumbisCavalo': ('estalagem', 4),
-    'zumbisFerraria': ('ferraria', 2),
-    'ramos1': ('casa7', 2),
-    'ramos2': ('celeiro', 6),
-    'aranhas': ('escola', 2),
-    'culto': ('casa9', 6),
-    'dragao': ('torre', 1),
-    'reidoth': ('ervas', 1),
+    'zumbis': ('guarnicao', 5),          # 11, os cinco da farda
+    'zumbisCavalo': ('cavaloPardo', 6),  # 3, seis zumbis das cinzas nas sombras (Obelisco; eram quatro na Mina)
+    'zumbisFerraria': ('velhaFerraria', 4),  # 8, quatro largados no chão (Obelisco; eram dois)
+    'ramos1': ('cabanaOcidental', 2),    # 1, "dois ramos secos se escondem entre as ervas daninha"
+    'ramos2': ('cabanaDosRamos', 2),     # 2, dois ramos no mato (Obelisco; eram seis)
+    'aranhas': ('armazem', 2),           # 6, a construção que o ladrilho `Webs` da FA cobre
+    'culto': ('cultistas', 6),           # 13
+    'dragao': ('torre', 1),              # 7
+    'reidoth': ('redutoDoDruida', 1),    # 4, "quando Reidoth visita Árvore Trovão, aqui é onde monta acampamento"
 }
 # Quem é GRANDE ocupa 2 x 2, e a mobília tem de deixar a pegada inteira livre — senão a aranha do armazém
 # nasce com um banco dentro dela. Aqui só a aranha gigante e o dragão verde.
 NINHOS_GRANDES = {'aranhas', 'dragao'}
 # Os dois bandos de mato nascem FORA das casas, como o livro os põe: "no mato a leste" e "nos arbustos ao sul
 # do tecelão". São áreas de capim, e o gerador escolhe as casas livres dentro delas.
+# Os dois bandos de mato nascem FORA das casas, como o livro os põe — e ao lado do prédio CERTO. Os
+# retângulos vinham da planta antiga e, medidos contra o de-para novo, estavam os dois no lugar errado:
+#
+#   - área 5: "os matos A LESTE desta ruína está com oito ramos secos". A ruína é a `fazenda`, no sudoeste,
+#     e o retângulo antigo era (49,17)-(56,24), o mato do nordeste, a trinta casas dela;
+#   - área 12: "seis ramos secos espreitam nos arbustos AO SUL desta ruína". A ruína é o `tecelao`, a leste,
+#     e o retângulo antigo era (20,21)-(27,27), no centro-oeste.
+#
+# Agora os dois saem MEDIDOS do prédio: a caixa dele deslocada para o lado que o livro diz.
+# O OBELISCO: o mato a leste da fazenda tem DOZE ramos e DOIS arbustos-agulha (eram oito ramos), e a tecelagem tem
+# quatro ramos no mato ao sul e dois arbustos-agulha nas árvores do lado leste da rua (eram seis ramos). Os
+# arbustos da fazenda dividem o mato com os ramos, e por isso a escolha de casas abaixo não repete casa entre
+# entradas.
 MATO = {
-    'ramos5': ((49, 17, 56, 24), 8),      # matoLeste
-    'ramos12': ((20, 21, 27, 27), 6),     # tecelagemSul
+    'ramos5': (('fazenda', 'leste'), 12),
+    'agulhas5': (('fazenda', 'leste'), 2),
+    'ramos12': (('tecelao', 'sul'), 4),
+    'agulhas12': (('tecelao', 'leste'), 2),
 }
+
+
+def mato_ao_lado(celulas, predio, lado, fundo=3):
+    """A caixa de mato encostada num lado do predio, do tamanho dele. O livro diz o lado; o predio, o resto."""
+    cs = celulas.get(predio) or []
+    if not cs:
+        sys.exit(f'o mato de {predio} nao tem predio para se encostar')
+    x0, x1 = min(c['x'] for c in cs), max(c['x'] for c in cs)
+    y0, y1 = min(c['y'] for c in cs), max(c['y'] for c in cs)
+    if lado == 'leste':
+        return (x1 + 1, y0 - 1, x1 + fundo + 2, y1 + 1)
+    if lado == 'oeste':
+        return (x0 - fundo - 2, y0 - 1, x0 - 1, y1 + 1)
+    if lado == 'sul':
+        return (x0 - 1, y1 + 1, x1 + 1, y1 + fundo + 2)
+    return (x0 - 1, y0 - fundo - 2, x1 + 1, y0 - 1)
 
 
 def motor(programa, extra=None):
@@ -364,34 +421,42 @@ console.log(JSON.stringify({ saida, porParede }));
 # e o portão de cada quintal, e como o mapa é pintado o tabuleiro NÃO redesenha móvel nenhum (só o marcado
 # `sobreOFundo`). Elas virariam 38 pontos invisíveis de "Examinar a cerca" em casas que eu teria de inventar.
 # As duas peças de fora que o roteiro usa — a estátua e a placa — voltam, e com casa medida.
+# A MOBÍLIA SEGUIU O NOME, e não a construção. As listas vinham da planta antiga, penduradas em nomes que
+# eram leitura do desenho — e, medido o de-para com o mapa do livro, onze desses nomes estavam no prédio
+# errado. Mover a lista junto com o prédio deixaria o barril de cerveja no covil dos cultistas e a bigorna no
+# celeiro. O que manda é o que a peça É: o barril e a cuba vão para a taverna, a bigorna para a ferraria, o
+# tear para o tecelão, o alçapão para a guarnição (é ele que o capítulo abre), e o acampamento do Reidoth —
+# cama de campanha, panela no fogo, secador de ervas — para o Reduto do Druida, que é onde o livro diz que
+# ele acampa. Era isso que fazia o druida "morar a 20 casas da mobília dele".
 MOBILIA = {
-    'estalagem': ['banco', 'barrisRack', 'cubaCerveja', 'fogao', 'prateleira'],
-    'casa9':     ['beliche', 'cadeira', 'cadeira', 'fogao', 'mesaPosta'],
-    'florestal': ['camaCampo', 'fogueiraPanela', 'mesaFerramentas', 'secadorErvas', 'trapos'],
+    'cavaloPardo':    ['banco', 'barrisRack', 'cubaCerveja', 'fogao', 'prateleira'],   # 3, a taverna
+    'cultistas':      ['beliche', 'cadeira', 'cadeira', 'fogao', 'mesaPosta'],         # 13, o acampamento deles
+    'redutoDoDruida': ['camaCampo', 'fogueiraPanela', 'secadorErvas', 'trapos'],       # 4, o acampamento do Reidoth
     # `arcaDragao` é a ARCA do mago que o dragão dorme em cima (glifo `t`, superfície `arca`): o capítulo a
     # abre pela superfície, não pela variante, e sem ela `cena-node/tesouros.mjs` não acha o tesouro da torre.
     # as duas aranhas mortas saíram daqui: elas estão DESENHADAS no capim ao sul, e agora ficam lá (ver `fixas`)
-    'torre':     ['arcaDragao', 'tesouroDragao', 'tesouroPouco'],
-    'guarda':    ['alcapaoFechado', 'beliche', 'beliche'],
-    # o casulo do elfo (o tesouro da área 6: poção de cura, 23 po, 35 pp) mora COM as aranhas: estava na
-    # `loja`, a 17 casas da aranha mais perto, porque a lista veio da planta antiga
+    'torre':          ['arcaDragao', 'tesouroDragao', 'tesouroPouco'],                 # 7
+    # o alçapão é o da VELHA GUARNIÇÃO: é por ele que o capítulo manda subir e olhar a aldeia do alto
+    'guarnicao':      ['alcapaoFechado', 'beliche', 'beliche'],                        # 11
+    # o casulo do elfo (o tesouro da área 6: poção de cura, 23 po, 35 pp) mora COM as aranhas.
     # o armazém das aranhas (o ladrilho `Webs` da FA cai aqui): prateleiras, como o capítulo o descreve,
     # e os dois casulos. O banco, a cadeira e a lousa saíram: eram mobília de escola, nome que a planta
     # antiga dava a esta construção, e não cabiam com duas criaturas Grandes em 12 casas.
-    'escola':    ['casuloCorpo', 'casuloElfo', 'prateleira', 'prateleira'],
-    'casa7':     ['banco', 'banquinho', 'trapos'],
-    'ervas':     ['banquinho', 'prateleira', 'saco'],
-    'loja':      ['prateleira'],
-    'ferraria':  ['bigorna', 'fole', 'mesaFerramentas'],
-    'pescaria':  ['baldeBanco', 'redes', 'tabuas'],
-    'prefeito':  ['camaViuva', 'escrivaninha'],
-    'moinho':    ['baldeBanco', 'mo'],
-    'embaixada': ['banco', 'escrivaninha'],
-    'fazenda':   ['cocho'],
-    'casa10':    ['prateleira'],
-    'casa12':    ['guardaRoupa'],
-    'casa15':    ['roca'],
-    'tecelagem': ['tear'],
+    'armazem':        ['casuloCorpo', 'casuloElfo', 'prateleira', 'prateleira'],       # 6
+    'cabanaOcidental': ['banco', 'banquinho', 'trapos'],                               # 1
+    'herborista':     ['banquinho', 'prateleira', 'saco', 'secadorErvas'],             # 9, a loja da herborista
+    'velhaFerraria':  ['bigorna', 'fole', 'mesaFerramentas'],                          # 8
+    'tecelao':        ['tear'],                                                        # 12, "em um canto há um tear quebrado"
+    'cabanaDosRamos': ['baldeBanco', 'mo'],                                            # 2
+    'praca':          ['guardaRoupa'],                                                 # 10
+    'fazenda':        ['cocho'],                                                       # 5
+    # as que o livro não numera
+    'pescaria':       ['baldeBanco', 'redes', 'tabuas'],
+    'cabanaDoLado':   ['camaViuva', 'escrivaninha'],
+    'embaixada':      ['banco', 'escrivaninha'],
+    'casaOeste':      ['prateleira'],
+    'casaSudeste':    ['roca'],
+    'casaNordeste':   ['mesaFerramentas'],
 }
 
 # `^` barra o passo e dá cobertura; `&` é peça baixa, que se pisa. O de cada peça é o que ela tinha na planta
@@ -821,7 +886,12 @@ def main():
 
     # Onde cada objeto escondido mora vem do teste, que guardava o do livro: o baú do comerciante na
     # cabana ocidental (casa7) e a caixa da Mirna na loja do herborista (ervas).
-    objetos = {'bauMercador': meio('casa7'), 'caixaMirna': meio('ervas'), 'bauCulto': meio('casa9')}
+    # O BAÚ DO MERCADOR É DA ÁREA 1, a Cabana Ocidental: "uma minuciosa busca pelo interior da cabana
+    # ocidental... revela o velho baú entre as raízes das árvores que cresceram dentro da casa". A CAIXA
+    # DA MIRNA é da área 9, a Loja do Herborista — estava na taverna, junto com o Reidoth. E o baú do
+    # culto é da área 13, com os cultistas.
+    objetos = {'bauMercador': meio('cabanaOcidental'), 'caixaMirna': meio('herborista'),
+               'bauCulto': meio('cultistas')}
 
     # O COFRE DOS CULTISTAS É O ÚNICO BAÚ DESENHADO. Os outros dois objetos estão ESCONDIDOS — só aparecem
     # quando alguém procura —, e por isso não vão para o terreno; o cofre está à vista no cômodo, e a cena o
@@ -834,7 +904,7 @@ def main():
     antes = alcance_com_portas_abertas(mapa)
     t = [list(l) for l in terreno]
     centro = objetos['bauCulto']
-    fila = [centro] + [c for c in celulas['casa9'] if (c['x'], c['y']) != (centro['x'], centro['y'])]
+    fila = [centro] + [c for c in celulas['cultistas'] if (c['x'], c['y']) != (centro['x'], centro['y'])]
     for tentou, cand in enumerate(fila):
         t[cand['y']][cand['x']] = 'K'
         mapa['terreno'] = [''.join(l) for l in t]
@@ -852,15 +922,16 @@ def main():
     mapa['terreno'] = terreno
     movel = f"{objetos['bauCulto']['x']},{objetos['bauCulto']['y']}"
 
-    # A ESTÁTUA DA PRAÇA FICA NA PRAÇA. Ela era `meio('escola')` — dentro de uma construção —, herdado da
-    # planta antiga; e desde que o ladrilho `Webs` da FA mostrou que essa construção é o armazém das aranhas,
-    # a estátua estava dentro do covil delas, disputando as 12 casas com duas criaturas Grandes. Agora é
-    # medida: a casa de RUA (fora de toda construção) mais perto do meio da aldeia, com as oito vizinhas
-    # livres — um largo, que é onde se põe estátua. Decidida antes dos bandos, porque `espalhar` começa pelo
-    # meio da sala e a aranha nascia em cima dela.
+    # A ESTÁTUA DA PRAÇA FICA NA PRAÇA, e agora "a praça" é um lugar e não um palpite. Ela já tinha saído de
+    # `meio('escola')` — dentro do covil das aranhas — para "a casa de rua mais perto do MEIO DA ALDEIA", que
+    # é um centro geométrico e caiu em (31,20), no meio do mapa. O livro põe a estátua na área 10, a Praça da
+    # Cidade, no quadrante nordeste — e o mapa oficial desenha o ★ dela ali. Então o alvo deixou de ser o
+    # centro da aldeia e passou a ser a PRAÇA; o resto da conta continua: a casa de rua (fora de toda
+    # construção) mais perto dela, com as oito vizinhas livres, que é o que faz um largo.
     emConstrucao = {f"{c['x']},{c['y']}" for cs in celulas.values() for c in cs}
-    cx = sum(c['x'] for cs in celulas.values() for c in cs) / max(1, len(emConstrucao))
-    cy = sum(c['y'] for cs in celulas.values() for c in cs) / max(1, len(emConstrucao))
+    naPraca = celulas.get('praca') or []
+    cx = sum(c['x'] for c in naPraca) / max(1, len(naPraca))
+    cy = sum(c['y'] for c in naPraca) / max(1, len(naPraca))
     livres8 = lambda x, y: all(f'{x + i},{y + j}' in vivas and f'{x + i},{y + j}' not in emConstrucao
                                for j in (-1, 0, 1) for i in (-1, 0, 1))
     # ordenado: ver `mais_perto` — conjunto não tem ordem estável entre processos
@@ -870,7 +941,7 @@ def main():
         sys.exit('não há largo na aldeia para a estátua da praça')
     ex, ey = min(largos, key=lambda q: (q[0] - cx) ** 2 + (q[1] - cy) ** 2)
     estatua = {'x': ex, 'y': ey}
-    print(f'  estátua: na rua em ({ex},{ey}), a casa de largo mais perto do meio da aldeia')
+    print(f'  estátua: na rua em ({ex},{ey}), o largo mais perto da praça (área 10)')
 
     # a casa de cada objeto escondido sai da conta dos bandos: senão o cultista nasce em cima do baú
     tomadas = {f"{q['x']},{q['y']}" for q in objetos.values()} | {f"{estatua['x']},{estatua['y']}"}
@@ -892,13 +963,23 @@ def main():
                              for j in range(passo) for i in range(passo))
         ninhos[nome] = espalhar([c for c in celulas.get(sala, []) if cabe(c)], quantos)
     emPredio = {f"{c['x']},{c['y']}" for cs in celulas.values() for c in cs}
-    for nome, ((x0, y0, x1, y1), quantos) in MATO.items():
+    caixa_do_mato = {}
+    # Duas entradas podem dividir o mesmo mato (os ramos e os arbustos da fazenda): a casa já escolhida sai da
+    # conta da seguinte, senão os dois nasciam um em cima do outro.
+    noMato = set()
+    for nome, ((predio, lado), quantos) in MATO.items():
+        x0, y0, x1, y1 = mato_ao_lado(celulas, predio, lado)
+        caixa_do_mato[nome] = (x0, y0, x1, y1)
         livres = [{'x': x, 'y': y} for y in range(y0, y1 + 1) for x in range(x0, x1 + 1)
                   if 0 <= x < w and 0 <= y < h and terreno[y][x] != 'R' and f'{x},{y}' in vivas
-                  and f'{x},{y}' not in emPredio]
+                  and f'{x},{y}' not in emPredio and f'{x},{y}' not in noMato]
         ninhos[nome] = espalhar(livres, quantos)
+        noMato |= {f"{c['x']},{c['y']}" for c in ninhos[nome]}
         if len(ninhos[nome]) < quantos:
-            sys.exit(f'a area de mato {nome} so tem {len(ninhos[nome])} casas livres para {quantos} bichos')
+            sys.exit(f'a area de mato {nome} ({predio}, {lado}: {x0},{y0}-{x1},{y1}) so tem '
+                     f'{len(ninhos[nome])} casas livres para {quantos} bichos')
+        print(f'  mato de {nome}: ao {lado} de {predio}, caixa ({x0},{y0})-({x1},{y1}), '
+              f'{len(livres)} casas livres')
 
     # A PORTA DA TORRE É MEDIDA, não chutada: das portas que a torre tem na planta da FA, a que fica mais
     # perto de por onde o grupo chega. O capítulo põe gente nela e mede linha de visão a partir dela, então
@@ -915,7 +996,7 @@ def main():
     pontos = {
         'estatua': estatua,
         'portaDaTorre': porta,
-        'reidoth': meio('ervas', exceto=list(objetos.values())),
+        'reidoth': meio('redutoDoDruida', exceto=list(objetos.values())),
         'chegada': {'x': 28, 'y': 34},
         'saida': [{'x': 27, 'y': 37}, {'x': 28, 'y': 37}, {'x': 29, 'y': 37}],
     }
@@ -936,6 +1017,13 @@ def main():
     reservado |= {f"{c['x'] + i},{c['y'] + j}" for nome in NINHOS_GRANDES for c in ninhos.get(nome, [])
                   for j in (0, 1) for i in (0, 1)}
     reservado |= {f"{q['x']},{q['y']}" for v in pontos.values() for q in (v if isinstance(v, list) else [v])}
+    # AS DUAS CASAS DE CADA PORTA. Movel na soleira deixa a porta sem lado nenhum para abrir, e
+    # `conferir-paredes.mjs` acusa "porta no macico". Apareceu quando a mobilia mudou de predio com o de-para
+    # do mapa do livro: as listas sao as mesmas, mas as construcoes tem outro formato, e tres pecas foram
+    # parar em soleira. O gerador do Castelo ja reservava isto; este nao.
+    for (pa, pb) in arestas_de_porta(mapa):
+        reservado.add(f"{pa['x']},{pa['y']}")
+        reservado.add(f"{pb['x']},{pb['y']}")
     # A PLACA DA CAVEIRA fica na estrada por onde o grupo chega — é o aviso que o livro põe na entrada da
     # aldeia. A casa é a vizinha livre da chegada, medida, para não nascer ninguém em cima dela.
     perto = sorted(((dx, dy) for dx in range(-3, 4) for dy in range(-3, 4) if (dx, dy) != (0, 0)),
@@ -989,10 +1077,10 @@ def main():
         'torre': {**caixa(celulas['torre']), 'cx': meio('torre')['x'], 'cy': meio('torre')['y'], 'raio': 4},
         'ninhos': ninhos,
         'objetos': objetos,
-        'zonas': {'matoLeste': {'x0': MATO['ramos5'][0][0], 'y0': MATO['ramos5'][0][1],
-                                'x1': MATO['ramos5'][0][2], 'y1': MATO['ramos5'][0][3]},
-                  'tecelagemSul': {'x0': MATO['ramos12'][0][0], 'y0': MATO['ramos12'][0][1],
-                                   'x1': MATO['ramos12'][0][2], 'y1': MATO['ramos12'][0][3]}},
+        # os nomes das zonas dizem o que elas SÃO: o mato a leste da fazenda (área 5) e os arbustos ao sul
+        # do tecelão (área 12), que é onde o livro põe cada bando. As caixas saem medidas do prédio.
+        'zonas': {'matoDaFazenda': dict(zip(('x0', 'y0', 'x1', 'y1'), caixa_do_mato['ramos5'])),
+                  'arbustosDoTecelao': dict(zip(('x0', 'y0', 'x1', 'y1'), caixa_do_mato['ramos12']))},
         'celulas': celulas,
         'predios': {n: caixa(cs) for n, cs in celulas.items() if cs},
         'pisos': {n: 'laje' for n, _s, _c, _k in predios},

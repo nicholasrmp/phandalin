@@ -17,7 +17,8 @@
 // cada encontro — é como se o grupo tivesse descansado antes de cada luta.
 
 import { abilityMod, proficiencyBonus, meiaProficiencia } from './abilities.js';
-import { maxHpEfetivo, conditionEffects } from './conditions.js';
+import { maxHpEfetivo, conditionEffects, getCondition } from './conditions.js';
+import { ARMORS, WEAPONS } from './items/index.js';
 import { CLASSES } from './classes/index.js';
 import { roll } from '../core/dice.js';
 
@@ -35,7 +36,21 @@ const turno = (enc) => `${enc.round}:${enc.side}`;
 export function prepararTalentos(enc) {
   for (const c of enc.combatants) {
     if (temTalento(c, 'sortudo')) c.pontosDeSorte = pb(c);
-    if (temTalento(c, 'iniciadoEmMagia') && c.magiaGratis) c.magiaGratis.usada = false;
+    // SORTUDO do Livro do Jogador (2014): três pontos, e não o bônus de proficiência.
+    if (temTalento(c, 'sortudoPhb')) c.pontosDeSorte = 3;
+    if ((temTalento(c, 'iniciadoEmMagia') || temTalento(c, 'iniciadoEmMagiaPhb')) && c.magiaGratis) c.magiaGratis.usada = false;
+  }
+  // LÍDER INSPIRADOR: os dez minutos de discurso antes da luta. Até seis aliados (ele incluso) ganham PV temporários iguais
+  // ao nível dele + Carisma; PV temporário não soma, fica o maior.
+  for (const lider of enc.combatants.filter((c) => temTalento(c, 'liderInspirador') && !c.dead && c.hp > 0)) {
+    const pv = (lider.level ?? 1) + abilityMod(lider.abilities?.cha ?? 10);
+    if (pv <= 0) continue;
+    const ouvem = [lider, ...enc.combatants.filter((c) => c.side === lider.side && c !== lider && !c.dead && c.kind === 'pc')].slice(0, 6);
+    const ganham = ouvem.filter((c) => (c.tempHp ?? 0) < pv);
+    for (const c of ganham) c.tempHp = pv;
+    if (ganham.length) {
+      enc.say('recurso', `${lider.name} fala antes da luta: ${ganham.map((c) => c.name).join(', ')} ganham ${pv} PV temporários.`, 'Líder Inspirador · nível + Carisma');
+    }
   }
   // Canção Encorajadora: até [bônus de proficiência] aliados ficam
   // inspirados, o próprio músico primeiro.
@@ -53,7 +68,14 @@ export function prepararTalentos(enc) {
 /** Bônus de iniciativa de um combatente (o grupo usa o maior). */
 export function bonusDeIniciativa(c) {
   // A iniciativa é um teste de DES: Pau pra Toda Obra e Atleta Notável entram (`meiaProficiencia`).
-  return abilityMod(c.abilities.dex) + (temTalento(c, 'alerta') ? pb(c) : meiaProficiencia(c, 'dex'));
+  // ALERTA do Livro do Jogador (2014): +5 fixo, por cima do resto.
+  // AUDÁCIA DESENFREADA (Espadachim, Xanathar): + o modificador de Carisma.
+  return abilityMod(c.abilities.dex) + (temTalento(c, 'alerta') ? pb(c) : meiaProficiencia(c, 'dex')) + (temTalento(c, 'alertaPhb') ? 5 : 0)
+    + (c.features?.includes('rakishAudacity') ? Math.max(0, abilityMod(c.abilities.cha ?? 10)) : 0)
+    // EMBOSCADOR TEMÍVEL (Perseguidor Sombrio, Xanathar): + o modificador de Sabedoria.
+    + (c.features?.includes('dreadAmbusher') ? Math.max(0, abilityMod(c.abilities.wis ?? 10)) : 0)
+    // ASTÚCIA TÁTICA (Magia de Guerra, Xanathar): + o modificador de Inteligência.
+    + (c.features?.includes('tacticalWit') ? Math.max(0, abilityMod(c.abilities.int ?? 10)) : 0);
 }
 
 // ------------------------------------------------------------- d20 ----
@@ -268,7 +290,9 @@ function refazerUns(enc, dano) {
 export function ajustarDanoDeArma(enc, atacante, p, dano) {
   let r = dano;
   if (p.weapon?.id === 'punhos' && temTalento(atacante, 'brigaoDeTaverna')) r = refazerUns(enc, r);
-  if (p.weapon && temTalento(atacante, 'atacanteSelvagem') && atacante.selvagemNoTurno !== turno(enc)) {
+  // O ATACANTE SELVAGEM de 2014 é só no corpo a corpo; o de 2024, em qualquer golpe de arma.
+  const selvagem = temTalento(atacante, 'atacanteSelvagem') || (temTalento(atacante, 'atacanteSelvagemPhb') && !p.ranged);
+  if (p.weapon && selvagem && atacante.selvagemNoTurno !== turno(enc)) {
     atacante.selvagemNoTurno = turno(enc);
     const segunda = rolarDeNovo(enc, r);
     if (segunda.total > r.total) {
@@ -316,6 +340,15 @@ const dadosDeVida = (c) => (c.dadosDeVidaRestantes ??= c.level ?? 1);
  * proficiência. Quem está caído também levanta. Devolve null se não vale.
  */
 export function vetoDoMedico(curandeiro, alvo) {
+  // CURANDEIRO do Livro do Jogador (2014): quem está caindo levanta com 1 PV; de pé, a cura do kit, uma vez por descanso
+  // para cada um (`descanso.js` limpa a marca).
+  if (temTalento(curandeiro, 'curandeiroPhb')) {
+    if (alvo.dead) return `${alvo.name} já morreu`;
+    if (alvo.hp <= 0) return null;
+    if (alvo.hp >= maxHpEfetivo(alvo)) return `${alvo.name} está com a vida cheia`;
+    if (alvo.curadoPeloKit) return `${alvo.name} já foi tratado com o kit desde o último descanso`;
+    return null;
+  }
   if (!temTalento(curandeiro, 'curandeiro')) return undefined;   // regra normal do kit
   if (alvo.dead) return `${alvo.name} já morreu`;
   if (alvo.hp >= maxHpEfetivo(alvo)) return `${alvo.name} está com a vida cheia`;
@@ -324,6 +357,21 @@ export function vetoDoMedico(curandeiro, alvo) {
 }
 
 export function medicoDeCampanha(enc, curandeiro, alvo) {
+  if (temTalento(curandeiro, 'curandeiroPhb')) {
+    if (alvo.hp <= 0) {
+      alvo.stable = true;
+      const curou = enc.heal(alvo, 1, curandeiro);
+      enc.say('cura', `${curandeiro.name} estabiliza ${alvo.name} com o kit, e ${alvo.name} volta a si com ${curou} PV.`, 'Curandeiro');
+      enc.onEvent?.({ type: 'stabilized', target: alvo, by: curandeiro });
+      return;
+    }
+    const dado = enc.rng.die(6);
+    const total = dado + 4 + (alvo.level ?? 1);
+    alvo.curadoPeloKit = true;
+    const curou = enc.heal(alvo, total, curandeiro);
+    enc.say('cura', `${curandeiro.name} trata ${alvo.name} com o kit: ${curou} PV.`, `Curandeiro · d6[${dado}] + 4 + ${alvo.level ?? 1} (os dados de vida de ${alvo.name})`);
+    return;
+  }
   const lados = CLASSES[alvo.classe]?.dadoDeVida ?? 8;
   alvo.dadosDeVidaRestantes = dadosDeVida(alvo) - 1;
   let dado = enc.rng.die(lados);
@@ -358,3 +406,107 @@ export function atributoDoIniciado(abilities) {
   return ['int', 'wis', 'cha'].reduce((melhor, a) => (abilities[a] > abilities[melhor] ? a : melhor), 'int');
 }
 
+
+// ------------------------------------------------ talentos do Livro do Jogador (2014) ----
+// O resto da regra deles. Cada função é chamada pelo motor num ponto só e devolve o que muda.
+
+/** A média de uma notação de dano ("1d10+3", "2d6"). */
+function mediaDaNotacao(notacao) {
+  const n = String(notacao ?? '');
+  let total = 0;
+  for (const [, q, l] of n.matchAll(/(\d+)d(\d+)/g)) total += Number(q) * (Number(l) + 1) / 2;
+  for (const [, sinal, v] of n.replace(/\d+d\d+/g, '').matchAll(/([+-])\s*(\d+)/g)) total += (sinal === '-' ? -1 : 1) * Number(v);
+  return total;
+}
+
+/** A chance de acertar com o d20 contra a CA, com vantagem ou desvantagem (o 1 erra, o 20 acerta). */
+function chanceDeAcerto(bonus, ac, modo) {
+  const p = Math.min(0.95, Math.max(0.05, (21 - (ac - bonus)) / 20));
+  return modo === 'vantagem' ? 1 - (1 - p) ** 2 : modo === 'desvantagem' ? p * p : p;
+}
+
+const treinadoNaArma = (c, w) => !c.weaponTraining || c.weaponTraining.includes(w.categoria) || c.weaponTraining.includes(w.id);
+
+/**
+ * O −5 NO ATAQUE POR +10 NO DANO (Mestre em Armas Grandes, com arma pesada de perto; Atirador de Elite, com arma à
+ * distância), as duas com arma treinada. O livro deixa escolher antes de cada ataque; o jogo escolhe pela conta: aceita
+ * quando o dano esperado com o −5 é maior que sem ele, com a vantagem ou desvantagem que o golpe já tem.
+ */
+export function golpePoderoso(atacante, p, bonus, ac, modo) {
+  const w = p.weapon;
+  if (!w || !treinadoNaArma(atacante, w)) return false;
+  const pesadaDePerto = !p.ranged && (w.props ?? []).includes('pesada') && temTalento(atacante, 'mestreEmArmasGrandes');
+  const deLonge = p.ranged && temTalento(atacante, 'atiradorDeElite');
+  if (!pesadaDePerto && !deLonge) return false;
+  const media = Math.max(1, mediaDaNotacao(p.damage));
+  return chanceDeAcerto(bonus - 5, ac, modo) * (media + 10) > chanceDeAcerto(bonus, ac, modo) * media;
+}
+
+/** ATIRADOR DE ELITE: sem desvantagem no alcance longo e sem meia cobertura nem três quartos, com arma à distância. */
+export const atiradorDeElite = (atacante, p) => Boolean(p.ranged && p.weapon && temTalento(atacante, 'atiradorDeElite'));
+
+/** ESPECIALISTA EM BESTA: inimigo colado não dá desvantagem no ataque à distância. */
+export const atiraColado = (atacante) => temTalento(atacante, 'especialistaEmBesta');
+
+/** ATIRADOR ARCANO: magia que pede jogada de ataque, com o dobro do alcance e sem meia cobertura nem três quartos. */
+export const atiradorArcano = (actor, spell) => Boolean(temTalento(actor, 'atiradorArcano') && ['attack', 'raios', 'vampirico'].includes(spell?.kind));
+
+/**
+ * MESTRE EM ARMADURAS PESADAS: de armadura pesada, o dano de concussão, corte e perfuração de ataque não mágico cai 3.
+ * Antes da resistência, que o livro manda aplicar depois de tudo.
+ */
+export function reducaoDaArmaduraPesada(alvo, amount, type, { magico = false, deArma = false } = {}) {
+  if (magico || !deArma || !['concussão', 'cortante', 'perfurante'].includes(type)) return amount;
+  if (!temTalento(alvo, 'mestreEmArmadurasPesadas') || ARMORS[alvo.armor ?? 'nenhuma']?.categoria !== 'pesada') return amount;
+  return Math.max(0, amount - 3);
+}
+
+/** ADEPTO ELEMENTAL: a magia de quem o tem, do elemento dele, passa por cima da resistência (não da imunidade). */
+export function adeptoIgnoraResistencia(conjurador, type) {
+  return Boolean(conjurador && temTalento(conjurador, 'adeptoElemental') && (conjurador.elementosDoAdepto ?? []).includes(type));
+}
+
+/** ADEPTO ELEMENTAL: cada 1 nos dados de dano da magia do elemento dele conta como 2. Muda `dmg` no lugar. */
+export function adeptoNosDados(conjurador, spell, dmg) {
+  if (!dmg?.rolls?.length || !adeptoIgnoraResistencia(conjurador, spell?.damageType)) return 0;
+  const uns = dmg.rolls.filter((v) => v === 1).length;
+  if (!uns) return 0;
+  dmg.rolls = dmg.rolls.map((v) => (v === 1 ? 2 : v));
+  dmg.total += uns;
+  return uns;
+}
+
+/**
+ * DUELISTA DEFENSIVO: atingido por um golpe corpo a corpo, com arma de acuidade treinada na mão, a reação soma a
+ * proficiência à CA. Só quando muda o resultado (o golpe que ia acertar e passa a errar). Devolve o bônus, ou 0.
+ */
+export function duelistaDefensivo(enc, alvo, atk, ac, p) {
+  if (p.ranged || atk.critical || !temTalento(alvo, 'duelistaDefensivo') || alvo.reactionUsed || conditionEffects(alvo).incapacitated) return 0;
+  const acuidade = [alvo.equippedWeapon, alvo.offhandWeapon].map((id) => WEAPONS[id]).find((w) => w && w.finesse && !w.ranged && treinadoNaArma(alvo, w));
+  if (!acuidade) return 0;
+  const b = pb(alvo);
+  if (atk.total >= ac + b) return 0;
+  alvo.reactionUsed = true;
+  enc.say('reacao', `${alvo.name} apara com a ${acuidade.name.toLowerCase()} (+${b} de CA): o golpe erra.`, 'Duelista Defensivo');
+  return b;
+}
+
+/** AGARRADOR: vantagem nos ataques contra quem ele mesmo agarra. */
+export const vantagemDoAgarrador = (atacante, alvo) => temTalento(atacante, 'agarrador') && getCondition(alvo, 'agarrado')?.source === atacante.id;
+
+/** ALERTA (2014): quem ele não vê não ganha vantagem contra ele por estar escondido. Acordado. */
+export const naoSePegaOculto = (alvo) => temTalento(alvo, 'alertaPhb') && !conditionEffects(alvo).incapacitated;
+
+/** DURÁVEL: o dado de vida gasto cura no mínimo o dobro do modificador de Constituição (e nunca menos de 2). */
+export function minimoDoDuravel(c, cura) {
+  if (!temTalento(c, 'duravel')) return cura;
+  return Math.max(cura, 2 * abilityMod(c.abilities?.con ?? 10), 2);
+}
+
+/** CONJURADOR DE GUERRA e MATADOR DE MAGOS no teste de concentração: vantagem de quem conjura, desvantagem pelo ferimento. */
+export function concentracaoDosTalentos(c, fonte) {
+  return {
+    vantagem: temTalento(c, 'conjuradorDeGuerra'),
+    desvantagem: Boolean(fonte && temTalento(fonte, 'matadorDeMagos')),
+  };
+}

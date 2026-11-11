@@ -1,0 +1,86 @@
+{
+ "Tasha's Caustic Brew": {
+  "nome": "Infusão Cáustica de Tasha",
+  "desc": "Você lança um jato de ácido numa linha de 9 m de comprimento por 1,5 m de largura, na direção que escolher. Quem estiver na linha faz um teste de resistência de Destreza; se falhar, fica coberto de ácido e sofre 2d4 de dano ácido no início de cada um de seus turnos, por até 1 minuto (concentração). O efeito termina antes se alguém gastar uma ação para raspar ou lavar o ácido de si ou de outra criatura. Em círculo 2 ou maior, o dano aumenta em 2d4 por círculo acima do 1º."
+ },
+ "Tasha's Mind Whip": {
+  "nome": "Chicote Mental de Tasha",
+  "desc": "Escolha uma criatura visível a até 27 m; ela faz um teste de resistência de Inteligência. Se falhar, sofre 3d6 de dano psíquico, fica sem reação até o fim do próximo turno dela e, nesse turno, só pode usar uma destas opções: movimento, ação ou ação bônus. Se passar, sofre metade do dano e nada mais. Em círculo 3 ou maior, afeta uma criatura extra por círculo acima do 2º, desde que todas estejam a até 9 m umas das outras."
+ },
+ "Summon Celestial": {
+  "nome": "Invocar Celestial",
+  "desc": "Um espírito celestial de aparência angelical surge em um espaço desocupado visível a até 27 m, usando a ficha de Espírito Celestial; ao conjurar, escolha a forma Vingador ou Defensor, que define o ataque da criatura. Ela é aliada do grupo, age logo após o seu turno na mesma iniciativa e cumpre seus comandos verbais sem gastar ações suas; sem ordens, usa a ação Esquivar e se afasta do perigo. Some ao chegar a 0 PV ou quando a magia termina, com duração de até 1 hora (concentração), e exige um relicário de ouro de 500 po. Em círculo 6 ou superior, use o círculo do espaço gasto onde a ficha cita o círculo da magia."
+ },
+ "Summon Undead": {
+  "nome": "Invocar Morto-Vivo",
+  "desc": "Um espírito morto-vivo surge em um espaço desocupado visível a até 27 m, usando a ficha de Espírito Morto-Vivo na forma escolhida (Fantasmagórica, Pútrida ou Esquelética); exige um crânio dourado de 300 po. Ele é aliado do grupo, age logo após o seu turno na sua iniciativa e cumpre seus comandos verbais sem gastar sua ação; sem ordens, usa Esquivar e se afasta do perigo. Some ao chegar a 0 PV ou quando a magia acaba (concentração, até 1 hora). Em círculo maior, use o círculo do espaço gasto onde a ficha cita o círculo da magia."
+ },
+ "Booming Blade": {
+  "nome": "Lâmina Trovejante",
+  "desc": "Truque: você faz um ataque corpo a corpo com a arma usada como componente contra uma criatura a até 1,5 m; se acertar, além do efeito normal do golpe, o alvo fica envolto em energia ressonante até o início do seu próximo turno. Caso ele se desloque voluntariamente 1,5 m ou mais nesse intervalo, sofre 1d8 de dano trovejante e a magia termina. No 5º nível, o acerto causa 1d8 de dano trovejante extra e o dano por se mover sobe para 2d8; esses valores passam a 2d8 e 3d8 no 11º nível e a 3d8 e 4d8 no 17º."
+ },
+ "Summon Fey": {
+  "nome": "Invocar Feérico",
+  "desc": "Um espírito feérico surge em um espaço desocupado que você veja a até 27 m, usando a ficha de Espírito Feérico; ao conjurar, escolha seu humor (Furioso, Alegre ou Travesso), que define uma de suas características (componente material: flor dourada de 300 po). Ele é aliado do grupo, age logo após o seu turno, obedece a comandos verbais sem custo de ação e, sem ordens, usa Esquivar e se afasta do perigo; some ao chegar a 0 PV ou quando a magia termina, que dura até 1 hora com concentração. Em círculo 4 ou maior, use o círculo do espaço gasto onde a ficha cita o círculo da magia."
+ },
+ "Tasha's Otherworldly Guise": {
+  "nome": "Aparência Extraplanar de Tasha",
+  "desc": "Com uma ação bônus, você se transforma por até 1 minuto (concentração), escolhendo os Planos Inferiores (imunidade a dano de fogo e veneno e à condição envenenado) ou os Planos Superiores (imunidade a dano radiante e necrótico e à condição enfeitiçado). Asas espectrais lhe dão deslocamento de voo de 12 m e você recebe +2 na CA. Seus ataques com arma contam como mágicos e podem usar seu modificador de habilidade de conjuração no ataque e no dano. Ao usar a ação de Ataque, você ataca duas vezes, benefício que não se soma a Ataque Extra ou característica semelhante; o componente material é um objeto gravado com símbolo dos Planos Exteriores, de no mínimo 500 po."
+ },
+ "Dream of the Blue Veil": {
+  "nome": "Sonho do Véu Azul",
+  "desc": "Ritual de 10 minutos: você e até oito criaturas voluntárias a até 6 m ficam inconscientes por 6 horas, sonhando com outro mundo do Plano Material; ao fim, todos atravessam uma cortina azul e são levados de corpo e mente para lá. É preciso conhecer a existência desse mundo e ter um item mágico vindo dele (chegada em local seguro a até 1,5 km de onde foi criado) ou incluir uma criatura nascida lá (chegada a até 1,5 km do seu local de nascimento). Uma criatura que sofra dano antes do fim desperta e fica para trás; se você sofrer dano, a magia acaba para todos e ninguém é transportado."
+ },
+ "Summon Aberration": {
+  "nome": "Invocar Aberração",
+  "desc": "Convoca um espírito aberrante num espaço desocupado visível a até 27 m, usando a ficha de Espírito Aberrante com a forma de observador menor, slaad ou cria estelar à sua escolha, o que define algumas de suas características; exige um frasco com tentáculo e olho de 400 po. Ele é aliado do grupo, age logo após o seu turno na sua iniciativa e cumpre suas ordens verbais sem gastar ação; sem comandos, usa Esquivar e se afasta do perigo. Some ao chegar a 0 PV ou ao fim da magia, que dura até 1 hora com concentração. Em círculo 5 ou maior, use o círculo do espaço gasto onde a ficha cita o círculo da magia."
+ },
+ "Mind Sliver": {
+  "nome": "Lasca Mental",
+  "desc": "Truque que atinge uma criatura visível a até 18 m com um golpe psíquico. Se ela falhar num teste de resistência de Inteligência, sofre 1d6 de dano psíquico e reduz em 1d4 o resultado do próximo teste de resistência que fizer até o fim do seu próximo turno. O dano sobe para 2d6 no 5º nível de personagem, 3d6 no 11º e 4d6 no 17º."
+ },
+ "Blade of Disaster": {
+  "nome": "Lâmina do Desastre",
+  "desc": "Com uma ação bônus, você abre uma fenda planar em forma de lâmina, de cerca de 90 cm, num espaço desocupado que consiga ver a até 18 m, e na hora faz até dois ataques corpo a corpo com magia contra criaturas, objetos soltos ou estruturas a até 1,5 m dela. Cada acerto causa 4d12 de dano energético, e o ataque é crítico com 18 a 20 no d20, somando mais 8d12 (12d12 no total). Nos turnos seguintes, com uma ação bônus, você desloca a lâmina até 9 m para um espaço visível e repete os dois ataques. Ela atravessa qualquer barreira, até Muralha de Energia, sem efeito algum; dura até 1 minuto (concentração)."
+ },
+ "Sword Burst": {
+  "nome": "Explosão de Lâminas",
+  "desc": "Truque instantâneo de componente apenas verbal: lâminas espectrais giram brevemente ao seu redor e atingem todas as outras criaturas a até 1,5 m de você. Cada uma faz um teste de resistência de Destreza e, se falhar, sofre 1d6 de dano energético; quem passa não sofre nada. O dano sobe para 2d6 no 5º nível de personagem, 3d6 no 11º e 4d6 no 17º."
+ },
+ "Spirit Shroud": {
+  "nome": "Mortalha Espiritual",
+  "desc": "Com uma ação bônus, você faz espíritos dos mortos rodearem você por até 1 minuto (concentração). Enquanto durar, seus ataques que acertarem criaturas a até 3 m causam 1d8 de dano extra, radiante, necrótico ou frio à sua escolha ao conjurar, e quem sofrer esse dano não pode recuperar PV até o início do seu próximo turno. Criaturas que você escolher e puder ver que comecem o turno a até 3 m de você têm o deslocamento reduzido em 3 m até o início do seu próximo turno. Em círculo maior, o dano extra aumenta em 1d8 a cada dois círculos acima do 3º."
+ },
+ "Summon Fiend": {
+  "nome": "Invocar Corruptor",
+  "desc": "Um espírito corruptor (demônio, diabo ou yugoloth, à sua escolha) surge num espaço desocupado visível a até 27 m, usando a ficha de Espírito Corruptor com traços definidos pelo tipo escolhido; exige um frasco de rubi com sangue humanoide de 600 po. Aliado seu e do grupo, ele age logo após o seu turno na mesma iniciativa, cumpre suas ordens verbais sem gastar ação e, sem comandos, usa Esquivar e se afasta do perigo. Some ao chegar a 0 PV ou quando a magia acaba, com concentração de até 1 hora. Em círculo 7 ou maior, use o círculo do espaço gasto onde a ficha cita o círculo da magia."
+ },
+ "Summon Elemental": {
+  "nome": "Invocar Elemental",
+  "desc": "Invoca um espírito elemental corpóreo (de ar, terra, fogo ou água, à sua escolha) num espaço desocupado visível a até 27 m, usando a ficha de Espírito Elemental com traços conforme o elemento; exige um frasco com incrustações de ouro de 400 po contendo ar, pedrinha, cinzas e água. Ele é aliado do grupo, age logo após o seu turno na sua iniciativa e cumpre suas ordens verbais sem gastar ação; sem ordens, usa Esquivar e se afasta do perigo. Some ao chegar a 0 PV ou quando a magia termina, que dura até 1 hora (concentração). Em círculo maior, use o círculo do espaço gasto onde a ficha cita o círculo da magia."
+ },
+ "Green-Flame Blade": {
+  "nome": "Lâmina de Chama Esverdeada",
+  "desc": "Faça um ataque corpo a corpo com a arma usada na conjuração contra uma criatura a até 1,5 m; se acertar, ela sofre os efeitos normais da arma. Chamas verdes podem então saltar para outra criatura visível a até 1,5 m do alvo, causando dano de fogo igual ao seu modificador de conjuração. Truque: no 5º nível, o alvo atingido sofre 1d8 de dano de fogo extra e a segunda criatura sofre 1d8 + modificador. Os dois dados sobem para 2d8 no 11º nível e 3d8 no 17º."
+ },
+ "Summon Construct": {
+  "nome": "Invocar Constructo",
+  "desc": "Um espírito de constructo surge num espaço desocupado visível a até 27 m, com a ficha de Espírito de Constructo; ao conjurar, você escolhe se ele é de argila, metal ou pedra (o que define alguns traços) e se tem aparência de golem ou modron. Ele é aliado do grupo, age logo após o seu turno na sua iniciativa e cumpre suas ordens verbais sem gastar ação sua; sem ordens, usa a ação Esquivar e se move para fugir do perigo. Some ao chegar a 0 PV ou quando a magia acaba, com concentração por até 1 hora, e exige um cofre ornamentado de pedra e metal de 400 po. Em círculo maior, use o círculo do espaço gasto onde a ficha cita o círculo da magia."
+ },
+ "Summon Shadowspawn": {
+  "nome": "Invocar Cria das Sombras",
+  "desc": "Você convoca um espírito sombrio corpóreo (ficha de Espírito Sombrio) em um espaço desocupado visível a até 27 m, escolhendo a emoção que o molda (Fúria, Desespero ou Medo), o que define parte de suas características. Ele é aliado do grupo, age logo após o seu turno na sua iniciativa e cumpre suas ordens verbais sem gastar ação; sem comandos, usa a ação Esquivar e se afasta do perigo. Some ao chegar a 0 PV ou quando a magia termina, que dura até 1 hora (concentração) e exige uma gema de 300 po com lágrimas. Em círculo 4 ou maior, use o círculo usado onde a ficha cita o círculo da magia."
+ },
+ "Intellect Fortress": {
+  "nome": "Fortaleza do Intelecto",
+  "desc": "Você ou uma criatura voluntária que você veja a até 9 m ganha resistência a dano psíquico e vantagem em testes de resistência de Inteligência, Sabedoria e Carisma. Dura até 1 hora, com concentração. Em círculo 4 ou maior, afeta uma criatura extra por círculo acima do 3º, desde que todas estejam a até 9 m umas das outras ao serem escolhidas."
+ },
+ "Lightning Lure": {
+  "nome": "Atração Elétrica",
+  "desc": "Truque que lança um chicote de eletricidade contra uma criatura visível a até 4,5 m de você. Se ela falhar num teste de resistência de Força, é puxada até 3 m em linha reta na sua direção e, caso termine a 1,5 m ou menos de você, sofre 1d8 de dano elétrico. O dano aumenta para 2d8 no 5º nível do personagem, 3d8 no 11º e 4d8 no 17º."
+ },
+ "Summon Beast": {
+  "nome": "Invocar Besta",
+  "desc": "Você conjura um espírito bestial, que surge num espaço desocupado visível a até 27 m e usa a ficha de Espírito Bestial; escolha o ambiente (Ar, Terra ou Água) e um animal nativo dele para a aparência, o que define alguns traços da criatura. Ela é aliada sua e do seu grupo, age logo após o seu turno na mesma iniciativa e cumpre seus comandos verbais sem gastar sua ação; sem ordens, usa Esquivar e se afasta do perigo. Dura até 1 hora (concentração) ou até cair a 0 PV, e o componente material é uma bolota dourada de 200 po com pena, pelo e cauda de peixe. Em círculo maior, use o círculo do espaço gasto onde a ficha mencionar o círculo da magia."
+ }
+}

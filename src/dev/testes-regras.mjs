@@ -38,6 +38,8 @@ import {
 } from '../rules/marcha.js';
 import { addCondition, removeCondition, hasCondition, getCondition, caEfetiva, conditionEffects, CONDITIONS } from '../rules/conditions.js';
 import { SPELLS, getSpell, magiasProntas, dadosDaMagia } from '../rules/spells.js';
+import { CombatManager } from '../app/combat/CombatManager.js';
+import { vantagemPorTraco } from '../rules/passivas.js';
 import { comoVe, visaoNoEscuro, fontesDeLuz, nivelDeLuz, PENUMBRA, ESCURO } from '../rules/luz.js';
 import { listaDaClasse } from '../game/criacao.js';
 import {
@@ -1029,7 +1031,8 @@ teste('grimório do mago: 6 no 1º nível, 8 no 2º, só magia de mago', () => {
 });
 
 teste('toda magia declara a fonte', () => {
-  for (const s of Object.values(SPELLS)) assert.ok(['srd', 'propria'].includes(s.fonte), s.id);
+  // as dos livros (`magias-livro-<livro>.js`) declaram o livro de onde vieram
+  for (const s of Object.values(SPELLS)) assert.ok(['srd', 'propria', 'phb', 'xge', 'tce', 'scag', 'dmg', 'ftd', 'bgg'].includes(s.fonte), s.id);
 });
 
 teste('mira: quantos alvos a magia escolhe, com o círculo', () => {
@@ -1151,6 +1154,26 @@ teste('Chefe Goblin e Yeemik marcados como Livro dos Monstros, não como nossos'
   assert.equal(MONSTERS.goblinChefe.fonte, 'MM');
   assert.equal(MONSTERS.yeemik.fonte, 'MM');
   assert.equal(SPELLS.raioDeDoenca.fonte, 'propria');
+});
+
+// O BANDIDO MARCARRUBRA é nosso, derivado do Bandido do SRD, e um revisor de fidelidade o achou duro demais
+// (ND 1/2 onde o livro usa 1/8). Medido em `src/dev/medir-marcarrubra.mjs`, 300 lutas por caso nas três salas
+// de bandido da Mansão: contra o bloco do SRD o grupo de 2º nível sai com 95% da vida e ninguém encosta no
+// chão; com o nosso, 89% e 6% de lutas com alguém a 0 PV. Zero mortes nas 900. A decisão é manter — e este
+// teste existe para que os quatro números que a medição usou não mudem sem que alguém meça de novo.
+teste('o Marcarrubra é o Rufião Marcarrubra do Obelisco: CA 11, 16 PV, uma espada curta +4', () => {
+  const m = MONSTERS.marcarrubra;
+  assert.equal(m.fonte, 'PaBTSO', 'é o bloco do Obelisco');
+  assert.equal(m.ac, 11);
+  assert.equal(m.maxHp, 16);
+  assert.equal(m.cr, '1/2');
+  assert.ok(!m.multiattack, 'um golpe só');
+  assert.deepEqual([m.attacks[0].bonus, m.attacks[0].damage], [4, '1d6+2']);
+  // e o bandido do SRD, com que ele foi comparado, continua sendo o do livro
+  assert.equal(MONSTERS.bandido.ac, 12);
+  assert.equal(MONSTERS.bandido.maxHp, 11);
+  assert.equal(MONSTERS.bandido.cr, '1/8');
+  assert.ok(!MONSTERS.bandido.multiattack, 'o do SRD bate uma vez só');
 });
 
 // ---- progressão --------------------------------------------------------------
@@ -2748,7 +2771,7 @@ teste('Névoa Obscurecente cresce com o círculo (+6 m de raio)', () => {
   assert.ok(maior > normal);
 });
 
-teste('Névoa Obscurecente: a área (e a prévia) pega o círculo escolhido: 81, 289 e 625 casas', () => {
+teste('Névoa Obscurecente: a área (e a prévia) pega o círculo escolhido: 52, 208 e 448 casas', () => {
   const ilvan = makeParty({ nivel: 5 })[ILVAN];
   ilvan.pos = { x: 2, y: 15 };
   const enc = new Encounter({
@@ -2757,10 +2780,10 @@ teste('Névoa Obscurecente: a área (e a prévia) pega o círculo escolhido: 81,
   });
   const nevoa = getSpell('nevoaObscurecente');
   const ponto = { x: 15, y: 15 };
-  assert.equal(enc.areaDaMagia(ilvan, nevoa, ponto).length, 81);
-  assert.equal(enc.areaDaMagia(ilvan, nevoa, ponto, 1).length, 81);
-  assert.equal(enc.areaDaMagia(ilvan, nevoa, ponto, 2).length, 289);
-  assert.equal(enc.areaDaMagia(ilvan, nevoa, ponto, 3).length, 625);
+  assert.equal(enc.areaDaMagia(ilvan, nevoa, ponto).length, 52);
+  assert.equal(enc.areaDaMagia(ilvan, nevoa, ponto, 1).length, 52);
+  assert.equal(enc.areaDaMagia(ilvan, nevoa, ponto, 2).length, 208);
+  assert.equal(enc.areaDaMagia(ilvan, nevoa, ponto, 3).length, 448);
 });
 
 teste('Escuridão contorna esquinas: uma parede segura a esfera', () => {
@@ -2863,7 +2886,7 @@ teste('Convocar Relâmpagos: raio de 1,5 m e, nos turnos seguintes, outro raio c
   });
   foes.forEach((f) => { f.hp = f.maxHp = 100; });
   resistenciasDao(enc, false);
-  assert.ok(enc.castSpell(h, 'convocarRelampagos', { point: { x: 7, y: 5 } }).ok);
+  assert.ok(enc.castSpell(h, 'convocarRelampagos', { point: { x: 7, y: 6 } }).ok);
   assert.ok(foes[0].hp < 100 && foes[1].hp < 100, 'os dois no raio de 1,5 m');
   assert.equal(foes[2].hp, 100, 'fora do raio');
   assert.equal(h.concentrating?.spellId, 'convocarRelampagos');
@@ -4166,7 +4189,8 @@ teste('UTIL: toda magia de utilidade existe, é SRD e o combate a recusa', () =>
   for (const id of UTIL_FORA) {
     const s = SPELLS[id];
     assert.ok(s, id);
-    assert.ok(['srd', 'propria'].includes(s.fonte), id);
+    // as de exploração dos livros (`rules/utilidade-livros.js`) declaram o livro de onde vieram
+    assert.ok(['srd', 'propria', 'phb'].includes(s.fonte), id);
   }
   const novas = Object.values(SPELLS).filter((s) => s.soFora);
   assert.ok(novas.length >= 17, `magias novas: ${novas.length}`);
@@ -4705,14 +4729,14 @@ teste('Círculo Mágico: o tipo escolhido não entra, ataca com desvantagem e n�
   assert.ok(r.ok, r.why);
   const z = enc.zonas.find((q) => q.circuloMagico);
   assert.equal(z.circuloMagico.tipo, 'morto-vivo');
-  assert.ok(z.casas.has('6,6') && z.casas.has('8,6') && !z.casas.has('9,6'), 'raio de 3 m = 2 casas');
+  assert.ok(z.casas.has('6,6') && z.casas.has('7,6') && z.casas.has('4,6') && !z.casas.has('8,6'), 'raio de 3 m a partir do cruzamento: 4 casas de lado');
   // O esqueleto não entra.
   esq.movementLeftFt = 60;
   const alcance = enc.reachableFor(esq);
-  assert.ok(!alcance.has('8,6') && !alcance.has('6,6'), 'casas do círculo fora do alcance');
+  assert.ok(!alcance.has('7,6') && !alcance.has('6,6'), 'casas do círculo fora do alcance');
   assert.ok(alcance.has('10,6'), 'fora dele anda');
   gob.movementLeftFt = 60;
-  assert.ok(enc.reachableFor(gob).has('8,7') || enc.reachableFor(gob).has('8,6'), 'goblin entra');
+  assert.ok(enc.reachableFor(gob).has('7,7') || enc.reachableFor(gob).has('7,6'), 'goblin entra');
   // Desvantagem contra quem está dentro; fora do círculo, não.
   assert.ok(JSON.stringify(enc.attackModifiers(esq, dara)).includes('círculo mágico'));
   assert.ok(!JSON.stringify(enc.attackModifiers(esq, party[PIP])).includes('círculo mágico'));
@@ -4871,6 +4895,7 @@ teste('Cajavidro: imobiliza, solta mísseis, foge com Passo Nebuloso e ergue o E
   const { enc, h, foes, log } = comHeroi('clerigo', 1, { foes: [['cajavidro', { x: 8, y: 5 }]] });
   const cj = foes[0];
   h.hp = h.maxHp = 100;
+  // CA 16: é a do bloco do OBELISCO, "12 (16 com Armadura Arcana e o Cajado de Defesa)". (Na Mina era 15.)
   assert.equal(cj.ac, 16);
   assert.ok(cj.spellcasting?.conjuraNoTurno, 'conjuração no motor');
   enc.beginSide('foes');
@@ -4889,9 +4914,9 @@ teste('Cajavidro: imobiliza, solta mísseis, foge com Passo Nebuloso e ergue o E
   takeMonsterTurn(enc, cj);
   assert.ok(log.some((e) => /Cajavidro conjura Passo Nebuloso/.test(e.text)), 'encurralado, some');
   const cargas = cj.spellcasting.cajado.cargas;
-  assert.ok(enc.escudoArcano(cj, h, 17, 16), 'o escudo faz o golpe errar');
+  assert.ok(enc.escudoArcano(cj, h, 17, 15), 'o escudo faz o golpe errar');
   assert.equal(cj.spellcasting.cajado.cargas, cargas - 2, 'gasta 2 cargas do cajado');
-  assert.ok(!enc.escudoArcano(cj, h, 17, 21), 'não ergue um segundo escudo');
+  assert.ok(!enc.escudoArcano(cj, h, 17, 20), 'não ergue um segundo escudo');
 });
 
 // Paredes de borda (`core/grid.js`): a parede fina entre duas casas.
@@ -6266,27 +6291,383 @@ teste('Gelatina Ocre: cortada, parte-se em duas menores com metade dos PV', () =
   assert.equal(enc.combatants.length, antes, 'só cortante e elétrico partem');
 });
 
-teste('Nezznar: o bloco do livro (ND 2, 27 PV, Cajado da Aranha) com os traços de drow', () => {
+teste('Nezznar: o bloco do Obelisco (ND 2, 27 PV, duas Rajadas Venenosas) com os traços de drow', () => {
   const pos = [{ x: 3, y: 5 }, { x: 3, y: 6 }, { x: 0, y: 0 }, { x: 0, y: 1 }];
   const { enc, foes } = montar({ foes: [['nezznar', { x: 8, y: 5 }]], pos, lado: 'foes' });
   const n = foes[0];
   // Os números são os do livro (apêndice B): ND 2, 450 XP, 27 PV.
   assert.equal(MONSTERS.nezznar.cr, '2');
   assert.equal(n.xp, 450);
-  // A CA já conta a Armadura Arcana (11 + DES 1 = 14 com ela), e o espaço dela saiu dos de 1º.
+  // A CA já conta a Armadura Arcana (11 + DES 1 = 14 com ela). As magias do bloco são por dia e à vontade, sem espaço.
   assert.equal(n.ac, 14);
-  assert.equal(n.spellcasting.slots[1], 3);
+  assert.deepEqual(n.spellcasting.slots, []);
   assert.equal(n.maxHp, 27);
   // E o que o faz drow: enxerga 36 m no escuro e tem os dois traços.
   assert.equal(n.senses.darkvisionFt, 120);
   assert.ok(n.traits.includes('ascendenciaFeerica'));
   assert.ok(n.traits.includes('sensibilidadeALuzSolar'));
-  // O Cajado da Aranha: bordão com 1d6 de veneno a mais em cada acerto.
-  const cajado = n.attacks.find((a) => a.name === 'Cajado da Aranha');
-  assert.ok(cajado && cajado.danoExtra?.type === 'veneno', 'o cajado traz o veneno');
+  // O Obelisco: DUAS Rajadas Venenosas por turno (+5, 2d8 de veneno), de perto ou a 36 m, e a Teia do cajado.
+  assert.equal(n.multiattack?.count, 2);
+  assert.ok(n.attacks.every((a) => a.name.startsWith('Rajada Venenosa') && a.bonus === 5 && a.damage === '2d8' && a.type === 'veneno'));
+  assert.ok(n.spellcasting.prepared.includes('teia'));
   // Joga o turno sem quebrar (a conjuração dele é a que o motor executa: Fogo das Fadas e o resto da lista).
   takeMonsterTurn(enc, n);
-  assert.ok(n.actionUsed || n.concentrating || n.spellcasting.slots[1] <= 3, 'o turno dele rodou');
+  assert.ok(n.actionUsed || n.concentrating, 'o turno dele rodou');
+});
+
+// "UMA VEZ POR DIA" E "À VONTADE" DE MONSTRO (os blocos do Obelisco, `monsters.js usosDoBloco`). Antes saíam de
+// espaços de magia — o Nezznar soltava TRÊS Mísseis Mágicos seguidos, de três espaços de 1º, onde o livro dá um.
+teste('magia de monstro por dia: o Nezznar solta UM Míssil Mágico, e a Teia do cajado é à vontade', () => {
+  const pos = [{ x: 3, y: 5 }, { x: 3, y: 6 }, { x: 0, y: 0 }, { x: 0, y: 1 }];
+  const { enc, foes, party } = montar({ foes: [['nezznar', { x: 8, y: 5 }]], pos, lado: 'foes' });
+  const n = foes[0];
+  const alvo = party[0];
+  const mm = enc.canCast(n, 'misselMagico', { target: alvo, point: alvo.pos });
+  assert.ok(mm.ok, `o primeiro Míssil sai: ${mm.why ?? ''}`);
+  const r = enc.castSpell(n, 'misselMagico', { target: alvo, targets: [alvo, alvo, alvo], point: alvo.pos, circulo: 1 });
+  assert.ok(r.ok, `conjurou: ${r.why ?? ''}`);
+  assert.equal(n.resources['porDia:misselMagico'], 0, 'gastou o uso do dia');
+  n.actionUsed = false; n.magiasNoTurno = [];
+  assert.equal(enc.canCast(n, 'misselMagico', { target: alvo, point: alvo.pos }).ok, false, 'o segundo Míssil não sai');
+  // A Teia, à vontade: conjura e não gasta recurso nenhum.
+  const antes = JSON.stringify(n.resources);
+  const teia = enc.canCast(n, 'teia', { point: alvo.pos });
+  assert.ok(teia.ok, `a Teia sai sem espaço: ${teia.why ?? ''}`);
+  assert.equal(teia.gratis?.tipo, 'invocacao');
+  assert.equal(JSON.stringify(n.resources), antes);
+  // E a Teia do cajado tem CD 15 (`cdPorMagia`), não a 13 do Nezznar: a resistência registrada diz contra quanto rolou.
+  const desde = enc.log.length;
+  const r2 = enc.castSpell(n, 'teia', { point: alvo.pos });
+  assert.ok(r2.ok, `a Teia saiu: ${r2.why ?? ''}`);
+  const linhas = enc.log.slice(desde).map((l) => (typeof l === 'string' ? l : `${l.text ?? ''} ${l.detail ?? l.detalhe ?? ''}`)).join(' | ');
+  assert.match(linhas, /CD 15/, `a Teia rolou contra CD 15: ${linhas.slice(0, 300)}`);
+  assert.doesNotMatch(linhas, /CD 13/);
+});
+
+// OS GOBLINS PSÍQUICOS DOS SAWPLEE (o Obelisco, capítulo 5): os dois blocos e o que eles pediram ao motor.
+teste('goblins psíquicos: os blocos do Obelisco (lutador ND 2, 31 PV; comandante ND 4, 58 PV), aberrações resistentes a psíquico', () => {
+  const l = makeMonster('goblinPsiLutador', { x: 0, y: 0 });
+  const c = makeMonster('goblinPsiComandante', { x: 0, y: 0 });
+  assert.deepEqual([l.cr ?? MONSTERS.goblinPsiLutador.cr, l.xp, l.ac, l.maxHp], ['2', 450, 15, 31]);
+  assert.deepEqual([MONSTERS.goblinPsiComandante.cr, c.xp, c.ac, c.maxHp], ['4', 1100, 16, 58]);
+  for (const g of [l, c]) {
+    assert.equal(g.tipo, 'aberração');
+    assert.ok(g.resist.includes('psíquico'));
+    assert.ok(g.explosaoMental);
+  }
+  assert.equal(c.multiattack.count, 3);
+  assert.equal(l.attacks[0].danoExtra.type, 'psíquico');
+});
+
+teste('goblins psíquicos: a Fortitude Mental dá vantagem contra medo e encanto', () => {
+  const g = makeMonster('goblinPsiLutador', { x: 0, y: 0 });
+  assert.ok(vantagemPorTraco(g, 'wis', { condicao: 'amedrontado' }).includes('Fortitude Mental'));
+  assert.ok(vantagemPorTraco(g, 'wis', { condicao: 'enfeiticado' }).includes('Fortitude Mental'));
+  assert.ok(!vantagemPorTraco(g, 'con', { condicao: 'envenenado' }).includes('Fortitude Mental'));
+});
+
+teste('goblins psíquicos: ao morrer, explodem em 1,5 m — e a explosão encadeia', () => {
+  let feridos = 0; let cadeias = 0;
+  for (let seed = 1; seed <= 15; seed++) {
+    const pos = [{ x: 5, y: 5 }, { x: 0, y: 0 }, { x: 0, y: 2 }, { x: 0, y: 4 }];
+    const { enc, foes, party } = montar({ seed, foes: [['goblinPsiLutador', { x: 6, y: 5 }], ['goblinPsiLutador', { x: 7, y: 5 }]], pos, lado: 'party' });
+    const [a, b] = foes;
+    const dara = party[0];
+    const pv = dara.hp;
+    b.hp = 1;                                    // o segundo está por um fio: a explosão do primeiro o mata
+    enc.applyDamage(a, 999, 'cortante', dara);
+    assert.ok(a.dead, 'o primeiro morreu');
+    if (dara.hp < pv) feridos += 1;
+    if (b.dead) { cadeias += 1; assert.ok(b.explodiu, 'o segundo, morto pela explosão, também explode'); }
+    assert.equal(party[1].hp, party[1].maxHp, 'quem está longe não sente nada');
+  }
+  assert.ok(feridos > 0, 'a explosão fere quem estava colado');
+  assert.ok(cadeias > 0, 'a explosão encadeia');
+});
+
+teste('goblins psíquicos: a Lâmina Psíquica tira 1d4 do próximo teste de resistência, e some nele', () => {
+  const pos = [{ x: 5, y: 5 }, { x: 0, y: 0 }, { x: 0, y: 2 }, { x: 0, y: 4 }];
+  const { enc, party } = montar({ foes: [['goblinPsiComandante', { x: 6, y: 5 }]], pos, lado: 'foes' });
+  const dara = party[0];
+  addCondition(dara, 'laminaPsiquica', { rounds: 1 });
+  const r = enc.resistencia(dara, 'wis', 10);
+  assert.ok(r.partes.some((p) => p.valor < 0), 'a resistência perdeu o 1d4');
+  assert.ok(!hasCondition(dara, 'laminaPsiquica'), 'e a marca sumiu nela');
+});
+
+teste('goblins psíquicos: o Escudo Psiônico (+3 de CA) salva um aliado a 4,5 m, uma vez por rodada', () => {
+  const pos = [{ x: 5, y: 5 }, { x: 0, y: 0 }, { x: 0, y: 2 }, { x: 0, y: 4 }];
+  const { enc, foes, party } = montar({ foes: [['goblinPsiComandante', { x: 7, y: 7 }], ['goblin', { x: 6, y: 5 }]], pos, lado: 'party' });
+  const [cmd, gob] = foes;
+  const ca = gob.ac;
+  assert.equal(enc.escudoPsionico(gob, party[0], ca + 3, ca), null, 'se +3 não faz errar, não gasta a reação');
+  assert.equal(enc.escudoPsionico(gob, party[0], ca + 1, ca), cmd, 'o comandante protege o goblin a 3 m');
+  assert.ok(cmd.reactionUsed);
+  assert.equal(enc.escudoPsionico(gob, party[0], ca, ca), null, 'a reação já foi');
+  cmd.reactionUsed = false;
+  gob.pos = { ...gob.pos, x: 0, y: 11 };
+  assert.equal(enc.escudoPsionico(gob, party[0], ca, ca), null, 'longe demais (mais de 4,5 m), não protege');
+});
+
+teste('goblins psíquicos: o Rasgo Sináptico pega a esfera de 9 m, incapacita quem falha e espera a recarga', () => {
+  const pos = [{ x: 3, y: 3 }, { x: 4, y: 3 }, { x: 3, y: 4 }, { x: 11, y: 11 }];
+  let incapacitou = 0;
+  for (let seed = 1; seed <= 10; seed++) {
+    const { enc, foes, party } = montar({ seed, foes: [['goblinPsiComandante', { x: 10, y: 3 }]], pos, lado: 'foes' });
+    const c = foes[0];
+    const pv = party.map((h) => h.hp);
+    assert.equal(enc.rasgoSinaptico(c, { x: 3, y: 3 }), true);
+    for (const i of [0, 1, 2]) assert.ok(party[i].hp < pv[i], `${party[i].name} estava na esfera`);
+    assert.equal(party[3].hp, pv[3], 'quem está fora não é pego');
+    incapacitou += party.filter((h) => hasCondition(h, 'incapacitado')).length;
+    c.actionUsed = false;
+    assert.equal(enc.rasgoSinaptico(c, { x: 3, y: 3 }), false, 'gasto, só volta com a recarga (5–6)');
+  }
+  assert.ok(incapacitou > 0, 'quem falha fica incapacitado');
+});
+
+teste('goblins psíquicos: a IA solta o Rasgo onde pega dois heróis e NENHUM goblin; com um goblin no meio, não', () => {
+  const pos = [{ x: 3, y: 3 }, { x: 4, y: 3 }, { x: 0, y: 11 }, { x: 1, y: 11 }];
+  const { enc, foes } = montar({ foes: [['goblinPsiComandante', { x: 11, y: 3 }]], pos, lado: 'foes' });
+  takeMonsterTurn(enc, foes[0]);
+  assert.ok(foes[0].recarregando?.['Rasgo Sináptico'], 'dois heróis juntos: ele usou o Rasgo');
+  const outro = montar({ foes: [['goblinPsiComandante', { x: 11, y: 3 }], ['goblin', { x: 3, y: 4 }]], pos: [{ x: 3, y: 3 }, { x: 4, y: 3 }, { x: 0, y: 11 }, { x: 11, y: 11 }], lado: 'foes' });
+  takeMonsterTurn(outro.enc, outro.foes[0]);
+  assert.ok(!outro.foes[0].recarregando?.['Rasgo Sináptico'], 'com um goblin colado nos heróis, ele não usa o Rasgo');
+});
+
+teste('goblins psíquicos: o Empurrão Telecinético derruba quem falha em Força CD 13, a até 9 m', () => {
+  let caiu = 0;
+  for (let seed = 1; seed <= 12; seed++) {
+    const pos = [{ x: 3, y: 5 }, { x: 0, y: 0 }, { x: 0, y: 2 }, { x: 0, y: 4 }];
+    const { enc, foes, party } = montar({ seed, foes: [['goblinPsiLutador', { x: 8, y: 5 }]], pos, lado: 'foes' });
+    assert.equal(enc.empurraoTelecinetico(foes[0], party[0]), true);
+    if (hasCondition(party[0], 'caido')) caiu += 1;
+    assert.equal(enc.empurraoTelecinetico(foes[0], party[0]), false, 'é ação bônus: uma por turno');
+  }
+  assert.ok(caiu > 0 && caiu < 12, `caíram ${caiu} de 12`);
+});
+
+// O RESTO DAS CRIATURAS DO CAPÍTULO 5 (o Obelisco), e o que cada uma pediu ao motor.
+const POS5 = [{ x: 3, y: 5 }, { x: 0, y: 0 }, { x: 0, y: 2 }, { x: 0, y: 4 }];
+
+teste('capítulo 5: os blocos (ashenwights, otyughs, broca, guardião, Ruxithid, texugo) com os números do livro', () => {
+  const linha = (id) => { const m = makeMonster(id, { x: 0, y: 0 }); return [MONSTERS[id].cr, m.xp, m.ac, m.maxHp]; };
+  assert.deepEqual(linha('ashenwightFeral'), ['5', 1800, 16, 65]);
+  assert.deepEqual(linha('ashenwightPsionico'), ['7', 2900, 16, 78]);
+  assert.deepEqual(linha('otyugh'), ['5', 1800, 14, 114]);
+  assert.deepEqual(linha('otyughMutante'), ['6', 2300, 16, 76]);
+  assert.deepEqual(linha('brocaInfernal'), ['5', 1800, 15, 85]);
+  assert.deepEqual(linha('guardiaoEscudo'), ['7', 2900, 17, 142]);
+  assert.deepEqual(linha('ruxithid'), ['5', 1800, 15, 88]);
+  assert.deepEqual(linha('texugoGigante'), ['1/4', 50, 10, 13]);
+  assert.equal(makeMonster('brocaInfernal', { x: 0, y: 0 }).pos.f, 3, 'a broca é Enorme: 3 x 3 casas');
+});
+
+teste('ashenwight: o Estilhaço Necrótico deixa desvantagem no próximo ataque', () => {
+  const { enc, foes, party } = montar({ foes: [['ashenwightFeral', { x: 4, y: 5 }]], pos: POS5, lado: 'foes' });
+  for (let i = 0; i < 20 && !hasCondition(party[0], 'zombado'); i++) { foes[0].actionUsed = false; enc.attackAction(foes[0], party[0], 'Estilhaço Necrótico'); }
+  assert.ok(hasCondition(party[0], 'zombado'), 'quem leva o estilhaço fica com desvantagem no próximo ataque');
+});
+
+teste('ashenwight psiônico: a Coroa enfeitiça, tira a reação, fere 2d8 no começo do turno e impede atacar quem a pôs', () => {
+  let coroou = false;
+  for (let seed = 1; seed <= 15 && !coroou; seed++) {
+    const { enc, foes, party } = montar({ seed, foes: [['ashenwightPsionico', { x: 8, y: 5 }]], pos: POS5, lado: 'foes' });
+    const a = foes[0]; const dara = party[0];
+    assert.equal(enc.coroaPsionica(a, dara), true);
+    assert.equal(enc.coroaPsionica(a, dara), false, 'gasta a recarga');
+    if (!hasCondition(dara, 'coroaPsionica')) continue;
+    coroou = true;
+    assert.ok(conditionEffects(dara).semReacao, 'coroado não reage');
+    assert.equal(enc.canAttack(dara, a).ok, false, 'não ataca quem o coroou');
+    const pv = dara.hp;
+    enc.inicioDoTurnoDoBloco(dara);
+    assert.ok(dara.hp < pv, 'a coroa fere no começo do turno');
+  }
+  assert.ok(coroou, 'em 15 sementes alguém falhou na Sabedoria CD 14');
+});
+
+teste('otyugh: a mordida passa a doença, e o descanso longo cura (CON 15) ou tira PV máximo', () => {
+  const dara = makeParty({ nivel: 3 })[0];
+  addCondition(dara, 'doencaDoOtyugh');
+  const max = dara.maxHp;
+  // O dado do descanso é controlado: o d20 sai 1 (falha), o d10 sai 6; depois o d20 sai 20 (cura).
+  const dados = [0.0, 0.5, 0.99];
+  const real = Math.random;
+  Math.random = () => dados.shift() ?? 0.5;
+  try {
+    descansoLongo(dara);
+    assert.ok(hasCondition(dara, 'doencaDoOtyugh'), 'falhou: continua doente');
+    assert.equal(dara.maxHp, max - 6, 'e perdeu 1d10 (6) de PV máximo');
+    descansoLongo(dara);
+    assert.ok(!hasCondition(dara, 'doencaDoOtyugh'), 'passou: curada');
+    assert.equal(dara.maxHp, max, 'curada, o PV máximo volta inteiro');
+  } finally {
+    Math.random = real;
+  }
+});
+
+teste('otyugh: com dois agarrados, a Pancada de Tentáculos atordoa quem falha (metade se passar)', () => {
+  const { enc, foes, party } = montar({ foes: [['otyugh', { x: 4, y: 4 }]], pos: [{ x: 3, y: 4 }, { x: 6, y: 4 }, { x: 0, y: 0 }, { x: 0, y: 2 }], lado: 'foes' });
+  const o = foes[0];
+  for (const h of party.slice(0, 2)) addCondition(h, 'contido', { source: o.id, data: { escape: 13 } });
+  const pv = party.slice(0, 2).map((h) => h.hp);
+  takeMonsterTurn(enc, o);
+  assert.ok(party.slice(0, 2).every((h, i) => h.hp < pv[i]), 'os dois agarrados apanharam');
+  assert.ok(enc.log.some((l) => /Pancada de Tentáculos/.test(typeof l === 'string' ? l : l.text)));
+});
+
+teste('otyugh mutante: o Hálito Virulento no começo do turno, e a Pancada de Quitina TROCA um dos dois golpes', () => {
+  const { enc, foes, party } = montar({ foes: [['otyughMutante', { x: 4, y: 4 }]], pos: [{ x: 3, y: 4 }, { x: 0, y: 0 }, { x: 0, y: 2 }, { x: 0, y: 4 }], lado: 'foes' });
+  const o = foes[0];
+  let feriu = false;
+  for (let i = 0; i < 10 && !feriu; i++) { const pv = party[0].hp; enc.inicioDoTurnoDoBloco(o); feriu = party[0].hp < pv; }
+  assert.ok(feriu, 'o hálito pega quem está colado');
+  addCondition(party[0], 'contido', { source: o.id, data: { escape: 15 } });
+  const antes = enc.log.length;
+  takeMonsterTurn(enc, o);
+  const linhas = enc.log.slice(antes).map((l) => (typeof l === 'string' ? l : l.text));
+  assert.ok(linhas.some((t) => /Pancada de Quitina/.test(t)), 'usou a quitina em quem segura');
+  const golpes = linhas.filter((t) => /(acerta|erra) .* com (Tentáculo|Mordida)/.test(t)).length;
+  assert.equal(golpes, 1, `trocou um dos dois golpes: sobrou ${golpes}`);
+});
+
+teste('broca infernal: a investida (6 m em linha reta) soma dano e derruba; a Rajada de Calor contorna a quina', () => {
+  const { enc, foes, party } = montar({ foes: [['brocaInfernal', { x: 6, y: 4 }]], pos: [{ x: 5, y: 5 }, { x: 0, y: 0 }, { x: 0, y: 2 }, { x: 0, y: 4 }], lado: 'foes' });
+  const b = foes[0];
+  b.movementLeftFt = 0;                                  // gastou os 12 m andando até ali
+  b.retaAndada = { pes: 40, dx: -1, dy: 1 };              // e em linha reta, na direção do alvo (o livro)
+  let derrubou = false;
+  for (let i = 0; i < 20 && !derrubou; i++) { enc.investida(b, party[0], b.attacks[0].investida); derrubou = hasCondition(party[0], 'caido'); }
+  assert.ok(derrubou, 'Força CD 17 falha às vezes: cai');
+  b.movementLeftFt = b.speedFt;
+  removeCondition(party[0], 'caido');
+  const pv = party[0].hp;
+  enc.investida(b, party[0], b.attacks[0].investida);
+  assert.equal(party[0].hp, pv, 'parado, sem investida');
+  // a rajada: atrás de uma quina de parede, a 6 m pelo chão, ainda pega
+  const mapa = MAPA.map((l) => l.split(''));
+  for (let y = 0; y <= 3; y++) mapa[y][8] = '#';   // uma parede curta: a volta pela ponta dá menos de 9 m
+  const m2 = montar({ foes: [['brocaInfernal', { x: 5, y: 2 }]], pos: [{ x: 9, y: 2 }, { x: 0, y: 11 }, { x: 1, y: 11 }, { x: 2, y: 11 }], lado: 'foes', mapa: mapa.map((l) => l.join('')) });
+  assert.ok(!m2.enc.field.hasLineOfSight(m2.foes[0].pos, m2.party[0].pos), 'a parede tapa a vista');
+  const antes = m2.party[0].hp;
+  assert.equal(m2.enc.rajadaDeCalor(m2.foes[0]), true);
+  assert.ok(m2.party[0].hp < antes, 'o calor dobrou a quina');
+});
+
+teste('guardião-escudo: com o amuleto, leva metade do dano e dá +2 de CA; regenera; e para quando quem o comanda morre', () => {
+  const { enc, foes } = montar({ foes: [['ruxithid', { x: 6, y: 5 }], ['guardiaoEscudo', { x: 7, y: 5 }]], pos: POS5, lado: 'party' });
+  const [rux, g] = foes;
+  g.amuletoCom = rux.id;
+  g.comandadoPor = rux.id;
+  const pvR = rux.hp; const pvG = g.hp;
+  enc.applyDamage(rux, 20, 'cortante', null, { magico: true });
+  assert.equal(pvR - rux.hp, 10, 'o mestre leva a metade');
+  assert.equal(pvG - g.hp, 10, 'o guardião leva a outra metade');
+  // sem o amuleto (o Santuário Índigo: o Ruxithid o comanda pelo cristal), o golpe é inteiro do mestre
+  g.amuletoCom = null;
+  const antes = rux.hp;
+  enc.applyDamage(rux, 20, 'cortante', null, { magico: true });
+  assert.equal(antes - rux.hp, 20, 'sem amuleto, sem Vínculo');
+  g.amuletoCom = rux.id;
+  assert.equal(enc.escudoDoGuardiao(rux, { name: 'x' }, rux.ac + 1, rux.ac), g, '+2 de CA colado');
+  g.hp = 100;
+  enc.inicioDoTurnoDoBloco(g);
+  assert.equal(g.hp, 110, 'Regeneração: 10 PV');
+  rux.hp = 1;                                   // por um fio: o golpe de 2 passa 1 ao guardião e 1 a ele
+  enc.applyDamage(rux, 2, 'cortante', null, { magico: true });
+  assert.ok(rux.dead);
+  assert.ok(hasCondition(g, 'inerte') && g.naoSeguraALuta, 'sem o mestre, o guardião para');
+});
+
+teste('Ruxithid: a Resistência Lendária passa duas vezes o que falharia, e os Tentáculos Cerebrais atordoam', () => {
+  const { enc, foes, party } = montar({ foes: [['ruxithid', { x: 5, y: 5 }]], pos: POS5, lado: 'foes' });
+  const r = foes[0];
+  for (let i = 0; i < 2; i++) assert.ok(enc.resistencia(r, 'str', 40).success, 'CD 40, impossível: passa pela lendária');
+  assert.equal(r.resources.resistenciaLendaria, 0);
+  assert.ok(!enc.resistencia(r, 'str', 40).success, 'a terceira falha');
+  let atordoou = false;
+  for (let i = 0; i < 20 && !atordoou; i++) {
+    r.bonusUsed = false; r.recarregando = {};
+    enc.tentaculosCerebrais(r, party[0]);
+    atordoou = hasCondition(party[0], 'atordoado');
+  }
+  assert.ok(atordoou, 'Destreza CD 15 falha às vezes: atordoado');
+});
+
+teste('Ruxithid: o Comando de Combate faz o aliado bater de reação', () => {
+  const { enc, foes, party } = montar({ foes: [['ruxithid', { x: 8, y: 5 }], ['guardiaoEscudo', { x: 4, y: 5 }]], pos: POS5, lado: 'foes' });
+  const [r, g] = foes;
+  assert.equal(enc.comandoDeCombate(r, g, party[0]), true);
+  assert.ok(g.reactionUsed && r.bonusUsed);
+  assert.ok(enc.log.some((l) => /Comando de Combate/.test(typeof l === 'string' ? l : l.text)));
+});
+
+// A BANSHEE DE CONYBERRY (SRD; o Obelisco a faz atacar). O que o motor executa dela: o bloco, a Visagem e o Lamento.
+teste('banshee: o bloco do SRD (ND 4, 1.100 XP, CA 12, 58 PV) e o Lamento uma vez por dia', () => {
+  const b = makeMonster('banshee', { x: 0, y: 0 });
+  assert.equal(MONSTERS.banshee.cr, '4');
+  assert.equal(b.xp, 1100);
+  assert.equal(b.ac, 12);
+  assert.equal(b.maxHp, 58);
+  assert.equal(b.attacks[0].name, 'Toque Corruptor');
+  assert.equal(b.attacks[0].damage, '3d6+2');
+  assert.equal(b.resources.lamento, 1);
+  assert.ok(b.conditionImmunities.includes('amedrontado'));
+});
+
+teste('banshee: a Visagem amedronta quem falha (e o medo se repete), e quem passa não a teme mais', () => {
+  const pos = [{ x: 3, y: 5 }, { x: 3, y: 6 }, { x: 4, y: 5 }, { x: 4, y: 6 }];
+  for (let seed = 1; seed <= 8; seed++) {
+    const { enc, foes, party } = montar({ seed, foes: [['banshee', { x: 8, y: 5 }]], pos, lado: 'foes' });
+    const b = foes[0];
+    enc.visagemHorripilante(b);
+    for (const h of party) {
+      const medo = h.conditions.find((c) => c.id === 'amedrontado');
+      const imune = h.imuneAVisagem?.includes(b.id);
+      assert.ok(Boolean(medo) !== Boolean(imune), `${h.name}: ou teme ou ficou imune (semente ${seed})`);
+      if (medo) assert.equal(medo.data.repete, 'sempre', 'o medo da Visagem se repete no fim de cada turno');
+    }
+    // Quem passou não rola de novo.
+    const imunes = party.filter((h) => h.imuneAVisagem?.includes(b.id)).length;
+    const antes = enc.log?.length ?? 0;
+    b.actionUsed = false;
+    enc.visagemHorripilante(b);
+    assert.equal(party.filter((h) => h.imuneAVisagem?.includes(b.id)).length >= imunes, true);
+  }
+});
+
+teste('banshee: o Lamento derruba a 0 PV quem falha (sem matar), fere 3d6 quem passa, e sai uma vez só', () => {
+  const pos = [{ x: 7, y: 3 }, { x: 7, y: 2 }, { x: 8, y: 3 }, { x: 0, y: 11 }];   // o último a 45 pés: fora dos 9 m
+  let caiu = 0; let feriu = 0;
+  for (let seed = 1; seed <= 12; seed++) {
+    const { enc, foes, party } = montar({ seed, foes: [['banshee', { x: 8, y: 2 }]], pos, lado: 'foes' });
+    const b = foes[0];
+    const pvAntes = party.map((h) => h.hp);
+    assert.equal(enc.lamentoDaBanshee(b), true);
+    party.slice(0, 3).forEach((h, i) => {
+      if (h.hp === 0) { caiu += 1; assert.ok(!h.dead, `${h.name} cai a 0 PV, mas não morre`); }
+      else { feriu += 1; assert.ok(pvAntes[i] - h.hp >= 3 && pvAntes[i] - h.hp <= 18, `${h.name}: 3d6 psíquicos`); }
+    });
+    assert.equal(party[3].hp, pvAntes[3], 'quem está a mais de 9 m não ouve o Lamento');
+    b.actionUsed = false;
+    assert.equal(enc.lamentoDaBanshee(b), false, 'o Lamento é uma vez por dia');
+  }
+  assert.ok(caiu > 0 && feriu > 0, `caíram ${caiu}, aguentaram ${feriu}`);
+});
+
+teste('magia de monstro por dia: o Cajavidro tem UM Imobilizar Pessoa e DOIS Teleportes (o Passo Nebuloso)', () => {
+  const m = makeMonster('cajavidro', { x: 0, y: 0 });
+  assert.deepEqual(m.resources, { 'porDia:enfeiticarPessoa': 1, 'porDia:imobilizarPessoa': 1, 'porDia:misselMagico': 1, 'porDia:passoNebuloso': 2 });
+  assert.deepEqual(m.spellcasting.slots, []);
+  // E a IA lê o uso do dia: no turno, com um herói colado e humano por perto, ela tenta prender — uma vez só.
+  const pos = [{ x: 3, y: 5 }, { x: 3, y: 6 }, { x: 0, y: 0 }, { x: 0, y: 1 }];
+  const { enc, foes } = montar({ foes: [['cajavidro', { x: 8, y: 5 }]], pos, lado: 'foes' });
+  const c = foes[0];
+  takeMonsterTurn(enc, c);
+  assert.ok(c.resources['porDia:imobilizarPessoa'] === 0 || c.resources['porDia:misselMagico'] === 0 || c.actionUsed,
+    'o Cajavidro jogou o turno com as magias do dia');
 });
 
 teste('o doppelganger disfarçado de drow se revela ao atacar ou ao cair', () => {
@@ -6612,7 +6993,7 @@ teste('quem nao negocia chega hostil, nem que o dado de doze', () => {
     assert.equal(NEGOCIAVEIS.has(id), false, id + ' nao negocia');
     assert.equal(reacaoDe(alto(), id).id, 'hostil', id + ' chega hostil com 12');
   }
-  for (const id of ['goblin', 'hobgoblin', 'orc']) {
+  for (const id of ['goblin', 'hobgoblin', 'bugbear']) {
     assert.equal(NEGOCIAVEIS.has(id), true, id + ' negocia');
   }
 });
@@ -6624,8 +7005,8 @@ teste('podeConversar: a propria funcao que a tela usa', () => {
   assert.equal(podeConversar('goblin', REACOES.hostil), false, 'hostil nao ouve');
   assert.equal(podeConversar('lobo', REACOES.indiferente), false, 'o lobo nunca ouve');
   // Aceita tanto a reacao inteira quanto o id dela.
-  assert.equal(podeConversar('orc', 'desconfiado'), true);
-  assert.equal(podeConversar('orc', 'hostil'), false);
+  assert.equal(podeConversar('bugbear', 'desconfiado'), true);
+  assert.equal(podeConversar('bugbear', 'hostil'), false);
   // Hostil nao tem CD: o livro nao da teste para convencer quem ja vem brigar.
   assert.equal(REACOES.hostil.cd, null);
   assert.equal(REACOES.desconfiado.cd, 15, 'medio, pela tabela do livro');
@@ -6884,7 +7265,8 @@ teste('as quatro magias de abrigo existem, com circulo e classes do livro', () =
   assert.ok(listaDaClasse('mago', 2).magias.includes('chamaContinua'), 'o mago tambem');
   assert.ok(listaDaClasse('clerigo', 2).magias.includes('repousoTranquilo'), 'o clerigo tem o repouso');
   assert.ok(listaDaClasse('mago', 2).magias.includes('repousoTranquilo'), 'o mago tambem');
-  assert.ok(!listaDaClasse('paladino', 2).magias.includes('repousoTranquilo'), 'o paladino nao');
+  // o PHB nao da o repouso ao paladino; a lista expandida do Tasha da (`rules/magias-por-classe-tce-expandida.js`)
+  assert.ok(listaDaClasse('paladino', 2).magias.includes('repousoTranquilo'), 'o paladino tem, pelo Tasha');
 });
 
 teste('a Pequena Cabana fecha a noite: ninguem vigia e todos descansam', () => {
@@ -7020,7 +7402,9 @@ teste('as oito magias de adivinhacao e servico existem, com circulo e classes', 
   }
   // As de 2o e 3o.
   assert.ok(listaDaClasse('clerigo', 2).magias.includes('augurio'), 'o Augurio e do clerigo');
-  assert.ok(!listaDaClasse('mago', 2).magias.includes('augurio'), 'nao do mago');
+  // o PHB nao da o Augurio ao mago; a lista expandida do Tasha da
+  assert.ok(listaDaClasse('mago', 2).magias.includes('augurio'), 'o mago tem, pelo Tasha');
+  assert.ok(!listaDaClasse('feiticeiro', 2).magias.includes('augurio'), 'nao do feiticeiro');
   assert.ok(listaDaClasse('mago', 2).magias.includes('auraMagicaDoArcanista'), 'a Aura e do mago');
   assert.ok(!listaDaClasse('bardo', 2).magias.includes('auraMagicaDoArcanista'), 'so dele');
   for (const classe of ['bardo', 'mago']) {
@@ -7559,7 +7943,8 @@ teste('quem passa a noite na pedra sai da conta da noite', () => {
   assert.equal(semEle.herois.length, party.length - 1, 'o acampamento da noite tem um a menos');
 });
 
-teste('Respirar na Agua se declara como narracao: o jogo nao afoga ninguem', () => {
+// Desde que a água funda cobra o ar (`conditions.js gastarFolego`, o polvo da Onda Eco), a magia deixou de só narrar.
+teste('Respirar na Água: quem a recebe não gasta o fôlego debaixo dela, até o descanso longo', () => {
   const { party } = montar({ nivel: 5 });
   const mago = garantirInventario(party[ILVAN]);
   mago.spellcasting.prepared.push('respirarNaAgua');
@@ -7567,9 +7952,11 @@ teste('Respirar na Agua se declara como narracao: o jogo nao afoga ninguem', () 
   const estado = estadoDe({ vila: { dia: 1 } });
   const r = conjurarFora(estado, mago, 'respirarNaAgua', { herois: party, rng: makeRng(3) });
   assert.ok(r.ok);
-  assert.equal(r.resultado.soNarra, true, 'ela mesma diz que so narra');
+  assert.ok(!r.resultado.soNarra, 'ela tem efeito de regra');
   assert.ok(r.resultado.respirar.length <= 10, 'o livro cobre no maximo dez criaturas');
-  assert.ok(/nao afoga|não afoga/.test(getSpell('respirarNaAgua').desc), 'e o desc diz por que');
+  for (const h of r.resultado.respirar) assert.equal(h.respiraNaAgua, true, `${h.name} respira na água`);
+  descansoLongo(party[0]);
+  assert.ok(!party[0].respiraNaAgua, 'as 24 horas acabam no descanso longo seguinte');
 });
 
 // ---- a palavra e o olho a distancia ---------------------------------------
@@ -8911,7 +9298,8 @@ teste('o vocabulario de tipo de dano e UM: quem causa e quem resiste escrevem ig
       // (poção, escudo, morto-vivo) em todo lugar menos dentro de um bloco de
       // dano, onde e o tipo do dano da zona.
       if (k === 'type') { ver(x, aqui); continue; }
-      if (k === 'tipo' && /dano/i.test(chavePai ?? '')) { ver(x, aqui); continue; }
+      // `dano`/`Dano` com a caixa certa: sem ela, o id `bruxaDaNoite` ("DaNo") passava por bloco de dano
+      if (k === 'tipo' && /dano|Dano/.test(chavePai ?? '')) { ver(x, aqui); continue; }
       andaNoDado(x, aqui, k);
     }
   };
@@ -9149,9 +9537,32 @@ teste('a utilidade tem cor por escola, e toda escola do jogo tem a sua: nenhuma 
   assert.deepEqual([...ESCOLAS_COM_COR].sort(), [...ESCOLAS].sort(), 'toda escola tem cor, e nenhuma cor sobra');
   // A Comunhão já foi escrita `divinação`: a escola é a mesma, e o normalizador aceita as duas.
   assert.equal(escolaDe(SPELLS.comunhao), 'adivinhacao');
-  // E a escola chega ao timbre.
-  assert.deepEqual(conjuracaoSoundFor(familiaDaMagia(SPELLS.detectarMagia)), { nome: 'castUtility', opts: { escola: 'adivinhacao' } });
-  assert.deepEqual(conjuracaoSoundFor(familiaDaMagia(SPELLS.abrir)), { nome: 'castUtility', opts: { escola: 'transmutacao' } });
+  // E a escola chega ao timbre. O `semitom` que vem junto é a nota da magia, e tem prova própria abaixo.
+  const soEscola = (sp) => { const r = conjuracaoSoundFor(familiaDaMagia(sp)); return { nome: r.nome, escola: r.opts.escola }; };
+  assert.deepEqual(soEscola(SPELLS.detectarMagia), { nome: 'castUtility', escola: 'adivinhacao' });
+  assert.deepEqual(soEscola(SPELLS.abrir), { nome: 'castUtility', escola: 'transmutacao' });
+});
+
+teste('cada magia tem a sua NOTA: o som não se repete em mais de 6 magias, e a mesma magia soa sempre na mesma altura', () => {
+  // O timbre diz a família (cura, proteção, maldição); a nota diz QUAL magia. Sem ela, vinte e quatro proteções soavam idênticas.
+  const timbre = (sp) => {
+    const { nome, opts } = conjuracaoSoundFor(familiaDaMagia(sp));
+    const esc = nome === 'castUtility' ? `/${opts.escola}` : '';
+    return `${nome}${esc}@${opts.semitom ?? 0}`;
+  };
+  const conta = new Map();
+  // a magia SEM MOTOR (`semMotor`, a dos livros que o jogo ainda não conjura) nunca toca: não entra na conta
+  for (const sp of Object.values(SPELLS).filter((x) => !x.semMotor)) conta.set(timbre(sp), (conta.get(timbre(sp)) ?? 0) + 1);
+  const pior = Math.max(...conta.values());
+  assert.ok(conta.size >= 100, `timbres distintos: ${conta.size}, esperado 100 ou mais`);
+  assert.ok(pior <= 6, `o som mais repetido pega ${pior} magias, e o teto é 6`);
+  // A nota sai do id, então ela não muda entre dois disparos nem entre duas partidas.
+  assert.equal(timbre(SPELLS.bencao), timbre(SPELLS.bencao));
+  assert.notEqual(timbre(SPELLS.bencao), timbre(SPELLS.resistencia), 'duas magias de reforço têm notas diferentes');
+  // O dano continua dizendo o TIPO: as magias de fogo ficam todas no mesmo timbre, mudando só a altura.
+  const nomeDe = (sp) => conjuracaoSoundFor(familiaDaMagia(sp)).nome;
+  assert.equal(nomeDe(SPELLS.bolaDeFogo), nomeDe(SPELLS.raioDeFogo));
+  assert.notEqual(timbre(SPELLS.bolaDeFogo), timbre(SPELLS.raioDeFogo));
 });
 
 teste('o catalogo nao deixa a classificacao calar: todo kind e todo `familiaSonora` e toda condicao de buff existem', () => {
@@ -9173,8 +9584,9 @@ teste('o catalogo nao deixa a classificacao calar: todo kind e todo `familiaSono
 
   const familiaInvalida = Object.values(SPELLS).filter((sp) => sp.familiaSonora && !FAMILIAS.includes(sp.familiaSonora)).map((sp) => sp.id);
   assert.deepEqual(familiaInvalida, [], 'familiaSonora fora de FAMILIAS: ' + familiaInvalida.join(', '));
-  // As quatro que dependem do campo: se ele sumir, caem na familia errada.
-  assert.deepEqual(Object.values(SPELLS).filter((sp) => sp.familiaSonora).map((sp) => sp.id).sort(),
+  // As quatro FEITAS À MÃO que dependem do campo: se ele sumir, caem na familia errada. (As dos livros o trazem da tabela
+  // de ajustes, `src/dev/magias/ajustes-<livro>.mjs`, e o importador o escreve de novo a cada rodada.)
+  assert.deepEqual(Object.values(SPELLS).filter((sp) => sp.familiaSonora && ['srd', 'propria'].includes(sp.fonte)).map((sp) => sp.id).sort(),
     ['luz', 'montariaFantasmagorica', 'reviverOsMortos', 'visaoNoEscuro']);
 
   // Magia de dano que perder o `damageType` NAO pode cair em utilidade calada.
@@ -9254,6 +9666,780 @@ teste('o conhaque anão: um copo devolve 1 PV, o segundo em menos de uma hora en
   const barril = heroi.bag.find((i) => i.id === 'conhaqueAnao');
   assert.ok(barril, 'o barril continua na mochila');
   assert.equal(barril.usosRestantes, 17, 'e marca os copos: 20 menos os 3 bebidos');
+});
+
+teste('A área das magias que não são esfera: o número de casas é o do livro, e parede é linha (a Muralha de Fogo saía em bloco de 144 casas)', () => {
+  const mapa = Array.from({ length: 61 }, () => '.'.repeat(61));
+  const heroi = makeParty()[0];
+  const enc = new Encounter({ battlefield: new Battlefield(61, 61, mapa), party: [heroi], foes: [], rng: makeRng(1) });
+  heroi.pos = { x: 30, y: 30 };
+  const esperado = { maosFlamejantes: 7, ondaTrovejante: 9, graxa: 4, fogoDasFadas: 16, emaranhar: 16, teia: 16, nuvemDeAdagas: 1, conjurarSaraivada: 84, relampago: 20, medo: 24, padraoHipnotico: 36, lufadaDeVento: 24, muralhaDeVento: 10, muralhaDeFogo: 12, imagemSilenciosa: 9, imagemMaior: 16, coneDeFrio: 84 };
+  for (const [id, n] of Object.entries(esperado)) {
+    assert.equal(enc.areaDaMagia(heroi, SPELLS[id], { x: 36, y: 30 }).length, n, id);
+  }
+});
+
+teste('Os blocos que o Obelisco pôs na Mina: os números são os do livro', () => {
+  // Cada número aqui veio do bloco do livro (5e.tools, 2026-11-08): CA, PV, ND, XP, bônus, dano e alcance.
+  const esperado = {
+    cobraVenenosaGigante: { ac: 14, maxHp: 11, cr: '1/4', xp: 50, ataque: ['Mordida', 6, '1d4+4', 10] },
+    serpenteConstritoraGigante: { ac: 12, maxHp: 60, cr: '2', xp: 450, ataque: ['Constrição', 6, '2d8+4', 5] },
+    polvoGigante: { ac: 11, maxHp: 52, cr: '1', xp: 200, ataque: ['Tentáculos', 5, '2d6+3', 15] },
+    zumbiOgro: { ac: 8, maxHp: 85, cr: '2', xp: 450, ataque: ['Maça-estrela', 6, '2d8+4', 5] },
+    grell: { ac: 12, maxHp: 55, cr: '3', xp: 700, ataque: ['Tentáculos', 4, '1d10+2', 10] },
+    fungoVioleta: { ac: 5, maxHp: 18, cr: '1/4', xp: 50, ataque: ['Toque Apodrecido', 2, '1d8', 10] },
+    quasit: { ac: 13, maxHp: 7, cr: '1', xp: 200, ataque: ['Garras', 4, '1d4+3', 5] },
+    chefeGoblinArqueiro: { ac: 17, maxHp: 21, cr: '1', xp: 200, ataque: ['Arco curto', 4, '1d6+2', undefined] },
+  };
+  for (const [id, e] of Object.entries(esperado)) {
+    const m = MONSTERS[id];
+    assert.ok(m, `${id} existe`);
+    assert.deepEqual([m.ac, m.maxHp, m.cr, m.xp], [e.ac, e.maxHp, e.cr, e.xp], id);
+    const a = m.attacks[0];
+    assert.deepEqual([a.name, a.bonus, a.damage, a.reachFt], e.ataque, `${id}: o ataque`);
+  }
+  // A serpente é ENORME (3x3 casas), o zumbi ogro e o polvo são grandes, o quasit é miúdo.
+  assert.equal(makeMonster('serpenteConstritoraGigante', { x: 5, y: 5 }).pos.f, 3);
+  assert.equal(makeMonster('zumbiOgro', { x: 5, y: 5 }).pos.f, 2);
+  // O chefe goblin: a azagaia é de Força, +2 e 1d6, e os dois golpes são de cimitarra. O engano estava no Yeemik também.
+  for (const id of ['goblinChefe', 'yeemik']) {
+    const az = MONSTERS[id].attacks.find((a) => a.name === 'Azagaia');
+    assert.deepEqual([az.bonus, az.damage], [2, '1d6'], `${id}: a azagaia do livro`);
+    assert.ok(MONSTERS[id].multiattack.sequence, `${id}: o multiataque é de lâmina, não de azagaia`);
+  }
+});
+
+teste('O que os blocos do Obelisco pediram ao motor: dado de multiataque, dois efeitos num golpe, dano só de quem falha, resistência a magia', () => {
+  const { enc, h } = comHeroi('clerigo', 5, { foes: [['fungoVioleta', { x: 3, y: 5 }]] });
+  // O FUNGO: de 1 a 4 toques por ação, rolados a cada vez.
+  const fungo = enc.combatants.find((c) => c.defId === 'fungoVioleta');
+  const contagens = new Set();
+  for (let i = 0; i < 60; i += 1) contagens.add(enc.golpesDoAtaque(fungo, 'Toque Apodrecido').length);
+  assert.deepEqual([...contagens].sort(), [1, 2, 3, 4], 'o 1d4 dá de um a quatro toques');
+
+  // O GRELL: o tentáculo paralisa (com resistência) E agarra (sem). Com a resistência falhando, as duas.
+  const g = comHeroi('clerigo', 5, { foes: [['grell', { x: 3, y: 5 }]] });
+  const grell = g.foes[0];
+  d20Fixo(g.enc, 1);
+  g.enc.resolveAttack(grell, g.h, { weaponId: 'Tentáculos' });
+  // O 1 natural erra; força o acerto pelo caminho do efeito.
+  g.enc.efeitoDoGolpe(grell, g.h, { ...grell.attacks[0], name: 'Tentáculos', onHit: grell.attacks[0].onHit[0] });
+  g.enc.efeitoDoGolpe(grell, g.h, { ...grell.attacks[0], name: 'Tentáculos', onHit: grell.attacks[0].onHit[1] });
+  assert.ok(hasCondition(g.h, 'paralisado'), 'o veneno paralisa quem falha');
+  assert.ok(hasCondition(g.h, 'contido'), 'e o agarrão prende sem resistência');
+
+  // O AGARRÃO ACABA COM QUEM AGARRA: no jogo, a Dara saiu da luta do poço CONTIDA por uma serpente morta.
+  const sp = comHeroi('clerigo', 5, { foes: [['serpenteConstritoraGigante', { x: 3, y: 4 }]] });
+  const [serp] = sp.foes;
+  const aperto = serp.attacks.find((x) => x.name === 'Constrição');
+  sp.enc.efeitoDoGolpe(serp, sp.h, aperto);
+  assert.ok(hasCondition(sp.h, 'contido'), 'a constrição prende');
+  sp.enc.applyDamage(serp, 999, 'radiante');
+  assert.ok(serp.dead && !hasCondition(sp.h, 'contido'), 'morta a serpente, o herói está livre');
+  // e cai também quando quem agarra fica incapacitado, no começo do lado seguinte
+  const sp2 = comHeroi('clerigo', 5, { foes: [['serpenteConstritoraGigante', { x: 3, y: 4 }]] });
+  sp2.enc.efeitoDoGolpe(sp2.foes[0], sp2.h, aperto);
+  addCondition(sp2.foes[0], 'atordoado', { rounds: 2 });
+  sp2.enc.beginSide('party');
+  assert.ok(!hasCondition(sp2.h, 'contido'), 'atordoada, a serpente não segura ninguém');
+  // o que NÃO é agarrão fica: o envenenado da cobra não depende de a cobra estar viva
+  const cb = comHeroi('clerigo', 5, { foes: [['cobraVenenosaGigante', { x: 3, y: 5 }]] });
+  addCondition(cb.h, 'envenenado', { rounds: 10, source: cb.foes[0].id, data: { dc: 11 } });
+  cb.enc.applyDamage(cb.foes[0], 999, 'radiante');
+  assert.ok(hasCondition(cb.h, 'envenenado'), 'o veneno fica com a cobra morta');
+
+  // ZERO NÃO É IMUNIDADE: 1 de fogo no quasit (resistente) cai para 0, e o registro chamava isso de "imune".
+  const r1 = comHeroi('clerigo', 5, { foes: [['quasit', { x: 3, y: 5 }]] });
+  r1.enc.applyDamage(r1.foes[0], 1, 'fogo');
+  r1.enc.applyDamage(r1.foes[0], 1, 'veneno');
+  const falas = r1.log.map((e) => e.text ?? String(e));
+  assert.ok(falas.some((t) => /resistente a fogo: 1 vira 0/.test(t)), `1 de fogo: ${falas.join(' | ')}`);
+  assert.ok(falas.some((t) => /imune a veneno: 1 vira 0/.test(t)), `veneno, sim, é imunidade: ${falas.join(' | ')}`);
+
+  // O QUASIT: quem falha leva 2d4 de veneno E fica envenenado; quem passa, nada — UMA rolagem só.
+  const q = comHeroi('clerigo', 5, { foes: [['quasit', { x: 3, y: 5 }]] });
+  const garra = { ...q.foes[0].attacks[0], name: 'Garras' };
+  d20Fixo(q.enc, 1);
+  const hp = q.h.hp;
+  q.enc.efeitoDoGolpe(q.foes[0], q.h, garra);
+  assert.ok(hasCondition(q.h, 'envenenado') && q.h.hp < hp, 'falhou: envenenado e ferido');
+  const q2 = comHeroi('clerigo', 5, { foes: [['quasit', { x: 3, y: 5 }]] });
+  d20Fixo(q2.enc, 20);
+  const hp2 = q2.h.hp;
+  q2.enc.efeitoDoGolpe(q2.foes[0], q2.h, garra);
+  assert.ok(!hasCondition(q2.h, 'envenenado') && q2.h.hp === hp2, 'passou: nem veneno, nem dano');
+
+  // A RESISTÊNCIA A MAGIA do quasit vem do traço do monstro, que mora em `traits` e não em `features`.
+  assert.deepEqual(vantagemPorTraco(q.foes[0], 'wis', { magico: true }), ['Resistência a Magia']);
+  assert.deepEqual(vantagemPorTraco(q.foes[0], 'wis', { magico: false }), [], 'só contra magia');
+  void h;
+});
+
+teste('Zeond, o quasit, joga como o livro manda: some, espera alguém fraco, ataca e some de novo', () => {
+  const montar = (pvDoHeroi) => {
+    const r = comHeroi('clerigo', 5, { foes: [['quasit', { x: 5, y: 5 }]], pos: { x: 2, y: 5 } });
+    r.h.hp = pvDoHeroi;
+    r.enc.firstSide = 'foes';
+    r.enc.beginSide('foes');
+    return r;
+  };
+  // VISÍVEL: gasta o turno para sumir, e não ataca.
+  const a = montar(999);
+  const zeond = a.foes[0];
+  takeMonsterTurn(a.enc, zeond);
+  assert.ok(hasCondition(zeond, 'invisivel'), 'some no primeiro turno');
+  assert.equal(a.h.hp, 999, 'e não ataca');
+  // INVISÍVEL, todo mundo inteiro: fica na espreita, sem atacar.
+  zeond.acted = false; zeond.actionUsed = false; zeond.movementLeftFt = zeond.speedFt;
+  a.enc.beginSide('foes');
+  takeMonsterTurn(a.enc, zeond);
+  assert.ok(hasCondition(zeond, 'invisivel'), 'continua invisível');
+  assert.equal(a.h.hp, 999, 'ninguém fraco: não ataca');
+  // INVISÍVEL e alguém pela metade: anda e ataca — e o ataque o revela.
+  const b = montar(10);
+  b.h.maxHp = 40;
+  addCondition(b.foes[0], 'invisivel', { rounds: Infinity, source: b.foes[0].id });
+  d20Fixo(b.enc, 15);
+  takeMonsterTurn(b.enc, b.foes[0]);
+  assert.ok(b.foes[0].actionUsed, 'atacou quem estava fraco');
+  assert.ok(!hasCondition(b.foes[0], 'invisivel'), 'e reapareceu ao atacar');
+});
+
+teste('A VEZ É DO LADO, e não do primeiro da lista: os quatro heróis agem pela camada `src/app`', () => {
+  // O DEFEITO: `TurnManager` perguntava `encounter.current ?? 0` — um ponteiro de iniciativa que este
+  // motor NUNCA teve, porque aqui a fase é do LADO e cada um fecha o seu turno com `acted`. Faltando
+  // o campo, a conta caía em zero e respondia sempre `combatants[0]`, então `isCurrentTurn` só deixava
+  // a PRIMEIRA heroína atacar, conjurar, usar item, usar recurso e entrar em mira; os outros três
+  // levavam "Não é o turno deste combatente" por cinco portas de `CombatManager`. O botão de passar a
+  // vez tinha o mesmo defeito e já fora corrigido à parte (`CombatAdapter.terminarTurnoDe`), o que
+  // mostra que o campo inventado derrubava uma porta de cada vez.
+  //
+  // E A CAMADA TINHA 180 TESTES VERDES. Eles passavam porque o mock do Encounter INVENTAVA o
+  // `current` que o motor não tem: o teste media a ficção, não o jogo. Por isso esta prova roda sobre
+  // o Encounter DE VERDADE, e é a única que pegaria isto.
+  const party = makeParty();
+  const foes = [makeMonster('goblin', { x: 8, y: 5 }), makeMonster('goblin', { x: 9, y: 5 })];
+  const enc = new Encounter({ battlefield: new Battlefield(12, 12, MAPA), party, foes, rng: makeRng(1) });
+  enc.firstSide = 'party';
+  enc.round = 1;
+  enc.beginSide('party');
+  const cm = new CombatManager(enc, null);
+
+  // Na fase do grupo, TODO herói pode agir — não só o primeiro da lista.
+  for (const h of party) assert.equal(cm.isCurrentTurn(h), true, `${h.name} tem de poder agir na fase do grupo`);
+  for (const f of foes) assert.equal(cm.isCurrentTurn(f), false, 'inimigo não age na fase do grupo');
+  // E a porta que mais doía: o último herói da lista entrando em mira de magia.
+  const mago = party.find((c) => c.spellcasting?.prepared?.length) ?? party.at(-1);
+  const mira = cm.enterTargeting({ kind: 'attack', weaponId: (mago.weapons ?? ['adaga'])[0] }, mago);
+  assert.equal(mira.ok, true, 'o último da lista entra em mira');
+
+  // Quem JÁ AGIU não é barrado aqui de propósito: quem recusa é o motor, com a palavra certa — e ele
+  // sabe do Ataque Extra, que deixa golpear de novo com a ação gasta. Barrar aqui seria trocar uma
+  // recusa verdadeira por uma mentira.
+  const dara = party[0];
+  dara.acted = true;
+  assert.equal(cm.isCurrentTurn(dara), true, 'quem já agiu passa por aqui; o motor é que recusa');
+  assert.match(enc.castSpell(dara, 'misselMagico', { target: foes[0] }).why ?? '', /não conjura|não está preparada|ação deste turno/);
+
+  // O que o guarda PRECISA barrar continua barrado.
+  enc.beginSide('foes');
+  for (const h of party) assert.equal(cm.isCurrentTurn(h), false, 'na fase dos inimigos, herói nenhum age');
+  enc.beginSide('party');
+  const caido = party[1];
+  addCondition(caido, 'inconsciente');
+  assert.equal(cm.isCurrentTurn(caido), false, 'inconsciente não age');
+  removeCondition(caido, 'inconsciente');
+  enc.over = true;
+  assert.equal(cm.isCurrentTurn(party[2]), false, 'acabado o combate, ninguém age');
+  enc.over = false;
+
+  // E "o da vez" e "o próximo" seguem o `acted`, sem índice nenhum.
+  party.forEach((c) => { c.acted = false; });
+  assert.equal(cm.turnManager.getCurrentCombatant(), party[0]);
+  party[0].acted = true;
+  assert.equal(cm.turnManager.getCurrentCombatant(), party[1], 'o da vez é o próximo que ainda não agiu');
+  assert.equal(cm.turnManager.getNextCombatant(), party[1], 'e o próximo não dá a volta na lista até cair num inimigo');
+  party.forEach((c) => { c.acted = true; });
+  assert.equal(cm.turnManager.isRoundEnd(), true, 'sem ninguém por jogar, a fase do lado acabou');
+
+  // A TRAVA CONTRA A VOLTA: o ponteiro que este motor não tem não pode reaparecer no código.
+  const raiz = join(dirname(fileURLToPath(import.meta.url)), '..');
+  const fonte = readFileSync(join(raiz, 'app', 'combat', 'TurnManager.js'), 'utf8')
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/\/\/.*/g, '');
+  assert.ok(!/encounter\.current/.test(fonte), '`encounter.current` não existe neste motor: perguntar por ele devolve sempre o primeiro da lista');
+});
+
+teste('A camada `src/app` não se tranca na primeira ação que DÁ CERTO: o ferrolho de reentrância ficava preso', () => {
+  // O SEGUNDO FERROLHO NA MESMA PORTA. `CombatManager` põe `isProcessing` antes de cada ação e, pelo
+  // contrato escrito nele, soltava no `onComplete` do handler — que `ActionHandler` NUNCA chama (ele
+  // só avisa `onSuccess` e `onError`). Então a primeira magia ou ataque que desse CERTO trancava a
+  // camada inteira e tudo depois levava "Ação em andamento"; só a ação que FALHAVA destrancava, pelo
+  // `!result.ok`. Um ferrolho barrava quem não fosse o primeiro da lista; este barrava todo mundo
+  // depois da primeira ação certa — e os dois juntos escondiam um ao outro.
+  const party = makeParty();
+  const foes = [makeMonster('goblin', { x: 4, y: 5 }), makeMonster('goblin', { x: 5, y: 6 })];
+  const enc = new Encounter({ battlefield: new Battlefield(12, 12, MAPA), party, foes, rng: makeRng(2) });
+  party.forEach((c, i) => { c.pos = { x: 3, y: 4 + (i % 3) }; });
+  enc.firstSide = 'party';
+  enc.round = 1;
+  enc.beginSide('party');
+  const cm = new CombatManager(enc, null);
+
+  const mago = party.find((c) => magiasProntas(c).includes('misselMagico'));
+  assert.ok(mago, 'a party de teste tem quem lance Míssil Mágico');
+  const primeira = cm.castSpell(mago, 'misselMagico', { target: foes[0], targets: [foes[0]] }, {});
+  assert.equal(primeira.ok, true, 'a magia sai');
+  assert.equal(cm.isProcessing, false, 'acabada a ação, o ferrolho tem de estar solto');
+
+  // E o próximo herói age. Antes, esta era a linha que devolvia "Ação em andamento" para sempre.
+  const outro = party.find((c) => c !== mago);
+  const segunda = cm.attack(outro, foes[0], (outro.weapons ?? ['adaga'])[0], {});
+  assert.notEqual(segunda?.why, 'Ação em andamento', 'a camada não pode ficar trancada');
+  assert.equal(cm.isProcessing, false, 'e continua solta depois da segunda');
+
+  // A ação que FALHA também solta (era o único caminho que soltava, e tem de continuar soltando).
+  cm.castSpell(party[0], 'bolaDeFogo', { point: { x: 5, y: 5 } }, {});
+  assert.equal(cm.isProcessing, false);
+
+  // E `concluir` é idempotente: soltar de novo não dispara o aviso outra vez.
+  let avisos = 0;
+  cm.concluir({ onComplete: () => { avisos += 1; } });
+  assert.equal(avisos, 0, 'com o ferrolho já solto, não há o que concluir');
+  cm.isProcessing = true;
+  cm.concluir({ onComplete: () => { avisos += 1; } });
+  cm.concluir({ onComplete: () => { avisos += 1; } });
+  assert.equal(avisos, 1, 'uma ação, um aviso');
+});
+
+teste('O ataque que ANDA antes de bater: o golpe não some no caminho, e a camada não fica trancada', () => {
+  // DOIS NOMES PARA A MESMA COISA. `CombatManager` passava `onMove` e `ActionHandler` lê `onWalk`,
+  // então, no caminho em que o atacante precisa ANDAR para alcançar, o handler andava, não achava
+  // quem segurasse o golpe e devolvia `needsMovement: true` — o ataque sumia calado, e com ele o
+  // aviso de fim de ação, deixando o ferrolho de reentrância preso para o resto da luta. Caminho
+  // hoje inalcançável pelo `CombatAdapter`, que anda por conta própria; armadilha para quem o usar.
+  const monta = () => {
+    const party = makeParty();
+    // Longe o bastante para o golpe precisar de passo, perto o bastante para o passo chegar:
+    // Dara anda 9 m (6 casas) e alcança 1,5 m, e o goblin está a 5 casas.
+    const foes = [makeMonster('goblin', { x: 7, y: 5 })];
+    const enc = new Encounter({ battlefield: new Battlefield(12, 12, MAPA), party, foes, rng: makeRng(5) });
+    party.forEach((c, i) => { c.pos = { x: 2, y: 4 + (i % 3) }; });
+    enc.firstSide = 'party';
+    enc.round = 1;
+    enc.beginSide('party');
+    return { enc, cm: new CombatManager(enc, null), heroi: party[0], goblin: foes[0] };
+  };
+
+  // COM quem segure o passo: anda e GOLPEIA, e a camada fica solta no fim.
+  const a = monta();
+  const hp = a.goblin.hp;
+  const r = a.cm.attack(a.heroi, a.goblin, (a.heroi.weapons ?? ['adaga'])[0], { onWalk: (seguir) => seguir() });
+  assert.equal(r.needsMovement, true, 'o alvo estava longe: foi preciso andar');
+  assert.ok(a.heroi.actionUsed, 'e o golpe saiu — era ele que sumia');
+  assert.ok(distanceFt(a.heroi.pos, a.goblin.pos) <= 5, 'o herói chegou ao alcance');
+  assert.equal(a.cm.isProcessing, false, 'acabada a ação, o ferrolho tem de estar solto');
+  assert.ok(hp >= a.goblin.hp, 'o goblin levou o golpe ou o golpe errou, mas foi rolado');
+
+  // SEM quem segure o passo: anda, não golpeia — e DIZ isso, em vez de prometer um golpe que não
+  // vem. O ferrolho solta do mesmo jeito: era aqui que ele ficava preso.
+  const b = monta();
+  const antes = { ...b.heroi.pos };
+  const r2 = b.cm.attack(b.heroi, b.goblin, (b.heroi.weapons ?? ['adaga'])[0], {});
+  assert.equal(r2.needsMovement, false, 'sem quem espere, a ação não fica pendente');
+  assert.equal(r2.andouSemGolpe, true, 'e diz que só andou');
+  assert.notDeepEqual(b.heroi.pos, antes, 'andou de verdade');
+  assert.equal(b.cm.isProcessing, false, 'e a camada não ficou trancada');
+});
+
+teste('A IA não TERMINA o turno no lado quente da Muralha de Fogo — e nem por isso deixa de atacar', () => {
+  // O lado quente não barra o passo: atravessá-lo é de graça, e só TERMINAR o turno nele queima. Por
+  // isso ele não entra em `evitarZonas` (que o tornaria intransponível e prenderia o monstro do lado
+  // de lá) e sim na escolha de ONDE PARAR. A régua de quem repara nisso é a mesma da Graxa: juízo,
+  // ou seja, modificador de Inteligência 0 ou mais.
+  const N = 14;
+  const mapa = Array.from({ length: N }, () => '.'.repeat(N));
+  const fogo = SPELLS.muralhaDeFogo;
+  // Muralha reta em x=8, lado quente para OESTE (x=6 e x=7), que é por onde o monstro vem.
+  // Herói em 5,5, fora da faixa; monstro em 7,5, dentro dela e já ao lado do herói.
+  const monta = (bicho, { heroi: ondeHeroi = { x: 5, y: 5 }, bichoEm = { x: 7, y: 5 }, pv = null } = {}) => {
+    const heroi = makeParty()[0];
+    heroi.pos = { ...ondeHeroi };
+    const mago = makeParty()[3];
+    mago.pos = { x: 12, y: 5 };
+    const m = makeMonster(bicho, { ...bichoEm });
+    if (pv !== null) m.hp = pv;
+    const enc = new Encounter({ battlefield: new Battlefield(N, N, mapa), party: [heroi, mago], foes: [m], rng: makeRng(4) });
+    const casas = enc.areaDaMagia(mago, fogo, { x: 8, y: 5 }, 4, { opcao: 'reta-longe' });
+    enc.criarZona(mago, fogo, casas, 15, { opcao: 'reta-longe', centro: { x: 8, y: 5 } });
+    enc.firstSide = 'foes';
+    enc.round = 1;
+    enc.beginSide('foes');
+    return { enc, m, heroi };
+  };
+
+  // QUEM TEM JUÍZO dá a volta e para na casa fria — e bate do mesmo jeito.
+  for (const bicho of ['goblin', 'bandido']) {
+    const { enc, m, heroi } = monta(bicho);
+    takeMonsterTurn(enc, m);
+    assert.equal(enc.zonasNoCalor(m.pos).length, 0, `${bicho} não termina o turno no lado quente`);
+    assert.ok(enc.field.contato(m.pos, heroi.pos), `${bicho} continua colado no herói`);
+    assert.ok(m.actionUsed, `${bicho} atacou: desviar do fogo não custa o golpe`);
+  }
+  // QUEM NÃO TEM não repara, e para na faixa — o mesmo corte da Graxa.
+  for (const bicho of ['lobo', 'zumbi']) {
+    const { enc, m, heroi } = monta(bicho);
+    takeMonsterTurn(enc, m);
+    assert.equal(enc.zonasNoCalor(m.pos).length, 1, `${bicho} não repara no fogo`);
+    assert.ok(enc.field.contato(m.pos, heroi.pos));
+  }
+
+  // A FUGA: sem o filtro, a conta de distância empurrava o goblin ferido para o fundo da faixa, e ele
+  // MORRIA queimado no fim do próprio turno. Agora para na casa fria à mesma distância.
+  const fuga = monta('goblin', { bichoEm: { x: 6, y: 5 }, pv: 2 });
+  takeMonsterTurn(fuga.enc, fuga.m);
+  assert.equal(fuga.enc.zonasNoCalor(fuga.m.pos).length, 0, 'a Escapada Ágil não foge para dentro do fogo');
+  assert.ok(fuga.m.hp > 0, 'e por isso o goblin sai vivo');
+  assert.ok(distanceFt(fuga.m.pos, fuga.heroi.pos) > 5, 'mas fugiu mesmo assim');
+});
+
+teste('As SEIS muralhas do SRD: a de Pedra, a de Força e a de Gelo BARRAM, e a de Espinhos custa quatro', () => {
+  // Faltavam quatro das seis, e as três primeiras trouxeram uma coisa que nenhuma zona do jogo
+  // fazia: PARAR alguém. A zona só sabia ferir, prender, esconder e barrar projétil — parede era
+  // só o que estava pintado no mapa. Agora `barraPasso` e `barraVisao` chegam ao campo por
+  // `atualizarTerrenoDasZonas`, pelo mesmo caminho do terreno difícil, e somem com a zona.
+  const N = 20;
+  const mapa = Array.from({ length: N }, () => '.'.repeat(N));
+  const monta = (magia, { goblinEm = { x: 14, y: 10 }, point = { x: 9, y: 10 }, ...opcoes } = {}) => {
+    const party = makeParty({ nivel: 9 });
+    const mago = party[3];
+    mago.pos = { x: 4, y: 10 };
+    mago.spellcasting.prepared.push(magia);
+    mago.spellcasting.slots = [0, 4, 3, 3, 3, 2, 1];
+    const goblin = makeMonster('goblin', { ...goblinEm });
+    goblin.hp = goblin.maxHp = 400;
+    const enc = new Encounter({ battlefield: new Battlefield(N, N, mapa), party: [mago], foes: [goblin], rng: makeRng(3) });
+    enc.firstSide = 'party';
+    enc.round = 1;
+    enc.beginSide('party');
+    const r = enc.castSpell(mago, magia, { point, ...opcoes });
+    assert.equal(r.ok, true, `${magia}: ${r.why ?? ''}`);
+    return { enc, mago, goblin, zona: enc.zonas.at(-1) };
+  };
+
+  // AS TRÊS QUE BARRAM. O comprimento é o do livro: 30 m = 20 casas nas de 5º e 6º círculo.
+  for (const magia of ['muralhaDeForca', 'muralhaDePedra', 'muralhaDeGelo']) {
+    const { enc, zona } = monta(magia);
+    assert.equal(zona.casas.size, 20, `${magia}: trinta metros, vinte casas`);
+    assert.equal(zona.barraPasso, true, `${magia} barra o passo`);
+    assert.equal(enc.field.blocksMove(9, 10), true, `${magia}: a casa dela é intransponível`);
+    assert.equal(enc.field.blocksMove(10, 10), false, 'e a casa ao lado não');
+    // A de Força é a única que se vê através.
+    const tapa = magia !== 'muralhaDeForca';
+    assert.equal(enc.field.blocksSight(9, 10), tapa, `${magia}: ${tapa ? 'tapa' : 'não tapa'} a vista`);
+    assert.equal(enc.field.hasLineOfSight({ x: 4, y: 10 }, { x: 14, y: 10 }), !tapa, `${magia}: a linha de visão`);
+    // E tudo isso SOME quando a zona acaba — é zona, não é mapa.
+    enc.zonas = enc.zonas.filter((z) => z !== zona);
+    enc.atualizarTerrenoDasZonas();
+    assert.equal(enc.field.blocksMove(9, 10), false, `${magia}: acabada a magia, o chão volta`);
+    assert.equal(enc.field.blocksSight(9, 10), false);
+  }
+
+  // A DE ESPINHOS não barra: atravessa-se devagar (quatro vezes o custo) e doendo.
+  // O goblin fica NA linha da sebe: ela não empurra ninguém, ela fere quem está lá.
+  const esp = monta('muralhaDeEspinhos', { goblinEm: { x: 9, y: 10 } });
+  assert.equal(esp.zona.casas.size, 12, 'dezoito metros, doze casas');
+  assert.equal(esp.zona.barraPasso, undefined ?? false, 'a sebe não é parede');
+  assert.equal(esp.enc.field.blocksMove(9, 10), false, 'passa-se por ela');
+  assert.equal(esp.enc.field.dificeis4.has('9,10'), true, 'cada casa custa quatro');
+  assert.ok(esp.goblin.hp < 400, 'quem estava na linha dela levou os 7d8 perfurantes ao surgir');
+
+  // O ANEL, que o livro dá à de Força, à de Gelo e à de Espinhos — e não à de Pedra.
+  for (const magia of ['muralhaDeForca', 'muralhaDeGelo', 'muralhaDeEspinhos']) {
+    const { zona } = monta(magia, { opcao: 'anel-dentro' });
+    assert.equal(zona.casas.size, 12, `${magia}: o anel tem doze casas de perímetro`);
+  }
+  const pedra = monta('muralhaDePedra', { opcao: 'anel-dentro' });
+  assert.equal(pedra.zona.casas.size, 20, 'a de Pedra não tem anel no livro: sai reta');
+
+  // A FORMA LIVRE, que o livro dá às três de painéis e não à sebe de espinhos.
+  // Um L: desce de 9,6 até 9,10 e vira para leste até 13,10.
+  const dobras = [{ x: 9, y: 6 }, { x: 9, y: 10 }];
+  const emL = { escalas: dobras, point: { x: 13, y: 10 }, goblinEm: { x: 18, y: 18 } };
+  for (const magia of ['muralhaDeForca', 'muralhaDePedra', 'muralhaDeGelo']) {
+    const { zona } = monta(magia, emL);
+    assert.ok(zona.casas.has('9,6'), `${magia} começa na primeira dobra`);
+    assert.ok(zona.casas.has('13,10'), `${magia} acaba onde o jogador clicou`);
+    assert.ok(zona.casas.has('11,10'), `${magia} faz o braço de leste`);
+  }
+  const semDobra = monta('muralhaDeEspinhos', emL);
+  assert.ok(!semDobra.zona.casas.has('9,6'), 'a de Espinhos não tem forma livre: ignora as dobras');
+  assert.ok(semDobra.zona.casas.has('13,10'), 'e sai reta, de través, pelo ponto clicado');
+});
+
+teste('A muralha SE QUEBRA, por trecho: a de Pedra e a de Gelo têm CA e PV, e as outras quatro não', () => {
+  // O livro dá CA e PV a DUAS das seis, e os dá por TRECHO: derrubar um trecho abre um VÃO e o
+  // resto fica de pé. É o que tira a muralha de "espere a concentração cair". A de Força é imune de
+  // propósito (só Desintegrar a destrói), e a sebe de Espinhos não tem CA nem PV nenhum — eu tinha
+  // escrito na `desc` dela que podia ser cortada, e não pode: o livro não lhe dá número nenhum.
+  const N = 20;
+  const mapa = Array.from({ length: N }, () => '.'.repeat(N));
+  const monta = (magia, { arma = null } = {}) => {
+    const party = makeParty({ nivel: 9 });
+    const mago = party[3];
+    const bruto = party[0];
+    mago.pos = { x: 4, y: 10 };
+    bruto.pos = { x: 8, y: 10 };
+    mago.spellcasting.prepared.push(magia);
+    mago.spellcasting.slots = [0, 4, 3, 3, 3, 2, 1];
+    if (arma) bruto.attacks = [arma];
+    const enc = new Encounter({ battlefield: new Battlefield(N, N, mapa), party: [mago, bruto], foes: [makeMonster('goblin', { x: 18, y: 18 })], rng: makeRng(11) });
+    enc.firstSide = 'party';
+    enc.round = 1;
+    enc.beginSide('party');
+    assert.ok(enc.castSpell(mago, magia, { point: { x: 9, y: 10 } }).ok, magia);
+    return { enc, bruto, zona: enc.zonas.at(-1) };
+  };
+
+  // A DE PEDRA: CA 15 e 90 PV por casa (o livro dá 180 ao painel de 3 m, e a casa tem 1,5 m).
+  const pedra = monta('muralhaDePedra', { arma: { name: 'Marreta', bonus: 20, damage: '40d1', type: 'concussão' } });
+  assert.equal(pedra.zona.objeto.ca, 15);
+  assert.equal(pedra.zona.pvDoTrecho.get('9,10'), 90);
+  assert.equal(pedra.enc.muralhaEm(9, 10), pedra.zona, 'a casa sabe de que muralha é');
+  const primeiro = pedra.enc.golpearMuralha(pedra.bruto, { x: 9, y: 10 }, 'Marreta');
+  assert.equal(primeiro.ok, true, primeiro.why);
+  assert.ok(primeiro.dano > 0, 'o golpe entrou');
+  assert.ok(pedra.zona.pvDoTrecho.get('9,10') < 90, 'e o trecho perdeu PV');
+  assert.equal(pedra.enc.field.blocksMove(9, 10), true, 'com PV de pé, a muralha continua parede');
+
+  // A ZERO, o trecho cai e ABRE UM VÃO — e só ele: o resto da muralha fica.
+  pedra.bruto.actionUsed = false;
+  pedra.zona.pvDoTrecho.set('9,10', 1);
+  pedra.enc.golpearMuralha(pedra.bruto, { x: 9, y: 10 }, 'Marreta');
+  assert.equal(pedra.zona.casas.has('9,10'), false, 'o trecho saiu da muralha');
+  assert.equal(pedra.enc.field.blocksMove(9, 10), false, 'o vão deixa passar');
+  assert.equal(pedra.enc.field.blocksSight(9, 10), false, 'e deixa ver');
+  assert.equal(pedra.enc.field.blocksMove(9, 11), true, 'o trecho ao lado continua de pé');
+  assert.ok(pedra.enc.zonas.includes(pedra.zona), 'e a muralha não acabou por causa de um vão');
+
+  // A DE GELO: CA 12, 15 PV por casa, e o FOGO vale em dobro.
+  const gelo = monta('muralhaDeGelo', { arma: { name: 'Tocha', bonus: 20, damage: '5d1', type: 'fogo' } });
+  assert.deepEqual([gelo.zona.objeto.ca, gelo.zona.pvDoTrecho.get('9,10')], [12, 15]);
+  gelo.enc.golpearMuralha(gelo.bruto, { x: 9, y: 10 }, 'Tocha');
+  assert.equal(gelo.zona.pvDoTrecho.get('9,10'), 5, '5 de fogo viram 10 no gelo: 15 menos 10');
+
+  // E a mesma pancada SEM ser fogo tira só o que tirou.
+  const gelo2 = monta('muralhaDeGelo', { arma: { name: 'Porrete', bonus: 20, damage: '5d1', type: 'concussão' } });
+  gelo2.enc.golpearMuralha(gelo2.bruto, { x: 9, y: 10 }, 'Porrete');
+  assert.equal(gelo2.zona.pvDoTrecho.get('9,10'), 10, 'sem vulnerabilidade, 15 menos 5');
+
+  // AS OUTRAS QUATRO não se quebram: não há trecho com PV para golpear.
+  for (const magia of ['muralhaDeForca', 'muralhaDeEspinhos']) {
+    const m = monta(magia, { arma: { name: 'Marreta', bonus: 20, damage: '40d1', type: 'concussão' } });
+    assert.equal(m.zona.pvDoTrecho, null, `${magia} não tem PV`);
+    assert.equal(m.enc.muralhaEm(9, 10), null);
+    const r = m.enc.golpearMuralha(m.bruto, { x: 9, y: 10 }, 'Marreta');
+    assert.equal(r.ok, false, `${magia} não se golpeia`);
+    assert.equal(m.bruto.actionUsed, false, 'e o golpe recusado não gasta a ação');
+  }
+
+  // Longe demais, não alcança.
+  const longe = monta('muralhaDePedra', { arma: { name: 'Marreta', bonus: 20, damage: '40d1', type: 'concussão', reachFt: 5 } });
+  longe.bruto.pos = { x: 2, y: 2 };
+  const r = longe.enc.golpearMuralha(longe.bruto, { x: 9, y: 10 }, 'Marreta');
+  assert.equal(r.ok, false);
+  assert.match(r.why, /fora de alcance/);
+});
+
+teste('A muralha que barra não nasce em cima de ninguém: empurra para o lado de lá', () => {
+  // O livro, nas três que barram: quem está na linha da muralha é empurrado para um dos lados, à
+  // escolha de quem conjura. Aqui o lado é sempre o de LÁ — ninguém levanta uma parede para o
+  // próprio lado. Sem isso a criatura ficaria EMPAREDADA, que é um estado que o livro não produz.
+  const N = 20;
+  const mapa = Array.from({ length: N }, () => '.'.repeat(N));
+  const party = makeParty({ nivel: 9 });
+  const mago = party[3];
+  mago.pos = { x: 4, y: 10 };
+  mago.spellcasting.prepared.push('muralhaDePedra');
+  mago.spellcasting.slots = [0, 4, 3, 3, 3, 2, 1];
+  const goblin = makeMonster('goblin', { x: 9, y: 10 });
+  const enc = new Encounter({ battlefield: new Battlefield(N, N, mapa), party: [mago], foes: [goblin], rng: makeRng(3) });
+  enc.firstSide = 'party';
+  enc.round = 1;
+  enc.beginSide('party');
+  assert.ok(enc.castSpell(mago, 'muralhaDePedra', { point: { x: 9, y: 10 } }).ok);
+  assert.equal(goblin.pos.x, 10, 'o goblin foi empurrado para o lado oposto ao conjurador');
+  assert.equal(enc.field.blocksMove(9, 10), true, 'e a muralha fechou a casa que ele deixou');
+  assert.equal(enc.field.blocksMove(goblin.pos.x, goblin.pos.y), false, 'ele não ficou emparedado');
+});
+
+teste('A muralha do livro: reta de através, caminho livre na de Vento, anel na de Fogo — e nenhuma delas com buraco', () => {
+  const mapa = Array.from({ length: 61 }, () => '.'.repeat(61));
+  const heroi = makeParty()[0];
+  const enc = new Encounter({ battlefield: new Battlefield(61, 61, mapa), party: [heroi], foes: [], rng: makeRng(1) });
+  heroi.pos = { x: 30, y: 30 };
+  const vento = SPELLS.muralhaDeVento;
+  const fogo = SPELLS.muralhaDeFogo;
+  // CONTÍNUA: duas casas seguidas da muralha se tocam pela ARESTA. Em diagonal se tocariam só pela
+  // quina, e alguém passaria entre elas — foi o buraco que a Lufada de Vento tinha.
+  const continua = (casas, nome) => {
+    for (let i = 1; i < casas.length; i += 1) {
+      const d = Math.abs(casas[i].x - casas[i - 1].x) + Math.abs(casas[i].y - casas[i - 1].y);
+      assert.equal(d, 1, `${nome}: a casa ${i} não encosta na anterior (${casas[i - 1].x},${casas[i - 1].y} → ${casas[i].x},${casas[i].y})`);
+    }
+  };
+
+  // A RETA, de través para quem lança e centrada no ponto. O comprimento é o do livro, em casas.
+  const reta = enc.areaDaMagia(heroi, vento, { x: 36, y: 30 });
+  assert.equal(reta.length, 10, 'quinze metros, dez casas');
+  assert.ok(reta.every((t) => t.x === 36), 'de través para o conjurador');
+  continua(reta, 'reta');
+  assert.equal(enc.areaDaMagia(heroi, fogo, { x: 36, y: 30 }).length, 12, 'dezoito metros, doze casas');
+
+  // NA DIAGONAL a muralha é uma escada, e tem o MESMO comprimento: dez casas de muralha, que cobrem
+  // menos chão em linha reta. Antes cada passo ganhava a casa de apoio sem contar no comprimento, e
+  // uma muralha de 15 m saía com vinte casas de frente.
+  const diag = enc.areaDaMagia(heroi, vento, { x: 36, y: 36 });
+  assert.equal(diag.length, 10, 'dez casas na diagonal também');
+  continua(diag, 'diagonal');
+  assert.ok(diag.some((t) => t.x === 36 && t.y === 36), 'passa pelo ponto mirado');
+
+  // O CAMINHO LIVRE, que o livro dá à Muralha de Vento: as dobras são as escalas do jogador.
+  const ele = enc.areaDaMagia(heroi, vento, { x: 40, y: 30 }, 3, { escalas: [{ x: 36, y: 26 }, { x: 36, y: 30 }] });
+  assert.equal(ele.length, 9, 'quatro casas descendo, mais a dobra, mais quatro para leste');
+  continua(ele, 'L');
+  assert.deepEqual([ele[0], ele.at(-1)], [{ x: 36, y: 26 }, { x: 40, y: 30 }], 'começa na primeira escala e acaba no ponto clicado');
+  // E o comprimento é teto: um caminho de sobra é cortado em dez casas, não estendido.
+  const longo = enc.areaDaMagia(heroi, vento, { x: 50, y: 30 }, 3, { escalas: [{ x: 36, y: 20 }, { x: 36, y: 30 }] });
+  assert.equal(longo.length, 10, 'o caminho para quando o comprimento do livro acaba');
+
+  // A Muralha de FOGO não tem forma livre no livro: as escalas não valem nela, e ela sai reta.
+  const fogoComEscalas = enc.areaDaMagia(heroi, fogo, { x: 40, y: 30 }, 4, { escalas: [{ x: 36, y: 26 }, { x: 36, y: 30 }] });
+  assert.ok(fogoComEscalas.every((t) => t.x === 40), 'a Muralha de Fogo ignora as dobras e sai reta');
+
+  // O ANEL, que o livro dá só à Muralha de Fogo: 6 m de diâmetro, doze casas de perímetro — que são
+  // os mesmos 18 m de comprimento — cercando quatro casas de miolo.
+  const anel = enc.areaDaMagia(heroi, fogo, { x: 36, y: 30 }, 4, { opcao: 'anel-dentro' });
+  assert.equal(anel.length, 12, 'doze casas de perímetro, os 18 m do livro');
+  continua(anel, 'anel');
+  const d0 = Math.abs(anel[0].x - anel.at(-1).x) + Math.abs(anel[0].y - anel.at(-1).y);
+  assert.equal(d0, 1, 'o anel FECHA: a última casa encosta na primeira');
+  const xs = [...new Set(anel.map((t) => t.x))];
+  const ys = [...new Set(anel.map((t) => t.y))];
+  assert.deepEqual([xs.length, ys.length], [4, 4], 'a moldura é de quatro por quatro');
+  assert.ok(!anel.some((t) => t.x > 34 && t.x < 37 && t.y > 28 && t.y < 31), 'o miolo fica vazio');
+  // A de Vento não tem anel: pedir um devolve a reta dela.
+  assert.equal(enc.areaDaMagia(heroi, vento, { x: 36, y: 30 }, 3, { opcao: 'anel-dentro' }).length, 10);
+
+  // PARA NA PAREDE em vez de pular por cima dela. Com rocha em 36,27 a reta para ali.
+  const comParede = Array.from({ length: 61 }, (_, y) => Array.from({ length: 61 }, (_, x) => (x === 36 && y === 27 ? '#' : '.')).join(''));
+  const enc2 = new Encounter({ battlefield: new Battlefield(61, 61, comParede), party: [heroi], foes: [], rng: makeRng(1) });
+  const cortada = enc2.areaDaMagia(heroi, vento, { x: 36, y: 30 });
+  assert.ok(!cortada.some((t) => t.y <= 27), 'a muralha para na parede e não ressurge do outro lado');
+  continua(cortada, 'cortada');
+});
+
+teste('O lado quente da Muralha de Fogo: a faixa de 3 m, quem a escolhe, e o fim de turno que cobra', () => {
+  const mapa = Array.from({ length: 61 }, () => '.'.repeat(61));
+  const fogo = SPELLS.muralhaDeFogo;
+  const monta = () => {
+    const heroi = criarPersonagem({ ...BASE(), id: 'h', name: 'Herói', abilities: { str: 10, dex: 14, con: 14, int: 18, wis: 12, cha: 10 } }, { classe: 'mago', nivel: 9 });
+    heroi.spellcasting.prepared = [...(heroi.spellcasting.prepared ?? []), 'muralhaDeFogo'];
+    const bode = makeMonster('goblin', { x: 38, y: 30 });
+    bode.hp = bode.maxHp = 300;
+    const enc = new Encounter({ battlefield: new Battlefield(61, 61, mapa), party: [heroi], foes: [bode], rng: makeRng(3) });
+    heroi.pos = { x: 30, y: 30 };
+    enc.firstSide = 'party';
+    enc.round = 1;
+    enc.beginSide('party');
+    return { enc, heroi, bode };
+  };
+
+  // A FAIXA: duas casas (3 m na conta do quadriculado) do lado escolhido, e nenhuma do outro.
+  const { enc, heroi } = monta();
+  for (const [opcao, colunas] of [['reta-longe', [37, 38]], ['reta-perto', [34, 35]]]) {
+    const casas = enc.areaDaMagia(heroi, fogo, { x: 36, y: 30 }, 4, { opcao });
+    const quente = enc.muralhaQuente(heroi, fogo, casas, opcao);
+    assert.deepEqual([...new Set(quente.map((t) => t.x))].sort((a, b) => a - b), colunas, opcao);
+  }
+  // "Longe" e "perto" são de quem conjura: os dois lados nunca são o mesmo lado.
+  const longe = enc.muralhaQuente(heroi, fogo, enc.areaDaMagia(heroi, fogo, { x: 36, y: 30 }, 4, { opcao: 'reta-longe' }), 'reta-longe');
+  assert.ok(longe.every((t) => t.x > 36), 'o lado de lá é o lado de lá mesmo');
+
+  // NO ANEL os lados são DENTRO e FORA, e não esquerda e direita: um anel de 6 m cerca QUATRO casas.
+  // Pela tangente, o "dentro" saía com catorze — as casas logo depois de cada quina entravam nele.
+  const anel = enc.areaDaMagia(heroi, fogo, { x: 36, y: 30 }, 4, { opcao: 'anel-dentro' });
+  const dentro = enc.muralhaQuente(heroi, fogo, anel, 'anel-dentro');
+  assert.equal(dentro.length, 4, 'o miolo do anel são quatro casas');
+  assert.deepEqual(dentro.map((t) => `${t.x},${t.y}`).sort(), ['35,29', '35,30', '36,29', '36,30']);
+  const fora = enc.muralhaQuente(heroi, fogo, anel, 'anel-fora');
+  assert.equal(fora.length, 48, 'a faixa de fora é a moldura de 8x8 menos o anel e o miolo');
+  assert.equal(new Set(fora.map((t) => `${t.x},${t.y}`)).size, 48, 'e sem casa repetida');
+  assert.ok(!fora.some((t) => dentro.some((d) => d.x === t.x && d.y === t.y)), 'dentro e fora não se misturam');
+
+  // O FIM DE TURNO COBRA. É isto que não existia: o jogo só feria quem estava DENTRO da muralha, e a
+  // `desc` da magia admitia a falta por escrito. E cobra UMA vez: quem está na muralha não rola duas.
+  const a = monta();
+  assert.ok(a.enc.castSpell(a.heroi, 'muralhaDeFogo', { point: { x: 36, y: 30 }, opcao: 'reta-longe' }).ok);
+  const zona = a.enc.zonas.at(-1);
+  assert.equal(zona.casas.size, 12);
+  assert.equal(zona.calor.size, 32, 'a faixa quente das duas colunas, com as pontas arredondadas');
+  assert.equal(a.enc.zonasNoCalor({ x: 38, y: 30 }).length, 1, 'a 3 m do lado quente');
+  assert.equal(a.enc.zonasNoCalor({ x: 39, y: 30 }).length, 0, 'a 4,5 m, não');
+  assert.equal(a.enc.zonasNoCalor({ x: 35, y: 30 }).length, 0, 'o lado frio não queima');
+  assert.equal(a.enc.zonasNoCalor({ x: 36, y: 30 }).length, 0, 'quem está NA muralha não entra pela faixa');
+  assert.equal(a.enc.zonasEm({ x: 36, y: 30 }).length, 1, 'quem está na muralha entra pela muralha');
+  const antes = a.bode.hp;
+  a.bode.aurasNoTurno = [];
+  a.enc.fimDoTurnoDoLado('foes');
+  assert.ok(a.bode.hp < antes, 'o goblin a 1,5 m do lado quente termina o turno e queima');
+
+  // E do lado frio não queima nada.
+  const b = monta();
+  b.bode.pos = { x: 34, y: 30 };
+  assert.ok(b.enc.castSpell(b.heroi, 'muralhaDeFogo', { point: { x: 36, y: 30 }, opcao: 'reta-longe' }).ok);
+  const hp = b.bode.hp;
+  b.bode.aurasNoTurno = [];
+  b.enc.fimDoTurnoDoLado('foes');
+  assert.equal(b.bode.hp, hp, 'do lado frio a muralha é só luz');
+});
+
+teste('A esfera do livro: nasce no cruzamento, é redonda, e a casa conta se o círculo cobre metade dela', () => {
+  const mapa = Array.from({ length: 61 }, () => '.'.repeat(61));
+  const heroi = makeParty()[0];
+  const enc = new Encounter({ battlefield: new Battlefield(61, 61, mapa), party: [heroi], foes: [], rng: makeRng(1) });
+  heroi.pos = { x: 5, y: 5 };
+  const conta = (id) => enc.areaDaMagia(heroi, SPELLS[id], { x: 30, y: 30 }).length;
+  assert.equal(conta('raioLunar'), 4, '1,5 m: as 4 casas em volta do ponto');
+  assert.equal(conta('despedacar'), 12, '3 m');
+  assert.equal(conta('escuridao'), 32, '4,5 m');
+  assert.equal(conta('bolaDeFogo'), 52, '6 m');
+  assert.equal(conta('tempestadeDeGranizo'), 208, '12 m');
+  assert.equal(conta('circuloDaMorte'), 448, '18 m');
+  const lunar = enc.areaDaMagia(heroi, SPELLS.raioLunar, { x: 30, y: 30 }).map((t) => `${t.x},${t.y}`).sort();
+  assert.deepEqual(lunar, ['29,29', '29,30', '30,29', '30,30'], 'o ponto é o canto de cima e da esquerda da casa mirada');
+  // Fica de fora o canto da Bola de Fogo, que a conta antiga pegava a 8,5 m do centro.
+  assert.ok(!enc.areaDaMagia(heroi, SPELLS.bolaDeFogo, { x: 30, y: 30 }).some((t) => t.x === 26 && t.y === 26));
+  // Quem conta a partir de uma casa ocupada ou de quem lança segue com a distância do quadriculado.
+  assert.equal(conta('esferaFlamejante'), 9, 'a até 1,5 m da esfera');
+  assert.equal(conta('guardiaoDaFe'), 25, 'a até 3 m do guardião');
+  assert.equal(enc.areaDaMagia(heroi, SPELLS.bracosDeHadar, { x: 30, y: 30 }).length, 25, 'a até 3 m de quem lança');
+});
+
+teste('a porta FAZ barulho, e cada desfecho tem o seu: o som existia e ninguém o chamava fora da Mansão', () => {
+  // O defeito que isto guarda: `doorStone` existia desde sempre e era tocado em DOIS lugares, os dois dentro do capítulo da Mansão.
+  // O menu de porta das outras dezenove cenas (`game/portas.js`) não importava o áudio, então abrir, trancar e arrombar eram mudos.
+  const raiz = join(dirname(fileURLToPath(import.meta.url)), '..');
+  const fonte = readFileSync(join(raiz, 'game', 'portas.js'), 'utf8');
+  const porAcao = {
+    doorWood: 'abrir', doorShut: 'fechar', lockKey: 'a chave', lockPick: 'a gazua que cede',
+    lockFail: 'a gazua que falha', doorBash: 'arrombar e ceder', doorHold: 'arrombar e a porta aguentar',
+  };
+  for (const [som, acao] of Object.entries(porAcao)) {
+    assert.ok(SOUND_NAMES.includes(som), `o som ${som} não existe`);
+    assert.ok(fonte.includes(`'${som}'`), `${acao} não toca ${som}`);
+  }
+  // O sucesso e o fracasso do MESMO gesto não podem soar igual: é por aí que o jogador sabe o que aconteceu sem ler o registro.
+  assert.ok(fonte.includes("audio.play('doorBash')") && fonte.includes("audio.play('doorHold')"), 'arrombar não separa ceder de aguentar');
+  assert.ok(fonte.includes("audio.play('lockPick')") && fonte.includes("audio.play('lockFail')"), 'a gazua não separa ceder de falhar');
+});
+
+// O CAPÍTULO 6 DO OBELISCO, as criaturas da vila: a gêmula encefálica, a gosma cinzenta psíquica e o monte errante psiônico.
+teste('a gêmula encefálica: a Sanguessuga gruda com Destreza CD 14, chupa 3d4 no começo do turno do alvo e cai quando ela morre', () => {
+  let grudou = 0;
+  for (let seed = 1; seed <= 12; seed++) {
+    const { enc, foes, party } = montar({ seed, foes: [['gemulaEncefalica', { x: 4, y: 3 }]], pos: [{ x: 3, y: 3 }, { x: 9, y: 9 }, { x: 10, y: 9 }, { x: 11, y: 9 }], lado: 'foes' });
+    const g = foes[0];
+    const h = party[0];
+    h.abilities.dex = 1;                              // falha quase sempre
+    assert.equal(enc.sanguessuga(g, h), true);
+    if (!hasCondition(h, 'sanguessuga')) continue;
+    grudou += 1;
+    assert.equal(g.gemulaEm, h.id);
+    assert.equal(getCondition(h, 'sanguessuga').data.escape, 15, 'arranca-se com a CD 15 do livro');
+    g.bonusUsed = false;
+    assert.equal(enc.sanguessuga(g, party[1]), false, 'grudada, não gruda em outro');
+    const pv = h.hp;
+    enc.inicioDoTurnoDoBloco(h);
+    assert.ok(h.hp < pv && pv - h.hp <= 12 && pv - h.hp >= 3, `chupou ${pv - h.hp} (3d4)`);
+    enc.applyDamage(g, 999, 'cortante', h, { magico: true });
+    assert.ok(!hasCondition(h, 'sanguessuga'), 'morta a gêmula, ela cai');
+  }
+  assert.ok(grudou >= 8, `grudou ${grudou} de 12 com Destreza 1`);
+});
+
+teste('a gêmula na IA: gruda (ação bônus) em quem está colado e bate com a Pancada Psíquica', () => {
+  const { enc, foes, party } = montar({ seed: 3, foes: [['gemulaEncefalica', { x: 4, y: 3 }]], pos: [{ x: 3, y: 3 }, { x: 9, y: 9 }, { x: 10, y: 9 }, { x: 11, y: 9 }], lado: 'foes' });
+  party[0].abilities.dex = 1;
+  takeMonsterTurn(enc, foes[0]);
+  assert.ok(foes[0].bonusUsed, 'tentou a Sanguessuga');
+  assert.ok(foes[0].actionUsed, 'e bateu');
+  // grudada, ela não usa o dreno do stirge (o campo é outro: `gemulaEm`, não `grudadoEm`)
+  for (let i = 0; i < 3; i++) { foes[0].actionUsed = false; foes[0].bonusUsed = false; foes[0].acted = false; takeMonsterTurn(enc, foes[0]); }
+  assert.ok(!enc.log.some((l) => /drena o sangue/.test(typeof l === 'string' ? l : l.text ?? '')), 'não drena sangue como o stirge');
+});
+
+teste('a gosma cinzenta psíquica: o Esmagamento Psíquico (Inteligência CD 10, 3d6, metade se passar) sai antes do pseudópode, e espera a recarga', () => {
+  const { enc, foes, party } = montar({ seed: 5, foes: [['gosmaCinzentaPsiquica', { x: 11, y: 3 }]], pos: [{ x: 3, y: 3 }, { x: 0, y: 11 }, { x: 1, y: 11 }, { x: 2, y: 11 }], lado: 'foes' });
+  const pv = party.map((h) => h.hp);
+  takeMonsterTurn(enc, foes[0]);
+  assert.ok(foes[0].recarregando?.['Esmagamento Psíquico'], 'usou o poder, que agora recarrega');
+  assert.ok(party.some((h, i) => h.hp < pv[i]), 'alguém levou o dano psíquico');
+  foes[0].actionUsed = false;
+  assert.equal(enc.esmagamentoPsiquico(foes[0], party[0]), false, 'só com a recarga (5–6)');
+  const g = makeMonster('gosmaCinzentaPsiquica', { x: 1, y: 1 });
+  assert.equal(g.abilities.int, 6, 'a variante psíquica tem Inteligência 6');
+  assert.ok(g.resist.includes('ácido') && g.resist.includes('fogo'));
+});
+
+teste('o monte errante psiônico: o monte errante do SRD (136 PV, CA 15, imune a elétrico, engole com as duas pancadas)', () => {
+  const m = makeMonster('monteErrantePsionico', { x: 1, y: 1 });
+  assert.equal(m.maxHp, 136);
+  assert.equal(m.ac, 15);
+  assert.ok(m.immune.includes('elétrico'));
+  assert.ok(m.traits.includes('engolir') && m.traits.includes('absorcaoDeRaios'));
+  assert.equal(m.xp, 1800);
+});
+
+// OS ÍCONES DE TRAÇO (tema Obsidiana): `public/icones-traco.json` sai de `importar-icones-traco.mjs`, mas é ele que vai
+// para o jogo, e um de-para editado à mão sem rodar o gerador deixaria chave apontando para desenho que não veio.
+const ICONES_DE_TRACO = JSON.parse((await import('node:fs')).readFileSync(new URL('../../public/icones-traco.json', import.meta.url), 'utf8'));
+const { inventarioDeIcones } = await import('./inventario-icones.mjs');
+teste('os ícones de traço: toda chave é algo que o jogo pede, todo nome tem desenho, e o crédito da licença vai junto', () => {
+  const dados = ICONES_DE_TRACO;
+  const chaves = new Set(inventarioDeIcones().map((x) => x.chave));
+  const fora = Object.keys(dados.mapa).filter((k) => !chaves.has(k));
+  assert.deepEqual(fora, [], `chaves que o jogo não pede: ${fora.join(', ')}`);
+  const semDesenho = Object.entries(dados.mapa).filter(([, v]) => v.split('+').some((n) => !dados.desenhos[n]?.length)).map(([k]) => k);
+  assert.deepEqual(semDesenho, [], `sem desenho: ${semDesenho.join(', ')}`);
+  for (const ds of Object.values(dados.desenhos)) for (const d of ds) assert.match(d, /^[Mm][\d.\s,MmLlHhVvCcSsQqTtAaZz-]+$/);
+  assert.match(dados._credito, /game-icons\.net.*CC BY 3\.0/);
+  // o composto é `base+selo`, e as duas partes têm desenho
+  for (const v of Object.values(dados.mapa)) for (const n of v.split('+')) assert.ok(dados.desenhos[n], `sem desenho: ${n}`);
+});
+
+// A TRAVA DO FUTURO: tudo o que o jogo pode pedir (`inventario-icones.mjs`: toda magia, característica, talento, item,
+// condição e traço de raça) tem ícone de traço. Sem ela, o próximo livro importado caía no ícone genérico de "arcano"
+// sem ninguém ver — foi o que aconteceu com as 82 magias do Xanathar, as 25 do Tasha e as subclasses dos seis livros.
+teste('toda coisa do jogo que pede ícone tem ícone de traço (o Xanathar, o Tasha, os talentos e o que vier)', () => {
+  const faltam = inventarioDeIcones().filter((x) => !ICONES_DE_TRACO.mapa[x.chave]).map((x) => x.chave);
+  assert.equal(faltam.length, 0, `${faltam.length} sem ícone de traço: ${faltam.slice(0, 25).join(', ')}${faltam.length > 25 ? '...' : ''}`);
+});
+
+// DUAS MAGIAS (ou duas características) com o mesmo desenho e a mesma cor seriam dois azulejos iguais na barra. Os lotes
+// do de-para foram escolhidos sem se ver e deram 64 pares de magia; `icones-traco-desempate.mjs` põe o selo da escola
+// ou da classe no segundo de cada par.
+teste('nenhuma magia, nem característica, divide desenho e cor com outra', () => {
+  const vistos = new Map();
+  const iguais = [];
+  for (const [k, v] of Object.entries(ICONES_DE_TRACO.mapa)) {
+    const tipo = k.split('-')[0];
+    if (tipo !== 'magia' && tipo !== 'classe') continue;
+    const g = `${tipo}|${v}|${ICONES_DE_TRACO.familias?.[k] ?? ''}`;
+    if (vistos.has(g)) iguais.push(`${vistos.get(g)} = ${k}`);
+    else vistos.set(g, k);
+  }
+  assert.deepEqual(iguais, []);
 });
 
 console.log(`\n${total - falhas}/${total} passaram`);

@@ -17,38 +17,38 @@ export const MAPA_ARVORE_TROVAO = {
     ",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,L,,,,,,,,,,,,,,,",
     ",,,,,,,,,,,,,,,,,,,,,,,,L,,,,,,,,,,,,T,,LL,,,,,,,,,,,,,,,,",
     ",,,,,,,,,,,,,,,,,,,,,,,,LL,,L,,,,,,,,,,,,LL,,,,,,,,,,,,,L,",
-    ",,,,,,,,,,,,,LLLL&LLL,,,,,,LLLL,,LL,,,,,LLL,L,,^LL,,,L,,L,",
-    ",,,,,,,T,,,,,LLLLLLLL,,,,,,LL&LLLLLL,,,LLL,,,,,LLLLL,,,,,,",
-    ",,,,,,,,,,,,,LL,L^LLL,,,,,,LLLLL^,L,L,,LL,,,,,,L,LL,,,,,,,",
-    ",,,,,,,,,,,,,LLLLLLL&,,,T,,LLLLLL&,L,L,,,,,,,,,L,LL,,,,,,,",
+    ",,,,,,,,,,,,,LLLLLLLL,,,,,,LLLL,,LL,,,,,LLL,L,,LLL,,,L,,L,",
+    ",,,,,,,T,,,,,LLLLLL^^,,,,,,LL&LLLLLL,,,LLL,,,,,LLLLL,,,,,,",
+    ",,,,,,,,,,,,,LL,L^^L^,,,,,,LLLLL^,L,L,,LL,,,,,,&,LL,,,,,,,",
+    ",,,,,,,,,,,,,LLLLLLLL,,,T,,LLLLLL&,L,L,,,,,,,,,L,LL,,,,,,,",
     ",,,,,,,,,,,,,,LLLL,L,,,,,,,,,,,LtL,,LL,,,,,,,,,LLLL,,,,,,,",
     ",,,,,,,,,,,,,,LL,,L,,,,,,L,,,,,,,L,LL,,,T,L,,,,,,LLLL,,,T,",
     ",,,,,,,,,,,,,,,,,,,,,,,,,,,,^,,,^,,L,,,,,,,L,,,,,L,,,,,,,,",
-    ",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,L^,LL,,,,,,,,,,,,,,,L",
-    ",,,,,,,,,,,,,,,,,,,,,,T,LL,,,,,,,,,LLLLLLL,,,,,,,,,,,LL,^L",
-    ",,,^,,,,,,,,,,,,,,,,,,,,LLL,,,,,L,,LLLLL,,,,,,,,,,L,,,,^LL",
-    ",,,,,,,,,,,,,,,T,,,,,,,,,,,,,,,L,,,,LLLL,,,,,,,,,,,,,,,L,L",
-    ",,,L,,,,,^^,,,,,,,,,,,,,,,,,,,,,,,,T,,LLL,,,,,,,,,,,,,L^,L",
+    ",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,L^,LL,,,,,,,,,,,,,,,^",
+    ",,,,,,,,,,,,,,,,,,,,,,T,LL,,,,,,,,,LLLLLLL,,,,,,,,,,,LL,LL",
+    ",,,&,^,,,,,,,,,,,,,,,,,,LLL,,,,,L,,L^LLL,,,,,,,,,,L,,,,LLL",
+    ",,,,,&,,,,,,,,,T,,,,,,,,,,,,,,,L,,,,LLLL,,,,,,,,,,,,,,,L,L",
+    ",,,L,,,,,^^,,,,,,,,,,,,,,,,,,,,,,,,T,,LLL,,,,,,,,,,,,,LL,L",
     ",T,,,,,,,,,,,T,,,LL,,,,,,,,,,,,,L,,,,,,LL,,,,,LLLL,,,,,,,,",
-    ",,,,,,,,,,,,,,,&,,,,,,,,,T,,,,,,L,,,,,,,,,,,,L,,L,,,,,,,,,",
-    ",,,,,,,,,,,,,,LL^,,,,,,,,,,,,,,L,,,^^T,,LL,,,,,,L,,,,,T,LL",
-    ",,,T,,,,,,,,,,,LLL,,,,,,,,,,T,,,,,,,,,,,L,,,,L,,,,,,,,,,,,",
+    ",,,,,,,,,,,,,,,L,,,,,,,,,T,,,,,,L,,,,,,,,,,,,L,,L,,,,,,,,,",
+    ",,,,,,,,,,,,,,LLL,,,,,,,,,,,,,,L,,,^^T,,LL,,,,,,L,,,,,T,LL",
+    ",,,T,,,,,,,,,,,&L^,,,,,,,,,,T,,,,,,,,,,,L,,,,L,,,,,,,,,,,,",
     ",,,,,,L,,,,,,,,,,,,,,,,^,,,,,,,,,,L,,,,LL,,,,LL^,,,,,,,T,,",
-    ",,,,,,,,,,,T,,,,,,,,,,,,,,,,,LL^L,,,,LLL,,,,,LLL,,,,,,,,,,",
+    ",,,,,,,,,,,T,,,,,,,,,,,,,,,,,LLLL,,,,LLL,,,,,LLL,,,,,,,,,,",
     ",,,,,,,,,,,,,,L,,,,,,,,,,,,,LLL,,,,,,,,,,,,,LLLL,,,,,,,,,,",
     ",,,L,T,,,,,,,LL,,,,,T,L,,,,,LLL,,,,,,,,,,,T,,LL,,,,,,,,,,L",
     ",,,,,,,&^,,,,LL,,,,,,,,,,,,,,,L,,,,,,,,,,,,,LLLL,,,,T,,LLL",
-    ",,,,,,,,&,,,,,L,L,,&^^,,T,,,L,,,,,,,,,,,,,,&LL,,L,,,,,,L,L",
-    ",,T,,,,,,,,,L&LL&,,^&,,,,,,^LLLLLLLL,,,,,L^L^L,,,,,,,,L,,,",
-    ",,,,,L,,,,,,,LLLLL,,,,,,,,RL^,,,,,L,,,,,,,LLL,,,,,,,,,L,,,",
-    ",L,,,L,,,,,,,^,,LL,,,,,,T,RLL,,,,LL,,,,,LL,,,,T,,,,,,LL,,,",
-    ",LLLLL,,,,,,,LL,LL,,,,,,,,L^LL,LLLL,,,,,,,,,,,,,,L,,LLL,,,",
-    "LLLLLLL,,,,,,LLLLL,,,,,,LL,^,L,,,,,,,,,,,,,,,,LLL^,,,LL,,,",
-    ",LLLLLLLL,,,,LL^L,,,,,,,LL,,,,,,,,,,,,,,,,,,,L,K^,,L,LL,,,",
-    ",,,,,,,LL,,,,,RR,,,,,^L,,LL,,,,,,LLLL,,,,,,,,L^L^,,^LLL,,,",
-    ",,,,,,,,,,,,,,,,,,,,,LL,,LL,,,,,,L,LLL,,,,,,,LLL^,,LL^^L,,",
-    ",T,,L,,,T,,,,,,,,,,,,,L,,LL,,T,,,LL,,L,,,,,,,,,,,,L^LLLL,,",
-    ",,,LLL,,,,,,,,,,,,,,,,L,,LL^,,,,LLLLLL,,,,,T,,,,,,,LL^LLLL",
+    ",,,,,,,,&,,,,,L,L,,,,L,,T,,,L,,,,,,,,,,,,,,&LL,,L,,,,,,L,L",
+    ",,T,,,,,,,,,L&LL&,,,,,,,,,,^LLLLLLLL,,,,,^LL^L,,,,,,,,L,,,",
+    ",,,,,L,,,,,,,L^LLL,,,,,,,,RL^,,,,,L,,,,,,,LLL,,,,,,,,,L,,,",
+    ",L,,,L,,,,,,,^,,LL,,,,,,T,RLL,,,,LL,,,,,L&,,,,T,,,,,,LL,,,",
+    ",LLLLL,,,,,,,LL,LL,,,,,,,,L^LL,LLLL,,,,,,,,,,,,,,^,,LLL,,,",
+    "LLLLLLL,,,,,,LLLLL,,,,,,LL,^,L,,,,,,,,,,,,,,,,LLLL,,,LL,,,",
+    ",LLLLLLLL,,,,LL^L,,,,,,,LL,,,,,,,,,,,,,,,,,,,L,LL,,L,LL,,,",
+    ",,,,,,,LL,,,,,RR,,,,,^L,,LL,,,,,,LLLL,,,,,,,,LLLL,,LLLL,,,",
+    ",,,,,,,,,,,,,,,,,,,,,LL,,LL,,,,,,L,^^L,,,,,,,LLLL,,LK^^L,,",
+    ",T,,L,,,T,,,,,,,,,,,,,L,,LL,,T,,,LL,,L,,,,,,,,,,,,LLLLLL,,",
+    ",,,LLL,,,,,,,,,,,,,,,,L,,LL^,,,,L^LLLL,,,,,T,,,,,,,LL^LLLL",
     ",LLL,,L,,,,,,,,,,,,T,,LLLL,,,,,,L,LL,,,,T,,,,L,,,,,LLLLLL,",
     ",LL,,,,,LLLL,,,,,,,,,,LLL,,,,,,L,,,,,,,,,,,LLL,,,,,,,,,,LL",
     ",,L,,LLLLLLL,,,,,,,,,LLLL,,,,,,,,,,,,,,,,,LLLL,,,,,,,,LLLL",
@@ -220,16 +220,16 @@ export const ARVORE_TROVAO = {
     }
   ],
   "estatua": {
-    "x": 31,
-    "y": 20
+    "x": 36,
+    "y": 12
   },
   "portaDaTorre": {
     "x": 31,
     "y": 5
   },
   "reidoth": {
-    "x": 19,
-    "y": 5
+    "x": 14,
+    "y": 28
   },
   "torre": {
     "x0": 31,
@@ -243,65 +243,53 @@ export const ARVORE_TROVAO = {
   "ninhos": {
     "zumbis": [
       {
-        "x": 43,
-        "y": 25
+        "x": 47,
+        "y": 4
       },
       {
-        "x": 41,
-        "y": 27
+        "x": 47,
+        "y": 6
       },
       {
-        "x": 41,
-        "y": 25
+        "x": 48,
+        "y": 3
       },
       {
-        "x": 42,
-        "y": 26
+        "x": 47,
+        "y": 3
       },
       {
-        "x": 44,
-        "y": 26
+        "x": 48,
+        "y": 4
       }
     ],
     "zumbisCavalo": [
       {
-        "x": 52,
-        "y": 32
+        "x": 18,
+        "y": 4
       },
       {
-        "x": 54,
-        "y": 34
+        "x": 20,
+        "y": 6
       },
       {
-        "x": 54,
-        "y": 31
+        "x": 20,
+        "y": 3
       },
       {
-        "x": 51,
-        "y": 34
+        "x": 17,
+        "y": 6
+      },
+      {
+        "x": 17,
+        "y": 3
+      },
+      {
+        "x": 19,
+        "y": 5
       }
     ],
     "zumbisFerraria": [
-      {
-        "x": 56,
-        "y": 12
-      },
-      {
-        "x": 57,
-        "y": 10
-      }
-    ],
-    "ramos1": [
-      {
-        "x": 14,
-        "y": 26
-      },
-      {
-        "x": 16,
-        "y": 30
-      }
-    ],
-    "ramos2": [
       {
         "x": 34,
         "y": 33
@@ -317,14 +305,26 @@ export const ARVORE_TROVAO = {
       {
         "x": 36,
         "y": 34
+      }
+    ],
+    "ramos1": [
+      {
+        "x": 4,
+        "y": 12
       },
       {
-        "x": 33,
-        "y": 34
+        "x": 3,
+        "y": 14
+      }
+    ],
+    "ramos2": [
+      {
+        "x": 16,
+        "y": 17
       },
       {
-        "x": 35,
-        "y": 32
+        "x": 15,
+        "y": 16
       }
     ],
     "aranhas": [
@@ -339,28 +339,28 @@ export const ARVORE_TROVAO = {
     ],
     "culto": [
       {
-        "x": 47,
+        "x": 53,
+        "y": 33
+      },
+      {
+        "x": 51,
         "y": 31
       },
       {
-        "x": 49,
-        "y": 28
+        "x": 54,
+        "y": 31
       },
       {
-        "x": 45,
-        "y": 32
+        "x": 51,
+        "y": 34
       },
       {
-        "x": 46,
-        "y": 29
+        "x": 54,
+        "y": 34
       },
       {
-        "x": 48,
-        "y": 29
-      },
-      {
-        "x": 45,
-        "y": 30
+        "x": 51,
+        "y": 33
       }
     ],
     "dragao": [
@@ -371,96 +371,124 @@ export const ARVORE_TROVAO = {
     ],
     "reidoth": [
       {
-        "x": 19,
-        "y": 5
+        "x": 14,
+        "y": 28
       }
     ],
     "ramos5": [
       {
-        "x": 52,
-        "y": 21
+        "x": 28,
+        "y": 34
       },
       {
-        "x": 56,
-        "y": 17
+        "x": 26,
+        "y": 30
       },
       {
-        "x": 49,
-        "y": 17
+        "x": 30,
+        "y": 30
       },
       {
-        "x": 56,
-        "y": 24
+        "x": 26,
+        "y": 37
       },
       {
-        "x": 49,
-        "y": 24
+        "x": 30,
+        "y": 37
       },
       {
-        "x": 53,
-        "y": 18
+        "x": 28,
+        "y": 31
       },
       {
-        "x": 49,
-        "y": 20
+        "x": 26,
+        "y": 33
       },
       {
-        "x": 56,
-        "y": 20
+        "x": 30,
+        "y": 33
+      },
+      {
+        "x": 26,
+        "y": 35
+      },
+      {
+        "x": 30,
+        "y": 35
+      },
+      {
+        "x": 28,
+        "y": 36
+      },
+      {
+        "x": 27,
+        "y": 32
+      }
+    ],
+    "agulhas5": [
+      {
+        "x": 28,
+        "y": 33
+      },
+      {
+        "x": 27,
+        "y": 37
       }
     ],
     "ramos12": [
       {
-        "x": 23,
-        "y": 24
+        "x": 46,
+        "y": 25
       },
       {
-        "x": 27,
-        "y": 21
+        "x": 43,
+        "y": 23
       },
       {
-        "x": 20,
-        "y": 21
-      },
-      {
-        "x": 20,
+        "x": 43,
         "y": 27
       },
       {
-        "x": 25,
-        "y": 27
+        "x": 48,
+        "y": 23
+      }
+    ],
+    "agulhas12": [
+      {
+        "x": 50,
+        "y": 20
       },
       {
-        "x": 26,
-        "y": 24
+        "x": 49,
+        "y": 23
       }
     ]
   },
   "objetos": {
     "bauMercador": {
-      "x": 14,
-      "y": 28
+      "x": 4,
+      "y": 13
     },
     "caixaMirna": {
-      "x": 18,
-      "y": 4
+      "x": 43,
+      "y": 25
     },
     "bauCulto": {
-      "x": 47,
-      "y": 30
+      "x": 52,
+      "y": 32
     }
   },
   "zonas": {
-    "matoLeste": {
-      "x0": 49,
-      "y0": 17,
-      "x1": 56,
-      "y1": 24
+    "matoDaFazenda": {
+      "x0": 26,
+      "y0": 30,
+      "x1": 30,
+      "y1": 38
     },
-    "tecelagemSul": {
-      "x0": 20,
-      "y0": 21,
-      "x1": 27,
+    "arbustosDoTecelao": {
+      "x0": 43,
+      "y0": 23,
+      "x1": 48,
       "y1": 27
     }
   },
@@ -633,7 +661,7 @@ export const ARVORE_TROVAO = {
         "y": 31
       }
     ],
-    "celeiro": [
+    "velhaFerraria": [
       {
         "x": 33,
         "y": 31
@@ -687,7 +715,7 @@ export const ARVORE_TROVAO = {
         "y": 31
       }
     ],
-    "casa9": [
+    "casaSudeste": [
       {
         "x": 49,
         "y": 28
@@ -753,7 +781,7 @@ export const ARVORE_TROVAO = {
         "y": 29
       }
     ],
-    "estalagem": [
+    "cultistas": [
       {
         "x": 51,
         "y": 31
@@ -819,7 +847,7 @@ export const ARVORE_TROVAO = {
         "y": 31
       }
     ],
-    "guarda": [
+    "herborista": [
       {
         "x": 43,
         "y": 24
@@ -861,7 +889,7 @@ export const ARVORE_TROVAO = {
         "y": 24
       }
     ],
-    "escola": [
+    "armazem": [
       {
         "x": 27,
         "y": 25
@@ -911,7 +939,7 @@ export const ARVORE_TROVAO = {
         "y": 25
       }
     ],
-    "casa7": [
+    "redutoDoDruida": [
       {
         "x": 13,
         "y": 25
@@ -997,7 +1025,7 @@ export const ARVORE_TROVAO = {
         "y": 25
       }
     ],
-    "moinho": [
+    "cabanaDosRamos": [
       {
         "x": 15,
         "y": 16
@@ -1023,7 +1051,7 @@ export const ARVORE_TROVAO = {
         "y": 17
       }
     ],
-    "ervas": [
+    "cavaloPardo": [
       {
         "x": 17,
         "y": 3
@@ -1089,7 +1117,7 @@ export const ARVORE_TROVAO = {
         "y": 3
       }
     ],
-    "casa12": [
+    "praca": [
       {
         "x": 38,
         "y": 10
@@ -1143,7 +1171,7 @@ export const ARVORE_TROVAO = {
         "y": 14
       }
     ],
-    "loja": [
+    "tecelao": [
       {
         "x": 47,
         "y": 19
@@ -1177,7 +1205,7 @@ export const ARVORE_TROVAO = {
         "y": 21
       }
     ],
-    "ferraria": [
+    "casaNordeste": [
       {
         "x": 57,
         "y": 10
@@ -1219,7 +1247,7 @@ export const ARVORE_TROVAO = {
         "y": 11
       }
     ],
-    "casa15": [
+    "guarnicao": [
       {
         "x": 47,
         "y": 3
@@ -1245,7 +1273,7 @@ export const ARVORE_TROVAO = {
         "y": 3
       }
     ],
-    "tecelagem": [
+    "casaOeste": [
       {
         "x": 23,
         "y": 19
@@ -1469,7 +1497,7 @@ export const ARVORE_TROVAO = {
         "y": 26
       }
     ],
-    "prefeito": [
+    "cabanaDoLado": [
       {
         "x": 9,
         "y": 14
@@ -1507,7 +1535,7 @@ export const ARVORE_TROVAO = {
         "y": 16
       }
     ],
-    "casa10": [
+    "cabanaOcidental": [
       {
         "x": 3,
         "y": 12
@@ -1559,79 +1587,79 @@ export const ARVORE_TROVAO = {
       "x1": 25,
       "y1": 37
     },
-    "celeiro": {
+    "velhaFerraria": {
       "x0": 33,
       "y0": 31,
       "x1": 36,
       "y1": 34
     },
-    "casa9": {
+    "casaSudeste": {
       "x0": 45,
       "y0": 28,
       "x1": 49,
       "y1": 32
     },
-    "estalagem": {
+    "cultistas": {
       "x0": 51,
       "y0": 31,
       "x1": 54,
       "y1": 34
     },
-    "guarda": {
+    "herborista": {
       "x0": 41,
       "y0": 24,
       "x1": 44,
       "y1": 27
     },
-    "escola": {
+    "armazem": {
       "x0": 27,
       "y0": 25,
       "x1": 30,
       "y1": 29
     },
-    "casa7": {
+    "redutoDoDruida": {
       "x0": 13,
       "y0": 25,
       "x1": 16,
       "y1": 30
     },
-    "moinho": {
+    "cabanaDosRamos": {
       "x0": 15,
       "y0": 16,
       "x1": 17,
       "y1": 18
     },
-    "ervas": {
+    "cavaloPardo": {
       "x0": 17,
       "y0": 3,
       "x1": 20,
       "y1": 6
     },
-    "casa12": {
+    "praca": {
       "x0": 38,
       "y0": 10,
       "x1": 40,
       "y1": 15
     },
-    "loja": {
+    "tecelao": {
       "x0": 44,
       "y0": 19,
       "x1": 47,
       "y1": 22
     },
-    "ferraria": {
+    "casaNordeste": {
       "x0": 55,
       "y0": 10,
       "x1": 57,
       "y1": 14
     },
-    "casa15": {
+    "guarnicao": {
       "x0": 47,
       "y0": 3,
       "x1": 48,
       "y1": 6
     },
-    "tecelagem": {
+    "casaOeste": {
       "x0": 23,
       "y0": 19,
       "x1": 25,
@@ -1667,13 +1695,13 @@ export const ARVORE_TROVAO = {
       "x1": 21,
       "y1": 26
     },
-    "prefeito": {
+    "cabanaDoLado": {
       "x0": 9,
       "y0": 14,
       "x1": 11,
       "y1": 16
     },
-    "casa10": {
+    "cabanaOcidental": {
       "x0": 3,
       "y0": 12,
       "x1": 5,
@@ -1683,23 +1711,23 @@ export const ARVORE_TROVAO = {
   "pisos": {
     "torre": "laje",
     "fazenda": "laje",
-    "celeiro": "laje",
-    "casa9": "laje",
-    "estalagem": "laje",
-    "guarda": "laje",
-    "escola": "laje",
-    "casa7": "laje",
-    "moinho": "laje",
-    "ervas": "laje",
-    "casa12": "laje",
-    "loja": "laje",
-    "ferraria": "laje",
-    "casa15": "laje"
+    "velhaFerraria": "laje",
+    "casaSudeste": "laje",
+    "cultistas": "laje",
+    "herborista": "laje",
+    "armazem": "laje",
+    "redutoDoDruida": "laje",
+    "cabanaDosRamos": "laje",
+    "cavaloPardo": "laje",
+    "praca": "laje",
+    "tecelao": "laje",
+    "casaNordeste": "laje",
+    "guarnicao": "laje"
   },
   "props": [
     {
-      "x": 31,
-      "y": 20,
+      "x": 36,
+      "y": 12,
       "variante": "estatuaPalien",
       "tipo": "prop"
     },
@@ -1734,92 +1762,74 @@ export const ARVORE_TROVAO = {
       "tipo": "prop"
     },
     {
-      "x": 51,
-      "y": 31,
+      "x": 17,
+      "y": 5,
       "variante": "banco",
       "tipo": "prop"
     },
     {
-      "x": 51,
-      "y": 33,
+      "x": 20,
+      "y": 5,
       "variante": "barrisRack",
+      "tipo": "prop"
+    },
+    {
+      "x": 20,
+      "y": 4,
+      "variante": "cubaCerveja",
+      "tipo": "prop"
+    },
+    {
+      "x": 18,
+      "y": 5,
+      "variante": "fogao",
+      "tipo": "prop"
+    },
+    {
+      "x": 19,
+      "y": 4,
+      "variante": "prateleira",
       "tipo": "prop"
     },
     {
       "x": 53,
       "y": 34,
-      "variante": "cubaCerveja",
+      "variante": "beliche",
       "tipo": "prop"
     },
     {
       "x": 54,
       "y": 32,
-      "variante": "fogao",
+      "variante": "cadeira",
       "tipo": "prop"
     },
     {
       "x": 53,
       "y": 32,
-      "variante": "prateleira",
-      "tipo": "prop"
-    },
-    {
-      "x": 46,
-      "y": 31,
-      "variante": "beliche",
-      "tipo": "prop"
-    },
-    {
-      "x": 48,
-      "y": 32,
       "variante": "cadeira",
       "tipo": "prop"
     },
     {
-      "x": 48,
-      "y": 31,
-      "variante": "cadeira",
-      "tipo": "prop"
-    },
-    {
-      "x": 48,
-      "y": 30,
-      "variante": "fogao",
-      "tipo": "prop"
-    },
-    {
-      "x": 49,
-      "y": 29,
-      "variante": "mesaPosta",
-      "tipo": "prop"
-    },
-    {
-      "x": 19,
-      "y": 24,
+      "x": 13,
+      "y": 25,
       "variante": "camaCampo",
       "tipo": "prop"
     },
     {
-      "x": 20,
+      "x": 16,
       "y": 25,
       "variante": "trapos",
       "tipo": "prop"
     },
     {
-      "x": 20,
-      "y": 24,
+      "x": 14,
+      "y": 26,
       "variante": "fogueiraPanela",
       "tipo": "prop"
     },
     {
-      "x": 21,
-      "y": 24,
-      "variante": "mesaFerramentas",
-      "tipo": "prop"
-    },
-    {
-      "x": 19,
-      "y": 25,
+      "x": 13,
+      "y": 27,
       "variante": "secadorErvas",
       "tipo": "prop"
     },
@@ -1836,21 +1846,9 @@ export const ARVORE_TROVAO = {
       "tipo": "prop"
     },
     {
-      "x": 43,
-      "y": 24,
+      "x": 47,
+      "y": 5,
       "variante": "alcapaoFechado",
-      "tipo": "prop"
-    },
-    {
-      "x": 44,
-      "y": 25,
-      "variante": "beliche",
-      "tipo": "prop"
-    },
-    {
-      "x": 42,
-      "y": 25,
-      "variante": "beliche",
       "tipo": "prop"
     },
     {
@@ -1878,63 +1876,93 @@ export const ARVORE_TROVAO = {
       "tipo": "prop"
     },
     {
-      "x": 13,
-      "y": 25,
+      "x": 3,
+      "y": 12,
       "variante": "banquinho",
       "tipo": "prop"
     },
     {
-      "x": 16,
-      "y": 25,
+      "x": 5,
+      "y": 13,
       "variante": "trapos",
       "tipo": "prop"
     },
     {
-      "x": 13,
-      "y": 27,
+      "x": 5,
+      "y": 12,
       "variante": "banco",
       "tipo": "prop"
     },
     {
-      "x": 17,
-      "y": 3,
+      "x": 43,
+      "y": 24,
       "variante": "banquinho",
       "tipo": "prop"
     },
     {
-      "x": 20,
-      "y": 6,
+      "x": 41,
+      "y": 27,
       "variante": "saco",
       "tipo": "prop"
     },
     {
-      "x": 17,
-      "y": 5,
+      "x": 44,
+      "y": 25,
       "variante": "prateleira",
+      "tipo": "prop"
+    },
+    {
+      "x": 41,
+      "y": 25,
+      "variante": "secadorErvas",
+      "tipo": "prop"
+    },
+    {
+      "x": 33,
+      "y": 34,
+      "variante": "bigorna",
+      "tipo": "prop"
+    },
+    {
+      "x": 35,
+      "y": 32,
+      "variante": "fole",
+      "tipo": "prop"
+    },
+    {
+      "x": 36,
+      "y": 32,
+      "variante": "mesaFerramentas",
       "tipo": "prop"
     },
     {
       "x": 47,
       "y": 19,
-      "variante": "prateleira",
+      "variante": "tear",
       "tipo": "prop"
     },
     {
-      "x": 56,
-      "y": 11,
-      "variante": "bigorna",
+      "x": 15,
+      "y": 18,
+      "variante": "baldeBanco",
       "tipo": "prop"
     },
     {
-      "x": 55,
-      "y": 12,
-      "variante": "fole",
+      "x": 17,
+      "y": 18,
+      "variante": "mo",
       "tipo": "prop"
     },
     {
-      "x": 55,
-      "y": 14,
-      "variante": "mesaFerramentas",
+      "x": 38,
+      "y": 10,
+      "variante": "guardaRoupa",
+      "tipo": "prop"
+    },
+    {
+      "x": 21,
+      "y": 31,
+      "variante": "cocho",
       "tipo": "prop"
     },
     {
@@ -1968,18 +1996,6 @@ export const ARVORE_TROVAO = {
       "tipo": "prop"
     },
     {
-      "x": 15,
-      "y": 16,
-      "variante": "baldeBanco",
-      "tipo": "prop"
-    },
-    {
-      "x": 16,
-      "y": 17,
-      "variante": "mo",
-      "tipo": "prop"
-    },
-    {
       "x": 35,
       "y": 17,
       "variante": "banco",
@@ -1992,33 +2008,21 @@ export const ARVORE_TROVAO = {
       "tipo": "prop"
     },
     {
-      "x": 21,
-      "y": 31,
-      "variante": "cocho",
-      "tipo": "prop"
-    },
-    {
-      "x": 3,
-      "y": 12,
+      "x": 23,
+      "y": 19,
       "variante": "prateleira",
       "tipo": "prop"
     },
     {
-      "x": 38,
-      "y": 10,
-      "variante": "guardaRoupa",
-      "tipo": "prop"
-    },
-    {
-      "x": 47,
-      "y": 3,
+      "x": 49,
+      "y": 28,
       "variante": "roca",
       "tipo": "prop"
     },
     {
-      "x": 23,
-      "y": 19,
-      "variante": "tear",
+      "x": 57,
+      "y": 10,
+      "variante": "mesaFerramentas",
       "tipo": "prop"
     }
   ],

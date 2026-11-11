@@ -128,16 +128,17 @@ export const NPCS = {
 
   elmar: {
     id: 'elmar',
-    nome: 'Elmar Barthen',
+    // ELMINA, pelo Obelisco (na Mina era Elmar, um velho). O id continua `elmar`: é o que o save e as conversas guardam.
+    nome: 'Elmina Barthen',
     look: 'elmar',
-    papel: 'Dono do armazém',
+    papel: 'Dona do armazém',
     bloco: 'plebeu',
     fonte: 'SRD',
     atitude: 'cordial',
     personalidade: {
-      quer: 'Que os dois moços que ele contratou cheguem à primavera sem virar caravaneiro morto na estrada.',
+      quer: 'Que os dois moços que ela contratou cheguem à primavera sem virar caravaneiro morto na estrada.',
       esconde: 'Que vende a crédito para metade da vila e que o livro não fecha há dois anos.',
-      fala: 'Devagar, com muito detalhe irrelevante antes do detalhe que importa. Chama os jovens de rapaz e as armas de ferragem.',
+      fala: 'Gentil e prática, fala depressa e anota enquanto fala. Chama as armas de ferragem.',
     },
     frase: 'Picareta eu tenho. Vontade de explicar para onde foram as três últimas, não.',
     blurb: 'Não luta: abre o depósito e entrega corda, óleo e lampião, que ganham a cena seguinte.',
@@ -153,7 +154,10 @@ export const NPCS = {
     atitude: 'barganha',
     personalidade: {
       quer: 'Uma escolta de verdade para a próxima remessa, paga pela companhia e não pelo bolso dela.',
-      esconde: 'Que compra de volta, sem perguntar, mercadoria que já foi dela — é mais barato que relatar o roubo.',
+      // O `esconde` antigo dizia que ela recompra sem perguntar a própria mercadoria roubada, o que a põe em
+      // contato com os ladrões. No livro é o contrário: ela NÃO sabe quem assalta as caravanas dela, e é por
+      // isso que a pergunta ao grupo. O que ela esconde é menor e mais dela: a conta.
+      esconde: 'Que a companhia já falou em fechar o posto se a terceira remessa também sumir, e que o prejuízo das duas primeiras saiu do bolso dela.',
       fala: 'Seca, conta no dedo, corta elogio pelo meio. Fala de arma como quem fala de ferramenta, nunca de glória.',
     },
     frase: 'Essa lâmina já voltou para cá duas vezes. Na terceira eu quero saber o nome de quem segurou.',
@@ -181,8 +185,11 @@ export const NPCS = {
     id: 'harbin',
     nome: 'Harbin Wester',
     look: 'harbin',
-    papel: 'Mestre da vila',
-    bloco: 'nobre',
+    // "Chefe da vila" é o cargo do livro, e o bloco é `plebeu`: o livro manda usar plebeu para quem não luta,
+    // e o Harbin é exatamente isso — um comerciante aposentado que herdou o martelo da praça e passa o dia
+    // fingindo que a vila não tem problema. `nobre` lhe dava CA 15 e um florete que ele nunca sacaria.
+    papel: 'Chefe da vila',
+    bloco: 'plebeu',
     fonte: 'SRD',
     atitude: 'medroso',
     personalidade: {
@@ -304,7 +311,9 @@ export const NPCS = {
     atitude: 'barganha',
     personalidade: {
       quer: 'Uma resposta que só um morto sabe, e está disposta a pagar o preço de perguntar.',
-      esconde: 'Que já tentou duas vezes sozinha, voltou ferida das duas, e não contou a ninguém do santuário.',
+      // Eram "duas vezes, ferida das duas". No livro ela foi UMA vez, e a banshee nem apareceu — o que é pior
+      // para ela, porque não há ferida que explique o fracasso, só a viagem perdida.
+      esconde: 'Que já foi até a cabana uma vez, sozinha, esperou a noite inteira e não apareceu ninguém — e que voltou sem contar a ninguém do santuário.',
       fala: 'Formal e impaciente ao mesmo tempo. Explica rito com precisão e corta pergunta pessoal com uma bênção.',
     },
     frase: 'A sorte não é bondade. É só a parte do futuro que ainda não foi decidida.',
@@ -324,12 +333,13 @@ export const NPCS = {
     blocoSubstituto: 'acolito',
     notaDoSubstituto: 'o bloco de druida espera as magias dele em spells.js',
     atitude: 'cordial',
+    // MULHER IDOSA no Obelisco (homem na Mina), de cabelo branco comprido, que não usa duas palavras quando uma basta.
     personalidade: {
       quer: 'Que a ruína volte a ser mato e que o dragão saia da torre; ajuda quem se dispõe a isso.',
       esconde: 'Que fica ali por culpa: viu o que se instalou nas pedras e demorou anos para agir.',
-      fala: 'Hospitaleiro e franco: recebe visita em casa, avisa de tudo antes que perguntem e conta o que sabe sem cobrar.',
+      fala: 'Seca e franca: uma palavra onde outros usam duas. Recebe razoavelmente bem, avisa de tudo e conta o que sabe sem cobrar.',
     },
-    frase: 'Entrem, sentem. Esta vila tem mais dentes do que parece, e eu conto todos.',
+    frase: 'Vivos. Raro. Sentem. Perguntem.',
     blurb: 'Prende o alvo no mato e cura à distância; nunca troca golpe na linha da frente.',
   },
 
@@ -457,11 +467,17 @@ export const NPCS = {
     nome: 'Yeemik',
     look: 'yeemik',
     papel: 'Segundo em comando que quer ser o primeiro',
-    // Bloco nomeado de `monsters/goblinoides.js`. O ELENCO lista Yeemik como
-    // goblin e não como chefe goblin, e isso é o personagem: ele comanda com um
-    // elmo roubado e números de goblin comum.
+    // Bloco nomeado de `monsters/goblinoides.js`, e o selo tem de ser O MESMO dele.
+    //
+    // Aqui estava `fonte: 'SRD'` com um comentário dizendo "números de goblin comum", e as duas coisas eram
+    // falsas: o bloco `yeemik` é o do Chefe Goblin do Livro dos Monstros, número por número — ND 1, 200 XP,
+    // CA 17, dois ataques e Redirecionar Ataque —, e por isso ele e o `goblinChefe` levam `fonte: 'MM'`,
+    // decisão registrada no comentário deles e travada em `testes-regras.mjs`. O elenco dizer SRD enquanto o
+    // bloco diz MM é pior que qualquer das duas sozinha: esconde a procedência no lugar em que alguém iria
+    // procurá-la. O que o esconderijo faz é baixar os PV para 12 (`encounter.js`), que é o número do livro
+    // da aventura para o Yeemik — isso é adaptação de cena, não troca de bloco.
     bloco: 'yeemik',
-    fonte: 'SRD',
+    fonte: 'MM',
     atitude: 'barganha',
     personalidade: {
       quer: 'O lugar do chefe, hoje, e que o grupo faça o trabalho sujo por ele.',

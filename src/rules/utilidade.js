@@ -34,6 +34,7 @@ import { oracaoDeCura, bomFrutoNoDescanso } from './descanso.js';
 import { APRIMORAR } from './spells.js';
 import { encherAgua, guardarMagico } from './mantimentos.js';
 import { garantirInventario } from './equipment.js';
+import { UTIL_DOS_LIVROS } from './utilidade-livros.js';
 
 /**
  * O que cada magia faz FORA do combate. Campos:
@@ -131,6 +132,9 @@ export const UTIL = {
   detectarVenenoDoenca: { alvo: 'area', min: 10, conc: true, efeito: 'venenos', ritual: true },
   localizarAnimaisPlantas: { alvo: 'si', min: 1, efeito: 'caca', ritual: true },
 };
+
+// AS MAGIAS DE EXPLORAÇÃO DOS LIVROS (`rules/utilidade-livros.js`): a mesma tabela, as mesmas regras.
+Object.assign(UTIL, UTIL_DOS_LIVROS);
 
 /** Os bichos que Convocar Familiar chama: a ficha mora em `monsters/feras.js`. */
 export const FAMILIARES = {
@@ -277,6 +281,17 @@ export function encerrar(estado, a, herois, { texto = null } = {}) {
   const outraViva = (quem) => estado.ativas.some((x) => x !== a && x.spellId === a.spellId && x.quem === quem);
   if (a.spellId === 'auraMagicaDoArcanista' && a.quem && !outraViva(a.quem)) delete a.quem.auraMagica;
   if (a.spellId === 'indetectavel' && a.quem && !outraViva(a.quem)) delete a.quem.semDeteccao;
+  // BANQUETE DE HERÓIS: passadas as 24 horas, os PV a mais vão embora
+  if (a.spellId === 'banqueteDeHerois') {
+    for (const id of a.alvos) {
+      const t = heroiPorId(herois, id);
+      const b = t && getCondition(t, 'banqueteDosHerois');
+      if (!b) continue;
+      t.maxHp -= b.data?.pv ?? 0;
+      t.hp = Math.min(t.hp, t.maxHp);
+      removeCondition(t, 'banqueteDosHerois');
+    }
+  }
   estado.ativas = estado.ativas.filter((x) => x !== a);
   const dono = heroiPorId(herois, a.por);
   for (const id of a.alvos) {
@@ -340,10 +355,13 @@ export function podeConjurarFora(c, spellId, { circulo = null, ritual = false } 
   if (c.armorUntrained) return { ok: false, why: 'armadura sem treino impede conjurar' };
   // Só o mago conjura ritual sem preparar (do grimório); bardo, druida e clérigo só o que têm pronto.
   const deRitual = c.classe === 'mago' && (c.spellcasting.rituais?.includes(spellId) || c.spellcasting.livro?.includes(spellId));
-  if (!magiasProntas(c).includes(spellId) && !(ritual && deRitual)) return { ok: false, why: `${spell.name} não está preparada` };
+  // CONJURADOR DE RITUAIS (talento): o livro de rituais dele, só como ritual, de qualquer classe.
+  const doLivroDeRituais = Boolean(c.spellcasting.livroDeRituais?.includes(spellId));
+  if (doLivroDeRituais && !ritual) return { ok: false, why: `${spell.name} do livro de rituais só se conjura como ritual` };
+  if (!magiasProntas(c).includes(spellId) && !(ritual && (deRitual || doLivroDeRituais))) return { ok: false, why: `${spell.name} não está preparada` };
   if (ritual) {
     if (!spell.ritual) return { ok: false, why: `${spell.name} não é ritual` };
-    if (!CLASSES_DE_RITUAL.has(c.classe)) return { ok: false, why: 'esta classe não conjura ritual' };
+    if (!CLASSES_DE_RITUAL.has(c.classe) && !doLivroDeRituais) return { ok: false, why: 'esta classe não conjura ritual' };
     return { ok: true, spell, circulo: spell.level, ritual: true };
   }
   if (spell.level === 0) return { ok: true, spell, circulo: 0 };
@@ -549,6 +567,7 @@ export function conjurarFora(estado, c, spellId, { herois, rng, circulo = null, 
       resultado.alvos = alvos;
       if (u.escolhe === 'atributo') resultado.opcao = opcao ?? 'urso';
     } else if (u.alvo === 'si') alvosIds = [c.id];
+    else if (u.alvo === 'grupo') alvosIds = grupo.filter((h) => !h.dead).map((h) => h.id);
     else if (u.alvo === 'aliado' && alvo) alvosIds = [alvo.id];
     // Os efeitos próprios.
     if (u.efeito === 'detectarMagia') {
@@ -604,6 +623,57 @@ export function conjurarFora(estado, c, spellId, { herois, rng, circulo = null, 
       resultado.comunhao = dados?.respostas ?? [];
       resultado.soNarra = !resultado.comunhao.length;
     }
+    // ---- AS MAGIAS DOS LIVROS (`rules/utilidade-livros.js`) ----
+    // Contatar Outro Plano: a mente vai longe demais. Inteligência CD 15; falhou, 6d6 psíquico e a loucura até o
+    // descanso longo (incapacitado, sem fala que se entenda).
+    if (u.riscoInt) {
+      const r = d20(rng, saveBonus(c, 'int'));
+      resultado.risco = { total: r.total, cd: u.riscoInt, passou: r.total >= u.riscoInt };
+      if (!resultado.risco.passou) {
+        const dano = roll(rng, '6d6').total;
+        c.hp = Math.max(0, c.hp - dano);
+        addCondition(c, 'enlouquecido', { rounds: Infinity, source: c.id });
+        resultado.risco.dano = dano;
+        resultado.comunhao = [];
+      }
+    }
+    if (u.efeito === 'lenda') {
+      // O que se sabe da criatura (a lore do bloco) vem da cena: a regra não conhece os bestiários.
+      resultado.lenda = alvo;
+    }
+    if (u.efeito === 'localizarCriatura') resultado.achou = dados?.nome ?? null;
+    if (u.efeito === 'memoria') {
+      // Modificar Memória: o que ele lembrava do grupo (a sondagem, a desconfiança de ter sido influenciado) some.
+      const k = chaveDoNpc(alvo);
+      if (estado.npcs[k]) { delete estado.npcs[k].ressentido; delete estado.npcs[k].sondado; }
+      resultado.esqueceu = alvo;
+    }
+    if (u.efeito === 'regenerar') {
+      // A regeneração do livro cura 4d8 + 15 na hora e 1 PV por rodada por uma hora: fora da luta, a vida toda volta.
+      const quem = alvo ?? c;
+      quem.hp = quem.maxHp;
+      resultado.regenerou = quem;
+    }
+    if (u.efeito === 'banqueteDosHerois') {
+      // Até doze à mesa: curam doença e veneno, ficam imunes a medo e a veneno, têm vantagem em Sabedoria e +2d10 de PV
+      // máximo, por 24 horas (`descanso.js` não tira; o relógio tira).
+      resultado.banquete = [];
+      for (const h of grupo.filter((x) => !x.dead).slice(0, 12)) {
+        removeCondition(h, 'envenenado');
+        const pv = roll(rng, '2d10').total;
+        h.maxHp += pv;
+        h.hp += pv;
+        addCondition(h, 'banqueteDosHerois', { rounds: Math.round(duracao * 10), source: c.id, data: { pv } });
+        resultado.banquete.push({ h, pv });
+      }
+      alvosIds = resultado.banquete.map((x) => x.h.id);
+    }
+    if (u.efeito === 'labia' || u.efeito === 'viagem') resultado.servico = u.efeito;
+    if (u.banquete) {
+      // a Mansão Magnífica: o banquete de cem que serve o grupo entra na despensa da noite
+      const entrada = guardarMagico(estado, { racoes: grupo.filter((x) => !x.dead).length, litros: 0, nome: spell.name, dia: estado.dia ?? 0 });
+      resultado.mantimentos = { racoes: entrada?.racoes ?? grupo.length, litros: 0 };
+    }
     // ---- o ritual que traz de volta ----
     if (u.efeito === 'reviver') {
       // Volta com 1 PV e com a conta de ter voltado: −4 que cai de 1 por
@@ -625,7 +695,10 @@ export function conjurarFora(estado, c, spellId, { herois, rng, circulo = null, 
       // degrau 6, que mata, e morreria outra vez no primeiro teste de fome ou
       // de marcha. Volta no 5 — o pior degrau que não mata.
       if (nivelDeExaustao(alvo) >= 6) mudarExaustao(alvo, 5 - nivelDeExaustao(alvo));
-      addCondition(alvo, 'revivido', { data: { penalidade: 4 } });
+      const pen = u.penalidade ?? 4;
+      if (pen > 0) addCondition(alvo, 'revivido', { data: { penalidade: pen } });
+      // a Ressurreição e as outras do livro voltam com TODOS os PV; o Reviver os Mortos, com 1
+      if (u.penalidade !== undefined) alvo.hp = alvo.maxHp;
       resultado.revivido = alvo;
     }
     // ---- a palavra e o olho a distância ----
@@ -648,9 +721,10 @@ export function conjurarFora(estado, c, spellId, { herois, rng, circulo = null, 
       resultado.montaria = qual;
     }
     if (u.efeito === 'respirar') {
-      // O jogo não afoga ninguém: a magia gasta o espaço e o tempo e narra.
+      // Até dez do grupo respiram debaixo d'água: não gastam o fôlego (`conditions.js gastarFolego`). A magia dura 24
+      // horas; aqui, até o próximo descanso longo (`descanso.js`).
       resultado.respirar = grupo.filter((h) => !h.dead).slice(0, 10);
-      resultado.soNarra = true;
+      for (const h of resultado.respirar) h.respiraNaAgua = true;
     }
     if (u.efeito === 'pedra') resultado.pedra = c;
     // ---- adivinhação e serviçais ----
@@ -847,10 +921,17 @@ export function modificadores(estado, herois, quem, pericia, { npc = null } = {}
   if (hab === 'cha' && npc && ativaDe(estado, herois, 'enfeiticarPessoa', { por: quem, npc })) vant('Enfeitiçar Pessoa');
   if (pericia === 'enganacao' && meu('disfarcarSe')) vant('Disfarçar-se');
   if (pericia === 'enganacao' && meu('alterarAparencia')) vant('Alterar Aparência');
+  if (pericia === 'enganacao' && ativaDe(estado, herois, 'aparenciaEnganosa', { alvo: quem.id })) vant('Aparência Enganosa');
+  // ATOR (talento): passando-se por outra pessoa (um disfarce de magia de pé), vantagem em Enganação e Atuação.
+  if (['enganacao', 'atuacao'].includes(pericia) && (quem.talentos ?? []).includes('ator')
+    && (meu('alterarAparencia') || meu('disfarcarSe') || ativaDe(estado, herois, 'aparenciaEnganosa', { alvo: quem.id }))) vant('Ator');
   if (pericia === 'enganacao' && meu('ilusaoMenor')) vant('Ilusão Menor (distração)');
   if (pericia === 'lidarComAnimais' && meu('falarComAnimais')) vant('Falar com Animais');
   if (npc && (pericia === 'persuasao' || pericia === 'enganacao') && estado.npcs[key]?.sondado) vant('mente sondada');
   if (npc && eSocial(pericia) && ativaDe(estado, herois, 'sugestao', { npc })) { out.auto = true; out.fontes.push('Sugestão'); }
+  if (npc && eSocial(pericia) && ativaDe(estado, herois, 'missao', { npc })) { out.auto = true; out.fontes.push('Missão'); }
+  // LÁBIA: no teste de Carisma, o d20 que vier abaixo de 15 conta como 15 (`rolarTeste`)
+  if (hab === 'cha' && meu('labia')) { out.minimo = 15; out.fontes.push('Lábia'); }
   if (npc && hab === 'cha' && estado.npcs[key]?.ressentido) desv(estado.npcs[key].ressentido === 'hostil' ? 'ele está hostil' : 'ele sabe que foi influenciado');
   // As condições do próprio herói: Aprimorar Atributo, Aumentar/Reduzir.
   const fx = conditionEffects(quem);
@@ -911,6 +992,7 @@ export function rolarTeste(estado, herois, rng, quem, pericia, cd, { npc = null,
   const r = rolarPericia(rng, quem, pericia, { bonusExtra: fixo, advantage: adv, disadvantage: dis });
   let total = r.total;
   const extras = [];
+  if (m.minimo && r.natural < m.minimo) { total += m.minimo - r.natural; extras.push(`d20 ${r.natural} vira ${m.minimo} (Lábia)`); }
   for (const cond of [...(quem.conditions ?? [])]) {
     const dados = CONDITIONS[cond.id]?.testeBonusDice;
     if (!dados) continue;
@@ -928,7 +1010,7 @@ export function rolarTeste(estado, herois, rng, quem, pericia, cd, { npc = null,
     passou = true;
     extras.push('Sugestão: ele cede');
   }
-  if (m.auto) {
+  if (m.auto && !ativaDe(estado, herois, 'missao', { npc })) {
     const a = ativaDe(estado, herois, 'sugestao', { npc });
     // A sugestão vale uma vez: cumprida, a magia acaba.
     if (a && passou) encerrar(estado, a, herois);
@@ -1040,10 +1122,13 @@ export function sentidasPorBemMal(estado, herois, dono, criaturas) {
 export const falaPorMensagem = (estado, herois, npc) => Boolean(ativaDe(estado, herois, 'mensagem', { npc }));
 
 /** As magias que o herói pode conjurar fora do combate (para os menus). */
-export function magiasForaDoHeroi(c) {
+export function magiasForaDoHeroi(c, { regiao = false } = {}) {
   // Só o mago conjura ritual sem preparar (grimório e livro de rituais).
   const doLivro = c.classe === 'mago' ? [...(c.spellcasting?.rituais ?? []), ...(c.spellcasting?.livro ?? []).filter((id) => SPELLS[id]?.ritual)] : [];
-  return [...new Set([...magiasProntas(c), ...doLivro])].filter((id) => UTIL[id]).map((id) => getSpell(id));
+  // o livro de rituais do CONJURADOR DE RITUAIS (talento)
+  doLivro.push(...(c.spellcasting?.livroDeRituais ?? []));
+  // a VIAGEM (Teletransporte e as outras) se conjura na tela da região, não na cena; e vice-versa
+  return [...new Set([...magiasProntas(c), ...doLivro])].filter((id) => UTIL[id] && Boolean(UTIL[id].soNaRegiao) === regiao).map((id) => getSpell(id));
 }
 
 /** Nome do círculo para o menu: "truque" ou "2º círculo". */

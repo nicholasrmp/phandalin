@@ -7,12 +7,17 @@
 // só a montagem das escolhas que o Livro do Jogador deixa fazer antes do 1º nível.
 //
 // REGRAS
-//   raças       as do Livro do Jogador que o motor já joga (`rules/racas.js`), menos o humano variante (talento e
-//               perícia a mais pedem outra tela; fica para depois)
+//   raças       as do Livro do Jogador que o motor já joga (`rules/racas.js`). O HUMANO VARIANTE (desde 2026-11-09):
+//               +1 em dois atributos quaisquer, uma perícia qualquer e um talento do Livro do Jogador de 2014
+//               (`rules/talentos-phb.js`) no 1º nível, ALÉM do talento de origem que todo herói ganha (regra da casa);
+//               o pré-requisito do talento se confere no herói do 1º nível, e o de origem não pode ser a versão de
+//               2024 do mesmo talento (`criacao.js` cuida disso no preparo)
 //   atributos   conjunto padrão (15, 14, 13, 12, 10, 8) ou compra de 27 pontos (8 a 15), mais o bônus da raça.
 //               O meio-elfo escolhe mais dois +1 (fora o Carisma) e duas perícias quaisquer
-//   antecedente os quatro do SRD 5.2 (CC-BY-4.0): Acólito, Criminoso, Sábio, Soldado. Dão duas perícias e sugerem o
-//               talento de origem que o livro de 2024 lhes dá — o talento é escolhido na tela de preparo, como nos
+//   antecedente os treze do Livro do Jogador (os quatro do SRD 5.2 e, desde 2026-11-09, os outros nove: Charlatão,
+//               Artista, Herói do Povo, Artesão de Guilda, Eremita, Nobre, Forasteiro, Marinheiro, Órfão). Dão as duas
+//               perícias do livro e sugerem um talento de origem — o que o livro de 2024 dá ao antecedente de mesmo nome,
+//               ou ao mais parecido com ele quando o nome mudou —; o talento é escolhido na tela de preparo, como nos
 //               prontos (regra da casa). O aumento de atributo do antecedente de 2024 NÃO entra: os atributos já
 //               levam o bônus da raça de 2014, e os dois juntos dariam pontos demais.
 //   perícias    as da classe, à escolha, mais as do antecedente e as da raça (o motor põe as da raça sozinho)
@@ -26,6 +31,7 @@
 import { CLASSES } from '../rules/classes/index.js';
 import { RACAS, ANCESTRALIDADES_DRACONICAS, racaDe } from '../rules/racas.js';
 import { SKILLS, SKILL_NAME, ABILITY_NAME } from '../rules/abilities.js';
+import { TALENTOS_PHB, porqueNaoTalento } from '../rules/talentos-phb.js';
 
 export const ATRIBUTOS = ['str', 'dex', 'con', 'int', 'wis', 'cha'];
 export const CONJUNTO_PADRAO = [15, 14, 13, 12, 10, 8];
@@ -34,7 +40,7 @@ export const CUSTO_DO_PONTO = { 8: 0, 9: 1, 10: 2, 11: 3, 12: 4, 13: 5, 14: 7, 1
 export const MAX_NOME = 24;
 export const MAX_HISTORIA = 600;
 
-/** Os quatro antecedentes do SRD 5.2. `talento` e `iniciado` são a sugestão do livro de 2024 para o padrão. */
+/** Os treze antecedentes do Livro do Jogador. `talento` e `iniciado` são a sugestão do livro de 2024 para o padrão. */
 export const ANTECEDENTES = {
   acolito: { nome: 'Acólito', nomeF: 'Acólita', pericias: ['intuicao', 'religiao'], talento: 'iniciadoEmMagia', iniciado: 'clerigo',
     resumo: 'Serviu num templo: conhece os ritos e lê as pessoas.' },
@@ -44,16 +50,59 @@ export const ANTECEDENTES = {
     resumo: 'Anos de biblioteca: sabe o que os livros dizem do mundo e da magia.' },
   soldado: { nome: 'Soldado', nomeF: 'Soldado', pericias: ['atletismo', 'intimidacao'], talento: 'atacanteSelvagem',
     resumo: 'Marchou em fileira e voltou: corpo treinado e voz de comando.' },
+  // Os outros nove do Livro do Jogador. O talento: o do antecedente de 2024 de mesmo nome (Charlatão, Artista, Eremita,
+  // Nobre, Marinheiro) ou do mais parecido (Herói do Povo -> Fazendeiro, Artesão de Guilda -> Artesão, Forasteiro ->
+  // Guia, Órfão -> Andarilho).
+  charlatao: { nome: 'Charlatão', nomeF: 'Charlatã', pericias: ['enganacao', 'prestidigitacao'], talento: 'habilidoso',
+    resumo: 'Vive de enganar: rosto de confiança, mãos rápidas e uma história pronta para cada ocasião.' },
+  artista: { nome: 'Artista', nomeF: 'Artista', pericias: ['acrobacia', 'atuacao'], talento: 'musico',
+    resumo: 'Ganha a vida no palco e na praça: sabe prender uma plateia e cair de pé.' },
+  heroiDoPovo: { nome: 'Herói do Povo', nomeF: 'Heroína do Povo', pericias: ['lidarComAnimais', 'sobrevivencia'], talento: 'vigoroso',
+    resumo: 'Gente simples que um dia enfrentou o que ninguém enfrentava: o povo o reconhece e o abriga.' },
+  artesaoDeGuilda: { nome: 'Artesão de Guilda', nomeF: 'Artesã de Guilda', pericias: ['intuicao', 'persuasao'], talento: 'artesao',
+    resumo: 'Aprendeu um ofício numa guilda: sabe negociar, e a guilda abre portas onde houver uma.' },
+  eremita: { nome: 'Eremita', nomeF: 'Eremita', pericias: ['medicina', 'religiao'], talento: 'curandeiro',
+    resumo: 'Anos de isolamento: cuida de feridas, reza sozinho e guarda uma descoberta que mudou tudo.' },
+  nobre: { nome: 'Nobre', nomeF: 'Nobre', pericias: ['historia', 'persuasao'], talento: 'habilidoso',
+    resumo: 'Nasceu com nome e brasão: sabe falar com quem manda, e quem manda o recebe.' },
+  forasteiro: { nome: 'Forasteiro', nomeF: 'Forasteira', pericias: ['atletismo', 'sobrevivencia'], talento: 'iniciadoEmMagia', iniciado: 'druida',
+    resumo: 'Cresceu longe das cidades: acha água e caça onde outros passam fome, e nunca se perde.' },
+  marinheiro: { nome: 'Marinheiro', nomeF: 'Marinheira', pericias: ['atletismo', 'percepcao'], talento: 'brigaoDeTaverna',
+    resumo: 'Anos de convés e de porto: braço forte, olho de vigia e briga de taverna no currículo.' },
+  orfao: { nome: 'Órfão', nomeF: 'Órfã', pericias: ['prestidigitacao', 'furtividade'], talento: 'sortudo',
+    resumo: 'Cresceu nas ruas sozinho: passa despercebido e conhece os atalhos da cidade.' },
+};
+
+/**
+ * O PORQUÊ DE IR A PHANDALIN, por antecedente. O Obelisco sugere um gancho para cada antecedente do Livro do Jogador; o
+ * herói criado sai com o do antecedente dele (o capítulo 1 mostra o motivo de cada um na carroça), e os doze heróis
+ * prontos já têm o seu, escrito para eles (`herois.js`). Texto nosso: a ideia do gancho é do livro, a frase não.
+ */
+export const MOTIVO_DO_ANTECEDENTE = {
+  acolito: 'O templo de Neverwinter mandou alguém rezar com os poucos fiéis da fronteira, onde não há sacerdote que chegue para todos.',
+  criminoso: 'Em Neverwinter há quem o procure por coisas que fez. Uma vila pequena e longe é o melhor lugar para sumir por um tempo.',
+  sabio: 'Leu tudo o que as bibliotecas de Neverwinter guardam sobre a mina perdida de Phandelver, e quer ouvir o que os moradores contam dela.',
+  soldado: 'Ferido a serviço da guarda de Neverwinter, ainda não voltou às fileiras; até lá, escolta carroças pela estrada de Phandalin.',
+  // os nove de 2026-11-09: texto nosso, sem gancho do livro por trás
+  charlatao: 'Um golpe em Neverwinter deu errado demais; dizem que em Phandalin os mineiros pagam bem e perguntam pouco.',
+  artista: 'Uma vila de garimpo que volta a crescer é plateia nova: ninguém ali ouviu as canções que ele sabe.',
+  heroiDoPovo: 'O povo da fronteira pediu ajuda contra os goblins da estrada, e ele não é de recusar quando pedem.',
+  artesaoDeGuilda: 'A guilda quer saber se as minas reabertas de Phandalin dão metal bom, e mandou alguém olhar de perto.',
+  eremita: 'O que ele achou no isolamento aponta para as colinas em volta de Phandalin, e não deixa de chamá-lo.',
+  nobre: 'A família tem terras e dívidas na fronteira; alguém do sangue precisa ir ver o que sobrou delas.',
+  forasteiro: 'Conhece as trilhas da Floresta de Neverwinter melhor que ninguém, e quem precisa de um guia até Phandalin paga.',
+  marinheiro: 'Desembarcou em Neverwinter sem navio e sem dinheiro; a escolta de uma carroça é o trabalho que apareceu.',
+  orfao: 'Ouviu nas ruas de Neverwinter que em Phandalin sobra trabalho para quem não tem nome, e foi.',
 };
 
 /** As raças que o criador oferece, na ordem da tela. */
-export const RACAS_DO_CRIADOR = ['humano', 'anaoColina', 'anaoMontanha', 'altoElfo', 'elfoFloresta', 'drow', 'halflingPesLeves',
+export const RACAS_DO_CRIADOR = ['humano', 'humanoVariante', 'anaoColina', 'anaoMontanha', 'altoElfo', 'elfoFloresta', 'drow', 'halflingPesLeves',
   'halflingRobusto', 'draconato', 'gnomoFloresta', 'gnomoRochas', 'meioElfo', 'meioOrc', 'tiferino'];
 
 // O nome da raça e da classe no feminino. O texto da raça é o que a mesa diz ("Anã da montanha"); o motor reconhece a
 // raça pelo texto e pelo grupo juntos (`racaDe`), e é por isso que o grupo vai em `ancestry`, no masculino do livro.
 const RACA_F = {
-  humano: 'Humana', anaoColina: 'Anã da colina', anaoMontanha: 'Anã da montanha', altoElfo: 'Alta elfa',
+  humano: 'Humana', humanoVariante: 'Humana (variante)', anaoColina: 'Anã da colina', anaoMontanha: 'Anã da montanha', altoElfo: 'Alta elfa',
   elfoFloresta: 'Elfa da floresta', drow: 'Elfa negra (drow)', halflingPesLeves: 'Halfling pés-leves',
   halflingRobusto: 'Halfling robusta', draconato: 'Draconata', gnomoFloresta: 'Gnoma da floresta', gnomoRochas: 'Gnoma das rochas',
   meioElfo: 'Meio-elfa', meioOrc: 'Meio-orc', tiferino: 'Tiferina',
@@ -81,8 +130,8 @@ const PRIORIDADE = {
 };
 /** O antecedente que combina com cada classe, para o primeiro rascunho. */
 const ANTECEDENTE_DA_CLASSE = {
-  barbaro: 'soldado', bardo: 'criminoso', bruxo: 'sabio', clerigo: 'acolito', druida: 'acolito', feiticeiro: 'sabio',
-  guerreiro: 'soldado', ladino: 'criminoso', mago: 'sabio', monge: 'acolito', paladino: 'soldado', patrulheiro: 'soldado',
+  barbaro: 'forasteiro', bardo: 'criminoso', bruxo: 'sabio', clerigo: 'acolito', druida: 'eremita', feiticeiro: 'sabio',
+  guerreiro: 'soldado', ladino: 'criminoso', mago: 'sabio', monge: 'eremita', paladino: 'nobre', patrulheiro: 'forasteiro',
 };
 
 export const nomeDaRaca = (raca, sexo, cor = 'vermelho') => {
@@ -116,7 +165,7 @@ export function novoRascunho(classe = 'guerreiro') {
   const r = {
     nome: '', sexo: 'F', raca: 'humano', cor: 'vermelho', classe, antecedente: ANTECEDENTE_DA_CLASSE[classe] ?? 'soldado',
     metodo: 'padrao', base: padraoDaClasse(classe), livres: [], periciasEscolhidas: [], periciasLivres: [],
-    historia: '', arte: null,
+    talentoVariante: null, historia: '', arte: null,
   };
   r.periciasEscolhidas = sugerirPericias(r);
   return r;
@@ -144,12 +193,36 @@ export function sugerirPericias(r) {
 /** Quantos pontos a compra está gastando. */
 export const custoDosPontos = (base) => ATRIBUTOS.reduce((s, a) => s + (CUSTO_DO_PONTO[base[a]] ?? 99), 0);
 
-/** Os atributos finais: a base, o bônus da raça e os +1 livres do meio-elfo. */
+/** Quantos +1 livres e quantas perícias livres a raça dá (o meio-elfo: dois e duas; o humano variante: dois e uma). */
+export const LIVRES_DA_RACA = { meioElfo: { atributos: 2, pericias: 2, semCarisma: true }, humanoVariante: { atributos: 2, pericias: 1 } };
+
+/** Os atributos finais: a base, o bônus da raça e os +1 livres (meio-elfo, humano variante). */
 export function atributosFinais(r) {
   const bonus = RACAS[r.raca]?.atributos ?? {};
+  const livres = LIVRES_DA_RACA[r.raca] ? (r.livres ?? []) : [];
   const out = {};
-  for (const a of ATRIBUTOS) out[a] = (r.base[a] ?? 8) + (bonus[a] ?? 0) + (r.raca === 'meioElfo' && r.livres?.includes(a) ? 1 : 0);
+  for (const a of ATRIBUTOS) out[a] = (r.base[a] ?? 8) + (bonus[a] ?? 0) + (livres.includes(a) ? 1 : 0);
   return out;
+}
+
+/**
+ * O herói do 1º nível, do jeito que o pré-requisito do talento o vê: os atributos finais, o treino de armadura da classe
+ * e se ele já conjura no 1º nível (bardo, bruxo, clérigo, druida, feiticeiro, mago; o paladino e o patrulheiro só no 2º).
+ */
+function heroiDoPrimeiroNivel(r) {
+  const def = CLASSES[r.classe];
+  const conjura = (def?.niveis?.[1] ?? []).some((f) => f === 'spellcasting' || f === 'pactMagic');
+  return {
+    abilities: atributosFinais(r), classe: r.classe, talentos: [], features: [],
+    armorTraining: [...(def?.armaduras ?? [])], weaponTraining: [...(def?.armas ?? [])], skills: [],
+    spellcasting: conjura ? { cantrips: [], prepared: [], sempreProntas: [], slotsMax: [0, 1] } : null,
+  };
+}
+
+/** Os talentos que o humano variante pode tomar no 1º nível, com o motivo dos que não pode: [{ id, motivo }]. */
+export function talentosDoVariante(r) {
+  const c = heroiDoPrimeiroNivel(r);
+  return Object.keys(TALENTOS_PHB).map((id) => ({ id, motivo: porqueNaoTalento(c, id) }));
 }
 
 /** O que falta para o rascunho virar herói: lista de frases (vazia = pode seguir). */
@@ -170,13 +243,22 @@ export function problemasDoRascunho(r) {
     if (valores.some((v) => !(v in CUSTO_DO_PONTO))) p.push('Na compra de pontos, cada atributo vai de 8 a 15.');
     else if (custoDosPontos(r.base) > PONTOS) p.push(`A compra passou de ${PONTOS} pontos (${custoDosPontos(r.base)}).`);
   } else p.push('Escolha como distribuir os atributos.');
-  if (r.raca === 'meioElfo') {
+  const livresDaRaca = LIVRES_DA_RACA[r.raca];
+  if (livresDaRaca) {
+    const quem = r.raca === 'meioElfo' ? 'Meio-elfo' : 'Humano variante';
     const livres = [...new Set(r.livres ?? [])];
-    if (livres.length !== 2 || livres.includes('cha') || livres.some((a) => !ATRIBUTOS.includes(a))) {
-      p.push('Meio-elfo: escolha dois atributos (fora o Carisma) para ganhar +1.');
+    if (livres.length !== livresDaRaca.atributos || (livresDaRaca.semCarisma && livres.includes('cha')) || livres.some((a) => !ATRIBUTOS.includes(a))) {
+      p.push(`${quem}: escolha dois atributos${livresDaRaca.semCarisma ? ' (fora o Carisma)' : ' diferentes'} para ganhar +1.`);
     }
     const ok = (r.periciasLivres ?? []).filter((s) => SKILLS[s]);
-    if (new Set(ok).size !== 2) p.push('Meio-elfo: escolha duas perícias quaisquer.');
+    if (new Set(ok).size !== livresDaRaca.pericias) p.push(`${quem}: escolha ${livresDaRaca.pericias === 1 ? 'uma perícia qualquer' : 'duas perícias quaisquer'}.`);
+  }
+  if (r.raca === 'humanoVariante') {
+    const t = r.talentoVariante;
+    const motivo = !t?.id ? 'escolha o talento' : talentosDoVariante(r).find((x) => x.id === t.id)?.motivo ?? null;
+    if (motivo) p.push(`Humano variante: ${t?.id && TALENTOS_PHB[t.id] ? `${motivo} (${t.id})` : motivo}.`);
+    const lista = TALENTOS_PHB[t?.id]?.atributo;
+    if (t?.id && Array.isArray(lista) && t.atributo && !lista.includes(t.atributo)) p.push('Humano variante: o +1 do talento vai num atributo que ele permite.');
   }
   const { quantas, de } = periciasDaClasse(r.classe);
   const fixas = periciasFixas(r);
@@ -201,7 +283,7 @@ export const novoId = (aleatorio = Math.random) => `pc-criado-${Math.floor(aleat
 export function definicaoDoRascunho(r, id = novoId()) {
   const raca = RACAS[r.raca];
   const sexo = r.sexo === 'M' ? 'M' : 'F';
-  const skills = [...new Set([...r.periciasEscolhidas, ...periciasFixas(r), ...(r.raca === 'meioElfo' ? r.periciasLivres : [])])];
+  const skills = [...new Set([...r.periciasEscolhidas, ...periciasFixas(r), ...(LIVRES_DA_RACA[r.raca] ? r.periciasLivres : [])])];
   const historia = String(r.historia ?? '').trim();
   return {
     id, criado: true,
@@ -216,8 +298,10 @@ export function definicaoDoRascunho(r, id = novoId()) {
     antecedente: nomeDoAntecedente(r.antecedente, sexo), antecedenteId: r.antecedente,
     origem: `${nomeDaRaca(r.raca, sexo, r.cor)}, ${nomeDoAntecedente(r.antecedente, sexo).toLowerCase()}.`,
     historia: historia ? [historia] : [],
-    motivo: '', traco: '', ideal: '', vinculo: '', defeito: '',
+    motivo: MOTIVO_DO_ANTECEDENTE[r.antecedente] ?? '', traco: '', ideal: '', vinculo: '', defeito: '',
     arte: r.arte ?? null,
+    // o TALENTO DO HUMANO VARIANTE, que `criacao.js montarHeroi` põe na ficha por cima do de origem
+    ...(r.raca === 'humanoVariante' && r.talentoVariante?.id ? { talentoDaRaca: { ...r.talentoVariante } } : {}),
     // o rascunho inteiro, para editar depois do jeito que foi feito
     rascunho: { ...structuredClone({ ...r, arte: null }) },
   };
@@ -238,6 +322,7 @@ export function definicaoValida(d) {
   if (!ATRIBUTOS.every((a) => Number.isInteger(d.abilities?.[a]) && d.abilities[a] >= 3 && d.abilities[a] <= 20)) return false;
   if (!Array.isArray(d.skills) || d.skills.some((s) => !SKILLS[s])) return false;
   if (d.arte != null && !arteValida(d.arte)) return false;
+  if (d.talentoDaRaca != null && (d.racaId !== 'humanoVariante' || !TALENTOS_PHB[d.talentoDaRaca.id])) return false;
   return true;
 }
 

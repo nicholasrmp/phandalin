@@ -14,9 +14,14 @@
 // se havia água no caminho.
 // Chega-se ao fim da última marcha: a noite no destino já é do lugar.
 //
-// Os LUGARES ficam em % da pintura (`art/vila/regiao.webp`, OpenArt). A
-// distância sai da pintura: a escala é tal que Phandalin–Poço da Coruja
-// Velha dá dois dias, como o Daran diz.
+// O MAPA é o OFICIAL do Obelisco ("Sword Coast region surrounding Phandalin", a versão de jogador), em
+// `public/mapas/oficial/regiao-jogador.webp` — arte da Wizards, só no disco, fora do repositório e da publicação. Sem
+// ele, a tela mostra a pintura do OpenArt (`art/vila/regiao.webp`), com os pinos em % dela.
+// A DISTÂNCIA sai sempre do mapa oficial (`rules/regiao-mapa.js`: 1 hexágono = 5 milhas), tenha ou não a imagem: é
+// ela que dá os dias de marcha e, com eles, quantos testes de encontro a viagem rola.
+// E a viagem SEGUE O TERRENO do mapa (`rules/regiao-rota.js`): o caminho mais barato, em que mata, colina e montanha
+// custam o dobro (o terreno difícil do Livro do Jogador: metade da marcha) e trilha e campo, o normal. A marcha do dia
+// gasta km EQUIVALENTES; o jogador vê os km de verdade, por onde passa, e a paisagem do dia é a do terreno dele.
 //
 // O estado da viagem mora em `app.campanha.viagem` e sobrevive a uma luta no
 // meio do caminho: a cena do encontro (`capitulo4-estrada.js`) devolve o grupo
@@ -31,6 +36,7 @@ import { darXp } from './nivel.js';
 import { telaDeSubirNivel } from '../view/nivel-tela.js';
 import { MISSOES } from './phandalin.js';
 import { visitarConyberry } from './conyberry.js';
+import { viagensPossiveis, viajarPorMagia } from './viagem-magica.js';
 import { makeRng, seedFromString } from '../core/rng.js';
 import {
   diaDeViagem, forragear, melhorForrageador, despensaDoGrupo,
@@ -58,6 +64,8 @@ import {
 import { makeMonster } from '../rules/monsters.js';
 import { passivePerception, skillBonus, rolarPericia } from '../rules/abilities.js';
 import { d20 } from '../core/dice.js';
+import { kmEntre, posicaoOficial } from '../rules/regiao-mapa.js';
+import { rotaEntre, terrenoDoTrecho, kmDeVerdade, resumoDaRota, pontosDaRota, NOME_DO_TERRENO } from '../rules/regiao-rota.js';
 
 export { ENCONTROS, sortearEncontro };
 
@@ -92,24 +100,37 @@ export const LOCAIS = [
   { id: 'castelo', nome: 'Castelo Dentefino', x: 51.9, y: 43.3, feito: 'sabeOCastelo', jogavel: true },
   // A Caverna Onda Eco: a 25 km a leste de Phandalin, nos vales das Montanhas Espada. Aparece quando alguém conta onde fica.
   { id: 'ondaEco', nome: 'Caverna Onda Eco', x: 74.0, y: 69.5, feito: 'sabeOndaEco', jogavel: true },
+  // O Repouso de Zorzula (o Obelisco, capítulo 5): um dia de marcha para o leste de Phandalin, nas Montanhas da Espada.
+  // Aparece quando a Gwyn acha o posto (a missão 'zorzula', `obelisco5-vila.js`).
+  { id: 'zorzula', nome: 'Repouso de Zorzula', x: 81.0, y: 67.0, missao: 'zorzula', jogavel: true },
+  // A Mina Hardyhammer (o Obelisco, capítulo 6): uns 24 km a sudoeste de Phandalin. Aparece com a missão da Halia.
+  { id: 'hardyhammer', nome: 'Mina Hardyhammer', x: 47.1, y: 78.1, missao: 'mineiros', jogavel: true },
+  // Talhundereth (o Obelisco, capítulo 6): o templo anão nas colinas a nordeste, que o mapa dos goblins marca e a Gwyn
+  // traduz. Aparece com a missão dos fragmentos.
+  { id: 'talhundereth', nome: 'Talhundereth', x: 76.0, y: 50.0, missao: 'fragmentos', jogavel: true },
   { id: 'neverwinter', nome: 'Neverwinter', x: 14.5, y: 30.8, sempre: true, cidade: true },
   { id: 'leilon', nome: 'Leilon', x: 39.0, y: 89.0, sempre: true, cidade: true },
 ];
+// cada lugar leva também a posição no mapa oficial, para a tela que o tiver
+for (const l of LOCAIS) l.oficial = posicaoOficial(l.id);
 const LOCAL = Object.fromEntries(LOCAIS.map((l) => [l.id, l]));
 
-const px = (l) => ({ x: l.x / 100 * LARG, y: l.y / 100 * ALT });
-const dist = (a, b) => Math.hypot(px(a).x - px(b).x, px(a).y - px(b).y);
-const KM_POR_PX = 2 * KM_POR_DIA / dist(LOCAL.phandalin, LOCAL.poco);
+/** A arte oficial da região (só no disco), e a proporção dela. */
+export const ARTE_OFICIAL_DA_REGIAO = { url: '/mapas/oficial/regiao-jogador.webp', proporcao: '1700 / 2216' };
 
 /**
  * Quilômetros e dias de marcha entre dois lugares, no ritmo escolhido
  * (`rules/marcha.js`). Sem ritmo, o normal: 36 km por dia.
  */
 export function trajeto(de, para, { ritmo = 'normal', horasExtras = 0, montaria = null } = {}) {
-  const km = Math.round(dist(LOCAL[de], LOCAL[para]) * KM_POR_PX / 2) * 2;
+  const rota = rotaEntre(de, para);
+  const km = rota?.km ?? kmEntre(de, para) ?? 0;
+  const kmMarcha = rota?.kmEquivalentes ?? km;
   return {
     km,
-    dias: diasDeMarcha(km, KM_POR_DIA, ritmo, horasExtras, { montaria }),
+    kmMarcha,
+    resumo: rota ? resumoDaRota(rota) : '',
+    dias: diasDeMarcha(kmMarcha, KM_POR_DIA, ritmo, horasExtras, { montaria }),
     porDia: kmPorDia(KM_POR_DIA, ritmo, horasExtras, { montaria }),
     montaria,
   };
@@ -124,6 +145,19 @@ export function trajeto(de, para, { ritmo = 'normal', horasExtras = 0, montaria 
 // sempre a mesma. `agua` diz se houve riacho, poço ou chuva de onde beber;
 // `calor` dobra a água do dia; `terreno` dá a CD de quem vai caçar e colher; `bioma` é o terreno do Explorador Natural.
 const PAISAGENS = [
+  // a TRILHA (a Trilha de Triboar, a Estrada Alta e os caminhos de carroça)
+  { texto: 'A trilha é de terra batida, com sulcos fundos de roda. Um marco de pedra a cada tanto, com a distância a Neverwinter raspada a faca.', terreno: 'comum', bioma: 'planicie', terrenoDoMapa: 'T' },
+  { texto: 'Um carroceiro solitário cruza com o grupo na trilha, puxando uma mula cansada. Ele não para, mas tira o chapéu.', terreno: 'comum', bioma: 'planicie', terrenoDoMapa: 'T' },
+  // a MATA (a Floresta de Neverwinter, Kryptgarden)
+  { texto: 'Dentro da mata, a luz chega verde e pouca. As raízes atravessam o caminho, e cada passo é escolhido.', terreno: 'farto', bioma: 'floresta', terrenoDoMapa: 'f', agua: true },
+  { texto: 'Árvores velhas, cobertas de musgo, e um silêncio de igreja. Alguma coisa grande se afasta no mato, sem se mostrar.', terreno: 'farto', bioma: 'floresta', terrenoDoMapa: 'f' },
+  // as COLINAS
+  { texto: 'Sobe e desce, sobe e desce: colinas de pedra solta e urze, e lá de cima mais colinas até o horizonte.', terreno: 'ermo', bioma: 'montanha', terrenoDoMapa: 'h' },
+  { texto: 'Um vale entre duas colinas, com um fio de água correndo entre as pedras. As pernas agradecem a descida.', terreno: 'comum', bioma: 'montanha', terrenoDoMapa: 'h', agua: true },
+  // a MONTANHA (as Montanhas da Espada, o Monte Hotenow)
+  { texto: 'Trilha de cabra na encosta, com o abismo de um lado. O vento corta, e o grupo anda colado na rocha.', terreno: 'ermo', bioma: 'montanha', terrenoDoMapa: 'm' },
+  { texto: 'Neve velha nas sombras da serra, mesmo agora. Derretida no cantil, é água boa.', terreno: 'ermo', bioma: 'montanha', terrenoDoMapa: 'm', agua: true },
+  // o CAMPO aberto
   { texto: 'Colinas baixas de capim amarelo, uma depois da outra. O vento não para.', terreno: 'comum', bioma: 'planicie' },
   { texto: 'Uma garoa fina o dia inteiro. À tarde, o sol sai bem a tempo de secar as capas.', agua: true, terreno: 'comum', bioma: 'planicie' },
   { texto: 'Rastros de carroça velhos na trilha, e um marco de pedra com um nome que ninguém consegue ler.', terreno: 'comum', bioma: 'planicie' },
@@ -178,11 +212,14 @@ export function abrirRegiao(app, { grupo, onde = 'phandalin' }) {
     const montaria = montariaDoGrupo();
     const porRitmo = Object.values(RITMOS).map((r) => ({ r, ...trajeto(reg.onde, l.id, { ritmo: r.id, montaria }) }));
     const normal = porRitmo.find((x) => x.r.id === 'normal');
+    // A VIAGEM POR MAGIA (`game/viagem-magica.js`): o Teletransporte e as outras, quando alguém do grupo as tem prontas
+    const magicas = viagensPossiveis(vivos(), reg.onde, l.id, { feitos });
     tela.esconder();
     const escolha = await narrar(app.root, {
       formato: 'painel',
       paginas: [{ titulo: l.nome, texto: [
-        `${km} km de ${LOCAL[reg.onde].nome}, com acampamento a cada noite.`,
+        `${km} km de ${LOCAL[reg.onde].nome}, com acampamento a cada noite.${normal.resumo ? ` O caminho: ${normal.resumo}.` : ''}`,
+        normal.kmMarcha > km ? `Mata, colina e montanha são terreno difícil: andam metade. Para a marcha, a viagem pesa como ${normal.kmMarcha} km de trilha.` : null,
         `Rações: o grupo leva ${d.racoes}, e a viagem pede ${normal.dias * vivos().length} em ritmo normal.${d.racoes < normal.dias * vivos().length ? ' O que faltar sai da caça e da colheita — ou da fome.' : ''}`,
         `Água: ${encheu > 0 ? `os cantis foram enchidos aqui (${encheu} litro(s)) e levam ` : 'os cantis levam '}${d.agua} litro(s), um dia para cada um. O resto é riacho, chuva ou magia.`,
         montaria
@@ -196,12 +233,30 @@ export function abrirRegiao(app, { grupo, onde = 'phandalin' }) {
           const nota = semGanho ? ' (os mesmos dias do passo normal, só com menos horas de estrada por dia)' : '';
           return `· ${x.r.nome}: ${x.porDia} km por dia, ${x.dias === 1 ? 'um dia' : `${x.dias} dias`}, ${x.dias * vivos().length} ração(ões)${nota} — ${x.r.resumo}.`;
         }),
-      ] }],
+      ].filter(Boolean) }],
       escolhas: [
         { rotulo: 'Ficar', valor: 'fica' },
         ...porRitmo.map((x) => ({ rotulo: x.r.nome, valor: x.r.id, primaria: x.r.id === 'normal' })),
+        ...magicas.map((m, i) => ({ rotulo: `${m.rotulo} (${m.detalhe})`, valor: `magia:${i}` })),
       ],
     });
+    if (typeof escolha === 'string' && escolha.startsWith('magia:')) {
+      const m = magicas[Number(escolha.slice(6))];
+      const rng = makeRng(seedFromString(`magia-${reg.onde}-${l.id}-${v.dia}-${camp.utilidade?.minutos ?? 0}`));
+      const conhecidos = LOCAIS.filter((x) => x.jogavel && conhecido(x)).map((x) => x.id);
+      const r = viajarPorMagia(camp, vivos(), rng, { c: m.c, spellId: m.spellId, de: reg.onde, para: l.id, conhecidos });
+      if (!r.ok) {
+        await narrar(app.root, { formato: 'painel', paginas: [{ titulo: m.rotulo, texto: [r.why] }] });
+        tela.mostrar();
+        return;
+      }
+      await narrar(app.root, { formato: 'painel', paginas: [{ titulo: m.rotulo, texto: r.texto }] });
+      reg.onde = r.chegou;
+      if (LOCAL[r.chegou]?.jogavel) { await entrar(LOCAL[r.chegou]); return; }
+      tela.atualizar?.();
+      tela.mostrar();
+      return;
+    }
     if (!RITMOS[escolha]) { tela.mostrar(); return; }
 
     // Marcha forçada: só vale perguntar quando ela encurta a viagem.
@@ -227,7 +282,7 @@ export function abrirRegiao(app, { grupo, onde = 'phandalin' }) {
     marcharEm(vivos(), escolha);
     camp.viagem = {
       de: reg.onde, para: l.id, dias: rota.dias, dia: 1, periodo: 'dia',
-      ritmo: escolha, horasExtras, kmRestantes: rota.km, porDia: rota.porDia, montaria,
+      ritmo: escolha, horasExtras, kmRestantes: rota.kmMarcha, kmMarcha: rota.kmMarcha, porDia: rota.porDia, montaria,
     };
     await seguirViagem();
   }
@@ -239,7 +294,12 @@ export function abrirRegiao(app, { grupo, onde = 'phandalin' }) {
     if (l.id === 'conyberry') {
       // Sem tabuleiro: a visita é uma conversa. Depois, a região de novo.
       feitos.visitou_conyberry = true;
-      await visitarConyberry(app, vivos());
+      const luta = await visitarConyberry(app, vivos());
+      // A banshee atacou (o Obelisco): a luta abre o tabuleiro da cabana, e é ela que devolve o grupo à região.
+      if (luta) {
+        app.newEncounter({ ...app.config, modo: 'campanha', capitulo: 4, cenaDaVila: 'covilAgatha', agatha: luta, continuarCom: vivos() });
+        return;
+      }
       abrirRegiao(app, { grupo, onde: 'conyberry' });
       return;
     }
@@ -256,6 +316,21 @@ export function abrirRegiao(app, { grupo, onde = 'phandalin' }) {
     if (l.id === 'ondaEco') {
       feitos.visitou_ondaEco = true;
       app.newEncounter({ ...app.config, modo: 'campanha', capitulo: 4, cenaDaVila: 'ondaEco', continuarCom: vivos() });
+      return;
+    }
+    if (l.id === 'talhundereth') {
+      feitos.visitou_talhundereth = true;
+      app.newEncounter({ ...app.config, modo: 'campanha', capitulo: 3, cenaDaVila: 'talhundereth', continuarCom: vivos() });
+      return;
+    }
+    if (l.id === 'hardyhammer') {
+      feitos.visitou_hardyhammer = true;
+      app.newEncounter({ ...app.config, modo: 'campanha', capitulo: 3, cenaDaVila: 'minaHardyhammer', continuarCom: vivos() });
+      return;
+    }
+    if (l.id === 'zorzula') {
+      feitos.visitou_zorzula = true;
+      app.newEncounter({ ...app.config, modo: 'campanha', capitulo: 3, cenaDaVila: 'zorzulaPosto', continuarCom: vivos() });
       return;
     }
     if (l.id === 'cume') {
@@ -275,6 +350,7 @@ export function abrirRegiao(app, { grupo, onde = 'phandalin' }) {
     // O dado da viagem é semeado como o resto do jogo, e o estado dele viaja
     // junto: uma luta no meio do caminho não rebobina a estrada.
     const rng = dadoDaViagem(camp, via);
+    tela?.atualizar();   // a rota aparece no mapa já na partida
     while ((via.kmRestantes ?? 0) > 0 || via.periodo === 'chegou') {
       // Grupo inteiro no chão: a viagem morre com ele. Sem isto o laço seguia
       // armando acampamento e escolhendo vigia para ninguém, e chegava ao
@@ -302,15 +378,24 @@ export function abrirRegiao(app, { grupo, onde = 'phandalin' }) {
         via.periodo = 'noite';
       }
       if (via.periodo === 'dia') {
-        const paisagem = rng.pick(PAISAGENS);
+        // A PAISAGEM DO DIA é a do terreno que a rota atravessa hoje (o que mais pesa no trecho).
+        const perfil = via.kmMarcha ? rotaEntre(via.de, via.para)?.perfil : null;
+        const feito = via.kmMarcha ? via.kmMarcha - (via.kmRestantes ?? 0) : 0;
+        const terrenoHoje = perfil ? terrenoDoTrecho(perfil, feito, feito + via.porDia) : null;
+        const doTerreno = terrenoHoje ? PAISAGENS.filter((p) => (p.terrenoDoMapa ?? '.') === terrenoHoje) : [];
+        const paisagem = rng.pick(doTerreno.length ? doTerreno : PAISAGENS.filter((p) => !p.terrenoDoMapa));
         // A noite acampa no terreno do dia.
         via.terrenoDoDia = paisagem.terreno ?? 'comum';
         // O dia anda o que o ritmo rende, ou o que falta — o que for menor.
         const kmHoje = Math.min(via.kmRestantes ?? via.porDia, via.porDia);
         const fracao = via.porDia > 0 ? kmHoje / via.porDia : 1;
-        registrar(`Dia ${v.dia}, a caminho de ${LOCAL[via.para].nome} (${Math.round(kmHoje)} km): ${paisagem.texto}`);
+        // o que se ANDA de verdade hoje: no terreno difícil, a mesma marcha rende metade
+        const kmDeVerdadeHoje = perfil ? kmDeVerdade(perfil, feito + kmHoje) - kmDeVerdade(perfil, feito) : kmHoje;
+        const ondeHoje = terrenoHoje ? `, por ${NOME_DO_TERRENO[terrenoHoje]}` : '';
+        registrar(`Dia ${v.dia}, a caminho de ${LOCAL[via.para].nome} (${Math.round(kmDeVerdadeHoje)} km${ondeHoje}): ${paisagem.texto}`);
         for (const t of await oDiaDoGrupo(rng, paisagem)) registrar(t);
         via.kmRestantes = Math.max(0, (via.kmRestantes ?? via.porDia) - kmHoje);
+        tela?.atualizar();   // o grupo anda na rota desenhada
         // Andou: a conta de paradas zera. Senão uma parada no começo da viagem
         // abortaria a próxima, dias depois, no primeiro degrau de exaustão.
         via.paradas = 0;
@@ -567,7 +652,7 @@ export function abrirRegiao(app, { grupo, onde = 'phandalin' }) {
     const estado = estadoDeUtilidade(camp);
     const herois = vivos();
     return {
-      cabana: Boolean(ativaDe(estado, herois, 'pequenaCabana')),
+      cabana: Boolean(ativaDe(estado, herois, 'pequenaCabana') || ativaDe(estado, herois, 'mansaoMagnificaDeMordenkainen')),
       chamaContinua: Boolean(ativaDe(estado, herois, 'chamaContinua')),
     };
   }
@@ -897,6 +982,15 @@ export function abrirRegiao(app, { grupo, onde = 'phandalin' }) {
     classe: 'regiao',
     pintura,
     proporcao: `${LARG} / ${ALT}`,
+    oficial: ARTE_OFICIAL_DA_REGIAO,
+    // a rota da viagem em curso, desenhada sobre o mapa oficial, e onde o grupo está nela
+    rota: () => {
+      const via = camp.viagem;
+      const r = via ? rotaEntre(via.de, via.para) : null;
+      if (!r) return null;
+      const feito = via.kmMarcha ? (via.kmMarcha - (via.kmRestantes ?? 0)) / via.kmMarcha : 0;
+      return { pontos: pontosDaRota(r), feito: Math.max(0, Math.min(1, feito)) };
+    },
     lugares: LOCAIS,
     estado: { missoes: v.missoes ?? {}, pistas: v.pistas ?? [], registro: (reg.registro ??= []) },
     grupo,

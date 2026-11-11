@@ -35,6 +35,12 @@ class_name = "LimitadorDO"
 name = "DIRETORIO"
 class_name = "DiretorioDO"
 
+# O diálogo com modelo: o caixa e as falas aprendidas num lugar só (src/worker/dialogo-do.js). Sem o segredo
+# ANTHROPIC_API_KEY (`wrangler secret put ANTHROPIC_API_KEY`) a rota responde 503 e o jogo usa o banco e as falas à mão.
+[[durable_objects.bindings]]
+name = "DIALOGO"
+class_name = "DialogoDO"
+
 [[migrations]]
 tag = "v1"
 new_sqlite_classes = ["SalaDO"]
@@ -49,8 +55,15 @@ new_sqlite_classes = ["LimitadorDO"]
 tag = "v3"
 new_sqlite_classes = ["DiretorioDO"]
 
+[[migrations]]
+tag = "v4"
+new_sqlite_classes = ["DialogoDO"]
+
 [vars]
 CODIGO_DO_SERVIDOR = "0"
+DIALOGO_MODELO = "claude-opus-5-5"
+# O gasto total do diálogo na publicação, em dólares. Estourou, os NPCs seguem com o banco e as falas à mão.
+DIALOGO_TETO_USD = "10"
 
 [observability]
 enabled = true

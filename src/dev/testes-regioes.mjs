@@ -8,7 +8,7 @@ import { makeParty } from '../rules/party.js';
 import { makeMonster } from '../rules/monsters.js';
 import { Battlefield } from '../core/grid.js';
 import { makeRng } from '../core/rng.js';
-import { prepararRegioes, alternarRegiao, armadilhasDasRegioes, regioesEm, descobrirRegiao } from '../rules/regioes.js';
+import { prepararRegioes, alternarRegiao, armadilhasDasRegioes, regioesEm } from '../rules/regioes.js';
 import { cortarNoPerigo } from '../game/armadilhas.js';
 import { montarCampo } from '../game/campo.js';
 import { limpar, novoMapa, porRegiao, regiaoNoRetangulo, regiaoNoPoligono, regiaoNaCasa, tirarRegiao, regioesEm as regioesDoMapa, redimensionar } from '../game/mapa-editor.js';
@@ -255,17 +255,21 @@ function ateALaje(enc, c) {
   return Campo.pathFrom(alcance, alvo);
 }
 
-teste('esconderijo: a laje é uma região escondida do mapa, de uma vez só, só para quem tem peso', () => {
+// A LAJE DO OBELISCO no mapa do esconderijo: não é armadilha escondida. Quem do grupo anda nela faz Acrobacia CD 10;
+// falhou, a encosta desce e pega a metade leste da passagem. Saber dela não livra ninguém do teste.
+teste('esconderijo: a laje é a do Obelisco — Acrobacia CD 10, uma vez só, só para o grupo, e não é escondida', () => {
   const { laje } = noEsconderijo();
   assert.ok(laje);
-  assert.equal(laje.escondida.cd, 12);
+  assert.deepEqual(laje.gatilho, { pericia: 'acrobacia', cd: 10 });
   assert.equal(laje.vezes, 1);
-  assert.equal(laje.tamanhoMinimo, 'medio');
+  assert.equal(laje.quem, 'grupo');
+  assert.equal(laje.escondida, undefined);
   assert.deepEqual([...laje.casas].sort(), PE.ressalto.map((p) => `${p.x},${p.y}`).sort());
 });
 
-teste('esconderijo: quem é Médio e pisa nela sem saber rola até o pé da passagem, ferido, e o desabamento acende', () => {
+teste('esconderijo: quem falha na Acrobacia derruba a laje, ferido, e o desabamento acende', () => {
   const { enc, field, party, eventos, laje } = noEsconderijo();
+  laje.gatilho = { pericia: 'acrobacia', cd: 99 };
   const dara = party[DARA];
   const acesas = [];
   const antes = field.alternarSobreposicao;
@@ -273,15 +277,15 @@ teste('esconderijo: quem é Médio e pisa nela sem saber rola até o pé da pass
   const pv = dara.hp;
   enc.moveAlong(dara, ateALaje(enc, dara));
   assert.ok(dara.hp < pv, 'levou o dano');
-  assert.ok(Math.max(Math.abs(dara.pos.x - PE.peDaPassagem.x), Math.abs(dara.pos.y - PE.peDaPassagem.y)) <= 1, `foi parar no pé da passagem (está em ${dara.pos.x},${dara.pos.y})`);
   assert.deepEqual(acesas, [['ressaltoCaido', true]]);
   assert.equal(laje.desligada, true, 'caída, não há mais laje');
   const ev = eventos.find((e) => e.type === 'regiao' && e.regiao.id === 'ressalto');
   assert.equal(ev.resultado.dano, pv - dara.hp, 'o evento traz o dano, para o painel da cena');
 });
 
-teste('esconderijo: o halfling, Pequeno, passa por ela sem quebrar', () => {
+teste('esconderijo: quem passa na Acrobacia atravessa, e a laje continua lá para o próximo', () => {
   const { enc, party, laje } = noEsconderijo();
+  laje.gatilho = { pericia: 'acrobacia', cd: 1 };
   const pip = party[PIP];
   const pv = pip.hp;
   enc.moveAlong(pip, ateALaje(enc, pip));
@@ -289,28 +293,61 @@ teste('esconderijo: o halfling, Pequeno, passa por ela sem quebrar', () => {
   assert.equal(laje.desligada, false);
 });
 
-teste('esconderijo: descoberta (o Investigar da cena, a passiva, o Procurar), o grupo passa por ela', () => {
-  const { enc, field, party, laje } = noEsconderijo();
-  assert.ok(descobrirRegiao(field, 'ressalto'));
-  const dara = party[DARA];
-  const pv = dara.hp;
-  enc.moveAlong(dara, ateALaje(enc, dara));
-  assert.equal(dara.hp, pv);
-  assert.equal(laje.desligada, false, 'continua lá: quem não sabe dela ainda pode cair');
+// A LAJE DO OBELISCO: o `gatilho` é um teste de perícia ANTES — passou, nada acontece e o disparo não se gasta;
+// falhou, o efeito pega a área do efeito (`casas`), que é maior que a da região: o entulho cai na passagem inteira.
+teste('gatilho: passou na Acrobacia, a laje aguenta; falhou, ela desaba e pega quem está na área do efeito', () => {
+  const laje = { id: 'laje', nome: 'a laje', casas: casas([3, 5]), vezes: 1, quem: 'grupo', gatilho: { pericia: 'acrobacia', cd: 10 },
+    efeitos: [{ tipo: 'dano', dados: '2d6', dano: 'concussão', teste: { atributo: 'dex', cd: 40, metade: true }, seFalhar: 'caido', alvo: 'todos', casas: casas([3, 5], [4, 5], [5, 5]) }] };
+  // CD 1: sempre passa
+  const a = montar({ regioes: [{ ...laje, gatilho: { pericia: 'acrobacia', cd: 1 } }] });
+  const pv = a.party[DARA].hp;
+  a.enc.moveAlong(a.party[DARA], linha(5, 1, 3));
+  assert.equal(a.party[DARA].hp, pv, 'passou no teste: nada');
+  assert.equal(a.field.regioes[0].disparos, 0, 'e o disparo não se gastou');
+  // CD 99: sempre falha, e a cobra a uma casa da laje, DENTRO da área do efeito, cai junto
+  const b = montar({ regioes: [{ ...laje, gatilho: { pericia: 'acrobacia', cd: 99 } }], foes: [['cobraVenenosaGigante', { x: 5, y: 5 }]] });
+  const cobra = b.foes[0];
+  const pvc = cobra.hp;
+  b.enc.moveAlong(b.party[DARA], linha(5, 1, 3));
+  assert.ok(hasCondition(b.party[DARA], 'caido'), 'quem pisou caiu');
+  assert.ok(cobra.hp < pvc && hasCondition(cobra, 'caido'), 'a cobra, fora da laje mas na área, levou o entulho');
+  assert.ok(b.field.regioes[0].desligada, 'uma vez só');
 });
 
-teste('esconderijo: a Percepção passiva que alcança a CD 12 para antes, e a cena mostra o que ele viu', () => {
-  const { enc, party, eventos } = noEsconderijo();
-  // o Brenn, anão, enxerga no escuro da caverna: a armadilha só se nota se o grupo a vê (como sempre foi)
-  const brenn = party[2];
-  [brenn.pos, party[DARA].pos] = [party[DARA].pos, brenn.pos];   // no lugar da Dara, de onde se chega à laje
-  const armas = armadilhasDasRegioes(enc);
-  assert.equal(armas.length, 1);
-  armas[0].cd = 0;   // a passiva de qualquer um alcança
-  const { evento } = cortarNoPerigo(enc, brenn, ateALaje(enc, brenn), armas);
-  assert.equal(evento?.tipo, 'notou');
-  evento.armadilha.notar(brenn, { mostrar: true });
-  assert.ok(eventos.some((e) => e.type === 'regiaoNotada'), 'o painel do que ele notou');
+// A COBRA NA ENCOSTA: vantagem contra quem está numa das casas que a cena diz (`vantagemContraEm`).
+teste('vantagem pela casa do alvo: a cobra ataca com vantagem quem luta na encosta', () => {
+  const { enc, party, foes } = montar({ foes: [['cobraVenenosaGigante', { x: 4, y: 5 }]], lugares: [{ x: 3, y: 5 }, { x: 1, y: 7 }, { x: 1, y: 9 }, { x: 1, y: 11 }] });
+  const [cobra] = foes;
+  const sem = JSON.stringify(enc.attackModifiers(cobra, party[DARA]));
+  cobra.vantagemContraEm = new Set(['3,5']);
+  cobra.vantagemContraEmMotivo = 'na encosta';
+  const com = JSON.stringify(enc.attackModifiers(cobra, party[DARA]));
+  assert.ok(!sem.includes('na encosta'), sem);
+  assert.ok(com.includes('na encosta'), com);
+  party[DARA].pos = { x: 5, y: 6 };
+  assert.ok(!JSON.stringify(enc.attackModifiers(cobra, party[DARA])).includes('na encosta'), 'fora da encosta, nada');
+});
+
+// O TETO BAIXO (o Obelisco, túneis da Onda Eco): Médio ou maior ataca corpo a corpo com desvantagem ali, menos com
+// arma leve.
+teste('teto baixo: arma que não é leve ataca com desvantagem, adaga não; fora do túnel, nada', () => {
+  const { enc, party, foes, log } = montar({ foes: [['goblin', { x: 4, y: 5 }]], lugares: [{ x: 3, y: 5 }, { x: 1, y: 7 }, { x: 1, y: 9 }, { x: 1, y: 11 }] });
+  const dara = party[DARA];
+  foes[0].hp = foes[0].maxHp = 999;
+  const golpe = (arma) => {
+    log.length = 0;
+    dara.actionUsed = false;
+    dara.atacouNoTurno = false;
+    enc.attackAction(dara, foes[0], arma);
+    return log.map((l) => `${l.text ?? ''} ${l.detail ?? ''} ${JSON.stringify(l.rolagem ?? '')}`).join(' | ');
+  };
+  const pesada = (dara.weapons ?? []).find((w) => !['adaga'].includes(w));
+  enc.field.tetoBaixo = new Set(['3,5']);
+  assert.ok(/teto baixo/.test(golpe(pesada)), `com ${pesada}, desvantagem`);
+  if (!(dara.weapons ?? []).includes('adaga')) dara.weapons.push('adaga');
+  assert.ok(!/teto baixo/.test(golpe('adaga')), 'com adaga, não');
+  enc.field.tetoBaixo = new Set();
+  assert.ok(!/teto baixo/.test(golpe(pesada)), 'fora do túnel, não');
 });
 
 console.log(`\n${total - falhas}/${total} testes das regiões passaram.`);

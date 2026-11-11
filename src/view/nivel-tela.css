@@ -30,3 +30,6 @@
   border-radius: 6px;
 }
 .nivel-nota { color: var(--muted); }
+/* A página do aumento ou talento: a frase do que a opção faz ocupa a linha inteira, e a regra do livro vem menor. */
+.nivel-escolha .nivel-nota { flex-basis: 100%; margin: 2px 0 0; }
+.nivel-escolha .nivel-regra { font-size: 12px; opacity: 0.85; }

@@ -92,12 +92,160 @@ export const GOBLINOIDES = {
     expertise: ['furtividade'],
     attacks: [
       { name: 'Cimitarra', bonus: 4, damage: '1d6+2', type: 'cortante', reachFt: 5, art: 'sword' },
-      { name: 'Azagaia', bonus: 4, damage: '1d6+2', type: 'perfurante', ranged: true, rangeFt: 30, longRangeFt: 120, art: 'javelin' },
+      // A AZAGAIA É DE FORÇA, e a do chefe é 10: +2 e 1d6, como no livro. Estava +4 e 1d6+2, os números da
+      // cimitarra, que é de acuidade. Achado ao montar o arqueiro do Obelisco, que é este bloco com arco.
+      { name: 'Azagaia', bonus: 2, damage: '1d6', type: 'perfurante', ranged: true, rangeFt: 30, longRangeFt: 120, art: 'javelin' },
     ],
-    // Dois ataques; o segundo com desvantagem.
-    multiattack: { count: 2, secondAtDisadvantage: true },
+    // Dois ataques DE CIMITARRA; o segundo com desvantagem. Sem a sequência, o motor dava duas azagaias também.
+    multiattack: { count: 2, sequence: ['Cimitarra', 'Cimitarra'], secondAtDisadvantage: true },
     traits: ['nimbleEscape', 'redirectAttack'],
     blurb: 'Dois ataques por turno e, de reação, troca de lugar com um goblin ao lado para o golpe acertar o capanga. Mate o capanga primeiro e a reação dele morre.',
+  },
+
+  // OS GOBLINS PSÍQUICOS DOS SAWPLEE (o Obelisco, capítulo 5): goblins de um clã que vive há gerações no posto que os
+  // devoradores de mente tomaram, e que herdou o que eles deixaram na cabeça. Aberrações goblinoides, resistentes a
+  // psíquico, com telepatia; os dois explodem ao morrer (`explosaoMental`) e têm vantagem contra encanto e medo
+  // (`fortitudeMental`).
+  goblinPsiLutador: {
+    id: 'goblinPsiLutador',
+    name: 'Goblin Psíquico Lutador',
+    look: 'goblin',
+    fonte: 'PaBTSO',
+    tipo: 'aberração',
+    size: 'pequeno',
+    level: 4,
+    cr: '2',
+    xp: 450,
+    abilities: { str: 9, dex: 17, con: 12, int: 16, wis: 15, cha: 10 },
+    voice: 'yellGoblin',
+    ac: 15,
+    acNote: 'couro batido',
+    maxHp: 31,
+    hpDice: '7d6+7',
+    speedFt: 30,
+    senses: { darkvisionFt: 60 },
+    saves: ['int', 'wis'],
+    skills: ['furtividade'],
+    expertise: ['furtividade'],
+    resist: ['psíquico'],
+    attacks: [
+      // Golpe desarmado com a mente por trás: 1d4+3 de concussão e mais 1d6 psíquico.
+      { name: 'Golpe Desarmado', bonus: 5, damage: '1d4+3', type: 'concussão', reachFt: 5, art: 'mace', danoExtra: { damage: '1d6', type: 'psíquico' } },
+    ],
+    multiattack: { count: 2 },
+    explosaoMental: { dano: '2d4', cd: 13 },
+    traits: ['nimbleEscape', 'explosaoMental', 'fortitudeMental', 'empurraoTelecinetico'],
+    blurb: 'Dois socos carregados de mente. De ação bônus, derruba quem vê a 9 m (Força CD 13) ou some (Escapada Ágil). Ao morrer, explode: Inteligência CD 13 ou 2d4 psíquicos em quem está colado.',
+  },
+
+  goblinPsiComandante: {
+    id: 'goblinPsiComandante',
+    name: 'Goblin Psíquico Comandante',
+    look: 'goblinBoss',
+    fonte: 'PaBTSO',
+    tipo: 'aberração',
+    size: 'pequeno',
+    level: 7,
+    cr: '4',
+    xp: 1100,
+    abilities: { str: 12, dex: 19, con: 13, int: 17, wis: 15, cha: 10 },
+    voice: 'yellGoblin',
+    ac: 16,
+    acNote: 'couro batido',
+    maxHp: 58,
+    hpDice: '13d6+13',
+    speedFt: 30,
+    senses: { darkvisionFt: 60 },
+    saves: ['int', 'wis'],
+    skills: ['furtividade'],
+    expertise: ['furtividade'],
+    resist: ['psíquico'],
+    attacks: [
+      // A LÂMINA PSÍQUICA: de perto ou a 18 m; quem leva perde 1d4 no próximo ataque ou resistência.
+      { name: 'Lâmina Psíquica', bonus: 6, damage: '2d6+4', type: 'psíquico', reachFt: 5, art: 'sword', magico: true,
+        onHit: { semResistencia: true, condition: 'laminaPsiquica', rounds: 1, note: 'perde 1d4 no próximo ataque ou resistência' } },
+      { name: 'Lâmina Psíquica (longe)', bonus: 6, damage: '2d6+4', type: 'psíquico', ranged: true, rangeFt: 60, longRangeFt: 60, art: 'sword', magico: true,
+        onHit: { semResistencia: true, condition: 'laminaPsiquica', rounds: 1, note: 'perde 1d4 no próximo ataque ou resistência' } },
+    ],
+    multiattack: { count: 3 },
+    explosaoMental: { dano: '4d4', cd: 13 },
+    // A psiônica do livro: Mão Mágica e Ilusão Menor à vontade; uma vez por dia cada, Enfeitiçar Pessoa, Sussurros
+    // Dissonantes e Telecinese (`ai.js psionicaDoComandante`; a Telecinese é `combat.js telecinese`). CD 13, Inteligência.
+    spellcasting: {
+      ability: 'int', cantrips: ['maoMagica', 'ilusaoMenor'], prepared: ['enfeiticarPessoa', 'sussurrosDissonantes'], slots: [],
+      porDia: { enfeiticarPessoa: 1, sussurrosDissonantes: 1 }, cdPorMagia: { enfeiticarPessoa: 13, sussurrosDissonantes: 13 },
+      inataPsionica: true, noMotor: true,
+    },
+    traits: ['nimbleEscape', 'explosaoMental', 'fortitudeMental', 'escudoPsionico', 'rasgoSinaptico', 'psionicaDoComandante'],
+    blurb: 'Três Lâminas Psíquicas de perto ou a 18 m (quem leva perde 1d4 no próximo d20). Recarga 5–6: Rasgo Sináptico, esfera de 9 m que incapacita quem falha em Inteligência CD 13. De reação, +3 de CA num aliado a 4,5 m. Explode ao morrer (4d4).',
+  },
+
+  // RUXITHID, O ESCOLHIDO (o Obelisco, capítulo 5): o chefe dos Sawplee, com um cristal cravado no crânio por onde os
+  // "deuses" falam. Paira, bate com a cimitarra carregada de mente, fura o cérebro de alguém com os Tentáculos
+  // Cerebrais e manda um aliado bater de reação (`comandoDeCombate`). Resistência Lendária 2/dia.
+  ruxithid: {
+    id: 'ruxithid',
+    name: 'Ruxithid, o Escolhido',
+    look: 'ruxithid',
+    fonte: 'PaBTSO',
+    tipo: 'aberração',
+    size: 'médio',
+    level: 8,
+    cr: '5',
+    xp: 1800,
+    abilities: { str: 14, dex: 19, con: 12, int: 18, wis: 15, cha: 12 },
+    voice: 'yellGoblin',
+    ac: 15,
+    acNote: 'camisão de malha',
+    maxHp: 88,
+    hpDice: '16d8+16',
+    speedFt: 30,
+    speeds: { walkFt: 30, flyFt: 30 },
+    hover: true,
+    senses: { darkvisionFt: 60 },
+    saves: ['int', 'wis'],
+    skills: ['intuicao', 'percepcao', 'furtividade'],
+    expertise: ['furtividade'],
+    resist: ['psíquico'],
+    attacks: [
+      { name: 'Cimitarra Psíquica', bonus: 7, damage: '2d6+4', type: 'cortante', reachFt: 5, art: 'sword', danoExtra: { damage: '2d6', type: 'psíquico' } },
+    ],
+    multiattack: { count: 2 },
+    recursos: { resistenciaLendaria: 2 },
+    traits: ['resistenciaLendaria', 'fortitudeMental', 'tentaculosCerebrais', 'comandoDeCombate'],
+    blurb: 'Paira e bate duas vezes com a cimitarra (2d6+4 e 2d6 psíquicos). Ação bônus: Tentáculos Cerebrais (Destreza CD 15 ou atordoado) ou manda um aliado bater. Passa em duas resistências que falharia.',
+  },
+
+  // O CASTELO, C3: dois em cada posto de arqueiros. É o Chefe Goblin com arco curto no lugar da azagaia — o
+  // Obelisco o criou assim, e o resto do bloco é o mesmo.
+  chefeGoblinArqueiro: {
+    id: 'chefeGoblinArqueiro',
+    name: 'Chefe Goblin Arqueiro',
+    look: 'goblinBoss',
+    fonte: 'PaBTSO',
+    size: 'pequeno',
+    level: 3,
+    cr: '1',
+    xp: 200,
+    abilities: { str: 10, dex: 14, con: 10, int: 10, wis: 8, cha: 10 },
+    voice: 'yellGoblin',
+    ac: 17,
+    acNote: 'camisão de malha, escudo',
+    maxHp: 21,
+    hpDice: '6d6',
+    speedFt: 30,
+    senses: { darkvisionFt: 60 },
+    skills: ['furtividade'],
+    expertise: ['furtividade'],
+    tatica: 'atirador',
+    attacks: [
+      { name: 'Arco curto', bonus: 4, damage: '1d6+2', type: 'perfurante', ranged: true, rangeFt: 80, longRangeFt: 320, art: 'bow' },
+      { name: 'Cimitarra', bonus: 4, damage: '1d6+2', type: 'cortante', reachFt: 5, art: 'sword' },
+    ],
+    // Os dois golpes são de cimitarra; o arco atira uma vez por turno.
+    multiattack: { count: 2, sequence: ['Cimitarra', 'Cimitarra'], secondAtDisadvantage: true },
+    traits: ['nimbleEscape', 'redirectAttack'],
+    blurb: 'O chefe goblin de arco: atira de longe, troca de lugar com o capanga quando é mirado, e de perto ainda tem a cimitarra duas vezes.',
   },
 
   hobgoblin: {
@@ -196,8 +344,8 @@ export const GOBLINOIDES = {
     name: 'Rei Grol',
     look: 'reiGrol',
     // O BUGBEAR DA AVENTURA: o bloco do SRD com os PONTOS DE VIDA DO LIVRO.
-    // A aventura o descreve como "um bugbear velho e feroz com 45 pontos de
-    // vida" (pág. 40), e não como um bugbear comum de 27. O resto — CA 16, a
+    // A aventura dá a ele 45 PV, por ser velho e bravo (pág. 40), e não os 27
+    // de um bugbear comum. O resto — CA 16, a
     // clava de 2d8+2 com Brutamontes, o Ataque Surpresa — é o bloco do SRD,
     // sem reforço nosso: já tentamos um chefe inventado (duas machadadas e um
     // grito de guerra) e isso levava o quarto de 1.900 para 2.900 de XP
@@ -261,9 +409,11 @@ export const GOBLINOIDES = {
     expertise: ['furtividade'],
     attacks: [
       { name: 'Punhal', bonus: 4, damage: '1d4+2', type: 'perfurante', reachFt: 5, art: 'dagger' },
-      { name: 'Azagaia', bonus: 4, damage: '1d6+2', type: 'perfurante', ranged: true, rangeFt: 30, longRangeFt: 120, art: 'javelin' },
+      // A azagaia é de Força (10): +2 e 1d6, como a do Chefe Goblin — o mesmo engano estava nos dois blocos.
+      { name: 'Azagaia', bonus: 2, damage: '1d6', type: 'perfurante', ranged: true, rangeFt: 30, longRangeFt: 120, art: 'javelin' },
     ],
-    multiattack: { count: 2, secondAtDisadvantage: true },
+    // Os dois golpes são de lâmina; a azagaia vai uma vez por turno.
+    multiattack: { count: 2, sequence: ['Punhal', 'Punhal'], secondAtDisadvantage: true },
     traits: ['nimbleEscape', 'redirectAttack'],
     blurb: 'Fica atrás dos capangas e empurra um deles para receber o golpe que era dele. Chegue até ele por fora do bando, ou nenhum dano o alcança.',
   },
@@ -298,6 +448,10 @@ export const GOBLINOIDES = {
 
 /** Traços novos desta família, somados ao dicionário geral. */
 export const TRAITS = {
+  psionicaDoComandante: {
+    name: 'Psiônica',
+    desc: 'Mão Mágica e Ilusão Menor à vontade; uma vez por dia cada, Enfeitiçar Pessoa, Sussurros Dissonantes e Telecinese (Inteligência, CD 13).',
+  },
   // Brutamontes está EMBUTIDO nos dados de dano dos ataques (é assim que o
   // bloco do SRD o escreve), então o motor não precisa somar nada. A entrada
   // existe para o HUD explicar ao jogador de onde vem o 2d8.

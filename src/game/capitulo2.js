@@ -61,23 +61,26 @@ import { garantirInventario } from '../rules/equipment.js';
 import { criarBuscas } from './buscas.js';
 import { PONTOS_DO_ESCONDERIJO as PE } from './esconderijo.js';
 import { fogueiraAcesa } from './fogo.js';
-import { descobrirRegiao } from '../rules/regioes.js';
+import { disparar } from '../rules/regioes.js';
+import { makeMonster } from '../rules/monsters.js';
 
 const MOVIMENTO = 60;
 // Os 275 XP do esconderijo (o marco do livro) pagos conforme as salas caem; o que sobra sai ao limpar tudo (`fimDoCapitulo`).
 // Os vigias e a ponte ficam no caminho do covil: 75 + 100 + 125 = 300, o 2º nível, antes do covil e do Klarg. Quem pula uma
 // sala (a chaminé do canil, a boca do túnel) recebe o que faltou no fim (`fimDoCapitulo`): o total segue 350 para todos.
-const PARCELAS_DO_ESCONDERIJO = { vigias: 100, ponte: 125, pocos: 50 };
+// A cobra do ressalto (o Obelisco) vale 50 XP no bloco, e a parcela é por herói: 50 dividido pelos quatro.
+const PARCELAS_DO_ESCONDERIJO = { vigias: 100, ponte: 125, pocos: 50, cobra: 12 };
 
 // `clima` é o que se sente ao chegar: cheiro, som e o sinal de quem vive ali. Entra antes do aviso de combate, para a sala não ser só um
 // número de goblins. Texto nosso.
 const SALAS = {
   vigias: { nome: 'o posto dos vigias', em: 'no mato', clima: 'Cheiro de fumaça fria e de casca de fruta podre; um dado de osso rola, esquecido, na tábua de um abrigo de ripas.' },
   canil: { nome: 'o canil', em: 'no canil', clima: 'O fedor de pelo molhado vem antes de tudo. Correntes arrastam no escuro, e algo grande rosna baixo, sem pressa.' },
+  cobra: { nome: 'a subida', em: 'na subida', clima: 'O entulho da subida estala sob o pé. Há um cheiro seco, de pele velha largada, e um silvo que parece vento até deixar de parecer.' },
   ponte: { nome: 'a ponte', em: 'na ponte', clima: 'O riacho corre ruidoso embaixo, abafando passos. As tábuas da ponte estão remendadas com portas velhas e cordas de tripa.' },
-  covil: { nome: 'o covil', em: 'no covil', clima: 'Fumaça de cozinha e couro mal curtido enchem o ar. Colchões de palha, ossos roídos e uma panela que ferve sozinha numa fogueira baixa.' },
+  covil: { nome: 'o covil', em: 'no covil', clima: 'Alguém está cozinhando, e o que quer que seja já cozinha há tempo demais. A fumaça fica parada à meia altura, e por baixo dela há colchões de palha amassados, ossos roídos jogados onde caíram e um cheiro azedo de pele que não acabou de curtir.' },
   pocos: { nome: 'os poços', em: 'nos poços', clima: 'Água parada em tanques escuros, e o gotejar que não para. Caixas de madeira marcadas com um leão azul estão empilhadas num canto, abertas à força.' },
-  chefe: { nome: 'a caverna de Klarg', em: 'na caverna de Klarg', clima: 'A caverna é quente e cheira a carne velha. Peles esticadas, crânios de lobo nos espetos e uma fogueira no meio, onde alguma coisa grande dorme sentada num trono de ossos.' },
+  chefe: { nome: 'a caverna de Klarg', em: 'na caverna de Klarg', clima: 'O calor aqui é de forno, e o cheiro é de carne deixada de molho. A luz vem de uma fogueira no meio do chão, e o que ela ilumina primeiro são os espetos fincados em volta, com crânio de lobo em cada um. Atrás deles, peles esticadas para secar. Mais atrás, encostada no fundo e maior do que devia ser, uma coisa dorme sentada.' },
 };
 
 // A PLANTA é a do battlemap da FA (`game/esconderijo.js`, gerado por `src/dev/mapa-esconderijo-fa.mjs`). Este
@@ -86,9 +89,23 @@ const salaDe = (field, p) => field.sala?.get(`${p.x},${p.y}`) ?? null;
 const naLista = (lista, p) => lista.some((q) => q.x === p.x && q.y === p.y);
 
 // Cruzar o riacho lá fora para o lado dos vigias. O riacho corre em x 10–11; quem pisa nele ou além, a céu aberto,
-// está atravessando. SÓ a céu aberto: a boca da caverna (y ≤ 13) fica de fora, senão não sobrava casa de entrada
-// sem gatilho — quem sobe pela clareira oeste e entra pela boca passa pelos vigias, como no livro.
+// está atravessando.
 const atravessou = (field, p) => p.y >= 14 && p.x >= 10 && ['fora', 'vigias'].includes(salaDe(field, p));
+
+// E O POSTO VIGIA A BOCA, que é o trabalho dele. Durante um tempo o gatilho dos vigias era SÓ a linha de cima, e o
+// `y >= 14` dela abria um buraco que eu medi no motor: a fileira y = 13 em x 10–12 é sala `passagem` — a goela da
+// caverna — a QUINZE PÉS do abrigo de ripas e à vista dos dois goblins, e a casa (13,13) fica dentro da própria
+// sala `vigias`. Pelo lado seco OESTE da água dava para sair da grama em (9,13), pisar em (10,13) e subir inteiro
+// para dentro do esconderijo sem que os vigias existissem: cem de XP e o aviso ao Klarg ficavam no mato para
+// sempre. Medido: do lado de fora o grupo chega a 55–60 pés e os vigias já o veem, então visão sozinha dispararia
+// na chegada; é o `x >= 10` que guarda a clareira da trilha (área 1, a oeste da água, onde o livro põe o grupo), e
+// com ele até 30 pés de raio não acende nada lá. A 20 pés o laço fecha a boca (y 12 e 13) e deixa em paz a goela
+// funda (y 11 a 25 pés, y 10 a 30), que é assunto das outras salas. O riacho ainda decide o TEXTO: quem entra pelo
+// lado seco não "atravessa o riacho" nenhum, e dizer que atravessou seria mentir para o jogador.
+const NA_BOCA = ['fora', 'vigias', 'passagem'];
+const OLHO_DO_POSTO_FT = 20;
+const olhoDoPosto = (field, postos, p) => p.x >= 10 && NA_BOCA.includes(salaDe(field, p))
+  && postos.some((f) => distanceFt(f.pos, p) <= OLHO_DO_POSTO_FT && field.hasLineOfSight(f.pos, p));
 
 // A passagem por onde a enchente desce (livro, área 5): a passagem da área 4 e os degraus da área 3 — e o canal
 // sob a ponte, que é a mesma água. Quem está na ponte, no anel alto ou no canil propriamente dito fica fora: é o
@@ -252,7 +269,7 @@ export function criarCapitulo2(app, config) {
       formato: 'painel',
       paginas: [{
         texto: [
-          'A trilha acaba numa caverna larga no pé de um morro, cercada de mato fechado. Um riacho sai lá de dentro; do lado direito dele, uma faixa estreita de chão seco leva para a boca.',
+          'O barulho de água chega antes da caverna. É um riacho raso, que sai de dentro do morro e cruza a trilha onde ela acaba — e é só seguindo-o de volta que se vê a boca: larga, baixa, aberta no pé da encosta e meio escondida pelo mato fechado que cresceu em volta dela. Pela margem direita da água corre uma faixa de chão seco, estreita o bastante para passar um de cada vez, e ela vai dar lá dentro.',
           semVisao.length
             ? `Lá dentro é breu. ${semVisao.length > 1 ? `${semVisao.slice(0, -1).join(', ')} e ${semVisao.at(-1)} não enxergam` : `${semVisao[0]} não enxerga`} no escuro: botão direito num herói acende a tocha — que também mostra o grupo a quem está no escuro.`
             : 'Lá dentro é breu, mas todos aqui enxergam no escuro até 60 pés.',
@@ -272,6 +289,7 @@ export function criarCapitulo2(app, config) {
     for (const g of pendentes()) {
       if (g.id === 'vigias') { if (await vigias(g, c)) return; continue; }
       if (g.id === 'ponte') { if (await ponte(g)) return; continue; }
+      if (g.id === 'cobra') { if (await cobra(g)) return; continue; }
       if (g.id === 'canil') { if (await canil(g)) return; continue; }
       if (g.id === 'chefe' && estado.klargAvisado) {
         // Avisado, Klarg se esconde atrás das estalagmites e espera.
@@ -318,15 +336,24 @@ export function criarCapitulo2(app, config) {
 
   // ------------------------------------------------------------- área 2 ----
   async function vigias(g, c) {
-    if (!atravessou(enc.field, c.pos)) return false;
-    // Quem atravessa com cuidado pode pegar os vigias distraídos.
+    const postos = hostis(g);
+    const naAgua = atravessou(enc.field, c.pos);
+    if (!naAgua && !olhoDoPosto(enc.field, postos, c.pos)) return false;
+    // Dois caminhos levam ao mesmo teste: molhar o pé no riacho, ou entrar pela boca debaixo do olho do posto.
+    const molhou = naAgua || enc.field.surfaceAt(c.pos.x, c.pos.y) === 'riacho';
+    // Quem chega com cuidado pode pegar os vigias distraídos.
     const r = rolarPericia(enc.rng, c, 'furtividade');
-    const atencao = Math.max(...hostis(g).map((f) => passivePerception(f)));
+    const atencao = Math.max(...postos.map((f) => passivePerception(f)));
     const furtivo = r.total > atencao;
+    const comoChegou = molhou
+      ? [`${c.name} atravessa o riacho sem barulho e vê, entre o mato,`,
+        `${c.name} atravessa o riacho e um galho estala. Do meio do mato, atrás de`]
+      : [`${c.name} entra pela boca da caverna pela faixa seca, sem molhar o pé, e vê, ali do outro lado da água,`,
+        `${c.name} entra pela boca da caverna e pisa num graveto. Ali do outro lado da água, atrás de`];
     await asArmas(furtivo
-      ? [`${c.name} atravessa o riacho sem barulho e vê, entre o mato, um abrigo de ripas: dois goblins ali, um cochilando, o outro coçando a orelha.`,
+      ? [`${comoChegou[0]} um abrigo de ripas: dois goblins ali, um cochilando, o outro coçando a orelha, e um terceiro, mais largo, de costas, comendo alguma coisa.`,
         `Furtividade ${r.total}: os vigias não perceberam nada.`]
-      : [`${c.name} atravessa o riacho e um galho estala. Do meio do mato, atrás de umas ripas de madeira, dois goblins se levantam de arco na mão.`,
+      : [`${comoChegou[1]} umas ripas de madeira, dois goblins se levantam de arco na mão, e um terceiro, mais largo, grita com eles.`,
         'Ninguém é surpreendido.']);
     await combate(g, furtivo ? 'nossa' : null);
     return true;
@@ -372,7 +399,27 @@ export function criarCapitulo2(app, config) {
     }
     await asArmas('As correntes estalam: os três lobos se jogam para a frente até onde o ferro deixa, babando.');
     await combate(g, null);
+    curiososDoCanil();
     return true;
+  }
+
+  // O BARULHO DO CANIL (o Obelisco): os goblins de perto ignoram rosnado, mas BRIGA com os lobos traz 1d4 deles para
+  // ver, duas rodadas depois. Chegam pela passagem, do lado de baixo.
+  function curiososDoCanil() {
+    const n = enc.rng.die(4);
+    const curiosos = Array.from({ length: n }, (_, i) => {
+      const f = makeMonster('goblin', { ...PE.peDaPassagem }, { nameSuffix: `curioso ${'ABCD'[i]}` });
+      f.grupo = 'canil';
+      f.facingVec = { dx: 1, dy: 1 };
+      return f;
+    });
+    grupos.canil.membros.push(...curiosos);
+    let veio = false;
+    enc.reinforcements = (rodada) => {
+      if (veio || rodada < 3 || estado.lutando !== grupos.canil) return null;
+      veio = true;
+      return { units: curiosos, aviso: `${n === 1 ? 'Um goblin chega' : `${n} goblins chegam`} pela passagem para ver que barulho é esse.` };
+    };
   }
 
   /** Os lobos acorrentados puxam a corrente quando veem alguém fora do alcance. */
@@ -401,15 +448,43 @@ export function criarCapitulo2(app, config) {
     // "matar o Serrote primeiro" virava a jogada dominante — medido em 1500
     // lutas: 99,1% de vitória contra 93,9%, e em 41% delas Klarg saía da
     // caverna sem ter dado um só golpe.
+    // KLARG FOGE QUANDO NÃO SOBRA NINGUÉM DO LADO DELE (o Obelisco): os goblins e o Serrote lutam até a morte, e
+    // caídos todos ele desce pela chaminé. A regra antiga (fugir com o lobo morto e meia vida) era nossa.
     if (m === klarg && !klarg.dead) {
-      if (!klarg.fugindo && serrote?.dead && klarg.hp * 2 <= klarg.maxHp) {
+      const aliados = grupos.chefe.membros.filter((f) => f !== klarg && enc.combatants.includes(f));
+      if (!klarg.fugindo && aliados.every((f) => f.dead || hasCondition(f, 'inconsciente'))) {
         klarg.fugindo = true;
-        enc.say('acao', 'Klarg sangra, olha o Serrote caído e decide que esta caverna não vale a pele dele.');
+        enc.say('acao', 'Klarg olha em volta, não vê ninguém de pé do lado dele, e decide que esta caverna não vale a pele dele.');
       }
       if (klarg.fugindo) return fugirPelaChamine();
     }
     return false;
   };
+
+  /** O chefe do posto caiu: os vigias que sobram fogem para o canil e soltam os lobos, que vêm para a briga. */
+  function lobosSoltos() {
+    if (estado.lobosSoltos || estado.lutando !== grupos.vigias) return;
+    estado.lobosSoltos = true;
+    const correm = hostis(grupos.vigias).filter((f) => !hasCondition(f, 'inconsciente'));
+    for (const f of correm) {
+      f.fugiu = true;
+      const i = enc.combatants.indexOf(f);
+      if (i >= 0) enc.combatants.splice(i, 1);
+    }
+    const lobos = hostis(grupos.canil).filter((f) => f.defId === 'lobo');
+    if (correm.length && lobos.length) {
+      for (const l of lobos) { l.corrente = null; l.grupo = 'vigias'; }
+      grupos.vigias.membros.push(...lobos);
+      grupos.canil.membros = grupos.canil.membros.filter((f) => !lobos.includes(f));
+      // Entram já na luta, lá do canil: só agem no próximo turno do lado deles, e têm o caminho todo para correr.
+      for (const l of lobos) if (!enc.combatants.includes(l)) enc.addCombatant(l);
+      enc.say('acao', `Com o chefe no chão, ${correm.length > 1 ? 'os vigias largam os arcos e correm' : 'o vigia larga o arco e corre'} caverna adentro, gritando. Lá dentro, ferro raspa em pedra, e três lobos soltos vêm pela boca da caverna.`);
+    } else if (correm.length) {
+      enc.say('acao', `Com o chefe no chão, ${correm.length > 1 ? 'os vigias correm' : 'o vigia corre'} caverna adentro.`);
+    }
+    enc.checkEnd();
+    app.refresh();
+  }
 
   function acalmarLobos(c) {
     const g = grupos.canil;
@@ -474,9 +549,13 @@ export function criarCapitulo2(app, config) {
   }
 
   // ------------------------------------------------------------- área 4 ----
-  // A LAJE RACHADA DO RESSALTO é uma REGIÃO do mapa (`encounter.js`, `rules/regioes.js`): a passiva que nota antes, o
-  // Procurar, o Encontrar Armadilhas, o tombo e o desenho do desabamento são todos do motor. O capítulo só conta a queda.
+  // A LAJE DO RESSALTO é uma REGIÃO do mapa (`encounter.js`, `rules/regioes.js`): a Acrobacia de quem anda em cima, o
+  // desabamento sobre a metade leste da passagem e o desenho dele são do motor. O capítulo conta a queda e liga o
+  // ATAQUE: o Obelisco também a faz ceder com quem ataca corpo a corpo de cima dela (`evento`, tipo `attack`).
   const laje = () => enc.field.regioes?.find((r) => r.id === 'ressalto') ?? null;
+  const naLaje = (p) => RESSALTO.some((q) => q.x === p.x && q.y === p.y);
+  // A ENCOSTA: a subida de entulho do oeste, onde a cobra ataca com vantagem.
+  const ENCOSTA = new Set([...RESSALTO.map((q) => `${q.x},${q.y}`), '8,6', '11,6']);
 
   /**
    * A laje cedeu sob alguém (a região disparou, no meio do passo): o painel conta o tombo, com o dano que o motor
@@ -485,8 +564,9 @@ export function criarCapitulo2(app, config) {
    * não há `depoisDeMover`: conta na hora.
    */
   function naRegiao(regiao, c, quando, resultado) {
-    if (regiao.id !== 'ressalto' || quando !== 'entrar') return;
-    estado.queda = { nome: c.name, dano: resultado?.dano ?? 0, caiu: resultado?.passou === false };
+    if (regiao.id !== 'ressalto') return;
+    const outros = (resultado?.atingidos ?? []).filter((a) => a.quem !== c).map((a) => `${a.quem.name} (${a.dano}${a.passou === false ? ', no chão' : ''})`);
+    estado.queda = { nome: c.name, dano: resultado?.dano ?? 0, caiu: resultado?.passou === false, outros };
     if (!estado.explorando) contarAQueda();
   }
 
@@ -495,19 +575,70 @@ export function criarCapitulo2(app, config) {
     if (!q) return;
     estado.queda = null;
     await narrar(root, { formato: 'painel', paginas: [{ texto: [
-      `A laje onde ${q.nome} pisa racha com um estalo e desce rolando junto com o entulho, até o pé da passagem (${q.dano} de dano${q.caiu ? ', e no chão' : ''}).`,
+      `A laje sob ${q.nome} racha com um estalo, e a massa inteira de entulho se solta e despenca para leste, encosta abaixo: ${q.dano} de dano${q.caiu ? ', e no chão' : ''}.`,
+      ...(q.outros.length ? [`A pedra pega também ${q.outros.join(', ')}.`] : []),
     ] }] });
     app.refresh();
   }
 
+  // ------------------------------------------------------------- área 4 ----
+  // A COBRA DO RESSALTO, que o Obelisco põe enrolada na laje rachada. Ela não se esconde com Furtividade: fica imóvel,
+  // da cor do entulho, e a régua do livro é a Percepção passiva — 13 ou mais vê a cobra antes do bote, abaixo disso é
+  // pego de surpresa. É por isso que `g.furtividade` vira [13] aqui, e o motor (`rolarSurpresa`) faz o resto, herói a
+  // herói. Ela acorda com alguém a 15 pés e à vista (a mordida alcança 10). A briga faz barulho na subida, e o goblin
+  // da ponte ouve: se ninguém ainda deu o sinal, ele assobia, e a enchente vem pela passagem como viria se ele os
+  // tivesse visto.
+  //
+  // E o livro lhe dá VANTAGEM contra quem luta na encosta (`vantagemContraEm`, lido pelo motor nos ataques).
+  const DESPERTA_A_COBRA_FT = 15;
+  async function cobra(g) {
+    const bicho = hostis(g)[0];
+    if (!bicho) return false;
+    const perto = herois().find((h) => distanceFt(h.pos, bicho.pos) <= DESPERTA_A_COBRA_FT
+      && enc.field.hasLineOfSight(h.pos, bicho.pos));
+    if (!perto) return false;
+    g.furtividade = [13];
+    bicho.vantagemContraEm = ENCOSTA;
+    bicho.vantagemContraEmMotivo = 'na encosta';
+    const viram = herois().filter((h) => passivePerception(h) >= 13);
+    await asArmas([
+      SALAS.cobra.clima,
+      viram.length
+        ? `${viram.map((h) => h.name).join(viram.length > 1 ? ' e ' : '')} ${viram.length > 1 ? 'veem' : 'vê'} a tempo: o que parecia uma dobra do entulho, na laje do meio da subida, é uma cobra do comprimento de dois homens, e ela já ergueu a cabeça.`
+        : `O entulho na laje do meio da subida se desenrola. Uma cobra do comprimento de dois homens dá o bote em ${perto.name} antes que alguém entenda o que está vendo.`,
+    ]);
+    const sentinela = hostis(grupos.ponte)[0];
+    if (sentinela && !grupos.ponte.ativo && !estado.enchentes && !estado.enchente) {
+      estado.enchente = { turnos: 2 };
+      enc.say('acao', 'Lá no alto, sobre o riacho, três assobios curtos: o barulho da briga chegou ao goblin da ponte.');
+    }
+    await combate(g, 'deles');
+    return true;
+  }
+
   // ------------------------------------------------------------- área 5 ----
-  /** O goblin da ponte: escondido, só visto com Percepção contra a Furtividade dele. */
+  /**
+   * O goblin da ponte, pelo Obelisco: bem escondido, só se vê com Percepção 15. Distraído como os outros: se ninguém
+   * do grupo leva luz, quem passa debaixo dos olhos dele passa com Furtividade CD 12, um teste por herói. Luz à vista
+   * dele, ou um teste falho, e ele dá o sinal da enchente e atira.
+   */
   async function ponte(g) {
     const goblin = hostis(g)[0];
     if (!goblin) return false;
-    const furt = g.furtividade[0];
-    const visto = herois().find((h) => podeVer(enc, h, goblin) && passivePerception(h) >= furt);
-    const notou = herois().find((h) => nota(goblin, h));
+    const visto = herois().find((h) => podeVer(enc, h, goblin) && passivePerception(h) >= 15);
+    const aVista = herois().filter((h) => podeVer(enc, goblin, h));
+    let notou = aVista.find((h) => emiteLuz(h)) ?? null;
+    if (!notou) {
+      estado.passouPelaPonte ??= new Set();
+      for (const h of aVista) {
+        if (estado.passouPelaPonte.has(h.id)) continue;
+        const r = rolarPericia(enc.rng, h, 'furtividade');
+        if (r.total >= 12) {
+          estado.passouPelaPonte.add(h.id);
+          enc.say('acao', `${h.name} passa sem barulho por baixo da ponte (Furtividade ${r.total} contra CD 12).`);
+        } else { notou = h; break; }
+      }
+    }
     if (!visto && !notou) return false;
     if (notou && !estado.enchentes) estado.enchente ??= { turnos: 2 };
     await asArmas(notou
@@ -525,6 +656,20 @@ export function criarCapitulo2(app, config) {
    */
   async function enchente() {
     if (!estado.enchente || estado.enchentes >= 2) return;
+    // O ASSOBIO VEM ANTES DA ÁGUA, e por um tempo não vinha. O gatilho já guardava `{ turnos: 2 }` — o atraso do
+    // livro, que manda os goblins dos tanques romperem o dique ao sinal da ponte —, mas ninguém LIA o campo:
+    // `enchente()` corria na primeira chamada depois do assobio, isto é, no passo seguinte. Dado morto, e a
+    // armadilha da cena perdia o que a torna armadilha: os dois turnos em que dá para sair da passagem, subir nos
+    // degraus do canil ou correr para a boca. Aqui o campo decide. `{ turnos: 0 }` (o dique rompido pelo próprio
+    // grupo, em `interacoes`) continua caindo na hora, que aí a água já está vindo.
+    if (estado.enchente.turnos > 0) {
+      estado.enchente = { turnos: estado.enchente.turnos - 1 };
+      enc.say('acao', estado.enchente.turnos > 0
+        ? 'Lá no fundo da caverna, pedra raspando pedra: alguma coisa grande está sendo desencaixada.'
+        : 'O barulho de água cresce no túnel lá em cima, e o riacho aos pés de vocês fica turvo de uma vez.');
+      app.refresh();
+      return;
+    }
     estado.enchente = null;
     estado.enchentes += 1;
     const linhas = [];
@@ -780,6 +925,15 @@ export function criarCapitulo2(app, config) {
   /** Klarg corre para a chaminé; chegando nela, some. Devolve true se gastou o turno. */
   function fugirPelaChamine() {
     if (distanceFt(klarg.pos, CHAMINE_TOPO) <= 5) {
+      // A boca da chaminé é estreita para um bugbear: Destreza CD 10, e quem falha fica entalado (contido) — tenta de
+      // novo no turno seguinte, com a ação.
+      const r = d20(enc.rng, abilityMod(klarg.abilities.dex));
+      if (r.total < 10) {
+        if (!hasCondition(klarg, 'contido')) addCondition(klarg, 'contido', { rounds: Infinity, source: 'chamine' });
+        enc.say('acao', `Klarg tenta se espremer pela chaminé e entala nos ombros (Destreza ${r.total} contra CD 10).`);
+        app.refresh();
+        return true;
+      }
       klarg.fugiu = true;
       estado.klargFugiu = true;
       enc.combatants.splice(enc.combatants.indexOf(klarg), 1);
@@ -807,9 +961,9 @@ export function criarCapitulo2(app, config) {
     audio.play('chestOpen');
     estado.bauAchado = true;
     enc.field.alternarSobreposicao?.('bauAberto', true);
-    for (const [id, qtd] of [['moedaDeCobre', 600], ['moedaDePrata', 110], ['pocaoDeCura', 2], ['estatuetaDeSapo', 1]]) guardar(c, id, qtd);
+    for (const [id, qtd] of [['moedaDeCobre', 1700], ['moedaDePrata', 150], ['pocaoDeCura', 2], ['estatuetaDeSapo', 1]]) guardar(c, id, qtd);
     return narrar(root, { formato: 'painel', paginas: [{ texto: [
-      `Entre sacos e caixotes com a marca de um leão azul, ${c.name} acha um baú destrancado: 600 peças de cobre, 110 de prata, duas poções de cura e um sapinho de jade com olhos de ouro.`,
+      `Entre sacos e caixotes com a marca de um leão azul, ${c.name} acha um baú destrancado: 1.700 peças de cobre, 150 de prata, duas poções de cura e um sapinho de jade com olhos de ouro.`,
       'O resto — comida, ferramentas, lonas — é muito para carregar sem uma carroça. A marca é de uma companhia mercante de Phandalin.',
     ] }] });
   }
@@ -840,6 +994,13 @@ export function criarCapitulo2(app, config) {
   /** O que o motor conta durante a luta (via `main.js`). */
   function evento(ev) {
     fogueira(ev);
+    // ATACAR DE CIMA DA LAJE também a faz ceder (o Obelisco): Acrobacia CD 10 de quem ataca corpo a corpo dali.
+    if (ev.type === 'attack' && !ev.ranged && ev.attacker?.side === 'party' && ev.attacker.pos && naLaje(ev.attacker.pos)) {
+      const r = laje();
+      if (r && !r.desligada) disparar(enc, r, ev.attacker, 'atacar');
+    }
+    // O CHEFE DO POSTO CAI, e os goblins dele correm para o canil soltar os lobos (o Obelisco).
+    if (ev.type === 'died' && ev.target?.chefeDoPosto && estado.lutando === grupos.vigias) setTimeout(() => lobosSoltos(), 0);
     if (ev.type === 'died' && ev.target === serrote && klarg && !klarg.dead) {
       enc.say('acao', 'Klarg vê o Serrote cair e ruge, com os dentes à mostra. Ele não corre: fica.');
     }
@@ -847,11 +1008,20 @@ export function criarCapitulo2(app, config) {
     // o deixava avisado, mesmo que os três caíssem na primeira rodada — e o
     // ramo "Klarg desavisado" virava código morto. Agora alguém precisa estar
     // de pé, não cativado e com a vez chegando para gritar.
+    // O Obelisco: a cachoeira abafa a briga entre os poços e a caverna de Klarg, e quem avisa é um goblin que LARGA a
+    // luta e corre para lá. Sai do tabuleiro e vai para junto do Klarg, onde o grupo o reencontra.
     if (ev.type === 'sideStart' && ev.side === 'foes' && estado.lutando === grupos.pocos && !estado.klargAvisado) {
-      const grita = hostis(grupos.pocos).find((f) => !hasCondition(f, 'cativado') && !hasCondition(f, 'inconsciente'));
-      if (grita) {
+      const corre = hostis(grupos.pocos).find((f) => f.defId === 'goblin' && !hasCondition(f, 'cativado') && !hasCondition(f, 'inconsciente') && !hasCondition(f, 'contido'));
+      if (corre) {
         estado.klargAvisado = true;
-        enc.say('acao', `${grita.name} grita para o fundo da caverna, em goblin. Lá atrás, alguma coisa grande responde.`);
+        enc.say('acao', `${corre.name} larga a briga e corre para o fundo da caverna, gritando em goblin.`);
+        const i = enc.combatants.indexOf(corre);
+        if (i >= 0) enc.combatants.splice(i, 1);
+        grupos.pocos.membros.splice(grupos.pocos.membros.indexOf(corre), 1);
+        corre.grupo = 'chefe';
+        corre.pos = { ...corre.pos, ...casaPerto({ x: klarg?.pos.x ?? 26, y: (klarg?.pos.y ?? 13) - 1 }) };
+        grupos.chefe.membros.push(corre);
+        enc.checkEnd();
       }
     }
     if (ev.type === 'sideStart' && ev.side === 'foes' && estado.enchente) {
@@ -950,7 +1120,15 @@ export function criarCapitulo2(app, config) {
     if (sobem.length) for (const t of await telaDeSubirNivel(root, sobem)) enc.say('cura', t);
     app.campanha = {
       ...(app.campanha ?? {}),
-      capitulo2: { sildar: vivo, acordoComYeemik: estado.acordo, klargFugiu: estado.klargFugiu, suprimentosDaCompanhia: true },
+      // `suprimentosDaCompanhia` é SEMPRE verdadeiro aqui, e é de propósito. Houve uma tentativa de amarrá-lo
+      // à carroça do capítulo 1 — "a Linene não paga quem perdeu a carroça" —, e era erro: a carga da Escudo
+      // Leão não é a carroça do Gundren. São os sacos e caixas com o leão azul da ÁREA 8, debaixo dos quais
+      // está o baú do Klarg, e `podeEncerrar` exige `estado.bauAchado`: quem termina o capítulo esteve lá e
+      // viu. O livro paga as 50 po por trazer a carga OU por dizer onde ela está, e as duas coisas valem para
+      // quem viu. A carroça decide só o TEXTO, logo abaixo: sem ela, a carga fica no lugar e o grupo vai
+      // contar onde.
+      capitulo2: { sildar: vivo, acordoComYeemik: estado.acordo, klargFugiu: estado.klargFugiu,
+        suprimentosDaCompanhia: true },
     };
     await narrar(root, {
       formato: 'tela',
@@ -959,9 +1137,11 @@ export function criarCapitulo2(app, config) {
           titulo: 'Fim do segundo capítulo',
           texto: [
             vivo
-              ? 'Sildar Hallwinter, da Aliança dos Lordes, anda devagar, mas anda. Ele conta o que ouviu dos goblins: Gundren e o mapa dele foram levados ao Castelo Dentefino, a mando de alguém que chamam de Aranha Negra. Sildar oferece 50 peças de ouro para ser escoltado a Phandalin.'
+              ? 'Sildar Hallwinter anda devagar, apoiado em quem o deixar apoiar-se, mas anda. Pela estrada ele conta o resto do que arrancou dos goblins no escuro: um nome, Aranha Negra, que foi quem pagou; um destino, o Castelo Dentefino, para onde o anão e o mapa seguiram. E faz uma oferta — cinquenta peças de ouro para chegar a Phandalin com companhia.'
               : 'Do anão, nenhum sinal: foi levado para outro lugar. A trilha volta para a estrada, e a estrada leva a Phandalin.',
-            'Os suprimentos com a marca do leão azul ficam esperando uma carroça. A estrada leva a Phandalin.',
+            app.campanha?.capitulo1?.carroca
+              ? 'Os sacos com a marca do leão azul cabem na carroça, apertados, e vão de volta para quem os perdeu. A estrada leva a Phandalin.'
+              : 'Os sacos com a marca do leão azul ficam onde estão: sem carroça, não há como levá-los. Dá para dizer à dona deles onde foram parar — ela que mande buscar. A estrada leva a Phandalin.',
           ],
         },
       ],
@@ -976,10 +1156,27 @@ export function criarCapitulo2(app, config) {
     nos: {
       oi: {
         fala: () => (estado.sildarLivre && sildar.hp > 0
-          ? ['Sildar Hallwinter, da Aliança dos Lordes. Fico devendo a vida a vocês.',
-            'Gundren e os irmãos acharam a entrada de uma mina perdida. Os goblins levaram ele e o mapa para um tal Castelo Dentefino, a mando de alguém que chamam de Aranha Negra.',
-            'Em Phandalin eu devia encontrar um colega, um mago chamado Iarno Alberk. Ninguém tem notícia dele. Antes, porém, esta caverna precisa ficar limpa.']
+          ? ['Sildar Hallwinter. Fico devendo a vida a vocês, e devo explicações — começando pela que menos me agrada: eu vim a Phandalin atrás de um homem, e só descobri que não ia achá-lo quando já estava amarrado aqui.',
+            'O homem é Iarno Albrek. Mago, colega meu na Aliança dos Lordes, mandado à vila antes de mim para ver o que se podia fazer por ela. Nunca mais escreveu. Ninguém na vila diz tê-lo visto.',
+            'Quanto ao anão: foi um serviço encomendado, não um assalto de estrada. Os goblins o levaram, e ao mapa dele, para um lugar que chamam de Castelo Dentefino, por ordem de alguém a quem chamam de Aranha Negra. Gundren e os irmãos tinham achado a entrada de uma mina perdida, e alguém queria muito que ela não fosse deles.',
+            'Mas isso é conversa para a estrada. Antes, esta caverna precisa ficar limpa.']
           : ['…água. Alguém tem água?']),
+        opcoes: [
+          { texto: 'Quem estava com os goblins que pegaram vocês?', vai: 'estranho', uma: true, requer: () => (estado.sildarLivre && sildar.hp > 0 ? null : 'ele mal fala') },
+          { texto: 'Fique aqui. Voltamos para buscar você.', fim: 'paz' },
+        ],
+      },
+      // O FIO DO OBELISCO no covil: é o SILDAR quem o conta (o livro, "interpretando Sildar").
+      estranho: {
+        ao: () => {
+          const vila = ((app.campanha ??= {}).vila ??= { pistas: [], missoes: {} });
+          const t = 'Goblins de fora: um goblin de cabeça comprida andava com o bando que pegou Sildar. Os Cragmaw não o conheciam, e ele sussurrou ao Sildar um nome, Ruxithid.';
+          if (!(vila.pistas ??= []).includes(t)) vila.pistas.push(t);
+        },
+        fala: [
+          'Um deles não era do bando. Goblin, sim, mas de cabeça comprida, esticada para trás como se alguém a tivesse puxado ainda mole. Os outros abriam caminho para ele e não sabiam o nome dele — dava para ver.',
+          'Ele chegou perto enquanto me amarravam, me olhou como quem confere uma mercadoria e cochichou: "não é você que o Ruxithid quer". Depois foi embora sozinho, mato adentro. Não sei quem é Ruxithid. Não gostei de ouvir o nome.',
+        ],
         opcoes: [{ texto: 'Fique aqui. Voltamos para buscar você.', fim: 'paz' }],
       },
     },
@@ -1054,7 +1251,12 @@ export function criarCapitulo2(app, config) {
     // Área 5: cortar as cordas da ponte, das pontas dela. A ponte continua de
     // pé (é corda e prancha, e só um dos cabos cede): quem está em cima é que
     // despenca os 6 m no canal. Derrubar a ponte inteira travaria o capítulo —
-    // ela é o único caminho do anel para os poços.
+    // ela é o único caminho do anel para os poços. MEDIDO, para quem vier
+    // propor os 10 PV e a CA 5 que o livro dá à ponte: trocando as duas casas
+    // de `ponte` por rocha e inundando o mapa da chegada do grupo, o alcançável
+    // cai de 318 para 229 casas, e a área 7 — os dois tanques, o dique, a
+    // enchente, três goblins e o aviso ao Klarg — sai do jogo. Ponte destruível
+    // só com um segundo caminho para os tanques, que esta planta não tem.
     if (sup === 'ponte' && !estado.ponteCortada) {
       const emCima = hostis(grupos.ponte).find((f) => naLista(PE.ponte, f.pos));
       ops.push({
@@ -1155,13 +1357,12 @@ export function criarCapitulo2(app, config) {
         achado: 'Pegadas pequenas, muitas, indo e voltando da boca da caverna: perto de uma dúzia de goblins usa este caminho. E, no meio delas, o rastro de dois corpos do tamanho de gente arrastados para dentro.',
       };
     }
-    // Área 4: a laje rachada do ressalto. Achá-la é passar rente à parede sem pisar nela.
-    // Já descoberta (Procurar, a passiva no caminho ou este mesmo Investigar), não há mais o que achar nela.
-    if (em(RESSALTO) && laje() && !laje().desligada && !laje().descoberta) {
+    // Área 4: a laje do ressalto. Saber dela não a faz deixar de ceder (o Obelisco pede Acrobacia de quem anda ou briga
+    // em cima), mas avisa: é ali que não se quer lutar.
+    if (em(RESSALTO) && laje() && !laje().desligada) {
       return {
-        titulo: 'A subida do oeste', cd: 12, alcance: 10,
-        achado: 'A laje no meio da subida está rachada por baixo e solta da rocha: não aguenta o peso de um adulto. Rente à parede, um de cada vez e sem pisar nela, dá para passar.',
-        efeito: () => { descobrirRegiao(enc.field, 'ressalto'); enc.say('acao', 'O grupo sabe da laje rachada: quem passa por ali vai rente à parede.'); },
+        titulo: 'A subida do oeste', cd: 10, alcance: 10,
+        achado: 'A laje no meio da subida está solta da rocha por baixo, presa só pelo peso do entulho em cima. Quem passar por ela, ou brigar em cima dela, precisa de pé firme — senão a encosta inteira desce para leste.',
       };
     }
     if (sala === 'passagem' && sup === 'riacho') {
@@ -1214,6 +1415,18 @@ export function criarCapitulo2(app, config) {
       return {
         titulo: 'Os colchões', cd: 10,
         achado: 'Colchões de palha cheios de pulga, quase uma dúzia, ainda amassados. Dorme mais goblin aqui do que está acordado agora.',
+      };
+    }
+    // O BARRIL DO COVIL era o único objeto PINTADO do esconderijo sem verbo nenhum. A casa (2,6) barra passo e
+    // ficou sem sala na pintura (`sala` nela é indefinida), então as pistas de `covil` não a alcançavam e o barril
+    // era desenho morto: nem faísca passiva, nem Procurar, nem Investigar. Aqui a pista vem pelo GLIFO, não pela
+    // sala, e a varredura de ±2 casas de `casasNotadas` a acende das casas em volta. Ele não dá tesouro: o barril
+    // é da pintura da FA, não do livro, e no livro o covil não tem nada além da algibeira do Yeemik — o cheiro de
+    // couro curtido que o livro põe na sala é o que está dentro dele.
+    if (sup === 'barris') {
+      return {
+        titulo: 'O barril', cd: 10, alcance: 10,
+        achado: 'Um barril de água da chuva, com uma caneca de estanho amassada pendurada na borda e, no fundo, tiras de couro de molho — é daí que vem o cheiro de curtume da caverna. Nada que se carregue.',
       };
     }
     if (sala === 'covil' && tile.y === PE.escadaDoCovil.y - 1 && enc.field.heightAt(tile.x, tile.y) <= 2) {

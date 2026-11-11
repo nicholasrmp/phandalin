@@ -21,6 +21,7 @@ import { CLASSES } from './classes/index.js';
 import { aplicarRaca, magiasRaciaisDoNivel, completarConjuracaoRacial, RACAS } from './racas.js';
 import { escolherMaestria, escolherAssinaturas, aplicarInvocacoes, darMagiasDeCaracteristica } from './passivas.js';
 import { SPELLS } from './spells.js';
+import { completarEscolhaDoTalento, validarTalento, aplicarTalentoPhb } from './talentos-phb.js';
 
 export const NIVEL_MAXIMO = 20;
 
@@ -186,10 +187,22 @@ export function subirNivel(c, escolhas = {}) {
   const sub = c.subclasse ? def.subclasse.opcoes[c.subclasse] : null;
   const ganhos = [...(def.niveis[nivel] ?? []), ...(sub?.niveis?.[nivel] ?? [])];
 
+  let talentoUsado = false;
   for (const g of ganhos) {
     if (g === 'asi') {
       // AUMENTO DE ATRIBUTO: +2 num ou +1 em dois, sem passar de 20. O padrão
       // é o atributo principal da classe, depois o segundo.
+      // OU UM TALENTO do Livro do Jogador, no lugar do aumento (`talentos-phb.js`): `escolhas.talento` é o id ou
+      // { id, atributo?, elemento?, ... }; o que faltar sai do padrão do talento.
+      if (escolhas.talento !== undefined && escolhas.talento !== null) {
+        if (escolhas.asi !== undefined) throw new Error('Escolha inválida: aumento de atributo E talento no mesmo nível.');
+        const e = completarEscolhaDoTalento(c, escolhas.talento);
+        validarTalento(c, e);
+        aplicarTalentoPhb(c, e);
+        c.escolhasFeitas.push({ nivel, tipo: 'talento', valor: e });
+        talentoUsado = true;
+        continue;
+      }
       if (escolhas.asi !== undefined) validarAsi(escolhas.asi, c);
       const asi = escolhas.asi ?? decidir('asi', asiPadrao(c, def));
       for (const [k, v] of Object.entries(asi)) c.abilities[k] = Math.min(20, c.abilities[k] + v);
@@ -215,6 +228,8 @@ export function subirNivel(c, escolhas = {}) {
       const todas = typeof escolha.opcoes === 'function' ? escolha.opcoes(c) : escolha.opcoes;
       const ja = escolha.lista ? (c[escolha.campo] ?? []) : [];
       const livres = todas.filter((o) => !ja.includes(o));
+      // a escolha que não sobra (as duas perícias do Arqueiro Arcano já treinadas pela origem): nada a escolher
+      if (!livres.length) { addFeature(c, g); continue; }
       const quantas = escolha.quantas ?? 1;
       if (escolhas[g] !== undefined) {
         if (quantas > 1) validarLista(g, escolhas[g], livres, quantas);
@@ -234,7 +249,7 @@ export function subirNivel(c, escolhas = {}) {
       c.abilities.con = Math.min(24, c.abilities.con + 4);
     }
     if (g === 'fightingStyle' || g === 'additionalFightingStyle') {
-      const opcoes = def.estilosDeLuta ?? [];
+      const opcoes = sub?.estilosDeLuta ?? def.estilosDeLuta ?? [];
       const ja = c.features.filter((f) => opcoes.includes(f));
       const livres = opcoes.filter((o) => !ja.includes(o));
       if (escolhas.estiloDeLuta !== undefined) validar('estiloDeLuta', escolhas.estiloDeLuta, livres);
@@ -245,19 +260,25 @@ export function subirNivel(c, escolhas = {}) {
     addFeature(c, g);
   }
 
+  if (escolhas.talento != null && !talentoUsado) throw new Error(`Escolha inválida: o ${nivel}º nível não dá aumento de atributo, e o talento entra no lugar dele.`);
+
   // Escolhas em lote que crescem com o nível: metamagia, invocações.
   for (const [tipo, tabela, opcoes] of [
     ['metamagia', def.metamagias, def.opcoesDeMetamagia],
     ['invocacoes', def.invocacoes, def.opcoesDeInvocacao],
     ['manobras', sub?.manobras, sub?.opcoesDeManobra],
     ['disciplinas', sub?.disciplinas, sub?.opcoesDeDisciplina],
+    ['disparos', sub?.disparos, sub?.opcoesDeDisparo],
+    ['runas', sub?.runas, sub?.opcoesDeRuna],
   ]) {
     if (!tabela) continue;
     const quer = porNivel(tabela, nivel) ?? 0;
-    const tem = c.features.filter((f) => opcoes.includes(f));
+    // As manobras do ADEPTO MARCIAL (talento) não são da classe: não contam entre as do Mestre de Batalha, e não se
+    // escolhem de novo.
+    const tem = c.features.filter((f) => opcoes.includes(f) && !(c.manobrasDoTalento ?? []).includes(f));
     if (quer > tem.length) {
       // Invocações têm pré-requisito de nível ou de pacto: a classe filtra.
-      const livres = opcoes.filter((o) => !tem.includes(o) && ((sub?.podeEscolher ?? def.podeEscolher)?.(o, c) ?? true));
+      const livres = opcoes.filter((o) => !c.features.includes(o) && ((sub?.podeEscolher ?? def.podeEscolher)?.(o, c) ?? true));
       if (escolhas[tipo] !== undefined) validarLista(tipo, escolhas[tipo], livres, quer - tem.length);
       const novas = escolhas[tipo] ?? decidir(tipo, livres.slice(0, quer - tem.length), livres);
       for (const f of novas) addFeature(c, f);
@@ -266,9 +287,20 @@ export function subirNivel(c, escolhas = {}) {
 
   // Características que dão perícia fixa (Influência Sedutora: Enganação e
   // Persuasão).
-  for (const [f, pericias] of Object.entries(def.periciasDeCaracteristica ?? {})) {
+  for (const [f, pericias] of Object.entries({ ...def.periciasDeCaracteristica, ...sub?.periciasDeCaracteristica })) {
     if (!c.features.includes(f)) continue;
     for (const p of pericias) if (!c.skills.includes(p)) c.skills.push(p);
+  }
+  // ...e as que ela DOBRA (o Sobrevivente do Batedor), e a resistência que ela dá (o Cortesão Elegante do Samurai: a de
+  // Sabedoria, ou a próxima da lista se já a tem).
+  for (const [f, pericias] of Object.entries(sub?.especializacaoDeCaracteristica ?? {})) {
+    if (!c.features.includes(f)) continue;
+    for (const p of pericias) if (!c.expertise.includes(p)) c.expertise.push(p);
+  }
+  for (const [f, lista] of Object.entries(sub?.resistenciasDeCaracteristica ?? {})) {
+    if (!c.features.includes(f) || c.resistenciaDeCaracteristica?.[f]) continue;
+    const nova = lista.find((h) => !c.saves.includes(h));
+    if (nova) { c.saves.push(nova); (c.resistenciaDeCaracteristica ??= {})[f] = nova; }
   }
 
   // BÊNÇÃOS DO CONHECIMENTO (clérigo): as duas perícias de saber entram treinadas e dobradas. ACÓLITO DA NATUREZA: a perícia escolhida.
@@ -295,12 +327,27 @@ export function subirNivel(c, escolhas = {}) {
   // (a regra fixa do SRD, que o jogo usa em vez de rolar). Constituição
   // conta em todo nível — e o aumento de CON conta retroativamente, como na
   // regra: recalculado a cada nível em vez de somado só daqui para a frente.
-  const con = abilityMod(c.abilities.con);
-  const dado = def.dadoDeVida;
-  // Piso de 1: salvaguarda contra CON absurda, não regra do SRD.
-  c.maxHp = Math.max(1, dado + (nivel - 1) * mediaDoDado(dado) + nivel * con + bonusDeVida(c, nivel));
+  recalcularVida(c);
   c.proficiency = proficiencyBonus(nivel);
 
+  // As ARMAS que uma característica dá (o Raio de Sol da Alma Solar) e o TREINO das armas escolhidas (as armas kensei).
+  // ASPECTO ASCENDENTE (Dragão Ascendente, 17º): percepção às cegas de 3 m. NATUREZA IMORTAL (Imortal, 10º): o fôlego sem fim.
+  if (c.features.includes('ascendantAspect')) c.senses = { ...(c.senses ?? {}), blindsightFt: Math.max(c.senses?.blindsightFt ?? 0, 10) };
+  if (c.features.includes('undyingNature')) c.respiraNaAgua = true;
+  // DÁDIVA DO MAR (Insondável): nado de 12 m e respirar debaixo da água
+  if (c.features.includes('giftOfTheSea')) {
+    c.speeds = { ...(c.speeds ?? {}), swimFt: Math.max(c.speeds?.swimFt ?? 0, 40) };
+    c.respiraNaAgua = true;
+  }
+  // (uma arma, ou a lista: a Lâmina Psíquica de perto e arremessada)
+  for (const [f, armas] of Object.entries(sub?.armasDeCaracteristica ?? {})) {
+    if (!c.features.includes(f)) continue;
+    for (const arma of [].concat(armas)) {
+      if (!c.weapons.includes(arma)) c.weapons.push(arma);
+      if (!c.weaponTraining.includes(arma)) c.weaponTraining.push(arma);
+    }
+  }
+  for (const a of sub?.treinoDoCampo ? c[sub.treinoDoCampo] ?? [] : []) if (!c.weaponTraining.includes(a)) c.weaponTraining.push(a);
   // Treino da subclasse (Domínio da Vida dá armadura pesada, por exemplo).
   for (const t of sub?.armaduras ?? []) if (!c.armorTraining.includes(t)) c.armorTraining.push(t);
   for (const t of sub?.armas ?? []) if (!c.weaponTraining.includes(t)) c.weaponTraining.push(t);
@@ -315,7 +362,8 @@ export function subirNivel(c, escolhas = {}) {
   // dificuldade das masmorras: medido na mansão, a cadeia fechava em 88-95%
   // com o enchimento e em 75-86% sem ele.
   for (const [chave, fn] of Object.entries({ ...def.recursos, ...sub?.recursos })) {
-    const max = fn(nivel, c);
+    // O dado de superioridade do ADEPTO MARCIAL soma aos da classe (o livro), e o máximo da classe não o apaga.
+    const max = fn(nivel, c) + (chave === 'superiorityDice' ? (c.dadosDeSuperioridadeDoTalento ?? 0) : 0);
     if (!max) continue;
     // Ilimitado (Fúria e Forma Selvagem no 20º): Infinity não sobrevive a um
     // JSON (vira null) nem cabe num selo de cargas. Fica na lista própria, e o
@@ -368,7 +416,9 @@ export function subirNivel(c, escolhas = {}) {
     if (conj.tipo === 'pacto') c.spellcasting.arcanoMistico = porNivel(def.arcanoMistico, nivel) ?? [];
     // Magias do domínio, do juramento e do círculo: sempre preparadas, sem
     // ocupar vaga no limite de preparação.
-    const extras = sub?.magiasDoDominio ?? sub?.magiasDoCirculo?.[c.terrenoDoCirculo];
+    // (a Alma Divina dá uma por afinidade: a tabela é função do personagem)
+    const doDominio = typeof sub?.magiasDoDominio === 'function' ? sub.magiasDoDominio(c) : sub?.magiasDoDominio;
+    const extras = doDominio ?? sub?.magiasDoCirculo?.[c.terrenoDoCirculo];
     if (extras) {
       c.spellcasting.sempreProntas = Object.entries(extras)
         .filter(([n]) => nivel >= Number(n))
@@ -385,6 +435,19 @@ export function subirNivel(c, escolhas = {}) {
   return { pendentes };
 }
 
+/**
+ * O PV MÁXIMO do nível em que o herói está, do zero: o dado inteiro no 1º, a média depois, a Constituição em todo nível
+ * e o que vem por fora (`bonusDeVida`). É a conta de `subirNivel`, exposta para quem muda a ficha depois dele (o talento
+ * do humano variante, que entra no 1º nível e pode mexer na Constituição ou ser o Vigoroso).
+ */
+export function recalcularVida(c) {
+  const dado = CLASSES[c.classe].dadoDeVida;
+  const nivel = c.level;
+  // Piso de 1: salvaguarda contra CON absurda, não regra do SRD.
+  c.maxHp = Math.max(1, dado + (nivel - 1) * mediaDoDado(dado) + nivel * abilityMod(c.abilities.con) + bonusDeVida(c, nivel));
+  return c.maxHp;
+}
+
 function addFeature(c, id) {
   if (!c.features.includes(id)) c.features.push(id);
 }
@@ -395,7 +458,10 @@ function addFeature(c, id) {
  * o anão da colina).
  */
 function bonusDeVida(c, nivel) {
-  return (c.features.includes('draconicResilience') ? nivel : 0) + nivel * (c.vidaPorNivel ?? 0);
+  // VIGOROSO (o talento de origem e o Robusto do Livro do Jogador, o mesmo): +2 por nível, os de antes inclusive. Antes
+  // o +2 entrava só na criação, e o recálculo do nível 2 o apagava.
+  return (c.features.includes('draconicResilience') ? nivel : 0) + nivel * (c.vidaPorNivel ?? 0)
+    + ((c.talentos ?? []).includes('vigoroso') ? 2 * nivel : 0);
 }
 
 /**

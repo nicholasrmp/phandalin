@@ -10,6 +10,14 @@ import { TurnManager } from "../../../app/combat/TurnManager.js";
 // pergunta errada aparece no teste.
 //
 // Para marcar um combatente de teste: `addCondition(c, 'inconsciente')`.
+//
+// E PELA MESMA RAZÃO O MOCK PERDEU O `current`. Ele trazia `current: 0`, um
+// ponteiro de iniciativa que o Encounter de verdade NUNCA teve — aqui a fase é
+// do LADO (`enc.side`) e cada um fecha o seu turno com `acted`. Enquanto o mock
+// inventava o campo, estes 39 testes passavam verdes enquanto, no jogo, só o
+// primeiro da lista conseguia atacar, conjurar e entrar em mira. Mock que
+// inventa campo não testa o jogo: testa a ficção. O que prova isto de verdade,
+// sobre o Encounter real, é `src/dev/testes-regras.mjs`, em "A VEZ É DO LADO".
 
 describe("TurnManager", () => {
   let manager;
@@ -19,17 +27,24 @@ describe("TurnManager", () => {
     // Mock do Encounter
     mockEncounter = {
       combatants: [
-        { id: "hero1", name: "Guerreiro", side: "party", dead: false },
-        { id: "hero2", name: "Mago", side: "party", dead: false },
-        { id: "foe1", name: "Goblin 1", side: "foes", dead: false },
-        { id: "foe2", name: "Goblin 2", side: "foes", dead: false },
+        { id: "hero1", name: "Guerreiro", side: "party", dead: false, acted: false },
+        { id: "hero2", name: "Mago", side: "party", dead: false, acted: false },
+        { id: "foe1", name: "Goblin 1", side: "foes", dead: false, acted: false },
+        { id: "foe2", name: "Goblin 2", side: "foes", dead: false, acted: false },
       ],
-      current: 0,
       round: 1,
       over: false,
       side: "party",
       auto: false,
-      endTurn: vi.fn(() => ({ ok: true })),
+      // O motor marca `acted` ao encerrar o turno, e vira a rodada quando o lado
+      // que joga por último acaba. O mock faz as duas coisas, senão não é o motor.
+      endTurn: vi.fn((c) => {
+        c.acted = true;
+        if (mockEncounter.combatants.every((x) => x.acted || x.dead)) {
+          mockEncounter.round += 1;
+        }
+        return { ok: true };
+      }),
     };
 
     manager = new TurnManager(mockEncounter);
@@ -56,14 +71,25 @@ describe("TurnManager", () => {
       expect(onNextTurn).toHaveBeenCalled();
     });
 
-    it("deve chamar onRoundEnd no fim da rodada", () => {
-      mockEncounter.current = 3; // Último combatente
-      const combatant = mockEncounter.combatants[3];
+    it("deve chamar onRoundEnd quando o MOTOR vira a rodada", () => {
+      // A rodada vira quando o motor a vira, e não quando um índice chega ao fim
+      // da lista: `endTurn` compara `enc.round` antes e depois.
+      mockEncounter.combatants.forEach((c) => { c.acted = true; });
+      const ultimo = mockEncounter.combatants[3];
+      ultimo.acted = false;
       const onRoundEnd = vi.fn();
 
-      manager.endTurn(combatant, { onRoundEnd });
+      manager.endTurn(ultimo, { onRoundEnd });
 
-      expect(onRoundEnd).toHaveBeenCalledWith(1);
+      expect(onRoundEnd).toHaveBeenCalledWith(2);
+    });
+
+    it("NÃO chama onRoundEnd enquanto sobra gente por jogar", () => {
+      const onRoundEnd = vi.fn();
+
+      manager.endTurn(mockEncounter.combatants[0], { onRoundEnd });
+
+      expect(onRoundEnd).not.toHaveBeenCalled();
     });
 
     it("deve funcionar sem callbacks", () => {
@@ -84,29 +110,28 @@ describe("TurnManager", () => {
   });
 
   describe("getNextCombatant", () => {
-    it("deve retornar próximo combatente vivo", () => {
-      mockEncounter.current = 0;
+    it("deve retornar o próximo do LADO DA VEZ que ainda não agiu", () => {
+      mockEncounter.combatants[0].acted = true;
 
       const next = manager.getNextCombatant();
 
       expect(next).toBe(mockEncounter.combatants[1]);
     });
 
-    it("deve circular pela lista de combatentes", () => {
-      mockEncounter.current = 3; // Último
+    it("NÃO dá a volta na lista até cair num inimigo", () => {
+      // Com o índice circular, o último herói a agir entregava a vez a um goblin
+      // no meio da fase do grupo. A fase é do lado: acabando o lado, não há próximo.
+      mockEncounter.combatants[0].acted = true;
+      mockEncounter.combatants[1].acted = true;
 
-      const next = manager.getNextCombatant();
-
-      expect(next).toBe(mockEncounter.combatants[0]); // Volta ao primeiro
+      expect(manager.getNextCombatant()).toBeNull();
     });
 
     it("deve pular combatentes mortos", () => {
-      mockEncounter.current = 0;
+      mockEncounter.combatants[0].acted = true;
       mockEncounter.combatants[1].dead = true;
 
-      const next = manager.getNextCombatant();
-
-      expect(next).toBe(mockEncounter.combatants[2]); // Pula o morto
+      expect(manager.getNextCombatant()).toBeNull();
     });
 
     it("deve retornar null se combate acabou", () => {
@@ -151,14 +176,14 @@ describe("TurnManager", () => {
   });
 
   describe("isRoundEnd", () => {
-    it("deve detectar fim de rodada", () => {
-      mockEncounter.current = 3; // Último combatente
+    it("é verdade quando o lado da vez não tem mais ninguém por jogar", () => {
+      mockEncounter.combatants.forEach((c) => { c.acted = true; });
 
       expect(manager.isRoundEnd()).toBe(true);
     });
 
-    it("deve retornar false no meio da rodada", () => {
-      mockEncounter.current = 1;
+    it("deve retornar false no meio da fase", () => {
+      mockEncounter.combatants[0].acted = true;
 
       expect(manager.isRoundEnd()).toBe(false);
     });
@@ -203,20 +228,16 @@ describe("TurnManager", () => {
   });
 
   describe("getCurrentCombatant", () => {
-    it("deve retornar combatente atual", () => {
-      mockEncounter.current = 2;
+    it("é o primeiro do lado da vez que ainda não agiu", () => {
+      mockEncounter.combatants[0].acted = true;
 
-      const current = manager.getCurrentCombatant();
-
-      expect(current).toBe(mockEncounter.combatants[2]);
+      expect(manager.getCurrentCombatant()).toBe(mockEncounter.combatants[1]);
     });
 
-    it("deve retornar null se índice inválido", () => {
-      mockEncounter.current = 10;
+    it("deve retornar null quando o lado da vez acabou", () => {
+      mockEncounter.combatants.forEach((c) => { c.acted = true; });
 
-      const current = manager.getCurrentCombatant();
-
-      expect(current).toBeNull();
+      expect(manager.getCurrentCombatant()).toBeNull();
     });
 
     it("deve retornar null sem combatentes", () => {
@@ -225,6 +246,36 @@ describe("TurnManager", () => {
       const current = manager.getCurrentCombatant();
 
       expect(current).toBeNull();
+    });
+  });
+
+  describe("ehAVezDe", () => {
+    it("deixa agir QUALQUER UM do lado da vez, e não só o primeiro da lista", () => {
+      // O defeito que isto guarda: `combatants[enc.current ?? 0]` respondia sempre
+      // "o primeiro da lista", e os outros heróis levavam "Não é o turno deste
+      // combatente" ao atacar, conjurar, usar item e entrar em mira.
+      expect(manager.ehAVezDe(mockEncounter.combatants[0])).toBe(true);
+      expect(manager.ehAVezDe(mockEncounter.combatants[1])).toBe(true);
+    });
+
+    it("barra quem é do outro lado", () => {
+      expect(manager.ehAVezDe(mockEncounter.combatants[2])).toBe(false);
+    });
+
+    it("barra morto, barra combate acabado, e barra nada", () => {
+      mockEncounter.combatants[1].dead = true;
+      expect(manager.ehAVezDe(mockEncounter.combatants[1])).toBe(false);
+      expect(manager.ehAVezDe(null)).toBe(false);
+      mockEncounter.over = true;
+      expect(manager.ehAVezDe(mockEncounter.combatants[0])).toBe(false);
+    });
+
+    it("NÃO barra quem já agiu: quem recusa, com a palavra certa, é o motor", () => {
+      // O motor diz "a ação deste turno já foi usada" e sabe do Ataque Extra, que
+      // deixa golpear de novo com a ação gasta. Barrar aqui seria uma mentira.
+      mockEncounter.combatants[0].acted = true;
+
+      expect(manager.ehAVezDe(mockEncounter.combatants[0])).toBe(true);
     });
   });
 

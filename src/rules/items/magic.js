@@ -219,6 +219,11 @@ const anel = (id, name, raridade, desc, extra = {}) =>
 
 export const RINGS = {
   anelDeProtecao: anel('anelDeProtecao', 'Anel de proteção', RARIDADE.raro, '+1 de CA e +1 em todas as resistências.', { acBonus: 1 }),
+  // O ANEL NETHERESE do Poço da Coruja Velha (o Obelisco): um Anel de Proteção feito de uma peça só de vidro verde
+  // místico, mais duro que aço, e que segura o que a mão dele segura (+4 contra largar ou ser desarmado). O motor não
+  // tem desarmar; o +4 fica dito.
+  anelDeProtecaoNetherese: anel('anelDeProtecaoNetherese', 'Anel de proteção netherese', RARIDADE.raro,
+    '+1 de CA e +1 em todas as resistências. Vidro verde de Netheril, mais duro que aço: a mão que o usa não larga o que segura (+4 contra ser desarmado ou deixar cair).', { acBonus: 1 }),
   anelDeQuedaSuave: anel('anelDeQuedaSuave', 'Anel de queda suave', RARIDADE.raro, 'Você cai 18 m por turno e nunca se machuca na queda.'),
   anelDeAcaoLivre: anel('anelDeAcaoLivre', 'Anel de ação livre', RARIDADE.raro, 'Terreno difícil não custa nada, e nada te prende nem te paralisa.'),
   anelDeInvisibilidade: anel('anelDeInvisibilidade', 'Anel de invisibilidade', RARIDADE.lendario, 'Uma ação para sumir, outra para voltar.'),

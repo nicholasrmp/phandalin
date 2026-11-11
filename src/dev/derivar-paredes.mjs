@@ -63,7 +63,9 @@ const alcanca = (semente) => {
 // o maior pedaço é o LADO DE FORA, e inundar por ele viraria a masmorra inteira em rocha. As LUZES resolvem:
 // elas estão onde a cena acontece, que é dentro. Sem luzes, vale o maior pedaço mesmo.
 let maior = new Set();
-const sementes = (m.luzes ?? []).map((l) => [l.pos?.x ?? l.x, l.pos?.y ?? l.y])
+// `SEMENTES="x,y;x,y"`: a cena com poucas luzes (Talhundereth tem duas, num templo de vinte salas) diz onde é dentro.
+const extras = (process.env.SEMENTES ?? '').split(';').filter(Boolean).map((p) => p.split(',').map(Number));
+const sementes = [...(m.luzes ?? []).map((l) => [l.pos?.x ?? l.x, l.pos?.y ?? l.y]), ...extras]
   .filter(([x, y]) => x >= 0 && y >= 0 && x < w && y < h && !campo.blocksMove(x, y));
 if (sementes.length) {
   for (const s of sementes) for (const k of alcanca(s)) maior.add(k);

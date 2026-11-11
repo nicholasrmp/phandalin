@@ -14,8 +14,22 @@
 // antes de procurar onde dormir; depois de um dia ou mais, os Marcarrubra
 // procuram briga.
 //
-// O QUE É NOSSO: todo o texto, as posições no mapa desenhado e o preço do
-// quarto (o livro manda ver o Livro do Jogador: hospedagem modesta, 5 pp).
+// O QUE É NOSSO: todo o texto, as posições no mapa desenhado, o preço do
+// quarto (o livro manda ver o Livro do Jogador: hospedagem modesta, 5 pp) —
+// e, isto importa, UM PUNHADO DE PAGAMENTOS QUE O LIVRO NÃO DÁ, listados aqui
+// para quem for medir a progressão não os tomar por oficiais:
+//
+//   - 25 po por herói do Gundren, mais um décimo do que a mina render;
+//   - 50 po do Sildar pela carta do Aranha Negra achada na mesa do Cajavidro;
+//   - uma poção de cura do Daran, por Persuasão CD 12;
+//   - 150 po (em vez de 100) da Halia e do Harbin a quem passa no teste deles,
+//     e 75 po a quem falha;
+//   - 15 po por herói do Barthen, por Persuasão CD 13, e 15% de desconto;
+//   - meio preço (ou nada) no quarto da estalagem depois da briga da rua.
+//
+// Nenhum deles é erro de número: todos são escolhas de ritmo, para a vila
+// pagar quem conversa e não só quem luta. Mas somados inflacionam o capítulo
+// em algumas centenas de ouro, e isso é decisão, não fidelidade.
 //
 // O estado mora em `app.campanha.vila` e sobrevive às lutas: a vila fecha
 // quando o tabuleiro abre e reabre, igual, quando a luta acaba.
@@ -33,6 +47,8 @@ import { totalEmCobre, guardar, cobrar, pagarCada, repartir, LOJAS, lojaComSimpa
 import { abrirLoja } from '../view/loja.js';
 import { garantirInventario } from '../rules/equipment.js';
 import { nomeDoMomento, deNoite } from './relogio.js';
+import { criarCapitulo5NaVila, capitulo5Ativo } from './obelisco5-vila.js';
+import { criarCapitulo6NaVila, capitulo6Ativo } from './obelisco6-vila.js';
 
 // ------------------------------------------------------------- o tempo ----
 // Seis momentos por dia; o grupo chega no quinto (fim de tarde). Cada visita
@@ -46,13 +62,19 @@ export const MISSOES = {
   iarno: { titulo: 'Onde está Iarno?', de: 'Sildar Hallwinter', texto: 'Iarno Albrek, mago da Aliança dos Lordes — baixo, barba preta, uns trinta anos — sumiu explorando a Mansão Tresendar há dois meses. Achá-lo, vivo ou não.', recompensa: '200 po por acabar com os Marcarrubra' },
   marcarrubra: { titulo: 'Os Marcarrubra', de: 'a vila', texto: 'A gangue de mantos vermelhos domina Phandalin. Frequentam o Gigante Adormecido; a base deles fica embaixo da Mansão Tresendar, no leste da vila.' },
   halia: { titulo: 'A oferta de Halia', de: 'Halia Thornton', texto: 'Eliminar o líder dos Marcarrubra, o Cajavidro, e levar a ela qualquer correspondência achada no quarto dele.', recompensa: '100 po' },
-  coruja: { titulo: 'Encrenca no Poço da Coruja Velha', de: 'Daran Edermath', texto: 'Na torre velha do Poço da Coruja Velha, dois dias a nordeste, há gente nova — e uns garimpeiros juram que foram postos para correr por mortos que andavam. Ir lá ver quem é, e contar ao Daran.' },
-  orcs: { titulo: 'Orcs no Cume da Wyvern', de: 'Harbin Wester', texto: 'O Harbin pagou um aviso na porta do salão: um bando de orcs anda assaltando quem passa pela Trilha de Triboar, e se esconde para os lados do Cume da Wyvern. Acabar com o bando.', recompensa: '100 po' },
+  coruja: { titulo: 'Encrenca no Poço da Coruja Velha', de: 'Daran Edermath', recompensa: 'as botas de passos largos e saltos do Daran', texto: 'Na torre velha do Poço da Coruja Velha, dois dias a nordeste, há gente nova — e uns garimpeiros juram que foram postos para correr por mortos que andavam. Ir lá ver quem é, e contar ao Daran.' },
+  orcs: { titulo: 'Saqueadores no Cume da Wyvern', de: 'Harbin Wester', texto: 'O Harbin pregou um aviso na porta do salão: um bando assalta carroças na ponta leste da Trilha de Triboar, perto do Cume da Wyvern — pelo menos um ogro e uns bugbears, e com eles, segundo as últimas vítimas, um goblin esquisito. Expulsar o bando e os goblins que andarem com ele.', recompensa: '100 po' },
   agatha: { titulo: 'A barganha da banshee', de: 'Irmã Garaele', texto: 'Levar um pente de prata à banshee Agatha, em Conyberry, e convencê-la a dizer onde está o grimório do mago Arco Suave.', recompensa: 'três poções de cura' },
-  reidoth: { titulo: 'Reidoth, o druida', de: 'Qelline Alderleaf', texto: 'O druida Reidoth conhece a região como poucos — talvez saiba onde fica o Castelo Dentefino. Da última vez, seguia para as ruínas de Árvore Trovão, uns 80 km a noroeste.' },
-  kost: { titulo: 'O favor do Mago Vermelho', de: 'Hamun Kost', texto: 'Tirar os orcs do Cume da Wyvern, ou perguntar à banshee Agatha o nome do mago que ergueu a torre do Poço da Coruja Velha. Em troca, ele conta o que sabe.' },
+  reidoth: { titulo: 'Reidoth, a druida', de: 'Qelline Alderleaf', texto: 'A druida Reidoth conhece a região como poucos — talvez saiba onde fica o Castelo Dentefino. Da última vez, seguia para as ruínas de Árvore Trovão, uns 80 km a noroeste.' },
+  kost: { titulo: 'O favor do Mago Vermelho', de: 'Hamun Kost', texto: 'Tirar os saqueadores do Cume da Wyvern, ou perguntar à banshee Agatha o nome do mago que ergueu a torre do Poço da Coruja Velha. Em troca, ele conta o que sabe.' },
   mirna: { titulo: 'A herança de Mirna', de: 'Mirna Dendrar', texto: 'Um colar de esmeraldas, escondido numa caixa sob as prateleiras da antiga loja de ervas da família, no canto sudeste de Árvore Trovão. Mirna o deu a quem o achar.' },
   linene: { titulo: 'Os suprimentos da Escudo Leão', de: 'Linene Graywind', texto: 'A última caravana da Escudo Leão nunca chegou. Quem achar a carga, ou disser onde está, ganha uma recompensa.', recompensa: '50 po' },
+  // O capítulo 5 do Obelisco (`obelisco5-vila.js`).
+  sawplee: { titulo: 'Goblins na vila', de: 'Harbin Wester', texto: 'Goblins atacaram quatro lugares de Phandalin: o poço atrás da Barthen, a pedra do Câmbio, o arco do Santuário da Sorte e o balcão do Gigante Adormecido. Descobrir quem são e acabar com isso.', recompensa: 'o resto do pagamento do Harbin' },
+  fragmentos: { titulo: 'Os três fragmentos', de: 'Gwyn Oresong', texto: 'Faltam três pedaços do obelisco: em Talhundereth, um templo anão abandonado nas colinas de Starmetal; na Cripta dos Talhund, debaixo dele; e na Encruzilhada da Forca, um velho entreposto subterrâneo. A Gwyn recomenda começar por Talhundereth.' },
+  pip: { titulo: 'A aventura de Pip', de: 'Trilena Stonehill', texto: 'Pip, o filho dos Stonehill, saiu para brincar nos campos a sudeste e não voltou.', recompensa: 'cama e comida na Stonehill' },
+  mineiros: { titulo: 'Mineiros sumidos', de: 'Halia Thornton', texto: 'Três mineiros da Halia sumiram numa mina velha a sudoeste, a Mina Hardyhammer, atrás de um "arbusto que anda".', recompensa: 'uma parte do veio de prata' },
+  zorzula: { titulo: 'O Repouso de Zorzula', de: 'Gwyn Oresong', texto: 'Os goblins vêm de um velho posto de mineração duergar, o Repouso de Zorzula, a um dia de viagem para o leste, nas Montanhas da Espada. Lá manda um tal de Ruxithid.' },
 };
 
 // ------------------------------------------------------------ facções ----
@@ -72,13 +94,22 @@ export const FACCOES = [
     quando: (f) => f.agathaGrimorio,
     convite: 'Garaele espera o santuário esvaziar. — Há uma rede de gente que sabe das coisas antes de elas acontecerem, e age em silêncio. A informação que vocês trouxeram foi preciosa. Alguém de vocês quer fazer parte?' },
   { id: 'alianca', nome: 'Aliança dos Lordes', lugar: 'salao', npc: 'sildar', titulo: 'Manto',
-    quando: (f, v) => v.sildar && f.casteloDentefino && f.traicaoDeIarno,
+    // O Obelisco: acabar com o Castelo OU descobrir a traição do Iarno basta.
+    quando: (f, v) => v.sildar && (f.casteloDentefino || f.traicaoDeIarno),
     convite: 'Sildar pede uma palavra em particular. — A Aliança dos Lordes existe para que cidades como esta não fiquem à mercê de um Iarno. Precisamos de quem age, não de quem fala. Quem de vocês vem comigo?' },
 ];
 
 // ------------------------------------------------------------- lugares ----
 // Posições em % da pintura (`art/vila/phandalin.webp`): a ponta de cada
 // marcador fica na porta do prédio pintado. A disposição segue o mapa do livro.
+// `oficial`: a mesma porta no MAPA OFICIAL da vila ("Map 2.1: Phandalin", versão de jogador, 2049 x 1452), que a tela
+// usa quando a arte está no disco (`public/mapas/oficial/vila-jogador.webp`, fora do repositório e da publicação).
+export const ARTE_OFICIAL_DA_VILA = { url: '/mapas/oficial/vila-jogador.webp', proporcao: '2049 / 1452' };
+const NO_MAPA_OFICIAL = {
+  estalagem: { x: 44.6, y: 40.2 }, barthen: { x: 52.0, y: 29.5 }, escudoLeao: { x: 33.9, y: 53.5 }, cambio: { x: 32.2, y: 68.0 },
+  salao: { x: 42.5, y: 52.5 }, santuario: { x: 38.5, y: 37.5 }, pomar: { x: 25.8, y: 30.5 }, fazenda: { x: 65.0, y: 66.0 },
+  marcenaria: { x: 38.5, y: 59.5 }, gigante: { x: 61.8, y: 42.0 }, mansao: { x: 88.4, y: 38.5 },
+};
 export const LUGARES = [
   { id: 'estalagem', nome: 'Estalagem Stonehill', x: 46.7, y: 45.4, npc: 'toblen', sempreAberto: true },
   { id: 'barthen', nome: 'Barthen Provisões', x: 54.6, y: 33.6, npc: 'elmar' },
@@ -92,8 +123,9 @@ export const LUGARES = [
   { id: 'gigante', nome: 'O Gigante Adormecido', x: 71.6, y: 48.3, npc: null, sempreAberto: true },
   { id: 'mansao', nome: 'Mansão Tresendar', x: 90.2, y: 47.2, npc: null, sempreAberto: true },
 ];
+for (const l of LUGARES) l.oficial = NO_MAPA_OFICIAL[l.id] ?? null;
 
-const QUADRO = 'O prédio mais sólido da vila: pedra grossa e uma torre com sino. Pregado na porta, um papel já amarelado promete recompensa a quem der fim aos orcs vistos para os lados do Cume da Wyvern — "tratar aqui dentro". A assinatura é um borrão.';
+const QUADRO = 'O prédio mais sólido da vila: pedra grossa e uma torre com sino. Pregado na porta, um papel já amarelado promete recompensa a quem der fim aos saqueadores vistos para os lados do Cume da Wyvern — um ogro, bugbears e "um goblin estranho" — "tratar aqui dentro". A assinatura é um borrão.';
 
 const pessoa = (id) => ({ id, name: NPCS[id]?.nome ?? id, look: NPCS[id]?.look ?? null });
 
@@ -122,7 +154,7 @@ export async function abrirPhandalin(app, { grupo, chegando = false } = {}) {
     const r = rolarPericia(rng, quem, pericia);
     return { quem: quem.name, pericia: SKILL_NAME[pericia], total: r.total, cd, passou: r.total >= cd };
   };
-  const falar = (npcId, arvore) => conversar(app, pessoa(npcId), arvore, fora);
+  const falar = (npcId, arvore, npc = null) => conversar(app, npc ?? pessoa(npcId), arvore, fora);
 
   // ---------------------------------------------------------- chegada ----
   if (chegando) {
@@ -140,6 +172,18 @@ export async function abrirPhandalin(app, { grupo, chegando = false } = {}) {
     });
     if (v.sildar) missao('gundren');
   }
+
+  // O CAPÍTULO 5 DO OBELISCO: depois da Mina Perdida, a vila revirada por goblins (`obelisco5-vila.js`).
+  const cap5 = capitulo5Ativo(camp)
+    ? criarCapitulo5NaVila({ app, camp, v, vivos, rng, registro, missao, concluir, pista, falar })
+    : null;
+  if (cap5) await cap5.chegada();
+
+  // O CAPÍTULO 6 DO OBELISCO: pago o contrato do Harbin, a Gwyn e as três missões antes dos fragmentos (`obelisco6-vila.js`).
+  const cap6 = capitulo6Ativo(camp)
+    ? criarCapitulo6NaVila({ app, camp, v, vivos, rng, registro, missao, concluir, pista, falar })
+    : null;
+  if (cap6) await cap6.chegada();
 
   // ------------------------------------------------------------ cenas ----
   const CENAS = {
@@ -172,20 +216,21 @@ export async function abrirPhandalin(app, { grupo, chegando = false } = {}) {
             ao: () => {
               pista('Irmã Garaele, do Santuário da Sorte, saiu da vila por uns dias e voltou machucada.');
               pista('Daran Edermath, do pomar, já foi aventureiro.');
-              pista('Orcs foram vistos na ponta leste da Trilha de Triboar; o chefe da vila procura quem os espante.');
+              pista('Saqueadores atacam carroças na ponta leste da Trilha de Triboar, e há goblins com eles; o chefe da vila procura quem os espante.');
+              pista('Elsa, a anã do balcão da Stonehill, tem uma irmã estudiosa em Neverwinter, Gwyn, que deve chegar à vila em breve.');
               pista('Thel Dendrar, o marceneiro, enfrentou os Marcarrubra há dez dias e foi morto. Levaram o corpo — e a mulher e os filhos sumiram.');
-              pista('Carp, o filho da Qelline Alderleaf, diz ter achado um túnel secreto no mato.');
+              pista('Carp, o filho da Qelline Alderleaf, diz ter achado um túnel secreto no mato — e ter visto goblins esquisitos por lá.');
               pista('Os Marcarrubra mexem com todo mundo, menos com o Câmbio de Minério da Halia Thornton.');
               missao('marcarrubra');
             },
             narra: 'Uma rodada de cerveja depois, a sala fala sozinha:',
             fala: [
-              'Trilena, a mulher do Toblen, puxa uma cadeira para perto: — O Thel Dendrar, o marceneiro, perdeu a paciência com os Marcarrubra faz uns dez dias. Disse umas verdades na cara deles. Morreu ali mesmo, e o corpo sumiu. A mulher e os dois filhos também — ninguém viu mais.',
-              'Lanar, ainda com pó de pedra na barba: — Lá para o leste, na Trilha de Triboar, apareceu orc. O chefe da vila pendurou um aviso pedindo voluntário. Voluntário, rá.',
-              'Freda, a tecelã, baixando a voz: — Repararam? A gangue cobra de todo mundo. De todo mundo menos do Câmbio de Minério. A Halia Thornton nunca teve uma vidraça quebrada.',
+              'O próprio Toblen, enxugando um caneco: — O Thel Dendrar, o marceneiro, perdeu a paciência com os Marcarrubra faz uns dez dias, quando eles vieram mexer com a mulher dele na oficina. Brigou, e eles o mataram ali mesmo — meia rua viu. Levaram o corpo. A mulher e os dois filhos também sumiram.',
+              'Lanar, um minerador ainda com pó de pedra na barba: — Lá para o leste, na Trilha de Triboar, tem bando assaltando carroça. O chefe da vila pendurou um aviso pedindo voluntário. E escutem o que eu digo: tem goblin andando com eles.',
+              'Freda, uma gnoma tecelã, baixando a voz: — Repararam? A gangue cobra de todo mundo. De todo mundo menos do Câmbio de Minério. A Halia Thornton nunca teve uma vidraça quebrada.',
               'Narth, um velho de mãos rachadas, sem tirar os olhos do caneco: — A elfa do santuário passou uns dias fora. Voltou mancando, cheia de arranhão. Perguntei; ela mudou de assunto.',
-              'Pip, o filho mais novo do Toblen, se espremendo entre as mesas: — Sabiam que o Carp achou um buraco escondido no mato? Ele jura que tem bandido lá dentro, e que escapou por um triz!',
-              'Elsa, equilibrando quatro canecos: — Conselho de quem já viu briga de verdade? Batam na porta do Daran, lá do pomar. Dizem que no tempo dele era coisa séria.',
+              'Pip, o filho mais novo do Toblen, se espremendo entre as mesas: — Sabiam que o Carp achou um buraco escondido no mato? Ele jura que os Marcarrubra quase pegaram ele! E que viu uns goblins esquisitos rondando lá!',
+              'Elsa, a anã do balcão, equilibrando quatro canecos: — Conselho de quem já viu briga de verdade? Batam na porta do Daran, lá do pomar. Foi aventureiro, e dos bons. — E, já que estão de passagem: — Minha irmã Gwyn chega de Neverwinter qualquer dia desses. Estudiosa, das que leem mais do que dormem. Vocês vão gostar dela.',
               'E toda vez que alguém diz "Marcarrubra", os olhos da sala escorregam para o leste — para o Gigante Adormecido, a taverna onde eles bebem.',
             ],
             opcoes: [{ texto: 'Voltar a falar com Toblen.', vai: 'oi' }],
@@ -204,8 +249,8 @@ export async function abrirPhandalin(app, { grupo, chegando = false } = {}) {
         inicio: 'oi',
         nos: {
           oi: {
-            narra: 'Prateleiras até o teto e cheiro de corda nova e couro curtido. Dois rapazes, Ander e Thistle, carregam sacos de farinha para dentro. Uma tabuleta avisa: armas e armaduras, só na Escudo Leão.',
-            fala: 'Elmar Barthen. Em que posso ajudar?',
+            narra: 'Prateleiras até o teto e cheiro de corda nova e couro curtido. Dois ajudantes, Ander e Thistle, carregam sacos de farinha para dentro, e atrás do balcão uma moça de avental anota tudo num livro. Uma tabuleta avisa: armas e armaduras, só na Escudo Leão.',
+            fala: 'Elmina Barthen, a dona. Em que posso ajudar?',
             opcoes: [
               { texto: 'Trouxemos a carroça de Gundren Buscapedra.', vai: 'carroca', uma: true,
                 requer: () => (camp.capitulo1?.carroca && !v.feito.carroca ? null : 'sem carroça para entregar'), oculta: true },
@@ -224,18 +269,18 @@ export async function abrirPhandalin(app, { grupo, chegando = false } = {}) {
             ],
           },
           carrocaPaga: {
-            ao: () => { v.feito.carroca = true; pagarCada(vivos(), 10); registro.push('Elmar Barthen paga 10 po a cada um pela carroça.'); },
+            ao: () => { v.feito.carroca = true; pagarCada(vivos(), 10); registro.push('Elmina Barthen paga 10 po a cada um pela carroça.'); },
             fala: 'Dez peças de ouro para cada um. Ainda bem que vocês voltaram com tudo.',
             opcoes: [{ texto: 'Obrigado.', vai: 'oi' }],
           },
           carrocaMais: {
-            ao: () => { v.feito.carroca = true; pagarCada(vivos(), 15); registro.push('Elmar Barthen paga 15 po a cada um pela carroça (regateio).'); },
+            ao: () => { v.feito.carroca = true; pagarCada(vivos(), 15); registro.push('Elmina Barthen paga 15 po a cada um pela carroça (regateio).'); },
             fala: 'Hm. Nem uma peça a menos do que a carga vale, e vocês sabem disso. Quinze para cada um — e esta é a última vez que perco um regateio.',
             opcoes: [{ texto: 'Obrigado.', vai: 'oi' }],
           },
           carrocaGraca: {
-            ao: () => { v.feito.carroca = true; v.feito.elmarGrato = true; registro.push('Elmar Barthen fica com a carroça sem pagar. Daqui em diante vende ao grupo por 15% menos.'); },
-            narra: 'Elmar fica um instante sem saber o que dizer. Depois estende a mão, e o aperto dura mais do que o necessário.',
+            ao: () => { v.feito.carroca = true; v.feito.elmarGrato = true; registro.push('Elmina Barthen fica com a carroça sem pagar. Daqui em diante vende ao grupo por 15% menos.'); },
+            narra: 'Elmina fica um instante sem saber o que dizer. Depois estende a mão, e o aperto dura mais do que o necessário.',
             fala: 'Ninguém aqui faz isso de graça. Então eu também não vou cobrar o que devo: da próxima vez que vierem ao balcão, o preço é menor. Palavra de Barthen.',
             opcoes: [{ texto: 'Fechado.', vai: 'oi' }],
           },
@@ -478,7 +523,7 @@ export async function abrirPhandalin(app, { grupo, chegando = false } = {}) {
               ao: () => {
                 v.feito.iarnoEntregue = true;
                 concluir('iarno');
-                app.xpPendente = { xp: (app.xpPendente?.xp ?? 0) + 200, motivo: 'O Cajavidro entregue a Sildar' };
+                app.xpPendente = { xp: (app.xpPendente?.xp ?? 0) + 200, motivo: [app.xpPendente?.motivo, 'O Cajavidro entregue a Sildar'].filter(Boolean).join('; ') };
                 feitos.traicaoDeIarno = true;
               },
               narra: 'Sildar olha um bom tempo para o homem amarrado antes de falar.',
@@ -548,7 +593,7 @@ export async function abrirPhandalin(app, { grupo, chegando = false } = {}) {
           },
           agatha: {
             fala: [
-              'Fui até a mata atrás de Conyberry falar com uma banshee, Agatha. Ela me pôs para correr antes de eu abrir a boca. A pergunta continua de pé: onde foi parar o grimório de Arco Suave, um mago de muito tempo atrás?',
+              'Fui até a mata atrás de Conyberry falar com uma banshee, Agatha. Esperei em vão: ela não apareceu para mim, e a volta me custou caro. A pergunta continua de pé: onde foi parar o grimório de Arco Suave, um mago de muito tempo atrás?',
               'Talvez ela ouça vocês. Elfos mortos continuam gostando de coisa bonita: levem este pente de prata, de presente. Se ela responder, eu pago com três poções de cura.',
             ],
             opcoes: [
@@ -595,13 +640,21 @@ export async function abrirPhandalin(app, { grupo, chegando = false } = {}) {
           },
           marcarrubra: {
             ao: () => { missao('marcarrubra'); pista('Os Marcarrubra têm uma base embaixo da Mansão Tresendar, no leste da vila.'); },
-            fala: 'Que alguém devia ter feito alguma coisa há muito tempo — e eu já estou velho para entrar sozinho num ninho de ratos. O chefe deles atende por Cajavidro. Bebem no Gigante Adormecido, mas dormem embaixo da Mansão Tresendar, a ruína do leste.',
+            fala: 'Que alguém devia ter feito alguma coisa há muito tempo — e que ninho de ratos não se limpa sozinho. O chefe deles atende por Cajavidro. Bebem no Gigante Adormecido, mas dormem embaixo da Mansão Tresendar, a ruína do leste.',
             opcoes: [{ texto: '…', vai: 'oi' }],
           },
           relatoCoruja: {
             ao: () => {
               v.feito.relatoCoruja = true;
               concluir('coruja');
+              // O OBELISCO dá ao Daran uma recompensa por isto: as botas de passos largos e saltos dele (na Mina,
+              // eram do Tharden, achadas na Onda Eco).
+              const quem = vivos()[0];
+              if (quem && !v.feito.botasDoDaran) {
+                v.feito.botasDoDaran = true;
+                guardar(quem, 'botasDeMarchaESalto', 1);
+                registro.push(`Daran Edermath dá as botas de passos largos e saltos dele (${quem.name} guarda).`);
+              }
               // O livro: 200 XP por negociar com o mago e contar ao Daran. Quem
               // o venceu já ganhou os 800 lá.
               if (feitos.kostNegociou && !feitos.kostDerrotado) {
@@ -638,16 +691,21 @@ export async function abrirPhandalin(app, { grupo, chegando = false } = {}) {
             ],
           },
           carp: {
-            ao: () => { v.feito.tunel = true; pista('Carp sabe onde fica um túnel secreto no mato perto da Mansão Tresendar, que leva ao covil dos Marcarrubra. Ele pode mostrar.'); },
+            ao: () => {
+              v.feito.tunel = true;
+              pista('Carp sabe onde fica um túnel secreto no mato perto da Mansão Tresendar, que leva ao covil dos Marcarrubra. Ele pode mostrar.');
+              pista('Goblins de fora: Carp viu goblins de cabeça comprida e mãos brilhando verde entrarem no túnel da Mansão Tresendar.');
+            },
             fala: [
               'Carp, dez anos, falando baixo e depressa: — Eu vou ser aventureiro, tá? Eu tava no mato atrás da mansão velha e achei uma passagem secreta, escondida no meio das moitas!',
               '— Aí saíram dois sujeitos enormes, feios de dar medo, e foram se encontrar com uns Marcarrubra. Eu fiquei grudado no chão, sem respirar. Eles moram lá embaixo, eu sei. Eu levo vocês!',
+              '— E teve outra coisa, mais estranha: uns goblins, mas não goblin normal, de cabeça comprida, com as mãos BRILHANDO verde, entraram no buraco também. Ninguém acredita em mim. Mas eu vi.',
             ],
             opcoes: [{ texto: '…', vai: 'oi' }],
           },
           reidoth: {
             ao: () => missao('reidoth'),
-            fala: 'Vocês precisam do Reidoth. É druida, amigo antigo, e conhece estas terras como eu conheço a minha horta. Da última vez que passou, ia para as ruínas de Árvore Trovão, a oeste da Floresta de Neverwinter — uns oitenta quilômetros a noroeste. Eu desenho o caminho.',
+            fala: 'Vocês precisam da Reidoth. É druida, amiga antiga, e conhece estas terras como eu conheço a minha horta. Da última vez que passou, ia para as ruínas de Árvore Trovão, a oeste da Floresta de Neverwinter — uns oitenta quilômetros a noroeste. Eu desenho o caminho.',
             opcoes: [{ texto: '…', vai: 'oi' }],
           },
         },
@@ -696,8 +754,8 @@ export async function abrirPhandalin(app, { grupo, chegando = false } = {}) {
             return 'Os Marcarrubra? Rapazes de uma companhia de escolta, só isso. A vila fala demais. Pois não — em que posso servir?';
           },
           opcoes: [
-            { texto: 'Sobre os orcs do aviso.', vai: 'orcs', uma: true },
-            { texto: 'Os orcs do Cume da Wyvern acabaram.', vai: 'orcsFeitos', uma: true,
+            { texto: 'Sobre os saqueadores do aviso.', vai: 'orcs', uma: true },
+            { texto: 'Os saqueadores do Cume da Wyvern acabaram.', vai: 'orcsFeitos', uma: true,
               requer: () => (feitos.cumeLimpo && !v.feito.harbinPagouOrcs ? null : 'nada'), oculta: true },
             { texto: 'Trouxemos um Marcarrubra preso.', vai: 'preso',
               requer: () => (temPreso() ? null : 'ninguém preso'), oculta: true },
@@ -709,24 +767,24 @@ export async function abrirPhandalin(app, { grupo, chegando = false } = {}) {
           fala: 'Cem peças de ouro, como estava no papel. E, por favor, não espalhem que foi tão fácil: os próximos vão querer cobrar mais.',
           opcoes: [
             { texto: 'Cem peças, como combinado.', vai: 'orcsPaga' },
-            { texto: 'Havia mais orcs do que o aviso dizia. O preço sobe.', teste: { pericia: 'intimidacao', cd: 13 }, sucesso: 'orcsMais', falha: 'orcsMenos' },
+            { texto: 'Havia mais deles do que o aviso dizia. O preço sobe.', teste: { pericia: 'intimidacao', cd: 13 }, sucesso: 'orcsMais', falha: 'orcsMenos' },
             { texto: 'Fique com as moedas. Dê-as à família do Thel Dendrar, e que a vila saiba de onde vieram.', vai: 'orcsDoa',
               requer: () => (v.feito.dendrarEmCasa ? null : 'a família Dendrar ainda não voltou'), oculta: true },
           ],
         },
         orcsPaga: {
-          ao: () => { v.feito.harbinPagouOrcs = true; concluir('orcs'); repartir(vivos(), 100 * 100); registro.push('Harbin paga 100 po pelos orcs do Cume da Wyvern.'); },
+          ao: () => { v.feito.harbinPagouOrcs = true; concluir('orcs'); repartir(vivos(), 100 * 100); registro.push('Harbin paga 100 po pelos saqueadores do Cume da Wyvern.'); },
           fala: 'Aqui. Contado duas vezes.',
           opcoes: [{ texto: '…', vai: 'oi' }],
         },
         orcsMais: {
-          ao: () => { v.feito.harbinPagouOrcs = true; concluir('orcs'); repartir(vivos(), 150 * 100); registro.push('Harbin paga 150 po pelos orcs do Cume da Wyvern, depois de uma conversa dura.'); },
+          ao: () => { v.feito.harbinPagouOrcs = true; concluir('orcs'); repartir(vivos(), 150 * 100); registro.push('Harbin paga 150 po pelos saqueadores do Cume da Wyvern, depois de uma conversa dura.'); },
           narra: 'Harbin recua a cadeira, passa o lenço na testa e abre a gaveta de baixo.',
           fala: 'Cento e cinquenta! Mas entendam: saiu do meu bolso, não do da vila. E eu vou lembrar disto.',
           opcoes: [{ texto: '…', vai: 'oi' }],
         },
         orcsMenos: {
-          ao: () => { v.feito.harbinPagouOrcs = true; concluir('orcs'); repartir(vivos(), 75 * 100); registro.push('Harbin paga só 75 po pelos orcs: não gostou da ameaça.'); },
+          ao: () => { v.feito.harbinPagouOrcs = true; concluir('orcs'); repartir(vivos(), 75 * 100); registro.push('Harbin paga só 75 po pelos saqueadores: não gostou da ameaça.'); },
           narra: 'Harbin endireita as costas, ofendido, e conta as moedas muito devagar.',
           fala: 'Ameaçar o chefe da vila no próprio salão? Setenta e cinco, e agradeçam que não chamo a guarda.',
           opcoes: [{ texto: '…', vai: 'oi' }],
@@ -743,7 +801,7 @@ export async function abrirPhandalin(app, { grupo, chegando = false } = {}) {
         orcs: {
           ao: () => missao('orcs'),
           narra: 'Harbin enxuga a testa.',
-          fala: 'Ah, o aviso. Pois é. Carroça assaltada, mercador sumido, um pastor que voltou sem as ovelhas e sem a orelha… Todo mundo jura que foram orcs, e que eles se enfiam naquele morro grande do leste, o Cume da Wyvern. O salão paga cem peças de ouro a quem acabar com isso. Cem! É muito dinheiro.',
+          fala: 'Ah, o aviso. Pois é. Carroça assaltada, mercador sumido, um pastor que voltou sem as ovelhas e sem a orelha… As últimas vítimas viram um ogro, uns bugbears — e um goblin que ninguém soube dizer de onde era, de cabeça comprida. Eles se enfiam naquele morro grande do leste, o Cume da Wyvern. O salão paga cem peças de ouro a quem expulsar o bando, goblin esquisito e tudo. Cem! É muito dinheiro.',
           opcoes: [{ texto: '…', vai: 'oi' }],
         },
         preso: {
@@ -792,15 +850,15 @@ export async function abrirPhandalin(app, { grupo, chegando = false } = {}) {
   /** O Gigante Adormecido depois da briga: sem mantos vermelhos na varanda. */
   async function gigante() {
     const rodada = 4 * vivos().length;                // caneco de cerveja: 4 pc
-    return conversar(app, { id: 'grista', name: 'Grista', look: null }, {
+    return conversar(app, { id: 'grista', name: 'Greska', look: null }, {
       inicio: 'oi',
       nos: {
         oi: {
-          narra: 'O Gigante Adormecido continua de pé, por pouco. Sem os mantos vermelhos na varanda, o lugar parece maior — e mais vazio. Atrás do balcão, Grista, uma anã de cara amarrada, esfrega um caneco que nunca fica limpo.',
+          narra: 'O Gigante Adormecido continua de pé, por pouco. Sem os mantos vermelhos na varanda, o lugar parece maior — e mais vazio. Atrás do balcão, Greska, uma orc de cara amarrada e presas curtas, esfrega um caneco que nunca fica limpo.',
           fala: 'Bebe ou some. E se vierem quebrar mais alguma coisa, a conta é de vocês.',
           opcoes: [
             { texto: `Uma rodada de cerveja (${v.feito.gristaAmiga ? 'de graça: ela se lembra' : `${rodada} pc`}).`, vai: 'cerveja', uma: true,
-              requer: () => (v.feito.gristaMedo ? 'Grista não serve quem a ameaçou'
+              requer: () => (v.feito.gristaMedo ? 'Greska não serve quem a ameaçou'
                 : v.feito.gristaAmiga || totalEmCobre(vivos()) >= rodada ? null : 'sem dinheiro'),
               efeito: () => { if (!v.feito.gristaAmiga) cobrar(vivos(), rodada); } },
             { texto: 'Os Marcarrubra ainda aparecem aqui?', teste: { pericia: 'intimidacao', cd: 12 }, sucesso: 'contaComMedo', falha: 'nada', uma: true },
@@ -813,14 +871,14 @@ export async function abrirPhandalin(app, { grupo, chegando = false } = {}) {
         cerveja: { narra: 'A cerveja é rala e morna. Ninguém puxa conversa, mas ninguém vai embora também.', opcoes: [{ texto: '…', vai: 'oi' }] },
         nada: { fala: 'Não vi nada, não sei de nada, e não vou começar agora.', opcoes: [{ texto: '…', vai: 'oi' }] },
         contaComMedo: {
-          ao: () => { v.feito.gristaMedo = true; pista('Os Marcarrubra entram no covil por uma escada de pedra nas ruínas da cozinha da Mansão Tresendar. Grista falou com medo, e agora não serve mais ao grupo.'); },
-          narra: 'Grista larga o caneco. A mão que o segurava treme um pouco.',
+          ao: () => { v.feito.gristaMedo = true; pista('Os Marcarrubra entram no covil por uma escada de pedra nas ruínas da cozinha da Mansão Tresendar. Greska falou com medo, e agora não serve mais ao grupo.'); },
+          narra: 'Greska larga o caneco. A mão que o segurava treme um pouco.',
           fala: 'Sobem a rua até a mansão velha e descem pela cozinha caída. Pronto. Agora saiam do meu balcão, e não voltem para pedir cerveja.',
           opcoes: [{ texto: '…', vai: 'oi' }],
         },
         conta: {
           ao: () => pista('Os Marcarrubra entram no covil por uma escada de pedra nas ruínas da cozinha da Mansão Tresendar.'),
-          narra: 'Grista olha para a porta antes de falar, baixo:',
+          narra: 'Greska olha para a porta antes de falar, baixo:',
           fala: 'Vêm menos, agora. Sobem a rua até a mansão velha e descem pela cozinha caída. É tudo o que eu sei — e eu não disse nada.',
           opcoes: [{ texto: '…', vai: 'oi' }],
         },
@@ -920,7 +978,9 @@ export async function abrirPhandalin(app, { grupo, chegando = false } = {}) {
       return;
     }
     tela.esconder();
-    const fim = l.npc ? await CENAS[l.id]() : await semNpc(l);
+    const doCap5 = cap5 ? await cap5.cenaDoLugar(l.id) : null;
+    const doCap6 = doCap5 == null && cap6 ? await cap6.cenaDoLugar(l.id) : null;
+    const fim = doCap5 ?? doCap6 ?? (l.npc ? await CENAS[l.id]() : await semNpc(l));
     if (fim?.descer) {
       tela.fechar();
       app.newEncounter({ ...app.config, modo: 'campanha', capitulo: 3, cenaDaVila: fim.descer, continuarCom: grupo });
@@ -1007,6 +1067,7 @@ export async function abrirPhandalin(app, { grupo, chegando = false } = {}) {
 
   tela = abrirTelaVila(app.root, {
     lugares: LUGARES,
+    oficial: ARTE_OFICIAL_DA_VILA,
     estado: v,
     grupo,
     missoes: MISSOES,
@@ -1022,10 +1083,15 @@ export async function abrirPhandalin(app, { grupo, chegando = false } = {}) {
     onLugar: (l) => visitar(l),
     onDormir: async () => {
       tela.esconder();
-      const quarto = 5 * 10 * vivos().length;
+      // O MESMO PREÇO DOS DOIS LADOS. A cena da estalagem cobra metade a quem limpou a rua e nada a quem a
+      // vila deve favor (`CENAS.estalagem`), e este caminho — o botão "Dormir" do mapa da vila — cobrava
+      // sempre as 5 pp cheias. Dois preços para o mesmo quarto, conforme a porta por onde se entrava.
+      const quarto = (v.feito.vilaGrata ? 0 : v.feito.ruaVencida ? 25 : 5 * 10) * vivos().length;
       const v2 = await narrar(app.root, {
         formato: 'painel',
-        paginas: [{ titulo: 'Onde dormir', texto: [`Quarto na Estalagem Stonehill: ${quarto / 10} peças de prata para o grupo. Ou o galpão da fazenda Alderleaf, de graça, ou acampar fora da vila.`] }],
+        paginas: [{ titulo: 'Onde dormir', texto: [quarto === 0
+          ? 'Quarto na Estalagem Stonehill: o Toblen não aceita dinheiro de vocês. Ou o galpão da fazenda Alderleaf, ou acampar fora da vila.'
+          : `Quarto na Estalagem Stonehill: ${quarto / 10} peças de prata para o grupo${v.feito.ruaVencida ? ', metade do preço desde a briga na rua' : ''}. Ou o galpão da fazenda Alderleaf, de graça, ou acampar fora da vila.`] }],
         escolhas: [
           { rotulo: 'Acampar fora', valor: 'acampar' },
           { rotulo: 'Galpão da Qelline', valor: 'palheiro' },

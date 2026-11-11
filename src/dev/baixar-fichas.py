@@ -77,6 +77,11 @@ def main():
     # os personagens com nome que têm a arte deles (`fichas-proprias.py`) não levam a ficha genérica por cima
     proprias = {k for k in json.load(open(os.path.join(RAIZ, 'src', 'dev', 'fichas-proprias.json'), encoding='utf-8')) if not k.startswith('_')}
     do5e = {k: v for k, v in json.load(open(LISTA_5E, encoding='utf-8')).items() if not k.startswith('_')}
+    # as fichas dos BESTIÁRIOS IMPORTADOS (`importar-bestiario.mjs` escreve `src/dev/bestiario/fichas-<livro>.json`)
+    pasta = os.path.join(RAIZ, 'src', 'dev', 'bestiario')
+    for nome in sorted(os.listdir(pasta)) if os.path.isdir(pasta) else []:
+        if nome.startswith('fichas-') and nome.endswith('.json'):
+            do5e.update({k: v for k, v in json.load(open(os.path.join(pasta, nome), encoding='utf-8')).items() if k not in do5e})
     os.makedirs(CRU_5E, exist_ok=True)
     for criatura, (livro, arquivo) in do5e.items():
         destino = os.path.join(CRU_5E, f'{criatura}.webp')

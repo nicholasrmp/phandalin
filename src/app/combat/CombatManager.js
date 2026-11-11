@@ -109,15 +109,19 @@ export class CombatManager {
         if (callbacks.onError) callbacks.onError(error);
       },
       onComplete: () => {
-        this.isProcessing = false;
-        if (callbacks.onComplete) callbacks.onComplete();
+        this.concluir(callbacks);
       },
-      onMove: callbacks.onMove,
+      // `onWalk` é o nome que `ActionHandler` LÊ. Daqui saía `onMove`, que ele nunca procura: o
+      // ataque que anda antes de bater andava e o golpe sumia calado, e o ferrolho desta camada
+      // ficava preso, porque quem o solta nesse caminho é o fim do passo.
+      onWalk: callbacks.onWalk ?? callbacks.onMove,
       onDamage: callbacks.onDamage,
     });
 
-    if (!result.ok) {
-      this.isProcessing = false;
+    // O ataque que precisa ANDAR antes de bater segue depois deste retorno: quem o solta é o
+    // `onComplete` do handler. Todo o resto já acabou aqui.
+    if (!result?.needsMovement) {
+      this.concluir(callbacks);
     }
 
     return result;
@@ -151,16 +155,13 @@ export class CombatManager {
         if (callbacks.onError) callbacks.onError(error);
       },
       onComplete: () => {
-        this.isProcessing = false;
-        if (callbacks.onComplete) callbacks.onComplete();
+        this.concluir(callbacks);
       },
       onDamage: callbacks.onDamage,
       onEffect: callbacks.onEffect,
     });
 
-    if (!result.ok) {
-      this.isProcessing = false;
-    }
+    this.concluir(callbacks);
 
     return result;
   }
@@ -193,16 +194,13 @@ export class CombatManager {
         if (callbacks.onError) callbacks.onError(error);
       },
       onComplete: () => {
-        this.isProcessing = false;
-        if (callbacks.onComplete) callbacks.onComplete();
+        this.concluir(callbacks);
       },
       onHeal: callbacks.onHeal,
       onEffect: callbacks.onEffect,
     });
 
-    if (!result.ok) {
-      this.isProcessing = false;
-    }
+    this.concluir(callbacks);
 
     return result;
   }
@@ -235,15 +233,12 @@ export class CombatManager {
         if (callbacks.onError) callbacks.onError(error);
       },
       onComplete: () => {
-        this.isProcessing = false;
-        if (callbacks.onComplete) callbacks.onComplete();
+        this.concluir(callbacks);
       },
       onEffect: callbacks.onEffect,
     });
 
-    if (!result.ok) {
-      this.isProcessing = false;
-    }
+    this.concluir(callbacks);
 
     return result;
   }
@@ -339,9 +334,27 @@ export class CombatManager {
    * @returns {boolean}
    * @private
    */
+  /**
+   * SOLTA O FERROLHO de reentrância. `isProcessing` é posto antes de cada ação e, pelo contrato
+   * escrito aqui, deveria cair no `onComplete` do handler — que o `ActionHandler` NUNCA chama: ele
+   * só avisa `onSuccess` e `onError`. Resultado medido: a primeira ação que DAVA CERTO trancava a
+   * camada inteira, e tudo o que viesse depois levava "Ação em andamento"; só a ação que FALHAVA
+   * destrancava, pelo `!result.ok`. Agora quem solta é o FIM da ação — o `onComplete`, se um dia
+   * vier, ou o retorno, que nestas portas é síncrono —, e soltar duas vezes não faz nada.
+   *
+   * A exceção é o ataque que ANDA antes de bater (`needsMovement`): esse segue depois do retorno, e
+   * quem o solta é o `onComplete`.
+   */
+  concluir(callbacks = {}) {
+    if (!this.isProcessing) return;
+    this.isProcessing = false;
+    if (callbacks.onComplete) callbacks.onComplete();
+  }
+
   isCurrentTurn(combatant) {
-    const current = this.turnManager.getCurrentCombatant();
-    return current && current.id === combatant.id;
+    // A fase é do LADO (ver `TurnManager.ehAVezDe`): comparar com "o combatente atual" só deixava
+    // agir o primeiro da lista, porque não há combatente atual neste motor.
+    return this.turnManager.ehAVezDe(combatant);
   }
 
   /**

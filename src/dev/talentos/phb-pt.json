@@ -1,0 +1,170 @@
+{
+ "Magic Initiate": {
+  "nome": "Iniciado em Magia",
+  "desc": "Sem pré-requisito e sem aumento de atributo. Escolha bardo, bruxo, clérigo, druida, feiticeiro ou mago: você aprende dois truques e uma magia de 1º círculo da lista dessa classe. A magia de 1º círculo pode ser lançada uma vez, no círculo mínimo, sem gastar espaço, e o uso volta após um descanso longo. O atributo de conjuração é Carisma para bardo, bruxo e feiticeiro, Sabedoria para clérigo e druida, e Inteligência para mago."
+ },
+ "Moderately Armored": {
+  "nome": "Moderadamente Blindado",
+  "desc": "Pré-requisito: proficiência com armaduras leves. Aumente seu valor de Força ou Destreza em 1, até o máximo de 20. Você passa a ter proficiência com armaduras médias e com escudos."
+ },
+ "Spell Sniper": {
+  "nome": "Atirador Arcano",
+  "desc": "Pré-requisito: capacidade de conjurar pelo menos uma magia. Magias que exigem jogada de ataque têm o alcance dobrado, e seus ataques à distância com magia não sofrem penalidade por meia cobertura nem por três-quartos de cobertura. Você também aprende um truque que use jogada de ataque, escolhido da lista de bardo, clérigo, druida, feiticeiro, bruxo ou mago. Esse truque usa Carisma (bardo, feiticeiro, bruxo), Sabedoria (clérigo, druida) ou Inteligência (mago) como atributo de conjuração."
+ },
+ "Mobile": {
+  "nome": "Móvel",
+  "desc": "Não tem pré-requisito nem aumento de atributo. Seu deslocamento aumenta em 3 m, e no turno em que você usa a ação Disparada o terreno difícil não gasta movimento extra. Depois de fazer um ataque corpo a corpo contra uma criatura, acertando ou errando, você não provoca ataques de oportunidade dela até o fim do turno."
+ },
+ "Observant": {
+  "nome": "Observador",
+  "desc": "Sem pré-requisito. Aumente Inteligência ou Sabedoria em 1. Seus valores passivos de Sabedoria (Percepção) e Inteligência (Investigação) recebem +5. Além disso, você lê lábios: se enxergar a boca de uma criatura falando um idioma que você conhece, entende o que ela diz."
+ },
+ "Weapon Master": {
+  "nome": "Mestre em Armas",
+  "desc": "Sem pré-requisito. Aumenta Força ou Destreza em 1 (máximo 20). Fruto de longo treino com armas variadas, você escolhe quatro armas simples ou marciais e passa a ter proficiência com elas."
+ },
+ "Mage Slayer": {
+  "nome": "Matador de Magos",
+  "desc": "Sem pré-requisito nem aumento de atributo. Se uma criatura a até 1,5 m de você conjurar uma magia, você pode gastar sua reação para fazer um ataque corpo a corpo com arma contra ela. Criaturas que você ferir enquanto mantêm concentração fazem o teste para não perdê-la com desvantagem. Você tem vantagem nos testes de resistência contra magias conjuradas por criaturas a até 1,5 m de você."
+ },
+ "Skilled": {
+  "nome": "Habilidoso",
+  "desc": "Sem pré-requisito e sem aumento de atributo. Você escolhe três proficiências novas, podendo combinar livremente perícias e ferramentas, como três perícias, três ferramentas ou qualquer mistura das duas."
+ },
+ "Shield Master": {
+  "nome": "Mestre em Escudos",
+  "desc": "Sem pré-requisito nem aumento de atributo; os benefícios valem enquanto você empunha um escudo. Depois de usar a ação de Ataque no seu turno, você pode gastar uma ação bônus para empurrar com o escudo uma criatura a até 1,5 m. Se não estiver incapacitado, soma o bônus de CA do escudo aos testes de resistência de Destreza contra magias ou efeitos nocivos que tenham só você como alvo. Contra efeitos que causam metade do dano num teste de Destreza bem-sucedido, você pode usar sua reação para, ao passar no teste, não sofrer dano algum."
+ },
+ "Martial Adept": {
+  "nome": "Adepto Marcial",
+  "desc": "Sem pré-requisito e sem aumento de atributo. Escolha duas manobras da lista do arquétipo Mestre de Batalha do guerreiro; quando uma delas exigir teste de resistência do alvo, a CD é 8 + seu bônus de proficiência + seu modificador de Força ou Destreza, à sua escolha. Você recebe um dado de superioridade d6, que se soma aos que já tiver de outras fontes e é gasto ao usar uma manobra. Os dados gastos voltam ao fim de um descanso curto ou longo."
+ },
+ "Elemental Adept": {
+  "nome": "Adepto Elemental",
+  "desc": "Pré-requisito: capacidade de conjurar pelo menos uma magia. Escolha um tipo de dano entre ácido, frio, fogo, elétrico ou trovejante: suas magias desse tipo passam por cima da resistência dos alvos, e cada 1 tirado nos dados de dano delas conta como 2. Pode ser escolhido mais de uma vez, sempre com um tipo de dano diferente."
+ },
+ "Lucky": {
+  "nome": "Sortudo",
+  "desc": "Sem pré-requisito nem aumento de atributo. Você tem 3 pontos de sorte, recuperados ao fim de um descanso longo. Em uma jogada de ataque, teste de habilidade ou teste de resistência seu, gaste 1 ponto para rolar mais um d20, mesmo depois de ver o dado e antes de saber o resultado, e escolha qual dado vale. Quando alguém ataca você, gaste 1 ponto para rolar um d20 e decidir se o ataque usa o dado do atacante ou o seu; se duas criaturas gastarem sorte na mesma jogada, os pontos se anulam e nenhum dado extra é rolado."
+ },
+ "Skulker": {
+  "nome": "Furtivo",
+  "desc": "Exige Destreza 13 ou maior. Você pode se esconder de uma criatura mesmo estando apenas levemente obscurecido em relação a ela. Quando estiver escondido e errar um ataque à distância com arma contra uma criatura, sua posição continua oculta. A penumbra não impõe desvantagem aos seus testes de Sabedoria (Percepção) que dependem da visão."
+ },
+ "Durable": {
+  "nome": "Durável",
+  "desc": "Sem pré-requisito. Aumenta sua Constituição em 1 (máximo 20). Ao gastar um Dado de Vida para recuperar PV, você sempre recupera, no mínimo, o dobro do seu modificador de Constituição, e nunca menos de 2 PV por dado."
+ },
+ "Grappler": {
+  "nome": "Agarrador",
+  "desc": "Pré-requisito: Força 13. Seus ataques contra uma criatura que você esteja agarrando têm vantagem. Além disso, com sua ação, você pode tentar imobilizar uma criatura agarrada por você fazendo um novo teste de agarrar; se vencer, tanto você quanto ela ficam contidos enquanto o agarrão durar."
+ },
+ "Athlete": {
+  "nome": "Atleta",
+  "desc": "Sem pré-requisito. Aumente sua Força ou Destreza em 1. Levantar-se da condição caído consome apenas 1,5 m do seu deslocamento, e escalar não gasta movimento adicional. Para fazer um salto longo ou em altura com corrida, basta percorrer 1,5 m a pé antes, em vez de 3 m."
+ },
+ "Mounted Combatant": {
+  "nome": "Combatente Montado",
+  "desc": "Sem pré-requisito e sem aumento de atributo; os benefícios valem enquanto você estiver montado e não estiver incapacitado. Seus ataques corpo a corpo têm vantagem contra criaturas que não estejam montadas e sejam menores que sua montaria. Quando alguém atacar sua montaria, você pode fazer com que o ataque mire você no lugar dela. Se sua montaria fizer um teste de resistência de Destreza contra um efeito que causa metade do dano num sucesso, ela não sofre dano algum se passar e sofre só metade se falhar."
+ },
+ "Inspiring Leader": {
+  "nome": "Líder Inspirador",
+  "desc": "Pré-requisito: Carisma 13. Com 10 minutos de discurso motivador, você escolhe até seis criaturas aliadas (você pode ser uma delas) a até 9 m que consigam ver ou ouvir você e entender o que diz. Cada uma recebe PV temporários iguais ao seu nível + seu modificador de Carisma. Uma criatura só pode se beneficiar deste talento de novo depois de terminar um descanso curto ou longo."
+ },
+ "Ritual Caster": {
+  "nome": "Conjurador de Rituais",
+  "desc": "Pré-requisito: Inteligência ou Sabedoria 13. Você escolhe uma classe entre bardo, clérigo, druida, feiticeiro, bruxo ou mago e ganha um livro de rituais com duas magias de 1º círculo dessa lista que tenham o descritor ritual; elas só podem ser conjuradas como rituais e com o livro em mãos, usando Carisma (bardo, feiticeiro, bruxo), Sabedoria (clérigo, druida) ou Inteligência (mago). Ao encontrar magias escritas, como pergaminhos ou grimórios, você pode copiar para o livro outras magias de ritual da mesma lista, de círculo até a metade do seu nível (arredondado para cima), gastando 2 horas e 50 po por círculo."
+ },
+ "Dual Wielder": {
+  "nome": "Combatente com Duas Armas",
+  "desc": "Sem pré-requisito e sem aumento de atributo. Enquanto empunha uma arma corpo a corpo diferente em cada mão, sua CA recebe +1. Você pode lutar com duas armas mesmo que suas armas corpo a corpo de uma mão não tenham a propriedade leve. Sempre que puder sacar ou guardar uma arma de uma mão, pode sacar ou guardar duas."
+ },
+ "Medium Armor Master": {
+  "nome": "Mestre em Armaduras Médias",
+  "desc": "Pré-requisito: proficiência com armaduras médias. Usar armadura média não impõe mais desvantagem nos seus testes de Destreza (Furtividade). Além disso, se sua Destreza for 16 ou mais, o bônus máximo de Destreza na CA com armadura média passa de +2 para +3."
+ },
+ "Keen Mind": {
+  "nome": "Mente Aguçada",
+  "desc": "Aumenta sua Inteligência em 1 (máximo 20). Você sempre sabe para que lado fica o norte e quantas horas faltam para o próximo nascer ou pôr do sol. Além disso, lembra com exatidão de tudo o que viu ou ouviu no último mês."
+ },
+ "Healer": {
+  "nome": "Curandeiro",
+  "desc": "Sem pré-requisito nem aumento de atributo. Ao estabilizar com um kit de primeiros socorros uma criatura que está morrendo, ela também volta com 1 PV. Com uma ação, você gasta um uso do kit para tratar uma criatura, que recupera 1d6 + 4 PV mais um valor igual ao seu total máximo de Dados de Vida. Cada criatura só pode receber essa cura de novo depois de terminar um descanso curto ou longo."
+ },
+ "Great Weapon Master": {
+  "nome": "Mestre em Armas Grandes",
+  "desc": "Sem pré-requisito e sem aumento de atributo. No seu turno, se você acertar um crítico com uma arma corpo a corpo ou deixar uma criatura com 0 PV usando uma, pode fazer um ataque extra com arma corpo a corpo como ação bônus. Além disso, antes de atacar corpo a corpo com uma arma pesada na qual tenha proficiência, você pode aceitar -5 na jogada de ataque; se acertar, o golpe causa +10 de dano."
+ },
+ "Tough": {
+  "nome": "Robusto",
+  "desc": "Sem pré-requisito e sem aumento de atributo. Ao adquirir este talento, seus PV máximos sobem em 2 por nível de personagem que você já tem. Daí em diante, cada novo nível conquistado concede mais 2 PV máximos além do normal."
+ },
+ "War Caster": {
+  "nome": "Conjurador de Guerra",
+  "desc": "Pré-requisito: capacidade de conjurar pelo menos uma magia. Ao sofrer dano enquanto mantém concentração, você rola com vantagem o teste de resistência de Constituição para não perdê-la, e consegue realizar os componentes somáticos mesmo segurando armas ou escudo nas mãos. Quando um inimigo provoca um ataque de oportunidade seu, você pode trocar esse ataque por uma magia lançada com sua reação, desde que ela tenha tempo de conjuração de 1 ação e tenha como alvo apenas essa criatura."
+ },
+ "Alert": {
+  "nome": "Alerta",
+  "desc": "Sem pré-requisito e sem aumento de atributo. Você soma +5 à sua iniciativa e não pode ser surpreendido enquanto estiver consciente. Além disso, criaturas que você não consegue ver não recebem vantagem nas jogadas de ataque contra você por estarem ocultas."
+ },
+ "Lightly Armored": {
+  "nome": "Armadura Leve",
+  "desc": "Sem pré-requisito. Aumente seu valor de Força ou de Destreza em 1 (até o máximo de 20). Você passa a ter proficiência com armaduras leves."
+ },
+ "Actor": {
+  "nome": "Ator",
+  "desc": "Sem pré-requisito; seu Carisma aumenta em 1. Ao se fazer passar por outra pessoa, você tem vantagem nos testes de Carisma (Enganação) e Carisma (Atuação). Depois de ouvir alguém falar ou uma criatura emitir sons por pelo menos 1 minuto, você consegue imitar essa voz ou esses sons. Quem escuta só percebe a farsa se vencer com um teste de Sabedoria (Intuição) a sua Carisma (Enganação)."
+ },
+ "Defensive Duelist": {
+  "nome": "Duelista Defensivo",
+  "desc": "Pré-requisito: Destreza 13 ou maior. Se você estiver empunhando uma arma de acuidade na qual tenha proficiência e for atingido por um ataque corpo a corpo, pode gastar sua reação para somar seu bônus de proficiência à CA contra esse ataque. Se a nova CA superar o resultado, o golpe erra."
+ },
+ "Sharpshooter": {
+  "nome": "Atirador de Elite",
+  "desc": "Sem pré-requisito nem aumento de atributo. Seus ataques com armas à distância não sofrem desvantagem no alcance longo e ignoram meia cobertura e três-quartos de cobertura. Antes de atacar com uma arma à distância na qual tenha proficiência, você pode aceitar -5 na jogada de ataque; se acertar, o golpe causa +10 de dano."
+ },
+ "Heavily Armored": {
+  "nome": "Armadura Pesada",
+  "desc": "Pré-requisito: proficiência com armaduras médias. Sua Força aumenta em 1 (máximo 20). Você passa a ser proficiente com armaduras pesadas."
+ },
+ "Tavern Brawler": {
+  "nome": "Brigão de Taverna",
+  "desc": "Aumenta Força ou Constituição em 1 (máximo 20). Você ganha proficiência com armas improvisadas, e seus ataques desarmados passam a causar 1d4 de dano. Sempre que acertar uma criatura no seu turno com um ataque desarmado ou uma arma improvisada, pode gastar uma ação bônus para tentar agarrá-la."
+ },
+ "Resilient": {
+  "nome": "Resiliente",
+  "desc": "Sem pré-requisito. Escolha um atributo: ele recebe +1 (máximo 20) e você passa a ter proficiência nos testes de resistência desse mesmo atributo."
+ },
+ "Crossbow Expert": {
+  "nome": "Especialista em Besta",
+  "desc": "Sem pré-requisito e sem aumento de atributo. Você não sofre a limitação da propriedade recarga nas bestas com as quais tem proficiência, e ter um inimigo a até 1,5 m de você não impõe desvantagem às suas jogadas de ataque à distância. Além disso, sempre que fizer a ação Atacar com uma arma de uma mão, pode gastar sua ação bônus para disparar uma besta de mão que esteja empunhando."
+ },
+ "Heavy Armor Master": {
+  "nome": "Mestre em Armaduras Pesadas",
+  "desc": "Pré-requisito: proficiência com armaduras pesadas. Sua Força aumenta em 1. Enquanto estiver vestindo armadura pesada, todo dano de concussão, cortante ou perfurante que você sofrer de ataques não mágicos diminui em 3."
+ },
+ "Sentinel": {
+  "nome": "Sentinela",
+  "desc": "Sem pré-requisito e sem aumento de atributo. Um acerto seu com ataque de oportunidade reduz o deslocamento do alvo a 0 até o fim daquele turno, e inimigos que saem do seu alcance provocam esse ataque mesmo tendo usado a ação Desengajar. Além disso, se uma criatura a até 1,5 m de você atacar outro alvo que não tenha este talento, você pode gastar sua reação para fazer um ataque corpo a corpo com arma contra ela."
+ },
+ "Charger": {
+  "nome": "Investida",
+  "desc": "Sem pré-requisito nem aumento de atributo. Depois de usar sua ação para Disparar, você pode gastar uma ação bônus para fazer um ataque corpo a corpo com arma ou tentar empurrar uma criatura. Se tiver percorrido pelo menos 3 m em linha reta logo antes dessa ação bônus, o ataque que acertar recebe +5 na rolagem de dano, ou o empurrão bem-sucedido afasta o alvo até 3 m de você."
+ },
+ "Linguist": {
+  "nome": "Linguista",
+  "desc": "Sem pré-requisito. Sua Inteligência aumenta em 1 e você aprende três idiomas à sua escolha. Você também sabe criar códigos escritos: quem não foi ensinado por você só consegue decifrá-los com magia ou passando num teste de Inteligência com CD igual ao seu valor de Inteligência + seu bônus de proficiência."
+ },
+ "Savage Attacker": {
+  "nome": "Atacante Selvagem",
+  "desc": "Sem pré-requisito e sem aumento de atributo. Uma vez por turno, ao rolar o dano de um ataque corpo a corpo com arma, você pode rolar de novo os dados de dano da arma e ficar com o resultado que preferir entre as duas rolagens."
+ },
+ "Dungeon Delver": {
+  "nome": "Explorador de Masmorras",
+  "desc": "Sem pré-requisito nem aumento de atributo. Você ganha vantagem nos testes de Sabedoria (Percepção) e Inteligência (Investigação) para encontrar portas secretas, além de vantagem nos testes de resistência contra armadilhas e resistência ao dano que elas causam. Viajar em ritmo rápido não reduz em 5 a sua Sabedoria (Percepção) passiva."
+ },
+ "Polearm Master": {
+  "nome": "Mestre em Armas de Haste",
+  "desc": "Sem pré-requisito e sem aumento de atributo. Ao usar a ação de Ataque atacando apenas com glaive, alabarda, bordão ou lança, você pode gastar uma ação bônus para golpear com a outra ponta da arma: o dado de dano é d4, o dano é de concussão e o modificador de atributo é o mesmo do ataque principal. Além disso, enquanto empunha glaive, alabarda, pique, bordão ou lança, qualquer criatura que entre no seu alcance com essa arma provoca um ataque de oportunidade seu."
+ }
+}

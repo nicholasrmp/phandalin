@@ -16,6 +16,13 @@ export function montarCampo(mapa) {
   // todos, o encontro padrão e o Poço ganharam contorno em quem não estava
   // coberto por nada.
   field.avisosDeVista = Boolean(mapa.avisosDeVista);
+  // O ESPINHEIRO QUE COBRE: no esconderijo, o livro dá três quartos de cobertura (+5) a quem ataca através do mato
+  // em volta do posto dos vigias (H1/H2). Só no mapa que pede: a emboscada e a rua também usam o glifo `%`, e lá o
+  // livro não diz isso. A tocaia (`P`) conta junto: no livro as tábuas são o CHÃO do posto, e o que fica entre os
+  // vigias e o riacho é o mato — o nosso gerador as desenhou como a borda da clareira, e é por ela que se atira.
+  if (mapa.espinheiroCobre) {
+    mapa.terreno.forEach((linha, y) => { for (let x = 0; x < linha.length; x++) if (linha[x] === '%' || linha[x] === 'P') field.matas.add(`${x},${y}`); });
+  }
   // O mapa PINTADO por baixo e como ele se encaixa na grade (ver `mapa-editor.js`): quem desenha é a vista de cima.
   if (mapa.fundo) field.fundo = mapa.fundo;
   // AS SOBREPOSIÇÕES: pedaços de arte com nome que o roteiro acende e apaga (a fogueira, a ponte que cede, o

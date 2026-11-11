@@ -43,17 +43,31 @@ DENTRO_DE = (4, 8)                # semente da inundação, no meio do acampamen
 ENTRADA_P = (9, 4)
 FORA_DA_BOCA = (11, 4)            # onde o vigia fica e de onde os orcs alarmados encaram o grupo
 DENTRO_DA_BOCA = (8, 5)
+#
+# POR QUE ESTA CENA NAO TEM `objetos` (peca de mobilia). Ela roda SOBRE O BATTLEMAP PINTADO DA FA (`fundo`), e
+# o desenho ja mostra a mobilia toda. Peca por cima seria desenhar cada coisa duas vezes -- e e a mesma razao
+# que esta escrita no mapa da rua da vila (`game/encounter.js`, `objetos: []`). O que precisa valer como REGRA
+# (barrar passo, dar cobertura, ter superficie que o menu enxergue) entra como GLIFO de terreno, nao como
+# peca. Um revisor de fidelidade ja abriu achado de "zero pecas" aqui; fica registrado que e de proposito.
 FOGUEIRA = (5, 7)
 CAIXOTE = (5, 11)
 PALHA = [(x, y) for y in (5, 6) for x in range(3, 8)]
 # o elenco, dentro da caverna: o chefe no fundo, dois acordados perto da boca, um de costas junto do fogo,
 # três dormindo na palha e o ogro Gog num canto. Tudo conferido contra o chão pelas provas.
+#
+# O GOG É GRANDE, e Grande ocupa 2x2 — não uma casa. Ele estava ancorado em (4,10), e a pegada dele cobria
+# também (5,11), que é o CAIXOTE do bando: superfície `bau`, que barra o passo. Ou seja, o ogro nascia dormindo
+# em cima do baú. Nem a prova daqui nem o `conferir-cena` viam, porque as duas olhavam só a âncora. Agora ele
+# dorme em (3,11) — o canto sudoeste, encostado no caixote em vez de em cima dele — e a prova confere a PEGADA
+# INTEIRA de todo posto, com o tamanho lido do bloco da criatura.
 POSTOS = {
     'brughor': (3, 8),
     'orcs': [(7, 5), (8, 6), (6, 8), (4, 5), (5, 5), (6, 5)],   # A, B acordados; C junto do fogo; D, E, F na palha
     'dormem': [False, False, False, True, True, True],
-    'gog': (4, 10),
+    'gog': (3, 11),
 }
+# quem é Grande ou maior, e quantas casas de lado a pegada tem
+PEGADA = {'gog': 2}
 SAIDA_CASAS = [(10, 23), (11, 23), (12, 23)]
 GRUPO = [(11, 21), (12, 21), (11, 22), (12, 22)]
 
@@ -106,6 +120,17 @@ const erros = [];
 for (const [nome, [x, y]] of Object.entries(pontos)) {
   if (f.blocksMove(x, y)) erros.push(`${nome} (${x},${y}) caiu em casa bloqueada`);
 }
+// A PEGADA INTEIRA, e nao so a ancora: criatura Grande ocupa 2x2, e o Gog ja nasceu dormindo em cima do bau
+// por esta conta faltar. O tamanho vem de `PEGADA`, que o gerador passa.
+const pegada = JSON.parse(process.env.PEGADA);
+for (const [nome, lado] of Object.entries(pegada)) {
+  const [x, y] = pontos[nome];
+  for (let dy = 0; dy < lado; dy += 1) for (let dx = 0; dx < lado; dx += 1) {
+    if (!f.inside(x + dx, y + dy) || f.blocksMove(x + dx, y + dy)) {
+      erros.push(`${nome} e ${lado}x${lado} e a pegada dele pega (${x + dx},${y + dy}), que barra o passo`);
+    }
+  }
+}
 // o grupo chega a tudo: senao a cena trava com alguem preso
 const alc = f.reachable({ x: pontos['heroi 0'][0], y: pontos['heroi 0'][1] }, 6000);
 for (const [nome, [x, y]] of Object.entries(pontos)) {
@@ -132,6 +157,7 @@ for (const [nome, [x, y]] of Object.entries(pontos)) {
 console.log(JSON.stringify(erros));
 '''
     erros = motor(programa, {'MAPA': json.dumps(mapa), 'PONTOS': json.dumps(pontos),
+                             'PEGADA': json.dumps(PEGADA),
                              'CAIXOTE': json.dumps(list(CAIXOTE)),
                              'DENTRO': json.dumps([f'{x},{y}' for x, y in sorted(interior_cache)])})
     if erros:

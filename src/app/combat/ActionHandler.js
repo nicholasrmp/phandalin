@@ -39,8 +39,17 @@ export class ActionHandler {
    * @returns {Object} { ok: boolean, why?: string }
    */
   tryAttack(attacker, target, weaponId, callbacks = {}) {
-    const { onSuccess, onError, onWalk } = callbacks;
+    const { onSuccess, onError, onWalk, onComplete } = callbacks;
     const enc = this.encounter;
+    // A AÇÃO ACABOU. `CombatManager` segura `isProcessing` desde antes de chamar e conta com este
+    // aviso para soltar — e nenhum dos quatro métodos daqui o dava, o que trancava a camada na
+    // primeira ação que desse certo. Uma ação, um aviso, mesmo quando ela acaba depois do `return`.
+    let avisado = false;
+    const pronto = () => {
+      if (avisado) return;
+      avisado = true;
+      if (onComplete) onComplete();
+    };
 
     // Verifica se pode atacar diretamente
     const check = enc.canAttack(attacker, target, weaponId);
@@ -51,10 +60,12 @@ export class ActionHandler {
 
       if (!r.ok) {
         if (onError) onError(r.why);
+        pronto();
         return r;
       }
 
       if (onSuccess) onSuccess(r);
+      pronto();
       return { ok: true };
     }
 
@@ -64,6 +75,7 @@ export class ActionHandler {
     // Arma à distância não resolve andando: o problema é visão ou alcance
     if (prof.ranged) {
       if (onError) onError(check.why);
+      pronto();
       return check;
     }
 
@@ -71,12 +83,14 @@ export class ActionHandler {
     if (!enc.podeAtacar(attacker)) {
       const why = "a ação deste turno já foi usada";
       if (onError) onError(why);
+      pronto();
       return { ok: false, why };
     }
 
     if (attacker.movementLeftFt <= 0) {
       const why = `sem movimento para chegar até ${target.name}`;
       if (onError) onError(why);
+      pronto();
       return { ok: false, why };
     }
 
@@ -87,15 +101,21 @@ export class ActionHandler {
       // Consegue chegar e atacar
       enc.moveAlong(attacker, path.path);
 
+      // O GOLPE ESPERA O PASSO. Quem chamou segura o `onWalk` e o solta quando a figura chega; sem
+      // ele não há quem espere, e o ataque se perderia calado depois de andar — então a ação acaba
+      // aqui, tendo só andado, e quem chamou fica sabendo pelo `needsMovement`.
       if (onWalk) {
         onWalk(() => {
           const r = enc.attackAction(attacker, target, weaponId);
           if (!r.ok && onError) onError(r.why);
           else if (r.ok && onSuccess) onSuccess(r);
+          pronto();
         });
+        return { ok: true, needsMovement: true };
       }
 
-      return { ok: true, needsMovement: true };
+      pronto();
+      return { ok: true, needsMovement: false, andouSemGolpe: true };
     }
 
     if (path.canAdvance) {
@@ -107,14 +127,19 @@ export class ActionHandler {
       if (onWalk) {
         onWalk(() => {
           if (onError) onError(why);
+          pronto();
         });
+        return { ok: false, why, advanced: true };
       }
 
+      if (onError) onError(why);
+      pronto();
       return { ok: false, why, advanced: true };
     }
 
     // Não pode se mover
     if (onError) onError(check.why);
+    pronto();
     return check;
   }
 
@@ -128,8 +153,8 @@ export class ActionHandler {
    * @returns {Object} { ok: boolean, why?: string, pending?: boolean }
    */
   tryCast(caster, spellId, options = {}, callbacks = {}) {
-    const { onSuccess, onError, onChoose } = callbacks;
-    const { target, point, targets, circulo, opcao } = options;
+    const { onSuccess, onError, onChoose, onComplete } = callbacks;
+    const { target, point, targets, circulo, opcao, escalas } = options;
 
     // Magia com escolha (Aprimorar Atributo, Glifo de Proteção)
     const spell = getSpell(spellId);
@@ -155,6 +180,7 @@ export class ActionHandler {
       targets,
       circulo,
       opcao,
+      escalas,
     });
 
     if (result.ok && onSuccess) {
@@ -163,6 +189,7 @@ export class ActionHandler {
       onError(result.why);
     }
 
+    if (onComplete) onComplete();
     return result;
   }
 

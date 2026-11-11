@@ -20,10 +20,13 @@ import { CLASSES } from './classes/index.js';
 import { addCondition, removeCondition, getCondition, maxHpEfetivo, mudarExaustao, nivelDeExaustao } from './conditions.js';
 import { SPELLS, magiasProntas, dadosDaMagia } from './spells.js';
 import { spellMod } from './party.js';
-import { rolarCura } from './talentos.js';
+import { rolarCura, minimoDoDuravel } from './talentos.js';
+import { resilienciaCelestial } from './subclasses-livros.js';
 
 /** Recursos que voltam no descanso curto. Os outros só no longo. */
-const VOLTAM_NO_CURTO = new Set(['secondWind', 'superiorityDice', 'actionSurge', 'channelDivinity', 'ki', 'wildShape', 'breathWeapon', 'strokeOfLuck', 'darkOnesOwnLuck', 'illusorySelf', 'feyPresence', 'mistyEscapes', 'darkDelirium', 'entropicWard']);
+const VOLTAM_NO_CURTO = new Set(['secondWind', 'superiorityDice', 'actionSurge', 'channelDivinity', 'ki', 'wildShape', 'breathWeapon', 'strokeOfLuck', 'darkOnesOwnLuck', 'illusorySelf', 'feyPresence', 'mistyEscapes', 'darkDelirium', 'entropicWard',
+  // as subclasses dos livros dizem quais dos seus recursos voltam no curto (`voltamNoCurto`)
+  ...Object.values(CLASSES).flatMap((def) => Object.values(def.subclasse?.opcoes ?? {}).flatMap((s) => s.voltamNoCurto ?? []))]);
 
 export const dadoDeVida = (c) => CLASSES[c.classe]?.dadoDeVida ?? 8;
 export const dadosDeVida = (c) => (c.dadosDeVidaRestantes ??= c.level ?? 1);
@@ -53,7 +56,8 @@ export function gastarDadoDeVida(rng, c, { cancao = 0 } = {}) {
   const con = abilityMod(c.abilities.con);
   // CANÇÃO DE DESCANSO: quem gasta um dado de vida ouvindo a canção cura um dado extra.
   const extra = cancao ? rng.die(cancao) : 0;
-  const cura = Math.max(0, rolagem + con) + extra;
+  // DURÁVEL (talento): o dado gasto cura no mínimo o dobro do modificador de Constituição, e 2 pelo menos.
+  const cura = minimoDoDuravel(c, Math.max(0, rolagem + con)) + extra;
   c.dadosDeVidaRestantes -= 1;
   const antes = Math.max(0, c.hp);
   c.hp = Math.max(antes, Math.min(maxHpEfetivo(c), antes + cura));
@@ -97,13 +101,15 @@ export function restaurarForca(c) {
 }
 
 export function recuperarNoCurto(c) {
+  // CURANDEIRO (talento de 2014): a cura do kit volta a valer em quem já a recebeu.
+  delete c.curadoPeloKit;
   restaurarForca(c);
   // O CONHAQUE ANÃO do Castelo (área 5): o livro envenena quem toma dois copos "em menos de 1 hora", e o
   // descanso curto é exatamente uma hora. Então ele é o relógio: passou a hora, some a marca e passa a
   // ressaca.
   if (c.ressacaDeConhaque) { removeCondition(c, 'envenenado'); delete c.ressacaDeConhaque; }
   delete c.bebeuConhaque;
-  for (const id of ['passoDoCaos', 'reencarnar', 'brilhoCaos', 'veInvisiveis', 'olhoDoCaos', 'regenCaos', 'surtoRepetido', 'tamanhoCaos']) removeCondition(c, id);
+  for (const id of ['passoDoCaos', 'reencarnar', 'brilhoCaos', 'veInvisiveis', 'visaoVerdadeira', 'olhoDoCaos', 'regenCaos', 'surtoRepetido', 'tamanhoCaos']) removeCondition(c, id);
   delete c.furiaDestrutivaPronta;
   delete c.surtoMaximoAte;
   delete c.surtoRapidoAte;
@@ -160,6 +166,9 @@ export function recuperarNoCurto(c) {
       frases.push(`Recuperação Arcana (${recuperou} espaço${recuperou > 1 ? 's' : ''})`);
     }
   }
+  // SURTO DE PODER: o descanso curto sem nenhum surto dá um.
+  if (c.features?.includes('powerSurge') && c.resources && (c.resources.powerSurge ?? 0) === 0) { c.resources.powerSurge = 1; frases.push('um surto de poder'); }
+  resilienciaCelestial(c);
   return frases;
 }
 
@@ -232,7 +241,10 @@ export function bomFrutoNoDescanso(conjurador, alvos, { circulo = 1 } = {}) {
  */
 export function descansoLongo(c, { alimentado = true } = {}) {
   if (c.dead) return;
-  for (const id of ['passoDoCaos', 'reencarnar', 'brilhoCaos', 'veInvisiveis', 'olhoDoCaos', 'regenCaos', 'surtoRepetido', 'tamanhoCaos']) removeCondition(c, id);
+  // a loucura do Contatar Outro Plano acaba com o descanso longo
+  removeCondition(c, 'enlouquecido');
+  delete c.curadoPeloKit;
+  for (const id of ['passoDoCaos', 'reencarnar', 'brilhoCaos', 'veInvisiveis', 'visaoVerdadeira', 'olhoDoCaos', 'regenCaos', 'surtoRepetido', 'tamanhoCaos']) removeCondition(c, id);
   acordar(c);
   // Ninguém dorme oito horas em Fúria. O combate já a encerra (`checkEnd`),
   // mas uma Fúria entrada fora de luta ficaria até o fim dos tempos.
@@ -241,6 +253,33 @@ export function descansoLongo(c, { alimentado = true } = {}) {
   // Proteção Arcana e Prodígio: duram até o descanso longo (o Prodígio rola de novo na próxima luta).
   delete c.wardHp;
   delete c.portento;
+  // Respirar na Água: 24 horas, que aqui acabam no descanso longo seguinte.
+  delete c.respiraNaAgua;
+  // A DOENÇA DO OTYUGH (SRD): a cada 24 horas, Constituição CD 15. Passa e cura (o PV máximo volta); falha e perde mais
+  // 1d10 de PV máximo. A zero de máximo, morre.
+  if (getCondition(c, 'doencaDoOtyugh')) {
+    const con = Math.floor(((c.abilities?.con ?? 10) - 10) / 2) + ((c.saves ?? []).includes('con') ? (c.proficiency ?? 2) : 0);
+    const total = 1 + Math.floor(Math.random() * 20) + con;
+    if (total >= 15) {
+      removeCondition(c, 'doencaDoOtyugh');
+      c.maxHp += c.pvMaxDaDoenca ?? 0;
+      delete c.pvMaxDaDoenca;
+    } else {
+      const perde = 1 + Math.floor(Math.random() * 10);
+      c.pvMaxDaDoenca = (c.pvMaxDaDoenca ?? 0) + perde;
+      c.maxHp = Math.max(0, c.maxHp - perde);
+      c.hp = Math.min(c.hp, c.maxHp);
+      if (c.maxHp <= 0) { c.dead = true; c.hp = 0; }
+    }
+  }
+  // A PODRIDÃO DA MÚMIA (SRD): a cada 24 horas, 3d6 de PV máximo a menos; a zero, morre e vira pó. Não cura no descanso.
+  const podre = getCondition(c, 'podridaoDaMumia');
+  if (podre) {
+    const perde = [0, 0, 0].reduce((s) => s + 1 + Math.floor(Math.random() * 6), 0);
+    c.pvMaxDaPodridao = (c.pvMaxDaPodridao ?? 0) + perde;
+    c.maxHp = Math.max(0, c.maxHp - perde);
+    if (c.maxHp <= 0) { c.dead = true; c.hp = 0; c.viraPo = true; return; }
+  }
   delete c.olharHipnoticoJa;
   delete c.furiaDestrutivaPronta;
   delete c.mareUsada;
@@ -269,7 +308,8 @@ export function descansoLongo(c, { alimentado = true } = {}) {
   // O que os mortos-vivos drenaram volta: o PV máximo e a Força (a Força já voltou no descanso curto).
   if (c.maxHpPerdido) { c.maxHp += c.maxHpPerdido; delete c.maxHpPerdido; }
   restaurarForca(c);
-  c.hp = maxHpEfetivo(c);
+  // quem a necromancia impede de curar (a podridão) acorda com os PV que tinha, cortados pelo máximo novo
+  c.hp = podre ? Math.min(c.hp, maxHpEfetivo(c)) : maxHpEfetivo(c);
   c.tempHp = 0;
   const nivel = c.level ?? 1;
   // Poção de vitalidade: no descanso seguinte, os dados de vida voltam TODOS.
@@ -287,4 +327,12 @@ export function descansoLongo(c, { alimentado = true } = {}) {
   if (c.features?.includes('tranquility')) {
     addCondition(c, 'santuario', { source: c.id, data: { dc: 8 + abilityMod(c.abilities.wis) + proficiencyBonus(c.level ?? 1) } });
   }
+  // SURTO DE PODER (Magia de Guerra, Xanathar): o descanso longo deixa UM surto, e não o máximo.
+  if (c.features?.includes('powerSurge') && c.resources) c.resources.powerSurge = Math.min(1, c.resourcesMax?.powerSurge ?? 1);
+  // AMIGO DA MORTE (Fantasma, 17º): sem berloque nenhum, o descanso longo deixa um na mão.
+  if (c.features?.includes('deathsFriend') && !((c.berloquesDeAlma ?? 0) > 0)) c.berloquesDeAlma = 1;
+  // o DRACO (Guardião Dracônico) descansa junto: volta com os PV cheios
+  if (c.dracoAtivo) c.pvDoDraco = null;
+  // RESILIÊNCIA CELESTIAL (Celestial, 10º): PV temporários ao fim do descanso.
+  resilienciaCelestial(c);
 }

@@ -11,6 +11,8 @@
 import { PILOTO } from './sala.js';
 
 export const TEMPO_DA_VOTACAO_MS = 45_000;
+/** O tempo para os outros oferecerem ajuda num teste: a conversa fica esperando, então é curto. */
+export const TEMPO_DA_AJUDA_MS = 15_000;
 
 /**
  * Quem decide a narrativa que está abrindo. `ator`: o id do herói que a começou (ou `null`: decisão geral). `visao`: a visão da

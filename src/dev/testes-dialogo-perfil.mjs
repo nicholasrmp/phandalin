@@ -8,9 +8,10 @@ const P = new URL('../', import.meta.url).href;
 const { montarHeroi } = await import(P + 'game/criacao.js');
 const { HEROIS_JOGAVEIS } = await import(P + 'game/sala.js');
 const { racaDe, atendePerfil, quemAtende, etiquetaDoPerfil } = await import(P + 'game/dialogo-perfil.js');
-const { conversar } = await import(P + 'game/dialogo.js');
+const { conversar, quemEscreve, testesDaCaixa, quemPodeAjudar, ofertaDeOuro } = await import(P + 'game/dialogo.js');
 const { registrarParaTeste, limparParaTeste, extrasDoNpc } = await import(P + 'game/dialogos-extras.js');
 const { makeRng } = await import(P + 'core/rng.js');
+const { estadoDe } = await import(P + 'rules/utilidade.js');
 
 let total = 0;
 let falhas = 0;
@@ -130,6 +131,145 @@ await teste('herói inconsciente não fala: não atende o perfil e não rola', a
   const dorme = montarHeroi('pc-guerreiro');
   addCondition(dorme, 'inconsciente');
   assert.equal(quemAtende([dorme, elenco.Grask], { atributo: { for: 17 } }).map((h) => h.name).join(), 'Grask');
+});
+
+await teste('numa sala, a conversa é de quem a começou até o fim, e quem fala é o herói dele', async () => {
+  limparParaTeste(NOME);
+  const herois = por('Ilvan', 'Dara');
+  let preso = null;
+  let janelaDosDezSegundos = 'pc-dara';   // `atorAtual` de verdade: depois de 10 s, sem nada preso, ela vence
+  const app = {
+    root: {}, campanha: {}, selected: herois[0],
+    atorAtual: () => preso ?? janelaDosDezSegundos,
+    prenderAtor: (id) => { const antes = preso; preso = id ?? null; return antes; },
+  };
+  herois[1].id = 'pc-dara';
+  const donos = [];
+  const quem = [];
+  globalThis.__escolher = (esc) => {
+    donos.push(app.atorAtual());
+    janelaDosDezSegundos = null;      // o jogador demorou: a janela venceu no meio da conversa
+    return esc[0].valor;
+  };
+  const arv = { inicio: 'a', nos: {
+    a: { fala: 'Primeira.', opcoes: [{ texto: (ctx) => { quem.push(ctx.quem.name); return 'Segue.'; }, vai: 'b' }] },
+    b: { fala: 'Segunda.', opcoes: [{ texto: 'Fim.', fim: 'ok' }] },
+  } };
+  try {
+    assert.equal(await conversar(app, NPC, arv, { herois, rng: makeRng(3), say() {} }), 'ok');
+  } finally { delete globalThis.__escolher; }
+  assert.deepEqual(donos, ['pc-dara', 'pc-dara'], 'a segunda decisão continua com ela');
+  assert.equal(quem[0], 'Dara', 'fala o herói dela, não o selecionado na tela do anfitrião');
+  assert.equal(preso, null, 'acabou a conversa, solta');
+});
+
+await teste('na caixa rola quem escreveu: o dono da conversa, o herói do líder, ou o melhor se o líder não tem herói', async () => {
+  const herois = por('Ilvan', 'Dara');
+  const [ilvan, dara] = herois;
+  ilvan.id = 'h-ilvan'; dara.id = 'h-dara';
+  const visao = { lider: 'p2', anfitriao: 'p1', herois: { 'h-ilvan': 'p1', 'h-dara': 'p2' }, jogadores: [{ id: 'p1', conectado: true }, { id: 'p2', conectado: true }] };
+  assert.equal(quemEscreve({ salaDaPartida: { visao } }, { doAtor: ilvan, herois }), ilvan, 'o dono da conversa');
+  assert.equal(quemEscreve({ salaDaPartida: { visao } }, { doAtor: null, herois }), dara, 'sem dono, o herói do líder');
+  assert.equal(quemEscreve({ salaDaPartida: { visao: { ...visao, herois: {} } } }, { doAtor: null, herois }), null, 'líder sem herói: a frase é do grupo');
+  assert.equal(quemEscreve({}, { doAtor: null, herois, falante: dara }), dara, 'sozinho, o selecionado');
+
+  // O teste de verdade, por dentro da conversa: a etiqueta e o dado são de quem escreve, mesmo havendo alguém melhor.
+  const o = { texto: 'Fala.', teste: { pericia: 'intimidacao', cd: 5 }, vai: 'x' };
+  const ctx = { estado: estadoDe({}), herois, npc: NPC };
+  const [t] = testesDaCaixa(ctx, [{ rotulo: 'Fala.', valor: { o, chave: 'oi:0' } }], ilvan);
+  assert.equal(t.valor.o.teste.heroi, ilvan);
+  assert.match(t.detalhe, /Ilvan/);
+  assert.equal(t.valor.chave, 'oi:0', 'a opção segue a mesma para `uma`');
+  assert.equal(o.teste.heroi, undefined, 'a árvore não muda');
+  const [doGrupo] = testesDaCaixa(ctx, [{ rotulo: 'Fala.', valor: { o, chave: 'oi:0' } }], null);
+  assert.equal(doGrupo.valor.o.teste.heroi, undefined, 'sem quem escreva, rola o melhor');
+  const perfil = { ...o, teste: { ...o.teste, heroi: dara } };
+  const [dePerfil] = testesDaCaixa(ctx, [{ rotulo: 'Fala.', valor: { o: perfil, chave: 'oi:1' } }], ilvan);
+  assert.equal(dePerfil.valor.o.teste.heroi, dara, 'a opção por perfil continua com quem atende o perfil');
+});
+
+await teste('numa sala rola o herói de quem começou, com ajuda de outro jogador uma vez; sozinho, rola o melhor sem pedir ajuda', async () => {
+  limparParaTeste(NOME);
+  const herois = por('Ilvan', 'Dara');
+  const [ilvan, dara] = herois;
+  ilvan.id = 'h-ilvan'; dara.id = 'h-dara';
+  const visao = { lider: 'p1', anfitriao: 'p1', herois: { 'h-ilvan': 'p1', 'h-dara': 'p2' }, jogadores: [{ id: 'p1', conectado: true }, { id: 'p2', conectado: true }] };
+  assert.deepEqual(quemPodeAjudar(visao, herois, ilvan).map((a) => [a.pub, a.heroi.name]), [['p2', 'Dara']]);
+  assert.deepEqual(quemPodeAjudar(visao, herois, ilvan, new Set(['h-dara'])), [], 'cada herói ajuda uma vez');
+  assert.deepEqual(quemPodeAjudar({ ...visao, jogadores: [{ id: 'p1', conectado: true }, { id: 'p2', conectado: false }] }, herois, ilvan), [], 'quem caiu não ajuda');
+  assert.deepEqual(quemPodeAjudar(null, herois, ilvan), [], 'sozinho não há ajuda');
+
+  const arv = { inicio: 'a', nos: {
+    a: { fala: 'Primeira.', opcoes: [{ texto: 'Fala.', teste: { pericia: 'intimidacao', cd: 1 }, sucesso: 'b', falha: 'b' }] },
+    b: { fala: 'Segunda.', opcoes: [{ texto: 'De novo.', teste: { pericia: 'intimidacao', cd: 1 }, sucesso: 'c', falha: 'c' }] },
+    c: { fala: 'Fim.', opcoes: [{ texto: 'Sair.', fim: 'ok' }] },
+  } };
+  const paineis = [];
+  const log = [];
+  globalThis.__escolher = (esc) => {
+    paineis.push(esc.map((e) => e.rotulo));
+    return (esc.find((e) => e.valor === 'ajudar') ?? esc[0]).valor;
+  };
+  const app = {
+    root: {}, campanha: {}, selected: dara, salaDaPartida: { visao },
+    atorAtual: () => 'h-ilvan', prenderAtor: () => null, quemAjudou: () => 'p2',
+  };
+  try {
+    assert.equal(await conversar(app, NPC, arv, { herois, rng: makeRng(3), say: (_, t) => log.push(t) }), 'ok');
+  } finally { delete globalThis.__escolher; }
+  assert.match(log[0], /^Ilvan · /, 'rola o herói de quem começou, não o melhor');
+  assert.match(log[0], /Dara ajudou/);
+  assert.doesNotMatch(log[1], /ajudou/, 'a segunda vez Dara já tinha ajudado');
+  assert.equal(paineis.filter((p) => p.includes('Ajudar')).length, 1, 'a oferta só aparece enquanto há quem ajude');
+});
+
+await teste('o teste social vencido libera os fatos da ficha; o perdido não, e fica cada um na sua ficha', async () => {
+  const { FICHAS, fatosLiberados, flagDeApertado, idDaFicha } = await import(P + 'game/npc-saber.js');
+  assert.equal(idDaFicha({ defId: 'goblin', capturado: true }), 'goblinCapturado');
+  assert.equal(idDaFicha({ defId: 'goblin' }), null, 'goblin solto não tem ficha');
+  assert.equal(idDaFicha({ defId: 'marcarrubra', capturado: true }), 'marcarrubra');
+  assert.deepEqual(fatosLiberados(FICHAS.goblinCapturado, {}), ['quem'], 'antes do dado ele só treme');
+  assert.ok(fatosLiberados(FICHAS.goblinCapturado, { [flagDeApertado('goblinCapturado')]: true }).includes('castelo'));
+  assert.ok(!fatosLiberados(FICHAS.yeemik, {}).includes('grol'));
+  assert.ok(fatosLiberados(FICHAS.yeemik, { [flagDeApertado('yeemik')]: true }).includes('grol'));
+
+  const goblin = { defId: 'goblin', capturado: true, name: 'Goblin', look: null };
+  const rodar = async (cd) => {
+    const herois = por('Ilvan', 'Dara');
+    const campanha = {};
+    globalThis.__escolher = (esc) => esc[0].valor;
+    try {
+      await conversar({ root: {}, campanha, selected: herois[0] }, goblin, { inicio: 'a', nos: {
+        a: { fala: 'Não mata!', opcoes: [{ texto: 'Fala.', teste: { pericia: 'intimidacao', cd }, sucesso: 'b', falha: 'b' }] },
+        b: { fala: 'Pronto.', opcoes: [{ texto: 'Sair.', fim: 'ok' }] },
+      } }, { herois, rng: makeRng(3), say() {} });
+    } finally { delete globalThis.__escolher; }
+    return campanha.flags[flagDeApertado('goblinCapturado')];
+  };
+  assert.equal(await rodar(1), true, 'CD 1: vence e libera');
+  assert.equal(await rodar(99), undefined, 'CD 99: perde e não libera');
+});
+
+await teste('a oferta na caixa: pouca recusa, sem ouro recusa, e paga de verdade para rolar com vantagem', async () => {
+  const { totalEmCobre } = await import(P + 'game/comercio.js');
+  const herois = por('Ilvan', 'Dara');
+  const ditos = [];
+  const ctx = { estado: estadoDe({}), herois, npc: NPC, enc: { say: (_, t) => ditos.push(t) } };
+  const o = { texto: 'Solta.', teste: { pericia: 'persuasao', cd: 10 }, vai: 'x' };
+  const teste = { valor: { o, chave: 'oi:0' } };
+  assert.match(ofertaDeOuro(ctx, teste, 5).motivo, /ao menos 10 po/);
+  const naBolsa = Math.floor(totalEmCobre(herois) / 100);
+  assert.match(ofertaDeOuro(ctx, teste, naBolsa + 1).motivo, /o grupo tem só/);
+  if (naBolsa >= 10) {
+    const of = ofertaDeOuro(ctx, teste, 10);
+    assert.equal(of.motivo, null);
+    const valor = of.pagar();
+    assert.equal(Math.floor(totalEmCobre(herois) / 100), naBolsa - 10, 'o ouro saiu da ficha');
+    assert.equal(valor.o.teste.vantagem, true);
+    assert.equal(valor.chave, 'oi:0');
+    assert.equal(o.teste.vantagem, undefined, 'a árvore não muda');
+    assert.match(ditos[0], /paga 10 po/);
+  }
 });
 
 await teste('a chave `uma` da opção acrescentada não depende do tamanho da árvore', async () => {

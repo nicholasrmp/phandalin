@@ -378,5 +378,31 @@ await teste('as opções de todas as chamadas de `narrar` nas cenas estão cober
   assert.deepEqual([...estranhas], [], 'opção que a porta não descreve');
 });
 
+await teste('a caixa de texto: o pedido a leva, e o texto do outro jogador chega à cena, cortado', async () => {
+  const campoTexto = { dica: 'Diga', maximo: 200 };
+  const escolhas = [{ rotulo: 'Dizer', valor: 'dizer' }, { rotulo: 'Sair', valor: { nao: true } }];
+  assert.deepEqual(descreverNarrativa({ paginas: [{ texto: [] }], escolhas, campoTexto }).pedido.campoTexto, campoTexto);
+  assert.equal('campoTexto' in descreverNarrativa({ paginas: [{ texto: [] }], escolhas }).pedido, false, 'sem caixa, o pedido segue igual');
+  let responder;
+  const porta = criarPortaCompartilhada({
+    local: () => new Promise(() => {}),
+    transmitir: () => {},
+    esperarResposta: (id, sinal) => new Promise((res) => { responder = res; sinal?.addEventListener('abort', () => res(null), { once: true }); }),
+  });
+  const remota = porta({}, { paginas: [{ texto: [] }], escolhas, campoTexto });
+  responder({ indice: 0, texto: 'x'.repeat(500) });
+  const r = await remota;
+  assert.equal(r.valor, 'dizer');
+  assert.equal(r.texto.length, 200);
+  // ... e a tela do próprio anfitrião resolve na mesma forma
+  const aqui = criarPortaCompartilhada({
+    local: async () => ({ valor: 1, texto: 'Vamos embora.' }),
+    transmitir: () => {},
+    esperarResposta: () => new Promise(() => {}),
+  });
+  const r2 = await aqui({}, { paginas: [{ texto: [] }], escolhas, campoTexto });
+  assert.deepEqual(r2, { valor: escolhas[1].valor, texto: 'Vamos embora.' });
+});
+
 console.log(`\n${total - falhas}/${total} testes passaram${falhas ? `, ${falhas} FALHARAM` : ''}.`);
 process.exit(falhas ? 1 : 0);

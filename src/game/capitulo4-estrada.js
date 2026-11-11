@@ -95,6 +95,15 @@ export function criarEstrada(app, config) {
     f.facingVec = { dx: Math.sign(11 - p.x) || -1, dy: Math.sign(7 - p.y) };
     inimigos.push(f);
   }
+  // O CHEFE do bando (o Obelisco: os goblins Cragmaw andam com um chefe goblin). Vem na primeira leva, ao lado do
+  // primeiro.
+  if (e.chefe && inimigos[0]) {
+    const [p] = lugares(1);
+    const chefe = makeMonster(e.chefe, { x: p.x, y: p.y }, { nameSuffix: 'do bando' });
+    chefe.facingVec = { ...inimigos[0].facingVec };
+    chefe.chefeDoBando = true;
+    inimigos.splice(Math.min(1, inimigos.length), 0, chefe);
+  }
 
   let levas = null;
 
@@ -119,10 +128,12 @@ export function criarEstrada(app, config) {
     const vivos = grupo.filter((c) => !c.dead);
     const quem = vivos[0];
     if (e.id === 'goblin' && quem) {
-      let pc = 0;
-      for (let i = 0; i < inimigos.length; i++) pc += enc.rng.die(10);
+      // O Obelisco: quem tem bolsa é o chefe — 1d10 pc e 1d10 pp.
+      const pc = enc.rng.die(10);
+      const pp = enc.rng.die(10);
       guardar(quem, 'moedaDeCobre', pc);
-      texto.push(`Nas algibeiras dos goblins: ${pc} peças de cobre. ${quem.name} guarda.`);
+      guardar(quem, 'moedaDePrata', pp);
+      texto.push(`Na bolsa do chefe goblin: ${pc} peças de cobre e ${pp} de prata. ${quem.name} guarda.`);
       const preso = inimigos.find((f) => f.capturado && !f.dead);
       if (preso && !feitos.sabeOCastelo) await interrogarGoblin(preso, texto);
     }
@@ -147,6 +158,7 @@ export function criarEstrada(app, config) {
   }
 
   async function interrogarGoblin(preso, texto) {
+    preso.ficha = 'goblinEstrada';
     const fim = await app.conversarCom(preso, {
       inicio: 'oi',
       nos: {

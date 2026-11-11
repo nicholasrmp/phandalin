@@ -12,6 +12,7 @@
 // número que o motor usa.
 import { abilityMod, proficiencyBonus } from './abilities.js';
 import { WEAPONS, ARMORS, SHIELD, SHIELD_AC, ITEMS } from './items/index.js';
+import { caDaForja, carismaNaArma, sabedoriaNosBracos } from './subclasses-livros.js';
 
 // Reexportados porque meia dúzia de arquivos já importa estes nomes daqui, e
 // mudar todos eles para apontar para `items/` seria churn sem ganho: este
@@ -24,8 +25,11 @@ export function armorClass(actor) {
   if (actor.formaSelvagem) return actor.formaSelvagem.ac;
   const armor = ARMORS[actor.armor ?? 'nenhuma'] ?? ARMORS.nenhuma;
   const dex = Math.floor((actor.abilities.dex - 10) / 2);
-  let ac = armor.base + Math.min(dex, armor.dexCap);
-  if (actor.shield) ac += SHIELD_AC;
+  // a CORROSÃO das Antenas do monstro da ferrugem: −1 na CA da armadura de metal e do escudo, de vez
+  // MESTRE EM ARMADURAS MÉDIAS (talento): com Destreza 16 ou mais, até +3 de Destreza na armadura média.
+  const teto = armor.categoria === 'média' && (actor.talentos ?? []).includes('mestreEmArmadurasMedias') && actor.abilities.dex >= 16 ? 3 : armor.dexCap;
+  let ac = armor.base - (actor.armaduraCorroida?.[actor.armor] ?? 0) + Math.min(dex, teto);
+  if (actor.shield) ac += SHIELD_AC - (actor.escudoCorroido ?? 0);
   // `acBonusArmadura` é o Estilo de Luta: Defesa, que a própria ficha descreve
   // como "+1 enquanto estiver de armadura". Enquanto nada podia desequipar,
   // somar sempre dava no mesmo; com o inventário dá para tirar a cota da
@@ -49,14 +53,25 @@ export function armorClass(actor) {
   if (!comArmadura && (actor.armaduraArcana || actor.features?.includes('armorOfShadows'))) ac = Math.max(ac, 13 + dex + (actor.shield ? SHIELD_AC : 0));
   ac += actor.acBonus ?? 0;
   if (comArmadura) ac += actor.acBonusArmadura ?? 0;
+  // COMBATENTE COM DUAS ARMAS (talento): +1 com uma arma de corpo a corpo em cada mão.
+  const deMao = (id) => WEAPONS[id] && !WEAPONS[id].ranged && id !== 'punhos';
+  if ((actor.talentos ?? []).includes('combatenteComDuasArmas') && deMao(actor.equippedWeapon) && deMao(actor.offhandWeapon)) ac += 1;
   // A armadura mágica (a Dragonguard é um peitoral +1): o bônus é dela, então
   // vem com ela e sai com ela.
   ac += armor.bonusCA ?? 0;
+  // BÊNÇÃO DA FORJA e ALMA DA FORJA (clérigo da Forja, Xanathar)
+  ac += caDaForja(actor, armor);
   return ac;
 }
 
 /** Modificador usado por uma arma: acuidade escolhe o melhor entre FOR e DES. */
 export function weaponAbility(actor, weapon) {
+  // GUERREIRO MALDITO (bruxo Lâmina Maldita, Xanathar): o Carisma, se for maior, na arma de uma mão que está na mão.
+  // BRAÇOS DO EU ASTRAL (monge, Tasha): a Sabedoria nos golpes desarmados.
+  return sabedoriaNosBracos(actor, weapon, carismaNaArma(actor, weapon, habilidadeDaArma(actor, weapon)));
+}
+
+function habilidadeDaArma(actor, weapon) {
   if (weapon.ranged) return 'dex';
   if (!weapon.finesse) return weapon.ability;
   const str = actor.abilities.str;
@@ -295,7 +310,9 @@ export function motivoParaRecusar(actor, slot, id) {
     if (!WEAPONS[id]) return `${nomeDeId(id)} não é arma`;
     if (actor.shield) return 'a mão secundária está com o escudo';
     if (duasMaos(noEncaixe(actor, 'maoPrincipal'))) return 'a mão principal já usa as duas mãos';
-    if (!leve(id)) return `${nomeDeId(id)} não é leve: só arma leve vai na mão secundária`;
+    // COMBATENTE COM DUAS ARMAS (talento): arma de uma mão de perto, leve ou não.
+    const peloTalento = (actor.talentos ?? []).includes('combatenteComDuasArmas') && !duasMaos(id) && !WEAPONS[id].ranged;
+    if (!leve(id) && !peloTalento) return `${nomeDeId(id)} não é leve: só arma leve vai na mão secundária`;
     if (id === noEncaixe(actor, 'maoPrincipal')) return 'essa arma já está na mão principal';
     return null;
   }

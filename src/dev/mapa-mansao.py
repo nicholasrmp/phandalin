@@ -30,6 +30,7 @@
 # o depósito de armas. Nessas a tocha ainda sobe de penumbra para claro, e apagar devolve a penumbra em vez do
 # breu. O corredor do fosso e o túnel da cisterna já nasciam no breu.
 import json
+import os
 from collections import deque
 from pathlib import Path
 
@@ -278,9 +279,14 @@ glifo(19, 8, 'e')
 # 5 jaulas: palha nas duas celas, a pilha de roupa e a lanterna.
 for (x, y) in [(20, 2), (22, 2), (21, 3), (20, 7), (22, 8), (21, 8)]:
     glifo(x, y, 'p')
-glifo(22, 5, 's'); prop(22, 4, 'lanterna', bloqueia=False)
-# 3 corredor do fosso: as duas colunas falsas junto da parede norte.
-prop(22, 9, 'pilarQuebrado'); prop(26, 9, 'pilarQuebrado')
+# A PILHA DE ROUPA que o comentario acima promete desde sempre e o codigo nunca punha: so havia o `s` dos
+# mantimentos e a lanterna. E a roupa da familia Dendrar, tirada deles quando os trancaram aqui, e o livro a
+# poe nas celas.
+glifo(22, 5, 's'); prop(22, 4, 'lanterna', bloqueia=False); prop(20, 3, 'trapos', bloqueia=False)
+# 3 corredor do fosso: as duas colunas falsas junto da parede norte. INTEIRAS (`pilarAnao`), nao quebradas:
+# coluna falsa tem de parecer coluna, senao o jogador ve a junta de longe e nao ha o que achar. A quebrada
+# continua na cripta (18,10), onde o desabamento e parte da sala.
+prop(22, 9, 'pilarAnao'); prop(26, 9, 'pilarAnao')
 # 1 porão: barris no entalhe do norte, a cuba e os barris do sul, a cisterna no meio.
 for x in R(20, 22):
     glifo(x, 12, 's')
@@ -315,6 +321,20 @@ for (x, y) in [(2, 15), (5, 15), (2, 17), (5, 17)]:
 # dela inteiro: 22 casas que o mapa quer escuras. Só sobreviveria com 5 pés de alcance, que não é fogo nenhum.
 # Enquanto a fenda não tiver altura própria, esta luz não entra.
 LUZES = []
+
+# A MANSÃO ACESA, uma peça por tocha. `game/fogo.js` apaga uma chama em três camadas — o desenho, a regra e o
+# fogo que queima — e a do DESENHO só funciona se a luz trouxer `sobreposicao`. Medido nas onze cenas do jogo:
+# só o Esconderijo tinha isso. Aqui eram ONZE tochas mexendo na regra e deixando a pintura brilhando igual, que
+# é exatamente o defeito que o comentário de `fogo.js` descreve.
+#
+# A Forgotten Adventures publica o Redbrand Hideout em duas versões, apagada e acesa, e as duas já estavam no
+# disco — a acesa sem uso nenhum. `src/dev/cortar-mansao-acesa.py` a corta no alcance de cada luz e deixa a
+# lista aqui. A arte não entra no repositório (o `.gitignore` cobre `public/mapas/fa/`): sem ela no disco, a
+# peça simplesmente não desenha e a cena abre igual.
+SOBREPOSICOES = []
+_lista = os.path.join(os.path.dirname(os.path.abspath(__file__)), '_mansao-acesa.json')
+if os.path.exists(_lista):
+    SOBREPOSICOES = json.load(open(_lista, encoding='utf-8'))
 for (x, y, claro, penumbra, tipo) in [
     (18, 8, 15, 15, 'fogueira'),     # 4 cripta: a cena põe a chama no braseiro de (19,8), que é casa maciça
     (8, 2, 5, 5, 'vela'),            # 12 quarto do mago: a chama pequena da escrivaninha (bright 5)
@@ -328,7 +348,10 @@ for (x, y, claro, penumbra, tipo) in [
     (4, 11, 15, 15, 'tocha'),        # 10 sala de estar
     (4, 15, 15, 15, 'tocha'),        # 9 alojamento dos bugbears
 ]:
-    LUZES.append({'pos': {'x': x, 'y': y}, 'claro': claro, 'penumbra': penumbra, 'tipo': tipo})
+    luz = {'pos': {'x': x, 'y': y}, 'claro': claro, 'penumbra': penumbra, 'tipo': tipo}
+    if len(LUZES) < len(SOBREPOSICOES):
+        luz['sobreposicao'] = SOBREPOSICOES[len(LUZES)]['id']       # a peça da Mansão acesa, na ordem das luzes
+    LUZES.append(luz)
 
 # Candeeiros nas paredes de TRÁS de cada sala (as arestas N e O, que ficam atrás da casa na câmera). Só nas salas com luz.
 for (x, y, lado) in [(4, 2, 'N'), (8, 2, 'N'), (13, 2, 'N'), (17, 2, 'N'), (21, 2, 'N'), (3, 7, 'N'), (4, 15, 'N'),
@@ -375,6 +398,7 @@ ponto = lambda p: {'x': p[0], 'y': p[1]}
 par = lambda p: {'a': ponto(p[0]), 'b': ponto(p[1])}
 dados = {
     'luzes': LUZES,
+    'sobreposicoes': SOBREPOSICOES,
     'terreno': [''.join(l) for l in T],
     'altura': [''.join(alt(v) for v in l) for l in A],
     'luz': [''.join(str(v) for v in l) for l in L],

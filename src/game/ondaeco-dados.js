@@ -19,6 +19,13 @@ export const EXAMES = {
   ferramentas: 'Um suporte de ferramentas de mineiro: picaretas, pás e uma marreta, o cabo escurecido pelas mãos. Estão ali como se alguém fosse voltar do turno.',
   suprimentos: 'Provisões de quem pretendia ficar uma temporada: farinha, sal, carne em barril, frascos de óleo, picaretas e pás. O acampamento dos irmãos Buscapedra, deixado de qualquer jeito.',
   lanterna: 'Uma lanterna grande de cobre, apagada e sem óleo, pendurada para dar luz a quem entrasse. Faz séculos que ninguém a acende.',
+  // O AFOGADO DO LAGO (área 10), que a FA pinta como `DarkPoolSkeleton` e o livro descreve a três metros da
+  // margem. Usa a arte de ossos de anão, mas não é um anão de corredor: é o mago que o lago guardou, e é
+  // dele o anel e a varinha que a busca na água devolve.
+  'ossosAnao@10': 'A três metros da margem, no raso, um esqueleto deitado de costas com flechas de orc entre as costelas. A água clara deixa ver tudo, menos o que ele ainda tem nas mãos.',
+  // AS CORDAS DA FENDA (área 18): a mesma peça da corda da entrada, e aqui são elas que o livro cita ao
+  // dizer que subir ou descer "sem usar a corda" é que pede o teste.
+  'estalagmiteCorda@18': 'Duas cordas de cânhamo descem pela parede da fenda, amarradas em pinos de ferro cravados na pedra. São novas, e os pinos foram postos por quem sobe e desce por aqui todo dia.',
   ossosAnao: 'Ossos de anão dentro de uma armadura de placas enferrujada, caídos de bruços, a mão ainda fechada. Morreu defendendo alguma coisa.',
   ossosOrc: 'Ossos de orc numa armadura tosca de couro e ferro, os dentes à mostra no crânio largo. Quem o matou não o enterrou.',
   ossos: 'Ossos soltos e um crânio rachado no meio do chão. Faz tanto tempo que nem os ratos mexem mais neles.',
@@ -80,19 +87,35 @@ export const TEXTOS = {
   ondas: [
     'O estrondo está mais perto agora. Vem de baixo, de muito longe: um jato de água que bate na pedra, fica um instante no ar e desaba. O chão estremece junto, e depois tudo volta ao silêncio.',
   ],
-  gas: [
-    'O tapete de fungos aperta sob a bota e solta uma baforada que se espalha na altura do joelho: doce, pesada, de fruta passada. A maior parte dos fungos desta caverna não faz mal nenhum. Este faz.',
+  // A CAVERNA DOS FUNGOS no Obelisco: dois fungos violeta escondidos entre os outros (o gás da Mina saiu).
+  fungosVistos: '{quem} para antes de pisar o canteiro: entre os chapéus que brilham, dois tufos roxos têm talos que se mexem sem vento. Fungo violeta. Dá para passar longe deles, rente às paredes do sul e do leste.',
+  fungosPerto: [
+    'Um dos tufos roxos se estica — os talos se desenrolam como dedos e vêm na direção de quem chegou perto demais.',
+  ],
+  fungosSurpresa: [
+    'O que parecia mais um tufo de cogumelos roxos se desenrola de repente: talos compridos, cheios de manchas, que se esticam três metros e encostam na pele como pano molhado. Onde encostam, a carne escurece.',
+  ],
+  // O POÇO ESCURO no Obelisco: a serpente sai do lago atrás do último da fila.
+  serpente: [
+    'A água do lago está parada e escura, e na margem as conchas quebradas estalam a cada passo.',
+    'Atrás de todos, a superfície se abre sem barulho. Uma cabeça do tamanho de um baú sai do escuro, e o corpo que vem atrás dela não acaba — vem direto em {quem}, que é quem está por último.',
+  ],
+  // A CAVERNA TROVEJANTE no Obelisco: o polvo é atraído pela luz sobre a água.
+  polvo: [
+    'Da borda, a água lá embaixo ferve e recua a cada estrondo. A luz que {quem} leva desenha um círculo trêmulo na superfície.',
+    'O círculo se quebra. Alguma coisa sobe na direção da luz, e os primeiros tentáculos batem na pedra da beirada.',
   ],
   stirges: [
-    'A caverna é tão alta que a luz some antes do teto. Nas paredes, gravuras de anões e gnomos com a picareta no ombro; no chão, os ossos de duas dúzias de combatentes, anões e orcs, ainda metidos em ferro velho.',
-    'Das vigas pendem lanternas de cobre sem fogo, e quem fica olhando para elas esquece de olhar mais para cima: lá, dez corpos de asa de couro se soltam, famintos.',
+    'O chão aqui pede que se olhe para baixo, e é o que todo mundo faz: há mortos demais para passar sem reparar, e o ferro em que eles ainda estão metidos conta de que lado cada um lutou. As paredes é que são o trabalho bonito — picaretas no ombro, lavradas por quem tinha orgulho do ofício —, e ninguém as vê, porque ninguém levanta a cabeça.',
+    'As lanternas de cobre penduradas no alto também puxam o olho, e também param antes do teto. É no teto que a caverna guarda o que tem de vivo: dez bolsas de asa de couro, penduradas de cabeça para baixo, que não comem há muito tempo e acabam de notar que chegou comida.',
   ],
-  esqueletos: [
-    'A guarita que vigiava a entrada foi tomada à força. Sobraram entulho de teto, bancos de pedra partidos, beliches e armas caídas das prateleiras, e no meio de tudo ossos de anões e de orcs, misturados.',
-    'Basta uma bota para o chão responder: os ossos se arrastam uns para os outros, se encaixam, e nove esqueletos se erguem com o que acharam à mão.',
+  // A GUARITA no Obelisco: oito mortos, dois deles ogros, no lugar dos nove esqueletos da Mina.
+  guarita: [
+    'A guarita que vigiava a entrada foi tomada à força. Sobraram entulho de teto, bancos de pedra partidos, beliches e armas caídas das prateleiras — e oito corpos apodrecendo entre eles, dois tão grandes que só podem ser de ogro.',
+    'Um instante depois de alguém entrar, os mortos se levantam: seis anões de armadura enferrujada e os dois ogros, devagar, de olhos vazios.',
   ],
   ghoulsSul: [
-    'Da porta entreaberta vem um ranger de dentes em osso e de couro sendo rasgado. O alojamento tem beliches de pedra em fila e um braseiro de ferro enferrujado, com carvão, no meio; entre os ossos dos mineiros, três vultos cinzentos e curvados roem as armaduras atrás de tutano.',
+    'O som chega antes da sala: alguma coisa está quebrando osso com método, sem pressa nenhuma, como quem janta sozinho. Lá dentro era um dormitório — a pedra ainda tem a forma das camas, e o braseiro no meio ainda tem o carvão que ninguém acendeu. Quem está comendo são três, de costas, e o que eles encontraram para comer usava armadura.',
     'Eles param e viram o rosto para a porta. Sentiram cheiro de carne.',
   ],
   ghoulsGrande: [
@@ -107,20 +130,24 @@ export const TEXTOS = {
     'Falam goblin entre risadas curtas, e já estão pegando as armas.',
   ],
   zumbis: [
-    'Uma fornalha enorme, apagada, domina o salão, com foles de ferro e carrinhos de minério por fundir. Um canal seco e fundo corta o piso. Em volta, anões e orcs ressecados, ainda de armadura, e sobre eles paira uma caveira coroada de fogo verde.',
+    'A primeira coisa que se vê é a chama verde, parada no ar à altura de um homem, porque é a única coisa acesa em quinhentos anos. Embaixo dela há mais de uma dúzia de mortos secos, de armadura, e embaixo deles o chão da maior oficina que estes anões construíram: a fornalha fria do tamanho de uma casa, os foles de ferro, os carrinhos com o minério que ninguém fundiu, e o rasgo fundo do canal que movia tudo isso quando ainda corria água nele.',
     'Oito dos mortos se levantam juntos, duros, e vêm em fila. A caveira se vira sem pressa e cumpre a ordem que ninguém cancelou em séculos.',
   ],
   fenda: [
     'Uma fenda enorme parte ao meio esta caverna. Um fio de água escorre da parede do oeste e cai nela, e de dentro vêm o raspar de pedra e vozes de gente cansada. Dois vultos grandes remexem os escombros lá embaixo, e um terceiro está de guarda na beira, ao lado de um drow de manto escuro.',
     'O drow ergue os olhos e dá um passo. As cordas rangem: os dois do fundo já começam a subir.',
   ],
+  espectadorCego: 'O olho grande se fecha e os dez pequenos se agitam sem achar nada. A coisa para no ar, entende o que isso quer dizer para uma criatura que é só olhos — e some, como quem foi chamado de volta e já não serve para o serviço.',
   espectadorSome: [
     'A esfera pisca todos os olhos, um de cada vez, e se encolhe como quem recebe uma boa notícia. — Dispensado — diz, dentro da cabeça de vocês. — Que bom. Eu estava tão cansado. — E desaparece, sem um som, voltando para onde veio.',
   ],
   fimMormesk: ['A sombra se desfaz em fios, e o frio sai dos aposentos como água que escoa. O baú está lá, aberto, e agora ninguém mais o guarda.'],
   fimEspectador: ['A esfera de olhos cai no chão com um som mole e fica imóvel. A chama verde do braseiro continua estalando, intocada, e a sala parece de repente muito grande.'],
   fimStirges: ['O último stirge cai de lado e fica de asa aberta. Uma goteira antiga bate no chão, e a caverna volta a ser só pedra e osso.'],
-  fimEsqueletos: ['Os ossos caem de vez, sem se juntar mais. A guarita volta ao que era: cacos de pedra e entulho.'],
+  fimGuarita: ['Os mortos caem e ficam caídos. A guarita volta ao que era: cacos de pedra, entulho e um cheiro que vai demorar a sair.'],
+  fimFungos: ['Os talos roxos murcham e ficam no chão como trapo. Os outros fungos continuam brilhando, verdes e inofensivos.'],
+  fimSerpente: ['O corpo enorme afunda devagar e some no escuro do lago. A água se fecha, e as conchas da margem voltam a ser o único barulho.'],
+  fimPolvo: ['Os tentáculos soltam a pedra e escorregam de volta para a água. A onda seguinte chega, bate na parede e leva a última mancha de tinta.'],
   fimGhoulsSul: ['Os três ficam entre os ossos que mastigavam. O braseiro de ferro, frio, continua no meio, e o alojamento parece só um quarto velho.'],
   fimGhoulsGrande: ['O último deles cai da escada lavrada e não se mexe mais. No silêncio, a grande caverna parece outra: duas mesas grandes, dois braseiros velhos e os ossos de uma batalha muito antiga.'],
   fimGosma: ['A coisa amarela perde a forma e escorre pelo chão, deixando uma poça de nada. O túnel volta a ser um túnel.'],
@@ -136,16 +163,19 @@ export const TEXTOS = {
     'Atrás, na porta dos aposentos do sacerdote, a fechadura espera por essa chave.',
   ],
   derrota: 'A mina engole o grupo sem pressa. As ondas continuam batendo ao longe, em intervalos regulares, e ninguém as escuta.',
+  nezznarInvisivel: 'Junto da mesa de guerra o ar se fecha sobre alguma coisa e a deixa de fora: onde havia um drow de manto preto não há mais nada, e o cajado de aranha some junto.',
+  nundroJunto: 'Ele pega o machado de um dos anões caídos, testa o peso com a mão esquerda porque a direita não fecha direito, e fica ao lado de vocês. Anda devagar e respira mal, mas anda — e conhece esta mina melhor que qualquer mapa.',
   nundroLivre: ['Nundro se apoia no cotovelo, tonto, e deixa que o ajudem a sentar. Está vivo, e vai ficar. Ele pergunta pelo irmão, e a pergunta fica sem resposta por um instante longo demais.'],
-  tharden: ['O anão está de botas boas, e elas valem mais que todo o resto do corpo dele: leves, de cano alto, com uma sola que parece não gastar. O Aranha Negra passou direto por ele e nunca olhou os pés. Servem a quem for.'],
+  tharden: ['Por baixo do gibão rasgado, o anão usa um manto curto de lã cinza, fino demais para o frio daqui e quente demais para ser só lã. O Aranha Negra passou direto por ele na pressa de entrar. Serve a quem for.'],
   cofreResiste: 'A tranca de anão não se rende: o ferro é bom, e o ladrão não foi melhor.',
   cofreAvaliadores: 'Cede com um clique fundo. Dentro, num pano de couro, o pagamento esquecido dos mineiros: seiscentas peças de cobre, cento e oitenta de prata, noventa de electro e sessenta de ouro. O electro vai em prata, que é como se troca hoje.',
   estatuaReconhece: 'Uma estátua assim, de anão de barba trançada e martelo no colo, só pode ser de Dumathoin, o Guardião dos Segredos Debaixo da Montanha. O templo é dele, e dele é esta mina, no fim das contas.',
   estatuaNada: 'Não dá para tirar mais nada dali. É pedra, e pedra guarda segredo melhor que ninguém.',
   estatuaVidro: 'De perto, as pedras verdes não têm a profundidade de uma esmeralda: são vidro lapidado, bom, mas vidro. Quem quer que tenha posto aqui os olhos verdadeiros já os levou há séculos.',
   estatuaEscorrega: 'A pedra é lisa e a bota escorrega. Ninguém sobe hoje.',
-  primeiroOlho: 'Subir é fácil: o martelo de pedra dá apoio, e o joelho dá outro. O olho verde sai com um estalo e cai na mão, e é vidro, sem nenhum valor. Nada acontece. Por enquanto.',
-  segundoOlho: 'O segundo olho sai, e o templo inteiro faz um som seco, de rachadura longa. Os pilares, alinhados com as paredes, rangem juntos. O teto cede.',
+  primeiroOlho: 'Subir é fácil: o martelo de pedra dá apoio, e o joelho dá outro. O olho verde sai com um estalo e cai na mão. Lá em cima, alguma coisa range — e para.',
+  segundoOlho: 'O olho sai com um estalo, e o templo inteiro responde com um som seco, de rachadura longa. Os seis pilares, alinhados com as paredes, rangem juntos e começam a ceder. O teto vem abaixo.',
+  soterrado: 'O resto do teto desce de uma vez. Onde era o templo de Dumathoin há agora um monte de pedra do chão ao teto, e ninguém atravessa mais por ali.',
   sacoNezznar: 'O saco de couro preto está pesado: moedas de electro e de ouro, platina em barrinhas, nove pedrinhas lapidadas e uma caneca anã de electro batido, com martelos cruzados. O drow não viajava com pouco.',
   notasNezznar: 'Mapas riscados a carvão, com cruzes onde a exploração parou. Nas margens, a letra miúda de quem não confia em ninguém: monstros demais, o fogo verde na fundição, a esfera que ninguém passa. Ele estava perdendo a paciência.',
   braseiroRevela: 'Uma chama assim só nasce de magia velha: o braseiro é a fonte da energia que ainda corre pelas cavernas em volta. Enfraqueceu com os anos, e já não encanta nada para sempre, mas ainda dá para banhar uma arma por um tempo.',
@@ -156,10 +186,10 @@ export const TEXTOS = {
   mormeskVigia: 'O frio dos aposentos aperta: o espectro está de olho em quem mexe nos livros dele.',
   tomosNada: 'Poeira e histórias de aventureiros e reis. Se há segredo aqui, está bem escondido.',
   mapaMormesk: 'Um dos tomos tem a capa mais grossa que as outras. Descosturada com jeito, solta um mapa fino dobrado em quatro: uma masmorra desenhada à mão, com um nome em letras de mago. Mormesk construiu essa masmorra, e agora alguém a procura.',
-  bauMago: 'No baú chamuscado: mil e cem peças de cobre, cento e sessenta de prata, cinquenta de electro — em prata, duzentas e cinquenta —, três diamantes lapidados e um cachimbo de madeira escura com filigrana de platina. É o que um mago acumulou em vida, e que a morte não lhe deixou levar.',
-  bauMagoPago: 'No baú chamuscado: mil e cem peças de cobre, cento e sessenta de prata, cinquenta de electro — em prata, duzentas e cinquenta — e três diamantes lapidados. O cachimbo de platina não está: Mormesk o guardou para si.',
+  bauMago: 'No baú chamuscado: mil e cem peças de cobre, cento e sessenta de prata, cem de electro — em prata, quinhentas —, cinco malaquitas e um cachimbo de madeira escura com filigrana de platina. É o que um mago acumulou em vida, e que a morte não lhe deixou levar.',
+  bauMagoPago: 'No baú chamuscado: mil e cem peças de cobre, cento e sessenta de prata, cem de electro — em prata, quinhentas — e cinco malaquitas. O cachimbo de platina não está: Mormesk o guardou para si.',
   lagoFalha: 'A água escura engole a luz da tocha logo na primeira braçada, e o frio faz o peito apertar. Não dá para descer mais.',
-  lagoAcha: 'A uns três metros da margem, no fundo, jaz um esqueleto humano com os restos de uma túnica e pontas de flecha orc cravadas entre as costelas. Duas alianças de platina e uma varinha ainda estão com ele: era um mago da velha Phandalin, e a mina foi a última coisa que defendeu.',
+  lagoAcha: 'A água é rasa o bastante perto da margem para entregar o que guarda: um homem que entrou no lago para fugir e não saiu, com a túnica ainda inteira e três hastes de orc no peito. As mãos dele não largaram nada — três anéis de ouro com pedras e uma varinha, que a água não estragou. Quem ele era está na varinha; o que ele fez aqui, nas flechas.',
   fendaFalha: 'Entre as pedras e a escuridão, nada que brilhe. Se houver alguma coisa aqui, não se deixa achar agora.',
   fendaAcha: 'Debaixo de um bloco enorme, o esqueleto esmagado de uma anã ainda leva nas mãos um par de manoplas de ferro escurecido, de dedos grossos. É o que a fenda guardava.',
   // O FECHO é o do livro e nada além dele: o destino de Nezznar, Phandalin livre, a mina de Gundren e Nundro com dez por cento dos
@@ -192,9 +222,11 @@ export const TEXTOS = {
   ondaPerto: 'O estrondo vem de perto agora, tão alto que a poeira se solta do teto. A água em algum lugar adiante bate na rocha, fica no ar e desaba.',
   vagando: (nome) => ['O barulho chegou antes: passos, arrastar de pedra, respiração.', `Pela escuridão, ${nome} vêm direto para o grupo.`],
   fimVagando: 'O que vagava pela mina fica no chão. Ela, no entanto, é grande, e não está vazia.',
-  bolsaDoBugbear: 'Na bolsa do bugbear maior: quinze peças de cobre, treze de electro (em prata, sessenta e cinco) e um frasco de poção da vitalidade.',
+  bolsaDoBugbear: 'Na bolsa do bugbear maior: quinze peças de cobre, treze de electro (em prata, sessenta e cinco), duas pedrinhas lapidadas e um frasco de poção de cura.',
   entrada: {
-    5: 'Aqui se pesava o pagamento dos mineiros. Um balcão de laje corta a sala, e as três balanças de ferro estão cegas de poeira. O que foi o arquivo, nos nichos do norte, virou farelo ao menor vento; pelo chão, gnomos e orcs caídos juntos, como se tivessem brigado pelo troco. No fundo, um cofre de ferro.',
+    // O FIO DO OBELISCO (área 1): o último dos goblins de fora que se acha na Mina.
+    1: 'No fundo do fosso da entrada há um corpo que não é de anão: um goblin magro, caído de qualquer jeito, de crânio comprido, esticado para trás, e a pele riscada de listras verdes. Veste trapos, sem marca de bando nenhum — não é Cragmaw. Os rastros dos que vieram com ele chegam até a beira do fosso e voltam para fora: estiveram aqui, olharam, não acharam o que procuravam e foram embora.',
+    5: 'Esta era a sala em que o trabalho de um mês virava número. O balcão de laje continua atravessado no meio dela, e as três balanças de ferro em cima dele continuam equilibradas, esperando um peso que não vem desde que os gnomos que as liam caíram no chão — junto dos orcs que os derrubaram, tão perto uns dos outros que dá para contar quem chegou primeiro. Nos nichos do norte, o que foi registro virou pó. No fundo, o cofre não foi aberto.',
     7: 'Poucas salas da mina aguentaram tanto. Falta um pedaço da parede leste, que virou monte de pedra, mas a porta do norte está sã e se tranca por dentro. Os barris, secos e rachados, ficaram encostados onde estavam. Não é um quarto, é um buraco com porta; mesmo assim, nada ronda por aqui.',
     8: 'Do chão ao teto, tudo aqui está vivo e quieto: um tapete de fungos engole o piso, crostas pálidas sobem pelas estalagmites, e cogumelos da altura de uma pessoa se curvam sobre o caminho. As bolas inchadas brilham num verde fosco, e o lugar ganha luz de graça.',
     10: 'O lago ocupa a caverna quase inteira, preto e calado, e a beira é cascalho de conchas partidas de um mexilhão pálido. Cheira a peixe velho. No meio a água é fundíssima, uns seis metros, e dela escapa uma corrente fraca para o nordeste, por uma fresta baixa.',
@@ -202,12 +234,36 @@ export const TEXTOS = {
     17: 'Uma passagem baixa, de pouco mais de um metro de teto, entulhada de pedras redondas: o leito de um córrego que secou. Dá para seguir agachado, e é um caminho que contorna os mortos da fundição.',
     20: 'Cortinas empoeiradas nas paredes, uma cama, um braseiro frio e chão de pedra: o quarto do sacerdote do templo, servindo agora de cela.',
   },
+  // O FOSSO DA ÁREA 1 E A FENDA DA 18. O livro dá a mesma regra aos dois e só troca os números: subir ou
+  // descer a parede sem corda é um teste de Força (Atletismo), CD 15 no fosso da entrada e CD 10 na fenda
+  // de 6 m da caverna desmoronada. Errar por 5 ou mais é cair — 1d6 de concussão por 3 m de queda, e
+  // caído no chão ao chegar.
+  fossoAtravessa: (nome, onde) => `${nome} desce pela parede do ${onde}, atravessa o fundo e sobe do outro lado, com as mãos em carne viva.`,
+  fossoDesiste: (onde) => `A parede do ${onde} desce lisa e úmida, e a mão escorrega antes do segundo apoio. Não se passa por aqui sem corda — não assim.`,
+  fossoCai: (nome, dano, onde) => `${nome} perde o apoio no meio da parede e desce o resto do ${onde} de uma vez: ${dano} de pedra, e o fundo recebe de mau jeito.`,
   paredaoNaoSobe: 'A pedra é lisa de baixo a cima, e as mãos não acham onde agarrar. Não é por aqui que se sobe: a escada fica ali ao lado.',
   paredaoCai: (nome, dano) => `${nome} perde a mão no meio da subida e cai de costas no pé do paredão: ${dano} de pedra no corpo, e o ar some do peito.`,
   portaResiste: 'A porta de pedra aguenta, e o ombro dói.',
   portaAvisa: 'O ferro range alto demais. Lá atrás, na escuridão do templo, algo de muitas patas se mexe sobre a pedra, e depois fica quieto, à espera.',
   chaveAbre: 'A chave entra na fechadura de primeira, como se tivesse nascido para ela. A porta se abre.',
   escutaNada: 'Pedra grossa, e só. Se há alguém do outro lado, está quieto.',
+  // O que se ouve numa porta QUALQUER, pela conta de quem está do outro lado. As quatro portas trancadas
+  // têm texto próprio (`escuta`, abaixo); esta é a das outras treze.
+  barricadaPoe: 'Os barris estão rachados e vazios, mas pesam o bastante. Empilhados contra a porta em bom estado, fazem dela parede: nada entra aqui sem derrubar tudo primeiro, e derrubar tudo faz um barulho que acorda quem estiver dormindo.',
+  barricadaTira: 'Os barris saem da frente da porta e voltam para a parede, onde passaram os últimos quinhentos anos.',
+  // As gravuras da área 3, que o livro põe nas paredes do túnel da entrada original.
+  jatoDagua: (caidos) => ['A água lá embaixo recua de uma vez, como se alguém a tivesse chamado, e volta num jato que sobe pela parede e bate logo abaixo da margem. O nível sobe três metros em dois segundos, e tudo aqui fica encharcado e barulhento demais para se ouvir qualquer coisa.',
+    caidos.length
+      ? `A pedra molhada não perdoa: ${caidos.join(' e ')} ${caidos.length > 1 ? 'vão' : 'vai'} ao chão.`
+      : 'A água desce de novo, devagar, e o eco demora mais que ela.'],
+  gravurasDaEntrada: 'A rocha deste túnel não foi só aberta: foi assinada. Em relevo raso, repetida de um lado ao outro, a mesma figura — anão e gnomo lado a lado, a picareta no ombro, andando para dentro da montanha. Quem cavou isto aqui estava convencido de que ia durar.',
+  escutaPorta: (quantos) => (quantos === 0
+    ? 'Pedra, e por trás dela mais pedra. Nada se mexe do outro lado — nem passo, nem respiração.'
+    : quantos === 1
+      ? 'Alguma coisa se arrasta lá dentro, sozinha, e para quando você para de respirar.'
+      : quantos <= 3
+        ? 'Mais de um, do outro lado: pés na pedra e um resmungo baixo que não é de língua nenhuma que se conheça.'
+        : 'Gente, e não pouca: passos em cima de passos, metal batendo em metal, e alguém mandando os outros calarem a boca.'),
   escuta: {
     alojNorteLeste: 'Vozes graves, em goblin, reclamando de fome entre risadas curtas. Mais de uma, e nenhuma com pressa.',
     sacerdote: 'Silêncio, e mais atrás, uma respiração fraca, irregular, de quem está ferido.',
@@ -383,6 +439,7 @@ export function arvoreDeNundro({ salvo }) {
     inicio: 'oi',
     nos: {
       oi: {
+        calado: true,   // desacordado: a caixa de perguntar só abre depois de despertá-lo
         narra: 'Um anão jovem, de barba curta e queimada nas pontas, está deitado no chão frio, de olhos fechados, com os pulsos esfolados e o rosto marcado de pancadas. Respira, mas mal.',
         opcoes: [
           { texto: 'Estancar os ferimentos e despertá-lo.', vai: 'livre' },
@@ -399,7 +456,15 @@ export function arvoreDeNundro({ salvo }) {
       },
       luto: {
         fala: 'Ele me avisou… Disse para desistir do mapa. — Ele engole o resto com um aceno. — Obrigado. Eu devo a vocês mais do que posso pagar.',
-        opcoes: [{ texto: '…', fim: 'resgatado' }],
+        opcoes: [{ texto: 'Fique aqui. Nós terminamos o serviço.', fim: 'resgatado' },
+          { texto: 'Consegue andar? Pode vir junto.', vai: 'junto' }],
+      },
+      // O LIVRO MANDA ELE SE OFERECER: solto, Nundro agradece e pede para seguir com o grupo enquanto
+      // durar. A árvore só o deixava ficar deitado na cela.
+      junto: {
+        fala: ['Andar eu ando. Correr é outra conversa. — Ele se apoia na parede e fica de pé de uma vez só, pela teimosia. — Me dê um machado e eu vou até onde vocês forem. É a mina do meu irmão.',
+          'Não sou dos que ficam esperando na porta enquanto outro paga a conta.'],
+        opcoes: [{ texto: 'Então venha.', fim: 'junto' }],
       },
     },
   };

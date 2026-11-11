@@ -1,0 +1,12 @@
+{
+ "_nota": "A COR que o dono corrigiu na página Escolha dos Ícones (2026-11-10): a família de Esmalte da chave, por cima da que o inventário calcula. A poção incomum saía verde, e verde lê como veneno. E as sete da revisão de 2026-11-10: a cor da família contradizia o conceito (sombra em vermelho, pedra verde em bege) ou não separava duas coisas de mesmo desenho.",
+ "item-pocaoDeResistencia": "abjuracao",
+ "item-pocaoDeSoproDeFogo": "fogo",
+ "envenenado": "veneno",
+ "classe-shadowWalk": "necrótico",
+ "classe-psionicSorcery": "psíquico",
+ "item-jade": "druida",
+ "item-malaquita": "druida",
+ "magia-sombraDeMoil": "necrótico",
+ "item-pocaoDeLeituraMental": "psíquico"
+}

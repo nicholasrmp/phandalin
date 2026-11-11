@@ -53,6 +53,12 @@ SAIDA = os.path.join(RAIZ, 'src', 'game', 'poco.js')
 PORTA = (10, 8)
 POCO_ = (5, 14)
 TORRE = {'x0': 10, 'y0': 3, 'x1': 14, 'y1': 8}
+#
+# POR QUE ESTA CENA NAO TEM `objetos` (peca de mobilia). Ela roda SOBRE O BATTLEMAP PINTADO DA FA (`fundo`), e
+# o desenho ja mostra a mobilia toda. Peca por cima seria desenhar cada coisa duas vezes -- e e a mesma razao
+# que esta escrita no mapa da rua da vila (`game/encounter.js`, `objetos: []`). O que precisa valer como REGRA
+# (barrar passo, dar cobertura, ter superficie que o menu enxergue) entra como GLIFO de terreno, nao como
+# peca. Um revisor de fidelidade ja abriu achado de "zero pecas" aqui; fica registrado que e de proposito.
 TENDA = [(x, y) for y in range(8, 11) for x in range(5, 8)]
 PATIO = {'x0': 2, 'y0': 6, 'x1': 15, 'y1': 17}
 SAIDA_CASAS = [(4, 21), (5, 21)]

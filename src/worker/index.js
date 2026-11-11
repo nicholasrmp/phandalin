@@ -4,6 +4,8 @@
 // aqui. É o que mantém o plano grátis folgado (100 mil requisições por dia).
 //
 //   GET /api/sala/<CÓDIGO>   abre o WebSocket da sala (Upgrade)
+//   POST /api/dialogo        uma pergunta a um NPC (`dialogo-do.js`), só com o segredo ANTHROPIC_API_KEY
+//   GET /api/dialogo         as falas aprendidas, para `dev/baixar-banco.mjs`
 //
 // Cada código é um Durable Object (`SalaDO`). Quem abre a sala manda `criar` como
 // primeira mensagem; quem chega depois manda `entrar`. O id do jogador vai nessa
@@ -14,10 +16,14 @@ import { normalizarCodigo } from '../game/sala.js';
 export { SalaDO } from './sala-do.js';
 export { LimitadorDO } from './limitador-do.js';
 export { DiretorioDO } from './diretorio-do.js';
+export { DialogoDO } from './dialogo-do.js';
 
 const PREFIXO = '/api/sala/';
 const NOVA_SALA = '/api/nova-sala';
 const TAVERNA = '/api/taverna';
+const DIALOGO = '/api/dialogo';
+/** O maior corpo de uma pergunta: a pergunta, os ids de fatos e as seis trocas da memória. */
+const MAX_CORPO_DA_PERGUNTA = 9000;
 
 const diretorio = (env) => env.DIRETORIO.get(env.DIRETORIO.idFromName('unico'));
 async function perguntarAoDiretorio(env, corpo) {
@@ -47,6 +53,21 @@ function origemPermitida(request, url) {
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
+    if (url.pathname === DIALOGO) {
+      // Sem o segredo não há modelo nem banco aqui: o cliente segue com o que veio no jogo.
+      if (!env.ANTHROPIC_API_KEY) return new Response('sem modelo', { status: 503 });
+      const objeto = env.DIALOGO.get(env.DIALOGO.idFromName('unico'));
+      if (request.method === 'GET') return objeto.fetch('https://dialogo/');
+      if (request.method !== 'POST') return new Response('use POST', { status: 405 });
+      // Esta rota gasta crédito: aqui o `Origin` é obrigatório, o que o navegador sempre manda num POST. Não é autenticação; o
+      // que segura o gasto é o limite por IP e o teto do `dialogo-do.js`.
+      if (!request.headers.get('Origin') || !origemPermitida(request, url)) return new Response('origem não permitida', { status: 403 });
+      const lim = await perguntar(env, request, { op: 'perguntar', contar: !ehLocal(ipDe(request)) });
+      if (lim.status === 429) return Response.json({ erro: 'perguntas demais; tente mais tarde' }, { status: 429 });
+      const corpo = await request.text();
+      if (corpo.length > MAX_CORPO_DA_PERGUNTA) return new Response('pedido grande demais', { status: 413 });
+      return objeto.fetch('https://dialogo/', { method: 'POST', body: corpo });
+    }
     // Um código de sala novo, sorteado aqui: no máximo algumas por hora para cada IP.
     if (url.pathname === NOVA_SALA) {
       if (request.method !== 'POST') return new Response('use POST', { status: 405 });

@@ -112,7 +112,7 @@ export default {
           1: ['nevoaObscurecente', 'ondaTrovejante'],
           3: ['lufadaDeVento', 'despedacar'],
           5: ['convocarRelampagos', 'tempestadeDeGranizo'],
-          7: ['controlarAgua', 'tempestadeDeGelo'],
+          7: ['controlarAAgua', 'tempestadeDeGelo'],
           9: ['ondaDestrutiva', 'pragaDeInsetos'],
         },
       },
@@ -135,7 +135,7 @@ export default {
           3: ['augurio', 'sugestao'],
           5: ['indetectavel', 'falarComOsMortos'],
           7: ['olhoArcano', 'confusao'],
-          9: ['lendaETradicao', 'videncia'],
+          9: ['lendasEHistorias', 'videncia'],
         },
       },
       natureza: {
@@ -158,8 +158,8 @@ export default {
           1: ['amizadeAnimal', 'falarComAnimais'],
           3: ['peleDeArvore', 'crescimentoDeEspinhos'],
           5: ['crescimentoDePlantas', 'muralhaDeVento'],
-          7: ['dominarBesta', 'vinhaAgradora'],
-          9: ['pragaDeInsetos', 'caminharEntreArvores'],
+          7: ['dominarBesta', 'vinhaAgarradora'],
+          9: ['pragaDeInsetos', 'caminharEmArvores'],
         },
       },
       enganacao: {

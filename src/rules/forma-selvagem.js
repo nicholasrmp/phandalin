@@ -42,9 +42,11 @@ export function formasDisponiveis(nivel, lua = false) {
 const CAMPOS_DA_FORMA = ['attacks', 'multiattack', 'traits', 'speedFt', 'speeds', 'look', 'size', 'resist', 'senses', 'aparencias', 'lookBase'];
 
 /** Veste a fera no druida. Devolve false se não pode (sem usos, nível, fera proibida). */
-export function vestirFera(c, feraId) {
+// `livre`: quem veste é a MAGIA (a Metamorfose, as Formas Animais, a Transformação), não a Forma Selvagem — a lista de
+// formas do druida não vale, e a magia escolhe a dela.
+export function vestirFera(c, feraId, { livre = false } = {}) {
   if (c.formaSelvagem) return false;
-  if (!formasDisponiveis(c.level ?? 1, c.features?.includes('circleForms')).includes(feraId)) return false;
+  if (!livre && !formasDisponiveis(c.level ?? 1, c.features?.includes('circleForms')).includes(feraId)) return false;
   const m = makeMonster(feraId, { x: 0, y: 0 });
   const original = {
     abilities: { ...c.abilities }, hp: c.hp, maxHp: c.maxHp, ac: c.ac, tempHp: c.tempHp,

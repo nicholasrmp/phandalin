@@ -9,9 +9,10 @@ import { fontesDeLuz, visaoDoGrupo, nivelDeLuz } from '../rules/luz.js';
 import { luzNaCasa, fogueiraAcesa, mudarFogo, temFogo, opcaoDeFogo } from '../game/fogo.js';
 import {
   opcaoDeInvestigar, opcaoDeExaminarCorpo, ACHADOS_DA_SUPERFICIE, ACHADOS_NO_CORPO, opcoesDeAtencao, opcaoDeProcurar,
-  opcaoDeLembrarCriatura, saberDaCriatura, verboDa, ajudanteDe, anotar, opcaoDoDiario, casasNotadas, PERICIA_DO_TIPO, ndDe,
+  opcaoDeLembrarCriatura, saberDaCriatura, criaturaConhecida, marcarConhecida, verboDa, ajudanteDe, anotar, opcaoDoDiario, casasNotadas, PERICIA_DO_TIPO, ndDe,
 } from '../game/investigar.js';
 import { cortarNoPerigo } from '../game/armadilhas.js';
+import { arteInteiraDe } from '../art/fichas-de-criatura.js';
 import { Battlefield, key } from '../core/grid.js';
 import { passivePerception, skillBonus } from '../rules/abilities.js';
 import { makeMonster } from '../rules/monsters.js';
@@ -183,20 +184,24 @@ teste('examinar o corpo: uma vez por herói e por corpo, com o achado do bloco',
 
 // ---------------------------------------------------------------------------------------------- o corpo ---
 
-teste('a algibeira de Yeemik está no corpo dele: três dentes de ouro e 15 de prata, uma vez só', () => {
+teste('a algibeira de Yeemik está no corpo dele: três gemas de 10 po e uma poção de cura, uma vez só', () => {
   const { enc, heroi } = noEsconderijo();
   const yeemik = buildFoes('esconderijo').find((f) => f.defId === 'yeemik');
   yeemik.dead = true;
   yeemik.hp = 0;
   yeemik.pos = { x: heroi.pos.x, y: heroi.pos.y };
-  assert.deepEqual(tesouroDoCorpo(yeemik), ['denteDeOuro', 'moedaDePrata']);
+  assert.deepEqual(tesouroDoCorpo(yeemik), ['gemaPequena', 'pocaoDeCura']);
   const r = saquearCorpo(enc, heroi, yeemik);
   assert.equal(r.ok, true, r.why);
-  assert.deepEqual(r.itens, [{ id: 'denteDeOuro', qtd: 3 }, { id: 'moedaDePrata', qtd: 15 }]);
+  assert.deepEqual(r.itens, [{ id: 'gemaPequena', qtd: 3 }, { id: 'pocaoDeCura', qtd: 1 }]);
   const bolsa = garantirInventario(heroi).bag;
-  assert.equal(bolsa.find((i) => i.id === 'denteDeOuro')?.qtd, 3);
-  assert.ok(bolsa.find((i) => i.id === 'moedaDePrata')?.qtd >= 15);
+  assert.equal(bolsa.find((i) => i.id === 'gemaPequena')?.qtd, 3);
   assert.deepEqual(tesouroDoCorpo(yeemik), [], 'a algibeira saiu duas vezes');
+  // e o Errk e o chefe do posto, que são o MESMO bloco, levam cada um a sua bolsa (`m.tesouro`)
+  const errk = buildFoes('esconderijo').find((f) => f.name === 'Errk');
+  const chefe = buildFoes('esconderijo').find((f) => f.chefeDoPosto);
+  assert.deepEqual(tesouroDoCorpo(errk), ['moedaDeCobre']);
+  assert.deepEqual(tesouroDoCorpo(chefe), ['moedaDePrata']);
 });
 
 teste('os goblins e Klarg não carregam nada no corpo — o baú de Klarg está entre os suprimentos', () => {
@@ -386,6 +391,48 @@ teste('a pista marcada no editor (ferramenta 9) chega ao mapa e vira verbo no me
   const { heroi, enc } = noEsconderijo();
   const ops = opcoesDeAtencao({ enc }, heroi, heroi.pos, 'caverna', { fora: true, pistas: [mapa.interativos[0].pista] });
   assert.ok(ops.some((o) => o.rotulo === 'Lembrar' && /CD 13/.test(o.detalhe)), ops.map((o) => `${o.rotulo} ${o.detalhe}`).join(' | '));
+});
+
+// ------------------------------------------------------------------------- o bestiário do grupo (a ficha) ---
+
+// O Lembrar que passa deixa o BLOCO conhecido: a ficha da criatura (`view/ficha-criatura.js`) só mostra a vida, os
+// atributos, os ataques e o que se sabe depois disso. Assíncrono porque o `fazer` abre a narrativa (aqui, o stub).
+{
+  const nome = 'Lembrar que passa marca o bloco na campanha, para todas as criaturas dele; quem falha não lembra; a arena guarda na cena';
+  total += 1;
+  try {
+    const { heroi, enc } = noEsconderijo();
+    heroi.abilities.int = 30;   // +10 em Natureza: CD 11 passa com qualquer d20
+    const lobo = makeMonster('lobo', { x: 23, y: 13 });
+    const outro = makeMonster('lobo', { x: 24, y: 13 });
+    const app = { enc, campanha: {} };
+    assert.equal(criaturaConhecida(app, lobo), false, 'antes do teste, ninguém sabe');
+    await opcaoDeLembrarCriatura(app, heroi, lobo, { fora: true }).fazer();
+    assert.deepEqual(app.campanha.bestiario, { lobo: true });
+    assert.equal(criaturaConhecida(app, outro), true, 'reconhecer um lobo vale para o outro lobo');
+    assert.equal(criaturaConhecida(app, makeMonster('goblin', { x: 0, y: 0 })), false, 'e não para o goblin');
+    // a falha não marca nada
+    const { heroi: h2, enc: e2 } = noEsconderijo();
+    h2.abilities.int = 1; h2.skills = []; h2.expertise = [];
+    const app2 = { enc: e2, campanha: {} };
+    const velho = makeMonster('lobo', { x: 23, y: 13 });
+    velho.xp = 155000;   // ND 30: CD 40, que −5 nunca alcança
+    await opcaoDeLembrarCriatura(app2, h2, velho, { fora: true }).fazer();
+    assert.equal(criaturaConhecida(app2, velho), false, 'quem falha não lembra');
+    // sem campanha (a arena), na cena
+    const app3 = { enc: e2 };
+    marcarConhecida(app3, velho);
+    assert.equal(criaturaConhecida(app3, velho), true);
+    assert.ok(e2.conhecidas.lobo);
+    console.log(`ok    ${nome}`);
+  } catch (e) { falhas += 1; console.log(`FALHA ${nome}\n      ${e.message.split('\n').join('\n      ')}`); }
+}
+
+teste('a arte inteira da criatura é o token com outro endereço; o herói não tem', () => {
+  assert.equal(arteInteiraDe({ defId: 'goblin', side: 'foes' }), '/criaturas/goblin.webp');
+  assert.equal(arteInteiraDe({ defId: 'quasit', name: 'Zeond', side: 'foes' }), '/criaturas/zeond.webp');
+  assert.equal(arteInteiraDe({ defId: 'semFicha', side: 'foes' }), null);
+  assert.equal(arteInteiraDe({ kind: 'pc', side: 'party', look: 'fighter' }), null);
 });
 
 console.log(`\n${total - falhas}/${total} testes passaram`);

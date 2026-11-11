@@ -19,14 +19,15 @@ export const EXAMES_DO_CASTELO = {
   mesa: 'Uma mesa de tábua grossa, com o tampo cheio de marcas de faca. Alguém comeu aqui há pouco e não limpou: osso roído, uma caneca virada, cera de vela endurecida na beirada.',
   mesaBanquete: 'A mesa comprida do salão, posta para quem não usa prato. Travessas de estanho amassadas, canecas tortas, e no meio um assado que já foi assado — agora é só o osso e a gordura seca.',
   arca: 'Uma arca de madeira escura com cantoneiras de ferro, a tampa arranhada de alto a baixo. As garras que fizeram isso não eram de goblin.',
-  // A MESMA PEÇA, OUTRA COISA: na torre do urso a `arca` não é arca nenhuma, é o toco do segundo andar.
-  // O livro: "o andar superior desta torre caiu criando um silo oco de pelo menos nove metros de altura...
-  // tudo que restou do segundo andar é uma BORDA QUEBRADA, sobre a qual fica um velho baú de madeira. O
-  // baú é difícil de ser visto do chão, necessitando de um teste de Sabedoria (Percepção) CD 15."
+  // A MESMA PEÇA, OUTRA COISA: na torre assombrada a `arca` não é arca nenhuma, é o toco do segundo andar, onde o
+  // grell fez o ninho. O Obelisco deixa SUBIR (Atletismo CD 15), e por isso o texto não diz mais que não dá.
+  // O livro a descreve como um silo: o piso de cima desabou e deixou um poço vazio de uns nove metros, com
+  // um resto de laje ainda preso à parede lá no alto. Em cima dessa laje há um baú velho, que de baixo não
+  // se enxerga sem procurar — Percepção CD 15.
   //
   // O texto do chão não pode entregar o baú: é exatamente isso que a CD 15 cobra. Ele descreve o que se vê
   // de baixo — a viga e a laje penduradas — e deixa a pista de olhar para cima, sem dizer o que há lá.
-  'arca@torreUrso': 'O andar de cima caiu quase todo e deixou a torre oca como um silo, nove metros até onde a sombra começa. Do segundo piso sobrou uma língua de laje presa numa viga, alta demais para alcançar e torta demais para subir. Lá em cima não dá para ver nada daqui — nem se há o que ver.',
+  'arca@torreUrso': 'O andar de cima caiu quase todo e deixou a torre oca como um silo, nove metros até onde a sombra começa. Do segundo piso sobrou uma língua de laje presa numa viga, bem alta, e as pedras soltas da parede são o único caminho até ela. Lá em cima não dá para ver nada daqui — nem se há o que ver.',
   camaRei: 'Uma cama que não nasceu cama: é um estrado de porta velha sobre caixotes, coberto de peles mal curtidas que ainda cheiram ao bicho. Para um rei goblin, é trono deitado.',
   banheira: 'Uma banheira de cobre, verde de azinhavre, com dois dedos de água parada e uma película por cima. Ninguém se lavou nela neste século.',
   // O ARMEIRO ESTÁ CHEIO, e não vazio. Este texto dizia "sobraram quatro, e nenhuma delas combina com as

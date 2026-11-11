@@ -15,6 +15,7 @@ import { ARESTA, distanceFt } from '../core/grid.js';
 import { rolarTeste } from '../rules/utilidade.js';
 import { garantirInventario } from '../rules/equipment.js';
 import { ctxDe } from './magias-fora.js';
+import { audio } from '../core/audio.js';
 
 const VIZINHAS = [[1, 0], [-1, 0], [0, 1], [0, -1]];
 
@@ -48,8 +49,10 @@ export function opcoesDePorta(app, c, tile, { fora = true } = {}) {
   for (const p of portasDaCasa(enc.field, tile)) {
     const longe = Math.min(distanceFt(c.pos, p.a), distanceFt(c.pos, p.b)) > 5 ? 'longe demais — encoste na porta' : null;
     const semAcao = !fora && c.actionUsed ? 'sem ação neste turno' : null;
-    const abrir = (texto) => {
+    // Toda porta que abre range, venha do menu ou do roteiro. O som é da MADEIRA; a laje de pedra da Mansão tem o `doorStone` dela.
+    const abrir = (texto, som = 'doorWood') => {
       enc.field.porAresta(p.a.x, p.a.y, p.b.x, p.b.y, ARESTA.aberta);
+      if (som) audio.play(som);
       enc.say('acao', texto);
       app.refresh?.();
     };
@@ -61,6 +64,7 @@ export function opcoesDePorta(app, c, tile, { fora = true } = {}) {
         motivo: longe ?? (naPassagem ? 'tem alguém na passagem' : null),
         fazer: () => {
           enc.field.porAresta(p.a.x, p.a.y, p.b.x, p.b.y, ARESTA.porta);
+          audio.play('doorShut');
           enc.say('acao', `${c.name} fecha a porta.`);
           app.refresh?.();
         },
@@ -82,7 +86,7 @@ export function opcoesDePorta(app, c, tile, { fora = true } = {}) {
     if (tem(c, p.tranca.chave ?? 'chave')) {
       ops.push({
         rotulo: 'Destrancar com a chave', icone: 'acao-usarObjeto', detalhe: 'sem teste', motivo: longe,
-        fazer: () => { destrancar(); abrir(`${c.name} gira a chave e abre a porta.`); },
+        fazer: () => { destrancar(); audio.play('lockKey'); abrir(`${c.name} gira a chave e abre a porta.`); },
       });
     }
     ops.push({
@@ -91,7 +95,8 @@ export function opcoesDePorta(app, c, tile, { fora = true } = {}) {
       fazer: () => {
         gasta();
         const t = teste('prestidigitacao', cd);
-        if (t.passou) { destrancar(); abrir(`${c.name} mexe na fechadura até ela ceder (${t.total} contra CD ${cd}) e abre a porta.`); return; }
+        if (t.passou) { destrancar(); audio.play('lockPick'); abrir(`${c.name} mexe na fechadura até ela ceder (${t.total} contra CD ${cd}) e abre a porta.`); return; }
+        audio.play('lockFail');
         enc.say('acao', `A fechadura resiste a ${c.name} (${t.total} contra CD ${cd}).`);
         app.refresh?.();
       },
@@ -101,7 +106,8 @@ export function opcoesDePorta(app, c, tile, { fora = true } = {}) {
       fazer: () => {
         gasta();
         const t = teste('atletismo', forca);
-        if (t.passou) { destrancar(); abrir(`${c.name} mete o ombro e a porta cede com estrondo (${t.total} contra CD ${forca}).`); return; }
+        if (t.passou) { destrancar(); audio.play('doorBash'); abrir(`${c.name} mete o ombro e a porta cede com estrondo (${t.total} contra CD ${forca}).`, null); return; }
+        audio.play('doorHold');
         enc.say('acao', `A porta aguenta o tranco de ${c.name} (${t.total} contra CD ${forca}).`);
         app.refresh?.();
       },

@@ -20,6 +20,8 @@ export function sum(list) {
 /** "2d6+3" ou "1d8" ou "4" → { count, sides, mod } */
 export function parseDice(notation) {
   if (typeof notation === 'number') return { count: 0, sides: 0, mod: notation };
+  // o dano FIXO do bloco ("1 de perfurante", a mordida do dragão feérico) às vezes chega como texto: o número sozinho
+  if (/^\s*-?\d+\s*$/.test(notation)) return { count: 0, sides: 0, mod: Number(notation) };
   const m = /^\s*(?:(\d+)d(\d+))?\s*([+-]\s*\d+)?\s*$/i.exec(notation);
   if (!m) throw new Error(`Notação de dado inválida: "${notation}"`);
   return {

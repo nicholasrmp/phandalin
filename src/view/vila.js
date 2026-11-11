@@ -6,8 +6,10 @@
 // outra proporção, outro título e outros botões (`o.pintura`, `o.proporcao`,
 // `o.titulo`, `o.botoes`).
 //
-// O MAPA é a pintura da vila (OpenArt, `art/vila/phandalin.webp`), fora do
-// tabuleiro como combinado. Os marcadores ficam em % dela, por cima.
+// O MAPA é o OFICIAL quando a arte está no disco (`o.oficial = { url, proporcao }`, e cada lugar com `l.oficial =
+// { x, y }` em % dele): o da vila e o da região, do Obelisco, que ficam fora do repositório e da publicação. A tela
+// tenta carregar a imagem; carregou, troca o fundo e muda os pinos de lugar. Sem ela, fica a pintura do OpenArt
+// (`art/vila/phandalin.webp`, ou `o.pintura`), com os pinos em `l.x`/`l.y`.
 
 import './vila.css';
 import { maxHpEfetivo } from '../rules/conditions.js';
@@ -48,6 +50,46 @@ export function abrirTelaVila(root, o) {
   // Propriedade personalizada só entra por setProperty.
   if (o.proporcao) quadro.style.setProperty('--proporcao', o.proporcao);
   const mapa = el('div', { class: 'vila-mapa' }, quadro, el('span', { class: 'vila-dica' }, 'Clique num pino para visitar o lugar.'));
+  // A ROTA da viagem em curso (`o.rota()`: pontos em % do mapa oficial e quanto já se andou), num SVG por cima da arte
+  const NS = 'http://www.w3.org/2000/svg';
+  const svgRota = document.createElementNS(NS, 'svg');
+  svgRota.setAttribute('class', 'vila-rota');
+  svgRota.setAttribute('viewBox', '0 0 100 100');
+  svgRota.setAttribute('preserveAspectRatio', 'none');
+  function desenharRota() {
+    svgRota.replaceChildren();
+    const r = noOficial ? o.rota?.() : null;
+    if (!r?.pontos?.length) return;
+    const linha = document.createElementNS(NS, 'polyline');
+    linha.setAttribute('points', r.pontos.map((p) => `${p.x},${p.y}`).join(' '));
+    linha.setAttribute('class', 'vila-rota-linha');
+    svgRota.append(linha);
+    const k = Math.min(r.pontos.length - 1, Math.round(r.feito * (r.pontos.length - 1)));
+    const aqui = document.createElementNS(NS, 'circle');
+    aqui.setAttribute('cx', r.pontos[k].x);
+    aqui.setAttribute('cy', r.pontos[k].y);
+    aqui.setAttribute('r', '0.9');
+    aqui.setAttribute('class', 'vila-rota-grupo');
+    svgRota.append(aqui);
+  }
+  // o mapa oficial, se estiver no disco: troca a arte e os pinos quando a imagem carrega
+  let noOficial = false;
+  if (o.oficial?.url) {
+    const teste = new Image();
+    teste.onload = () => {
+      noOficial = true;
+      quadro.style.backgroundImage = `url(${o.oficial.url})`;
+      quadro.style.setProperty('--proporcao', o.oficial.proporcao);
+      quadro.classList.add('oficial');
+      for (const l of o.lugares) {
+        const pino = pinos.get(l.id);
+        if (pino && l.oficial) { pino.style.left = `${l.oficial.x}%`; pino.style.top = `${l.oficial.y}%`; }
+      }
+      desenharRota();
+      o.aoTrocarArte?.();
+    };
+    teste.src = o.oficial.url;
+  }
   for (const l of o.lugares) {
     const b = el('button', {
       class: `vila-pino${l.cidade ? ' cidade' : ''}`,
@@ -58,6 +100,7 @@ export function abrirTelaVila(root, o) {
     pinos.set(l.id, b);
     quadro.append(b);
   }
+  quadro.prepend(svgRota);
 
   /** O próximo passo: a primeira missão em aberto, ou, sem nenhuma, o que fazer para achar uma. */
   function proximoPasso() {
@@ -112,8 +155,9 @@ export function abrirTelaVila(root, o) {
       chave: o.pintura ? 'regiao' : 'phandalin',
       proporcao: o.proporcao ?? null,
       classe: o.classe ?? null,
+      oficial: o.oficial ?? null,
       lugares: o.lugares.filter((l) => (o.visivel ? o.visivel(l) : true)).map((l) => ({
-        id: l.id, nome: l.nome, x: l.x, y: l.y, cidade: Boolean(l.cidade), fechado: !o.aberto(l), novidade: Boolean(o.novidade?.(l)),
+        id: l.id, nome: l.nome, x: l.x, y: l.y, oficial: l.oficial ?? null, cidade: Boolean(l.cidade), fechado: !o.aberto(l), novidade: Boolean(o.novidade?.(l)),
       })),
       momento: o.momento(),
       dinheiro: o.dinheiro(),
@@ -128,6 +172,7 @@ export function abrirTelaVila(root, o) {
   }
 
   function atualizar() {
+    desenharRota();
     momento.textContent = o.momento();
     dinheiro.textContent = moedas(o.dinheiro());
     // Votação do destino: uma insígnia com o número de votos em cada lugar e uma frase com o andamento.

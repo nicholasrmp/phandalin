@@ -60,6 +60,7 @@ const CORES_SUP = {
   conchas: '#6f6a5c',
   canal: '#4a4640',
   aguaEscura: '#1a2a3a',
+  lava: '#4a35a0',
 };
 
 /** Altura vira clareamento: o platô fica mais claro que o chão à volta. */

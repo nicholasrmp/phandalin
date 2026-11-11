@@ -16,7 +16,9 @@ const idDe = (e) => (typeof e === 'string' ? e : e.id);
 const qtdDe = (e) => (typeof e === 'string' ? 1 : e.qtd ?? 1);
 
 /** A chave do corpo na tabela de tesouro, ou null (o corpo não carrega nada de nota). */
-export const chaveDoTesouro = (m) => [m?.npcId, m?.defId].find((k) => k && TESOURO_POR_INIMIGO[k]) ?? null;
+// `m.tesouro` vem primeiro: dois monstros do MESMO bloco podem levar bolsas diferentes (o Errk e o chefe do posto são os
+// dois chefes goblin, e o livro dá a cada um a sua).
+export const chaveDoTesouro = (m) => [m?.tesouro, m?.npcId, m?.defId].find((k) => k && TESOURO_POR_INIMIGO[k]) ?? null;
 
 /**
  * Alguém do grupo (vivo ou morto: passe `combatants` do lado do grupo, não só os vivos) já tem esta peça?

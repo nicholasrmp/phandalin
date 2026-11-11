@@ -86,6 +86,8 @@ export const SUPERFICIE = {
   sarcofago: { topo: CAVERNA, lado: ROCHA_LADO, objeto: 'sarcofago', chao: 'laje', face: 'alvenaria' },
   grade: { topo: CAVERNA, lado: ROCHA_LADO, objeto: 'grade', chao: 'laje', face: 'alvenaria' },
   fosso: { topo: ['#14110e', '#110e0c'], lado: ['#0d0b09', '#15120f'], chao: 'fosso' },
+  // A lava sulfurosa do Repouso de Zorzula é AZUL-ARROXEADA (o livro), não laranja.
+  lava: { topo: ['#3b2a78', '#33246c'], lado: ['#1d1540', '#251b52'], chao: 'lava' },
   // A rua: o prédio é um sprite só, desenhado na casa da frente da pegada.
   casa: { topo: GRAMA, lado: TERRA, objeto: 'casa', chao: 'grama' },
   taverna: { topo: ESTRADA, lado: TERRA, objeto: 'taverna', chao: 'estrada' },

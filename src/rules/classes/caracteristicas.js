@@ -12,6 +12,18 @@
 const C = (nome, tipo, desc, extra = {}) => ({ nome, tipo, desc, ...extra });
 
 import { TRACOS_RACIAIS } from '../racas.js';
+import { RECURSOS_XGE } from './subclasses-xge.js';
+import { TEXTO_XGE } from './caracteristicas-xge.js';
+import { RECURSOS_TCE } from './subclasses-tce.js';
+import { TEXTO_TCE } from './caracteristicas-tce.js';
+import { RECURSOS_SCAG } from './subclasses-scag.js';
+import { TEXTO_SCAG } from './caracteristicas-scag.js';
+import { RECURSOS_DMG } from './subclasses-dmg.js';
+import { TEXTO_DMG } from './caracteristicas-dmg.js';
+import { RECURSOS_FTD } from './subclasses-ftd.js';
+import { TEXTO_FTD } from './caracteristicas-ftd.js';
+import { RECURSOS_BGG } from './subclasses-bgg.js';
+import { TEXTO_BGG } from './caracteristicas-bgg.js';
 
 export const CARACTERISTICAS = {
   // ---- comuns a várias classes --------------------------------------------
@@ -554,6 +566,18 @@ const SEM_EFEITO = {
   visionsOfDistantRealms: 'o jogo não tem Olho Arcano',
   oneWithShadows: 'o jogo não tem penumbra como esconderijo',
 };
+// AS SUBCLASSES DOS LIVROS: o nome e a regra vêm do texto traduzido (`caracteristicas-xge.js`), o tipo e o estado do
+// motor, da tabela à mão (`subclasses-xge.js`).
+for (const [recursos, textos] of [[RECURSOS_XGE, TEXTO_XGE], [RECURSOS_TCE, TEXTO_TCE], [RECURSOS_SCAG, TEXTO_SCAG], [RECURSOS_DMG, TEXTO_DMG],
+  [RECURSOS_FTD, TEXTO_FTD], [RECURSOS_BGG, TEXTO_BGG]]) {
+  for (const [id, r] of Object.entries(recursos)) {
+    if (CARACTERISTICAS[id]) throw new Error(`Característica repetida: ${id}`);
+    const t = textos[id];
+    if (!t) continue;
+    CARACTERISTICAS[id] = C(t.nome, r.tipo, t.desc, r.motor ? { motor: true } : {});
+    if (r.semEfeito) SEM_EFEITO[id] = r.semEfeito;
+  }
+}
 for (const id of FEITO) if (CARACTERISTICAS[id]) CARACTERISTICAS[id].motor = true;
 for (const id of ESTRUTURAIS) if (CARACTERISTICAS[id]) CARACTERISTICAS[id].estrutural = true;
 for (const [id, motivo] of Object.entries(SEM_EFEITO)) if (CARACTERISTICAS[id]) CARACTERISTICAS[id].semEfeito = motivo;

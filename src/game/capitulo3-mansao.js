@@ -6,7 +6,7 @@
 //
 //   geral     portas secretas: Percepção passiva 15 a 3 m acha sem procurar;
 //             procurando, Percepção CD 10. A porta do depósito de armas (6)
-//             está trancada: chave (Mosk ou o Cajavidro), ferramentas de
+//             está trancada: chave (Nosk ou o Cajavidro), ferramentas de
 //             ladrão com Destreza CD 10, ou Força CD 20 para derrubar.
 //   área 1    porão com cisterna. A porta para o 2 está fechada. Revirar os
 //             barris faz barulho: os três da área 2 abrem a porta e vêm de
@@ -28,21 +28,36 @@
 //             qualquer um em cima (Investigação CD 15 percebe). No fundo, o
 //             baú do vigia, com a espada Talon.
 //   área 9    três bugbears e Droop, o goblin, que desmaia quando o grupo
-//             entra. Mosk carrega a chave. O terceiro bugbear dorme e só
+//             entra — e que qualquer herói encostado nele acorda com uma ação,
+//             como o livro manda (antes só o saque do Nosk o acordava, e quem
+//             não revirasse nada ficava com o informante dormindo para
+//             sempre). Nosk carrega a chave. O terceiro bugbear dorme e só
 //             levanta na quarta rodada (decisão nossa, de equilíbrio). Quem
 //             veste o manto vermelho pode tentar enganá-los (Enganação CD 15,
 //             "o Cajavidro nos mandou") e apertar um deles (Intimidação CD 15).
 //   área 10   quatro Marcarrubra bêbados no jogo de pedrinhas: quem entra os
 //             pega de surpresa (sem teste). De manto vermelho, dá para se
 //             passar por recruta (Enganação CD 10) e conversar antes.
-//   área 11   o rato do Cajavidro AVISA SEMPRE o dono. Ele foge, no tabuleiro,
-//             pela porta secreta do quarto, pelo depósito (7) e pela caverna (8)
-//             até a porta secreta da cisterna (1), seis casas por vez que o
-//             grupo anda; os dois guarda-costas ficam no quarto. Quem o alcança
-//             o vê beber um frasco e sumir (invisível): a luta é dele. Só pela
-//             passagem secreta do 7, antes do aviso, dá para pegá-lo de
-//             surpresa. Com 8 PV ou menos, ele se rende. O rato não entra no
-//             tabuleiro (simplificação nossa).
+//   área 11   ZEOND, o quasit do Cajavidro, é o alarme dele (o Obelisco; na
+//             Mina era um rato de 1 PV). Está no tabuleiro desde sempre — em
+//             (4,4), lado neutro e INVISÍVEL (`encounter.js` `foesMansao`).
+//             Vivo, ele avisa SEMPRE: o livro não dá chance de passar por ele,
+//             e a planta concorda — medido, nenhuma casa de fora da oficina tem
+//             linha de visão até (4,4), então não há como abatê-lo antes de
+//             entrar. Quem não quer o aviso usa a passagem secreta do 7, que é
+//             a alternativa do próprio livro, e a régua avisa antes do passo.
+//             Morto ou desacordado, porém, ele não avisa nada.
+//             Quem chega ao quarto pela secreta encontra o Zeond lá também: ele
+//             entra na luta do lado do mestre, invisível, e escolhe o mais
+//             ferido (`ai.js turnoInvisivel`). Acabada a luta, se ainda vive,
+//             some pela parede — não fica para segurar a sala sozinho.
+//             Avisado, ele foge no tabuleiro pela porta secreta do quarto, pelo
+//             depósito (7) e pela caverna (8) até a porta secreta da cisterna
+//             (1), seis casas por vez que o grupo anda; os dois guarda-costas
+//             ficam no quarto. Quem o alcança o vê beber um frasco e sumir
+//             (invisível): a luta é dele. Pela passagem secreta do 7, ou com o
+//             familiar resolvido, dá para pegá-lo de surpresa. Com 8 PV ou menos,
+//             ele se rende.
 //
 // ARMADILHAS PELO CAMINHO: o fosso escondido e a ponte podre param o passo
 // na casa onde ele pisa (`enc.paraNaCasa`), dentro e fora da luta, e para
@@ -53,7 +68,7 @@
 
 import { narrar } from '../view/narrativa.js';
 import { d20 } from '../core/dice.js';
-import { skillBonus, passivePerception, SKILL_NAME, spellSaveDc, abilityMod, rolarPericia } from '../rules/abilities.js';
+import { skillBonus, passivePerception, SKILL_NAME, spellSaveDc, abilityMod, rolarPericia, percepcaoParaSecreta, achaSecretaComVantagem } from '../rules/abilities.js';
 import { Battlefield, ARESTA, distanceFt, isAdjacent, SUPERFICIES } from '../core/grid.js';
 import { podeVer, visaoNoEscuro, emiteLuz } from '../rules/luz.js';
 import { addCondition, removeCondition, hasCondition } from '../rules/conditions.js';
@@ -98,7 +113,7 @@ export function criarMansao(app, config) {
   const salvo = (camp.mansao ??= {
     vencidos: [], secretas: [], trancadaAberta: false, fossoVisto: false, fossoXp: false,
     ponteSulCaiu: false, celas: false, bolsa: false, bauVigia: false, bauIarno: false, carta: false,
-    aneis: [], mesa: false, reagentes: false, peles: false, mantos: 0,
+    aneis: [], mesa: false, mesaVirada: false, reagentes: false, peles: false, mantos: 0,
     tregua: false, iarno: null, presosLivres: false, temChave: false, sabeSenha: false,
   });
   salvo.portas ??= [];
@@ -119,10 +134,14 @@ export function criarMansao(app, config) {
   // O Cajavidro fugido (ou preso, ou morto) de uma visita anterior não volta.
   if (salvo.iarno && grupos.cajavidro) grupos.cajavidro.vencido = true;
   const iarno = grupos.cajavidro?.membros[0];
-  const rato = grupos.rato?.membros[0];
+  const zeond = grupos.familiar?.membros[0];
+  // Invisível desde o começo: é assim que o Obelisco o põe na oficina, e é o que impede de abatê-lo de longe.
+  if (zeond && !zeond.dead && !hasCondition(zeond, 'invisivel')) {
+    addCondition(zeond, 'invisivel', { rounds: Infinity, source: zeond.id, data: { escondido: true } });
+  }
   const vigia = grupos.fenda?.membros[0];
   const droop = grupos.guardas?.membros.find((f) => f.defId === 'droop');
-  const mosk = grupos.guardas?.membros.find((f) => f.name === 'Mosk');
+  const mosk = grupos.guardas?.membros.find((f) => f.name === 'Nosk');
   /**
    * O Cajavidro sai do grupo do quarto quando foge: os dois guarda-costas ficam no quarto como grupo próprio
    * (`guardaCostas`, sem XP), e o grupo `cajavidro` passa a ser só ele, o que o grupo alcança na fuga.
@@ -141,16 +160,18 @@ export function criarMansao(app, config) {
   }
   if (salvo.iarno === 'fugiu') separarGuardas();
   const presos = (grupos.jaulas?.membros ?? []).filter((f) => f.preso);
+  for (const p of presos) p.ficha = 'mirna';    // quem responde pela família presa é ela
   const estado = {
     explorando: false, encerrado: false, lutando: null,
     fuga: null,               // a fuga do Cajavidro em curso: { rota, i }
     iarnoAvisado: Boolean(salvo.iarno), alojamentoVem: false,
+    familiarResolvido: false, // o Zeond já foi morto, ou já falhou em notar o grupo: não avisa mais
     de: new Map(),            // de onde cada um veio no último passo
   };
 
   const herois = () => enc.combatants.filter((c) => c.side === 'party' && !c.dead && c.hp > 0);
   const hostis = (g) => (g?.membros ?? []).filter((f) => f.side === 'foes' && !f.dead && !f.fugiu);
-  const pendentes = () => Object.values(grupos).filter((g) => g.id !== 'rato' && !g.ativo && !g.vencido && !g.tregua && !g.fuga && hostis(g).length);
+  const pendentes = () => Object.values(grupos).filter((g) => g.id !== 'familiar' && !g.ativo && !g.vencido && !g.tregua && !g.fuga && hostis(g).length);
   const tem = (c, id) => garantirInventario(c).bag.some((i) => i.id === id && i.qtd > 0);
   // Os testes passam pelas magias de utilidade (Orientação soma 1d4, Aprimorar Atributo dá vantagem...).
   const teste = (c, pericia, cd, vantagem = false) => {
@@ -294,12 +315,13 @@ export function criarMansao(app, config) {
   // O FOSSO E A PONTE DO SUL são REGIÕES do mapa (`encounter.js`, `rules/regioes.js`): o passo para nelas, o teste,
   // o dano, a volta para a beirada e o Procurar são do motor, para herói e monstro, na luta e explorando. A cena abre
   // o buraco, quebra a ponte, conta e dá o XP (`evento`). Explorando, o passo também para na primeira casa da oficina
-  // (o rato vê) e na do raio da cripta: a cena resolve ali, e não depois de o herói ter atravessado a sala inteira.
+  // (o Zeond vê) e na do raio da cripta: a cena resolve ali, e não depois de o herói ter atravessado a sala inteira.
   /** O que uma armadilha contou e a cena ainda vai narrar, explorando (o painel vem depois do passo). */
   let armadilhaContada = null;
   enc.paraNaCasa = (c, p) => {
     if (!estado.explorando || c.side !== 'party') return false;
-    if (!estado.iarnoAvisado && iarno && !iarno.dead && !grupos.cajavidro?.ativo && NA_OFICINA(p)) return true;
+    if (!estado.iarnoAvisado && !estado.familiarResolvido && iarno && !iarno.dead
+      && !grupos.cajavidro?.ativo && NA_OFICINA(p)) return true;
     return Boolean(grupos.cripta && pendentes().includes(grupos.cripta) && !grupos.cripta.senha && !vestido(c) && gatilhoDaCripta(p));
   };
 
@@ -344,12 +366,32 @@ export function criarMansao(app, config) {
     estado.lutando = g;
     root.classList.remove('explorando');
     if (g.id === 'cripta') salvo.jaulasAvisadas = true;    // a luta na cripta se ouve nas jaulas
+    // O ZEOND ENTRA NA LUTA (o Obelisco): no quarto, se o grupo chegou pela secreta sem passar por ele; em QUALQUER
+    // luta da mansão depois de ter avisado o mestre, porque ele vem seguindo o grupo, invisível, à espera de uma briga.
+    // Aparece colado a um herói e continua invisível: o primeiro sinal dele é o veneno das garras.
+    const zeondEntra = zeond && !zeond.dead && !zeond.fugiu
+      && (zeond.seguindo || ((g.id === 'cajavidro' || g.id === 'guardaCostas') && zeond.side === 'neutro'));
+    if (zeondEntra) {
+      zeond.side = 'foes';
+      zeond.grupo = g.id;
+      estado.zeondNaLuta = true;
+      if (!hasCondition(zeond, 'invisivel')) addCondition(zeond, 'invisivel', { rounds: Infinity, source: zeond.id, data: { escondido: true } });
+      if (zeond.seguindo) {
+        const alvo = herois()[enc.rng.die(Math.max(1, herois().length)) - 1] ?? herois()[0];
+        if (alvo) zeond.pos = { ...zeond.pos, ...casaPerto(alvo.pos) };
+      }
+      if (!enc.combatants.includes(zeond)) enc.addCombatant(zeond);
+    }
     // `som` só se ela ainda não estava aberta: quem abriu a porta e depois
     // revirou os barris chamava isto com a porta já aberta, e ela rangia duas vezes.
     if (g.id === 'alojamento') abrirPorta('alojamento', { som: !salvo.portas.includes('alojamento') });
-    if (g.id === 'guardas' && droop && !droop.dead) {
-      addCondition(droop, 'inconsciente');
-      droop.stable = true;
+    // O DROOP SE ESCONDE (o Obelisco: quando a briga começa, ele se esconde e fica fora dela). Sai do tabuleiro —
+    // debaixo de um beliche — e volta quando a luta acaba (`fimDoCombate`). Na Mina ele desmaiava de medo.
+    if (g.id === 'guardas' && droop && !droop.dead && !droop.escondido) {
+      droop.escondido = true;
+      const id = enc.combatants.indexOf(droop);
+      if (id >= 0) enc.combatants.splice(id, 1);
+      enc.say('acao', 'O goblin magrelo dá um ganido e se enfia debaixo de um beliche, de mãos na cabeça.');
     }
     // Bêbados (decisão nossa: o livro só diz que estão distraídos).
     // Bêbados: envenenado DURA. Sem duração a condição ficava para sempre, o
@@ -441,7 +483,7 @@ export function criarMansao(app, config) {
       if (!secretaAoAlcance(s, c.pos)) continue;
       // A do quarto ficou mal fechada quando o Cajavidro fugiu: fica fácil.
       const limite = nome === 'quarto' && salvo.iarno === 'fugiu' ? 10 : 15;
-      if (passivePerception(c) < limite) continue;
+      if (percepcaoParaSecreta(c) < limite) continue;
       abrirSecreta(nome);
       await painel(`${c.name} repara numa junta de pedra que não fecha direito: uma porta secreta, que gira para o lado com um empurrão.`);
       app.refresh();
@@ -502,6 +544,37 @@ export function criarMansao(app, config) {
   }
 
   // ------------------------------------------------------- o vigia ----
+  /**
+   * ESTRANHA INTUIÇÃO, agora rolada. O traço do bloco é um teste RESISTIDO — a Intuição do vigia contra a
+   * Enganação do alvo —, e quem perde tem um fato ou segredo lido em voz alta. No jogo o nó `intuicao` da
+   * conversa era decoração: o olho dizia "um aqui mente com a boca" e nenhum dado caía, de modo que o único
+   * traço próprio da criatura não existia como regra em lugar nenhum.
+   *
+   * O SEGREDO QUE ELE LÊ É VERDADE DO ESTADO DO JOGO, não invenção: o manto vermelho roubado em quem não é
+   * Marcarrubra (e isso NÃO quebra o disfarce — o olho fala para a mesa, não para os bandidos), o cajado de
+   * vidro, a chave do Nosk, a senha da cripta que o Droop contou, e, em último caso, o que trouxe o grupo aqui.
+   * Quem vence a resistida ouve o olho desistir dele.
+   */
+  function estranhaIntuicao() {
+    if (!vigia || vigia.dead) return [];
+    const intuicao = d20(enc.rng, skillBonus(vigia, 'intuicao')).total;
+    const linhas = [];
+    for (const h of herois()) {
+      const eng = rolarPericia(enc.rng, h, 'enganacao');
+      if (eng.total >= intuicao) {
+        linhas.push(`…este o olho não alcança… (Enganação ${eng.total} contra Intuição ${intuicao})`);
+        continue;
+      }
+      const segredo = h.mantoVermelho ? 'veste o manto de um homem que não é ele, e o manto ainda está quente'
+        : (h.weapons ?? []).includes('cajadoDeDefesa') ? 'carrega o vidro do mago, e o vidro ainda lembra de quem o segurava'
+          : salvo.temChave ? 'tem no bolso a chave do peludo grande, e o peludo não a deu de presente'
+            : salvo.sabeSenha ? 'sabe a palavra dos ossos, e não foi o mago que contou'
+              : 'veio atrás de um homem, e vai achar menos homem do que esperava';
+      linhas.push(`…este ${segredo}… (Enganação ${eng.total} contra Intuição ${intuicao})`);
+    }
+    return linhas;
+  }
+
   async function oVigia(c) {
     const g = grupos.fenda;
     if (!g || !pendentes().includes(g) || g.conversou) return false;
@@ -543,9 +616,11 @@ export function criarMansao(app, config) {
           ],
         },
         intuicao: {
-          // A Estranha Intuição do vigia: ele lê o que cada um esconde, e diz em voz alta, só para mostrar que pode.
+          // A Estranha Intuição do vigia, ROLADA: `estranhaIntuicao()` faz a resistida do bloco (Intuição dele
+          // contra a Enganação de cada herói) e devolve, para quem perder, um segredo que é verdade do estado
+          // do jogo. Era só texto antes.
           narra: 'O olho enorme se fixa em cada um, um por vez, e uma coceira fria passa por dentro da cabeça.',
-          fala: '…um aqui mente com a boca… outro mente com as mãos… o olho sabe o que cada um guarda e não conta. Ainda. Dá comida e o olho esquece.',
+          fala: () => [...estranhaIntuicao(), 'O olho sabe, e não conta. Ainda. Dá comida e o olho esquece.'],
           opcoes: [{ texto: '…', vai: 'oi' }],
         },
         // A ameaça que não pegou: a conversa acaba e a luta começa (a opção apontava para um nó que não existia).
@@ -575,7 +650,7 @@ export function criarMansao(app, config) {
             salvo.tregua = true;
           },
           fala: [
-            '…bom… bom… o olho conta. O mago de vidro dorme no oeste, depois da sala dos livros. O rato dele vê tudo lá.',
+            '…bom… bom… o olho conta. O mago de vidro dorme no oeste, depois da sala dos livros. O diabinho dele vê tudo lá… e ninguém vê o diabinho.',
             '…tem porta na pedra, no depósito do norte, que leva ao quarto dele por trás. Ele não sabe que o olho sabe.',
             '…e o mago obedece a uma aranha. Aranha preta. Manda os peludos grandes ajudar.',
           ],
@@ -614,10 +689,32 @@ export function criarMansao(app, config) {
   }
 
   // ----------------------------------------------------- o Cajavidro ----
-  /** O rato viu alguém na oficina: o mestre já sabe, e foge. O rato AVISA SEMPRE (o livro não dá chance de passar por ele). */
-  async function ratoAvisa(c) {
-    if (estado.iarnoAvisado || !iarno || iarno.dead || !NA_OFICINA(c.pos)) return false;
+  /**
+   * O ZEOND VIU ALGUÉM NA OFICINA: o mestre já sabe, e foge. Vivo, ele AVISA SEMPRE — o livro não dá chance de
+   * passar por ele, e a planta concorda: a oficina são as 16 casas de x 2–5, y 2–5, e MEDIDO no motor, nenhuma
+   * casa de fora dela tem linha de visão até (4,4), onde o bicho está — e ele está invisível. Não há como abatê-lo
+   * antes de entrar, e
+   * quem não quer o aviso usa a passagem secreta do 7 (a alternativa do próprio livro), com a régua avisando
+   * antes do passo.
+   *
+   * Com o bicho fora de combate a oficina fica em silêncio, e o mestre, de costas: o alarme não toca sozinho.
+   * Avisado o mestre, o Zeond vai com ele e sai do tabuleiro.
+   */
+  async function familiarAvisa(c) {
+    if (estado.iarnoAvisado || estado.familiarResolvido || !iarno || iarno.dead || !NA_OFICINA(c.pos)) return false;
     if (grupos.cajavidro.ativo) return false;
+    const alarme = zeond && !zeond.dead && !hasCondition(zeond, 'inconsciente') && !hasCondition(zeond, 'paralisado');
+    if (!alarme) {
+      estado.familiarResolvido = true;
+      await painel([
+        'A bancada do mago está como ele a deixou: cadinho frio, três frascos tampados, um caderno aberto.',
+        zeond?.dead
+          ? 'Nada se mexe nela, nem no ar em volta. Do outro lado da parede, alguém arrasta uma cadeira e continua escrevendo.'
+          : 'Encolhida debaixo da bancada, uma criaturinha de chifres e asas de couro dorme um sono que não é dela. Do outro lado da parede, alguém continua escrevendo.',
+      ]);
+      app.refresh();
+      return true;
+    }
     estado.iarnoAvisado = true;
     salvo.iarno = 'fugiu';
     iarno.fugiu = false;
@@ -630,8 +727,15 @@ export function criarMansao(app, config) {
     if (!enc.combatants.includes(iarno)) enc.addCombatant(iarno);
     iarno.facingVec = { dx: 1, dy: 0 };
     avancarIarno(2);
+    // O ZEOND NÃO VAI COM O MESTRE (o Obelisco): dado o aviso, ele SEGUE o grupo pela mansão, invisível, e espera uma
+    // luta para atacar quem estiver fraco. Sai do tabuleiro agora e volta na próxima briga (`combate`).
+    if (zeond && !zeond.dead) {
+      zeond.seguindo = true;
+      const iz = enc.combatants.indexOf(zeond);
+      if (iz >= 0) enc.combatants.splice(iz, 1);
+    }
     await painel([
-      'Um rato marrom corre por baixo da bancada, para, olha direto para vocês — olha demais, como gente — e some por uma fresta.',
+      'Um frasco tomba sozinho na bancada. Uma risadinha aguda passa rente às cabeças de vocês, vinda do nada, e uma voz miúda grita para o outro lado da parede: — Mestre! Visita, mestre! Visita sem convite!',
       'Do outro lado da parede, uma cadeira arrasta, alguém pragueja baixinho, e uma pedra raspa em pedra. Passos apressados, que se afastam.',
       '(O Cajavidro sabe que vocês estão aqui, e está fugindo.)',
     ]);
@@ -690,16 +794,26 @@ export function criarMansao(app, config) {
     return false;
   }
 
+  /**
+   * ALCANÇADO, ELE BEBE A POÇÃO — SE AINDA A TIVER. O frasco de invisibilidade dele é o da BOLSA DE FUGA, no
+   * fundo da cisterna: é o plano de fuga que o livro lhe dá, roupa limpa, 50 po, uma poção de cura e uma de
+   * invisibilidade, tudo num fio dentro da água. O jogo já deixa o grupo achar a bolsa (Mãos Mágicas, vara, ou
+   * Percepção CD 15, com a aura de ilusão e evocação denunciando o frasquinho) e grava `salvo.bolsa` — mas
+   * depois o Cajavidro "tirava um frasco do cinto" e sumia mesmo assim, bebendo o que já estava na mochila de
+   * um herói. Achar o esconderijo da fuga dele antes da hora agora VALE: ele é alcançado de corpo inteiro.
+   */
   async function iarnoAlcancado() {
     estado.fuga = null;
     salvo.iarno = null;
     const g = grupos.cajavidro;
     g.fuga = false;
-    addCondition(iarno, 'invisivel', { rounds: 10, quando: 'fim', lado: 'foes' });
-    await asArmas([
-      'O Cajavidro olha por cima do ombro, vê quem o segue e solta um palavrão elegante. Tira um frasco do cinto, bebe de um gole — e o corpo dele some, como tinta na água. Só o cajado de vidro denuncia onde ele está.',
-      '— Eu avisei que um cavalheiro sabe quando partir. Mas não disse que ia partir sozinho.',
-    ]);
+    const temFrasco = !salvo.bolsa;
+    if (temFrasco) addCondition(iarno, 'invisivel', { rounds: 10, quando: 'fim', lado: 'foes' });
+    await asArmas(temFrasco
+      ? ['O Cajavidro olha por cima do ombro, vê quem o segue e solta um palavrão elegante. Tira um frasco do cinto, bebe de um gole — e o corpo dele some, como tinta na água. Só o cajado de vidro denuncia onde ele está.',
+        '— Eu avisei que um cavalheiro sabe quando partir. Mas não disse que ia partir sozinho.']
+      : ['O Cajavidro olha por cima do ombro, vê quem o segue e enfia a mão no cinto. A mão volta vazia. Ele olha a própria mão, depois a cisterna lá atrás, e a cara dele muda de ironia para outra coisa.',
+        '— Vocês mexeram na minha água. — O cajado de vidro sobe, e ele não some: não tem com o quê.']);
     await combate(g, null);
     return true;
   }
@@ -728,7 +842,7 @@ export function criarMansao(app, config) {
     if (await contarArmadilha()) return;
     if (await secretasPassivas(c)) return;
     if (await iarnoFoge()) return;
-    if (await ratoAvisa(c)) return;
+    if (await familiarAvisa(c)) return;
     if (await cripta(c)) return;
     if (await oVigia(c)) return;
     for (const g of pendentes()) {
@@ -817,7 +931,9 @@ export function criarMansao(app, config) {
     // guardar o espaço não era plano nenhum — era teimosia, e ele morria
     // conjurando com 5 PV em vez de se render.
     const colado = enc.combatants.some((h) => h.side === 'party' && !h.dead && isAdjacent(h.pos, iarno.pos));
-    if (!caido && colado && (iarno.spellcasting?.slots?.[2] ?? 0) > 0) return false;
+    // O Teleporte é duas vezes por dia (`porDia:passoNebuloso`, o bloco do Obelisco); o espaço de 2º fica para um bloco antigo.
+    const teleportes = (iarno.resources?.['porDia:passoNebuloso'] ?? 0) + (iarno.spellcasting?.slots?.[2] ?? 0);
+    if (!caido && colado && teleportes > 0) return false;
     iarno.side = 'neutro';
     iarno.rendido = true;
     iarno.name = 'Iarno Albrek';
@@ -854,6 +970,23 @@ export function criarMansao(app, config) {
 
   function evento(ev) {
     if (ev.type === 'died' && ev.target === iarno) salvo.iarno = 'morto';
+    // AS JAULAS (o Obelisco): caídos dois dos três Rufiões, o terceiro corre para avisar o resto do covil — e, na
+    // pressa, abre a passagem secreta do depósito (7), que o grupo passa a conhecer.
+    if ((ev.type === 'died' || ev.type === 'downed') && ev.target?.grupo === 'jaulas' && estado.lutando === grupos.jaulas) {
+      const guardas = grupos.jaulas.membros.filter((f) => f.side === 'foes');
+      const caidos = guardas.filter((f) => f.dead || f.hp <= 0).length;
+      const resta = guardas.filter((f) => !f.dead && f.hp > 0 && !f.fugiu);
+      if (caidos >= 2 && resta.length === 1) {
+        const r = resta[0];
+        r.fugiu = true;
+        const i = enc.combatants.indexOf(r);
+        if (i >= 0) enc.combatants.splice(i, 1);
+        if (MANSAO.secretas.deposito && !salvo.secretas.includes('deposito')) abrirSecreta('deposito', { som: true });
+        salvo.jaulasFugiu = true;
+        enc.say('acao', `${r.name} larga a briga e corre para avisar o resto do covil — e na pressa empurra uma pedra da parede, que gira: uma passagem secreta para o depósito.`);
+        setTimeout(() => { enc.checkEnd(); app.refresh(); }, 0);
+      }
+    }
     // Salto: quem pula o fosso de uma beirada à outra ganha o XP de passar por ele.
     if (ev.type === 'moved' && ev.salto && ev.actor.side === 'party' && salvo.fossoVisto
       && ((ev.from.x <= 22 && ev.to.x >= 25) || (ev.from.x >= 25 && ev.to.x <= 22)) && ev.to.y >= 9 && ev.to.y <= 10) {
@@ -901,16 +1034,24 @@ export function criarMansao(app, config) {
     }
     const quem = herois()[0];
     if (g?.id === 'alojamento' && quem) {
-      guardar(quem, 'moedaDePrata', 28); guardar(quem, 'moedaDeOuro', 19); guardar(quem, 'granada', 2);
+      // O Obelisco: 16 pp e 7 po; 12 pp e 5 po; 20 pc, 11 pe e duas granadas. O electro vira ouro e prata (5 po e 5 pp).
+      guardar(quem, 'moedaDeCobre', 20); guardar(quem, 'moedaDePrata', 33); guardar(quem, 'moedaDeOuro', 17); guardar(quem, 'granada', 2);
       guardar(quem, 'mantoVermelho', 3);
-      texto.push(`Nas bolsas de cinto dos três: 28 peças de prata, o equivalente a 19 de ouro (12 de ouro e 15 de electro, trocadas) e duas granadas. Nos beliches, três mantos vermelhos encardidos. ${quem.name} guarda tudo.`);
+      texto.push(`Nas bolsas de cinto dos três: 20 peças de cobre, 28 de prata, 12 de ouro, 11 de electro (que valem 5 de ouro e 5 de prata, e assim ficam) e duas granadas. Nos beliches, três mantos vermelhos encardidos. ${quem.name} guarda tudo.`);
     } else if (g?.id === 'guardas' && quem) {
       salvo.temChave = true;
-      guardar(quem, 'moedaDePrata', 33); guardar(quem, 'tapaOlho', 1);
-      texto.push(`No cinto de Mosk: 33 peças de prata, uma chave de ferro pesada que serve em quase toda fechadura daqui, e o tapa-olho de enfeite que ele usava sem precisar. ${quem.name} guarda.`);
-      if (droop && !droop.dead) {
+      guardar(quem, 'moedaDePrata', 13); guardar(quem, 'gemaPequena', 5);
+      texto.push(`No cinto de Nosk: 13 peças de prata, um punhado de pedras semipreciosas (umas 50 de ouro, juntas) e uma chave de ferro pesada que serve em quase toda fechadura daqui. ${quem.name} guarda.`);
+      // O Droop sai do esconderijo (ou acorda, se algo o derrubou): vê os bugbears no chão e chora de alívio.
+      if (droop && !droop.dead && (droop.escondido || hasCondition(droop, 'inconsciente'))) {
+        if (droop.escondido) {
+          droop.escondido = false;
+          droop.side = 'neutro';
+          if (enc.occupied(droop.pos.x, droop.pos.y)) droop.pos = { ...droop.pos, ...casaPerto(droop.pos) };
+          if (!enc.combatants.includes(droop)) enc.addCombatant(droop);
+        }
         removeCondition(droop, 'inconsciente');
-        texto.push('Encolhido num canto, o goblin Droop volta a si, vê os bugbears no chão e começa a chorar de alívio.');
+        texto.push('De baixo de um beliche sai o goblin Droop, de quatro, vê os bugbears no chão e começa a chorar de alívio.');
       }
     } else if (g?.id === 'cajavidro') {
       if (quem) salvo.temChave = true;
@@ -921,19 +1062,78 @@ export function criarMansao(app, config) {
     } else if (g) {
       texto.push(`Silêncio ${SALAS[g.id]?.em ?? 'na sala'}.`);
     }
+    // O Zeond, se lutou: morto, vale o bloco dele (200 XP, o quasit de ND 1). Vivo, ele não segura a sala sozinho:
+    // some pela parede e volta a seguir o grupo — a não ser que o mestre já esteja fora (morto, preso ou longe), e aí
+    // ele vai embora de vez.
+    let xpDoZeond = 0;
+    if (estado.zeondNaLuta && zeond) {
+      estado.zeondNaLuta = false;
+      if (zeond.dead) {
+        xpDoZeond = zeond.xp ?? 200;
+        texto.push('No chão, onde nada parecia haver, aparece o corpo miúdo de um diabinho de chifres, que se desfaz em fumaça amarela.');
+      } else {
+        const semMestre = !iarno || iarno.dead || ['morto', 'preso'].includes(salvo.iarno) || iarno.fugiu;
+        zeond.side = 'neutro';
+        const iz = enc.combatants.indexOf(zeond);
+        if (iz >= 0) enc.combatants.splice(iz, 1);
+        if (semMestre) {
+          zeond.fugiu = true;
+          zeond.seguindo = false;
+          texto.push('Uma risadinha passa pela sala e atravessa a parede: sem o mestre, o diabinho invisível foi embora de vez.');
+        } else {
+          zeond.seguindo = true;
+          texto.push('Uma risadinha passa rente às cabeças de vocês e some. O que quer que fosse, não acabou: continua por perto.');
+        }
+      }
+    }
     if (g && SALAS[g.id]) {
       // Preso, o Cajavidro vale o dobro — a outra metade quando Sildar o recebe na vila.
-      const xp = SALAS[g.id].xp;
+      const xp = SALAS[g.id].xp + xpDoZeond;
       await painel(texto.length ? texto : ['A sala é de vocês.']);
       await darXpDoLivro(xp, `${SALAS[g.id].nome[0].toUpperCase()}${SALAS[g.id].nome.slice(1)}`);
+    } else if (xpDoZeond) {
+      await painel(texto);
+      await darXpDoLivro(xpDoZeond, 'Zeond, o diabinho do mago');
     }
     prepararExploracao();
+  }
+
+  // ------------------------------------------------------ o fio do Obelisco ----
+  // A CAVERNA DA FENDA (área 8): no Obelisco, dois goblins de fora estão mortos debaixo da ponte sul — de crânio
+  // comprido, em trapos —, e quem os examina vê que foram mortos por um par de garras: o nothic os pegou antes que
+  // fossem adiante. O fio é o mesmo dos Cragmaw e do Sildar, e vai para o diário com a mesma abertura.
+  const vila = ((app.campanha ??= {}).vila ??= { pistas: [], missoes: {} });
+  const anotar = (t) => { if (!(vila.pistas ??= []).includes(t)) vila.pistas.push(t); };
+  const PONTE_SUL = MANSAO.pontes.sul;
+  const debaixoDaPonteSul = (p) => p.x >= MANSAO.fenda[PONTE_SUL][0] - 1 && p.x <= MANSAO.fenda[PONTE_SUL].at(-1) + 1
+    && Math.abs(p.y - PONTE_SUL) <= 1;
+  function pistasEm(tile) {
+    if (!debaixoDaPonteSul(tile)) return [];
+    return [
+      {
+        titulo: 'O fundo da fenda', pericias: ['percepcao'], cd: 10, alcance: 10,
+        achado: 'Lá embaixo, logo debaixo da ponte do sul, dois goblins mortos. Não são os goblins que vocês já viram: o crânio deles é comprido, esticado para trás, e eles vestem trapos imundos, juntados de qualquer jeito, sem marca de bando nenhuma.',
+        efeito: () => anotar('Goblins de fora: dois deles, de crânio comprido e em trapos, estão mortos debaixo da ponte sul da caverna da fenda, nos porões da Mansão Tresendar.'),
+      },
+      {
+        titulo: 'Como morreram', pericias: ['medicina'], cd: 12, alcance: 10,
+        achado: 'Não foi arma nenhuma: os dois têm o peito e a garganta abertos por quatro sulcos fundos e paralelos, de garra. Alguma coisa grande, que mora nesta caverna, pegou os dois antes que eles fossem mais longe.',
+      },
+    ];
   }
 
   // -------------------------------------------------------- conversas ----
   const arvoreDroop = {
     inicio: 'oi',
     nos: {
+      // O DROOP DO OBELISCO é dos Scraptops, um clã de goblins catadores e consertadores, e não um Cragmaw.
+      deOnde: {
+        fala: [
+          'Droop é Scraptop! Scraptop cata, Scraptop conserta. Droop veio atrás de roda e de eixo para a carroça de casa, só isso!',
+          'Aí os Cragmaw acharam Droop e disseram que agora Droop é Cragmaw. Droop não quer ser Cragmaw. Droop quer ir para casa.',
+        ],
+        opcoes: [{ texto: '…', vai: 'oi' }],
+      },
       oi: {
         narra: 'O goblin magrelo se ajoelha, encosta a testa no chão e fala sem parar, em comum ruim.',
         fala: [
@@ -944,6 +1144,7 @@ export function criarMansao(app, config) {
           { texto: 'Onde ficam as portas escondidas?', vai: 'portas', uma: true },
           { texto: 'Como passar pelos ossos da cripta?', vai: 'senha', uma: true },
           { texto: 'E o Castelo Dentefino?', vai: 'castelo', uma: true },
+          { texto: 'E você, de onde é?', vai: 'deOnde', uma: true },
           { texto: 'Vai embora, Droop.', fim: 'paz' },
         ],
       },
@@ -981,19 +1182,73 @@ export function criarMansao(app, config) {
             { texto: 'Atacar.', fim: 'surpresa' },
           ],
         },
+        // O QUE OS MARCARRUBRA SABEM. O livro tem um quadro com esse nome, e o jogo entregava dois itens dele
+        // (o mago do cajado de vidro, o bicho da fenda) num único nó. Os outros ficavam de fora: os presos nas
+        // jaulas e o entalhador que eles mataram, onde está a pilhagem, e a cripta em que ninguém entra sem
+        // manto. Capturar bandido para interrogar o jogo não tem (só o Cajavidro se rende, `rendeSe`), e montar
+        // rendição para `marcarrubra` seria mecânica nova — então o quadro do livro sai por onde o grupo PODE
+        // falar com eles: a mesa dos bêbados, de manto vermelho, com a Intimidação para o que não se oferece.
         aceitam: {
           narra: 'O riso volta à sala, mais alto. Alguém empurra um banco com o pé.',
           fala: '— Senta aí, recruta! Paga uma rodada que a gente fala do chefe.',
           opcoes: [
             { texto: 'O que vocês sabem do chefe?', vai: 'chefe', uma: true },
+            { texto: 'Quem são os presos das jaulas?', vai: 'presos', uma: true },
+            { texto: 'Onde fica o que vocês tomam da vila?', vai: 'pilhagem', uma: true },
+            { texto: 'E a sala dos sarcófagos?', vai: 'ossos', uma: true },
+            { texto: 'Apertar um deles: "Quem manda no mago?"',
+              teste: { pericia: 'intimidacao', cd: 13 }, sucesso: 'acima', falha: 'desconfiam', uma: true },
+            { texto: 'Derrubar a mesa e misturar as pilhas.', vai: 'mesaVirada', uma: true },
             { texto: 'Atacar enquanto estão distraídos.', fim: 'surpresa' },
             { texto: 'Sair sem briga.', fim: 'paz' },
+          ],
+        },
+        // DERRUBAR A MESA é a distração que o próprio livro sugere na sala 10, com as pilhas de moeda do jogo
+        // de pedrinhas. O jogo já vendia surpresa por "atacar enquanto estão distraídos"; o que faltava era a
+        // ação nomeada, e ela custa algo: as moedas se espalham, e recolhê-las depois (o verbo `Recolher o
+        // dinheiro da mesa`) passa a ser catar no chão.
+        mesaVirada: {
+          ao: () => { salvo.mesaVirada = true; },
+          narra: 'A mesa vira com um estrondo de madeira e metal. Quatro pilhas de moeda se espalham pelo chão de laje, e quatro bandidos bêbados vão atrás delas de quatro, esbarrando uns nos outros.',
+          fala: '— MINHA PILHA! Quem… quem mexeu na minha pilha?!',
+          opcoes: [
+            { texto: 'Atacar agora.', fim: 'surpresa' },
+            { texto: 'Sair enquanto eles catam.', fim: 'paz' },
           ],
         },
         chefe: {
           fala: [
             '— O mago do cajado de vidro? Mora do lado de lá, passando a oficina. Nunca come com a gente.',
             '— E tem um bicho no fundo da caverna, de um olho só. A gente joga resto de comida de longe e não olha.',
+          ],
+          opcoes: [{ texto: '…', vai: 'aceitam' }],
+        },
+        presos: {
+          fala: [
+            '— A mulher do entalhador e os dois filhotes. O homem abriu a boca na praça, falou que a gente era bandido — e era, mas não se fala.',
+            '— O chefe mandou guardar os três. Para quê, não sei. Ninguém pergunta.',
+          ],
+          opcoes: [{ texto: '…', vai: 'aceitam' }],
+        },
+        pilhagem: {
+          fala: [
+            '— O pano e as peles ficam no galpão do fundo, empilhados. As armas, na sala trancada do lado — e a chave é do peludo.',
+            '— O que é bom mesmo o chefe leva para o quarto dele. A gente fica com as peles.',
+          ],
+          opcoes: [{ texto: '…', vai: 'aceitam' }],
+        },
+        ossos: {
+          fala: [
+            '— Ali ninguém entra sem o manto. Os ossos levantam. Perdemos um assim, no começo, e o chefe só riu.',
+            '— Tem uma palavra que faz eles pararem. O chefe sabe. A gente, não.',
+          ],
+          opcoes: [{ texto: '…', vai: 'aceitam' }],
+        },
+        acima: {
+          narra: 'O copo para no meio do caminho. O bandido olha para os lados antes de falar, e fala baixo.',
+          fala: [
+            '— Tem alguém acima dele, isso eu sei. Carta chega, carta sai, e o chefe muda de humor no dia.',
+            '— Quem traz a carta é os peludos da sala de baixo. Pergunta para eles, se tiver coragem. Eu não tenho.',
           ],
           opcoes: [{ texto: '…', vai: 'aceitam' }],
         },
@@ -1029,14 +1284,28 @@ export function criarMansao(app, config) {
           ],
         },
         sabem: {
-          fala: '— O mago paga mal e fala demais. Manda a gente ficar aqui e vigiar o goblin. O chefe do mago é outro, mais acima, que a gente nunca viu.',
+          fala: '— O mago fala demais. A gente não é dele: mandaram a gente segurar os capas vermelhas e a vila na linha. De quem manda, não se fala.',
           opcoes: [{ texto: '…', vai: 'servos' }],
         },
+        // O QUE SÓ OS BUGBEARS SABEM. O livro é explícito: eles são os únicos do esconderijo que sabem onde fica a
+        // CAVERNA ONDA ECO, e sabem também o CASTELO DENTEFINO; contam só apertados (Intimidação CD 15), porque
+        // temem o Aranha Negra mais do que temem o grupo, para quem trabalham. Os dois lugares usam as palavras
+        // da resposta da Agatha (`conyberry.js`) e abrem o mesmo marcador no mapa da região.
         confessa: {
           narra: `O bugbear encosta na parede, apertado pelo olhar de ${quem.name}.`,
+          ao: (ctx) => {
+            ctx.flags.apertadoBugbears = true;       // a trava do "Perguntar outra coisa" (`game/npc-saber.js`)
+            const feito = (camp.feitos ??= {});
+            feito.sabeOCastelo = true;
+            feito.sabeOndaEco = true;
+            const pistas = ((camp.vila ??= {}).pistas ??= []);
+            const t = 'Um bugbear dos Marcarrubra, apertado: o Castelo Dentefino fica na Floresta de Neverwinter, ao norte da Trilha de Triboar, e a Caverna Onda Eco nos morros a leste de Phandalin, ao pé das Montanhas Espada. Eles recebem ordens do Aranha Negra.';
+            if (!pistas.includes(t)) pistas.push(t);
+          },
           fala: [
             '— Tá bom, tá bom! A chave de tudo fica com o de tapa-olho.',
-            '— O mago dorme do outro lado, passando a oficina. O rato dele vê tudo por lá. E tem uma porta atrás do quarto, que dá no depósito.',
+            '— O mago dorme do outro lado, passando a oficina. Tem um diabinho com ele que fica invisível e vigia por lá. E tem uma porta atrás do quarto, que dá no depósito.',
+            '— E a gente não é do mago, não. É do Aranha Negra, e ele é pior que vocês. O Castelo Dentefino fica na Floresta de Neverwinter, ao norte da Trilha de Triboar. E a mina que ele quer, a Onda Eco, nos morros a leste da vila, ao pé das Montanhas Espada. Agora larga!',
           ],
           opcoes: [{ texto: '…', vai: 'servos' }],
         },
@@ -1077,26 +1346,41 @@ export function criarMansao(app, config) {
   const arvoreIarno = {
     inicio: 'oi',
     nos: {
+      // A CONVERSA COM O CAJAVIDRO PRESO sai pela boca DELE, e não na ordem do quadro do livro. Ele é vaidoso:
+      // começa pelo que o absolve, defende-se antes de ser acusado, e só entrega o drow quando o assunto é
+      // dinheiro — nunca como informação de graça. Os fatos são os mesmos; quem escolhe a ordem é o preso.
       oi: {
         narra: 'Amarrado, o Cajavidro ajeita o manto com os cotovelos e fala como se estivesse num salão.',
         fala: 'Meus caros, que situação desagradável. Perguntem. Um cavalheiro sabe quando perdeu.',
         opcoes: [
-          { texto: 'Quem é o Aranha Negra?', vai: 'aranha', uma: true },
-          { texto: 'E os bugbears?', vai: 'bugbears', uma: true },
-          { texto: 'Por que trair a Aliança?', vai: 'alianca', uma: true },
+          { texto: 'A Aliança sabe o que você fez aqui?', vai: 'alianca', uma: true },
+          { texto: 'Quem paga por isto tudo?', vai: 'aranha', uma: true },
+          { texto: 'Os bugbears não são seus.', vai: 'bugbears', uma: true },
           { texto: 'Basta. Você vai responder a Sildar.', fim: 'paz' },
         ],
       },
+      alianca: {
+        narra: 'A pergunta o diverte. É a única que ele queria ouvir.',
+        fala: [
+          'Sabe? Uma carta minha por mês, educada, com notícias de uma vila pacata. Ninguém em Neverwinter tem motivo para abrir a segunda.',
+          'E não me chamem de traidor: traidor é quem jura e muda de ideia. Eu nunca jurei nada que não desse para desjurar.',
+        ],
+        opcoes: [{ texto: '…', vai: 'oi' }],
+      },
       aranha: {
-        fala: 'Um elfo das profundezas — um drow, sim, desses que vocês só viram em história de taverna. Ele procura a Forja das Magias, a velha forja do pacto entre anões, gnomos e magos. Prometeu dividir comigo.',
+        narra: 'Aí, pela primeira vez, ele olha para a porta antes de falar.',
+        fala: [
+          'Pagar, ninguém pagou nada ainda. Prometeram — metade do que sair de uma forja que fecharam há quinhentos anos. Anões, gnomos e magos fizeram pacto, fizeram espada que corta sem fio, e depois morreram todos. Metade disso ainda é muito.',
+          'Quem promete se faz chamar de Aranha Negra. Não é apelido de bandoleiro, é tradução: ele é um elfo das profundezas, dos de verdade, não dos de história de taverna. Vi a pele dele uma vez, à luz de vela, e passei a semana sem dormir.',
+        ],
         opcoes: [{ texto: '…', vai: 'oi' }],
       },
       bugbears: {
-        fala: 'Três brutos que ele mandou para "ajudar". Nunca precisei deles. Eles sabem o caminho da mina; eu, infelizmente, não.',
-        opcoes: [{ texto: '…', vai: 'oi' }],
-      },
-      alianca: {
-        fala: 'Trair é uma palavra feia. Ninguém mais na Aliança sabe, se é isso que pergunta. Eu vi uma oportunidade e a aproveitei, como qualquer homem prático.',
+        narra: 'Ele bufa, e a vaidade dele aparece inteira na resposta.',
+        fala: [
+          'Claro que não são meus. Foram mandados para cá como se manda cão para guardar casa de hóspede — e eu que pagasse a comida.',
+          'Se querem o que eles têm e eu não: o caminho até a mina. Pediram meu plano, minhas cartas, meu nome, e o mapa deixaram com os brutos. Vejam só onde me puseram na conta deles.',
+        ],
         opcoes: [{ texto: '…', vai: 'oi' }],
       },
     },
@@ -1225,7 +1509,7 @@ export function criarMansao(app, config) {
         fazer: async () => {
           marcarBusca('secreta', chaveDaBusca());
           const perto = secretasPerto();
-          const vantagem = perto.some(([n]) => n === 'quarto' && salvo.iarno === 'fugiu');
+          const vantagem = perto.some(([n]) => n === 'quarto' && salvo.iarno === 'fugiu') || achaSecretaComVantagem(c);
           const t = teste(c, 'percepcao', 10, vantagem);
           if (t.passou && perto.length) {
             // Quem acha uma secreta acha as que estão ao alcance dela: um rangido só, e não dois empilhados.
@@ -1276,6 +1560,25 @@ export function criarMansao(app, config) {
     if (sup === 'rocha' || sup === 'alvenaria') ops.push(...opsDeParede(c, tile));
 
     ops.push(...opsDePortaComum(c, tile));
+
+    // ACORDAR O DROOP. O livro é explícito: ele fica inconsciente por 1d10 minutos, e OUTRA CRIATURA PODE
+    // ACORDÁ-LO COM UMA AÇÃO. No jogo o desmaio existia (`addCondition(droop, 'inconsciente')` quando a luta dos
+    // guardas começa) e o despertar estava GRUDADO NO SAQUE: só revirando o cinto do Nosk, depois de vencer, o
+    // goblin voltava a si. Grupo que ganhasse a luta e não revirasse nada ficava com um informante desacordado
+    // para sempre — e é ele que conta as quatro portas secretas, a senha da cripta e o caminho do Castelo.
+    // Agora qualquer herói encostado nele o sacode, e o saque continua acordando quem ainda estiver dormindo.
+    if (droop && !droop.dead && hasCondition(droop, 'inconsciente')
+      && tile.x === droop.pos.x && tile.y === droop.pos.y) {
+      ops.push({
+        rotulo: 'Acordar o goblin', icone: 'acao-ajudar', detalhe: 'uma ação',
+        motivo: longe(5),
+        fazer: async () => {
+          removeCondition(droop, 'inconsciente');
+          await painel(`${c.name} sacode o goblin magrelo pelo ombro. Ele acorda num susto, se encolhe com as mãos na cabeça, olha os bugbears no chão — e só então começa a respirar.`);
+          app.refresh();
+        },
+      });
+    }
 
     // A porta do alojamento (2), fechada: abre-se à mão.
     const pa = MANSAO.portas.alojamento;
@@ -1423,8 +1726,14 @@ export function criarMansao(app, config) {
           rotulo: 'Abrir o sarcófago', icone: 'acao-usarObjeto', motivo: longe(5) ?? (grupos.cripta && pendentes().includes(grupos.cripta) && !grupos.cripta.senha ? 'os esqueletos ainda estão de pé' : null),
           fazer: async () => {
             salvo.aneis.push(chave);
-            guardar(c, 'anelDePlatina', 1);
-            await painel(`A tampa de pedra, entalhada com um rosto nobre, desliza com esforço. Ossos, pano podre — e, entre os dedos, um anel de sinete de platina. ${c.name} guarda.`);
+            // O OBELISCO: o tesouro da cripta é UM bracelete de ouro com pedras (140 po), no sarcófago da mulher — o do
+            // meio. Os outros dois guardam só os ossos (a Mina dava um anel por sarcófago).
+            if (chave === '1') {
+              guardar(c, 'braceleteDeOuro', 1);
+              await painel(`A tampa de pedra, entalhada com o rosto de uma mulher, desliza com esforço. Ossos miúdos, pano podre — e, solto entre os ossos do pulso, um bracelete de ouro com pedrinhas engastadas. ${c.name} guarda.`);
+            } else {
+              await painel('A tampa de pedra, entalhada com o rosto de um homem de barba, desliza com esforço. Ossos, pano podre, e mais nada que valha a pena.');
+            }
           },
         });
       }
@@ -1474,7 +1783,9 @@ export function criarMansao(app, config) {
           const n = Math.min(herois().length, 12 - salvo.mantos);
           salvo.mantos += n;
           guardar(c, 'mantoVermelho', n);
-          await painel(`Armas enfileiradas para um bando maior do que este, e uma pilha de mantos vermelhos dobrados num canto. ${c.name} pega ${n}.`);
+          // O próprio `detalhe` do botão já dizia "uma dúzia pendurada na porta", e o texto falava de pilha
+          // dobrada num canto: duas verdades para o mesmo monte de pano. O livro os pendura nos ganchos.
+          await painel(`Armas enfileiradas para um bando maior do que este, e uma dúzia de mantos vermelhos pendurados nos ganchos de ferro atrás da porta, ombro a ombro, como numa antessala de teatro. ${c.name} pega ${n}.`);
         },
       });
     }
@@ -1483,8 +1794,8 @@ export function criarMansao(app, config) {
         rotulo: 'Revirar o depósito', icone: 'acao-procurar', motivo: longe(5),
         fazer: async () => {
           salvo.peles = true;
-          guardar(c, 'pelesDeCastor', 30);
-          await painel(`Debaixo de caixas vazias e palha, um fardo amarrado com corda boa: trinta peles de castor curtidas. Mercadoria de caravana, com certeza não comprada. ${c.name} guarda.`);
+          guardar(c, 'pelesDeCastor', 40);
+          await painel(`Debaixo de caixas vazias e palha, um fardo amarrado com corda boa: quarenta peles de castor curtidas, de uma caravana da Trilha de Triboar assaltada uns dias atrás. Mercadoria de caravana, com certeza não comprada. ${c.name} guarda.`);
         },
       });
     }
@@ -1542,26 +1853,30 @@ export function criarMansao(app, config) {
           audio.play('chestOpen');
           salvo.bauVigia = true;
           guardar(c, 'moedaDePrata', 160); guardar(c, 'moedaDeOuro', 120); guardar(c, 'malaquita', 5);
-          guardar(c, 'pocaoDeCura', 2); guardar(c, 'pergaminhoDeAuguro', 1);
+          guardar(c, 'pocaoDeCura', 1); guardar(c, 'pocaoDeEscalada', 1); guardar(c, 'pocaoDeCrescimento', 1);
+          guardar(c, 'pingenteDeUnicornio', 1);
           (c.weapons ??= []).push('talon');
           const h = teste(c, 'historia', 15);
           await painel([
-            'Lá embaixo, entre ossos roídos, o vigia guardava o que juntou: um baú de madeira gasto. Mais adiante, meio coberto de pedra, o corpo de Thel Dendrar.',
-            `No baú: 160 peças de prata, 120 de ouro, cinco malaquitas, duas poções de cura, um pergaminho de augúrio — e uma espada longa que ninguém ali devia saber usar, com um falcão no copo e o nome Talon gravado na lâmina. ${c.name} guarda tudo.`,
-            h.passou ? 'O nome lembra uma história velha da família Tresendar: um cavaleiro, o Falcão Negro, caiu nestes porões segurando os orcs de uma invasão. Era a espada dele.' : null,
+            'Lá embaixo, entre ossos roídos, o vigia guardava o que juntou: um baú de madeira gasto. Mais adiante, amontoado no fundo, um esqueleto limpo até o osso, com um pingente de madeira em forma de cabeça de unicórnio ainda no pescoço — o Thel Dendrar, se a Mirna reconhecer o pingente.',
+            `No baú: 160 peças de prata, 120 de ouro, cinco malaquitas, três frascos (cura, escalada e crescimento, pelos rótulos) — e, deitada por cima de tudo como quem não pertence ali, uma espada longa de cavaleiro. O copo é um falcão de asas fechadas, gasto de ser segurado. Na lâmina, uma palavra só: Talon. ${c.name} guarda tudo.`,
+            h.passou ? 'A palavra puxa uma história que em Phandalin se conta sem data: dos Tresendar, o último a usar armadura foi um que os vizinhos chamavam de Falcão Negro, e que não saiu destes porões no dia em que os orcs desceram. Davam o corpo por perdido. A espada, também.' : null,
           ].filter(Boolean), { teste: h });
         },
       });
     }
 
     // Área 10: o dinheiro da mesa.
-    if (sup === 'mesa' && NA_ESTAR(tile) && grupos.estar?.vencido && !salvo.mesa) {
+    if (sup === 'mesa' && NA_ESTAR(tile) && grupos.estar?.vencido && !salvo.mesa) {    // virada, o dinheiro está no chão (ver `mesaVirada`)
       ops.push({
-        rotulo: 'Recolher o dinheiro da mesa', icone: 'acao-usarObjeto', motivo: longe(5),
+        rotulo: salvo.mesaVirada ? 'Catar o dinheiro do chão' : 'Recolher o dinheiro da mesa',
+        icone: 'acao-usarObjeto', motivo: longe(5),
         fazer: async () => {
           salvo.mesa = true;
           guardar(c, 'moedaDeCobre', 75); guardar(c, 'moedaDePrata', 55); guardar(c, 'moedaDeOuro', 26); guardar(c, 'brincosDeRubi', 1);
-          await painel(`Espalhado entre copos virados: 75 peças de cobre, 55 de prata, mais ouro e electro que somam 26 de ouro, e um par de brincos com um rubi do tamanho de uma lentilha — alguém apostou o que não era dele. As pedrinhas, aliás, são viciadas. ${c.name} guarda.`);
+          await painel(salvo.mesaVirada
+            ? `Catado da laje, de quatro, nas quatro direções em que rolou: 75 peças de cobre, 55 de prata, mais ouro e electro que somam 26 de ouro, e um par de brincos com um rubi do tamanho de uma lentilha, que foi parar debaixo de uma estante — alguém apostou o que não era dele. As pedrinhas, aliás, são viciadas. ${c.name} guarda.`
+            : `Espalhado entre copos virados: 75 peças de cobre, 55 de prata, mais ouro e electro que somam 26 de ouro, e um par de brincos com um rubi do tamanho de uma lentilha — alguém apostou o que não era dele. As pedrinhas, aliás, são viciadas. ${c.name} guarda.`);
         },
       });
     }
@@ -1573,10 +1888,10 @@ export function criarMansao(app, config) {
         fazer: async () => {
           salvo.reagentes = true;
           guardar(c, 'reagente', 3);
-          if (camp.vila) (camp.vila.pistas ??= []).push('O diário de Urmon, em anão, achado na oficina do Cajavidro: Urmon procurava uma maça sagrada de Lathander, a Invocadora da Luz, que sumiu junto com a Mina Perdida de Phandelver e a Forja das Magias.');
+          if (camp.vila) (camp.vila.pistas ??= []).push('Um caderno em anão, na oficina do Cajavidro: alguém chamado Urmon passou anos atrás de uma maça de Lathander, a Invocadora da Luz, perdida com a mina e com a forja que havia dentro dela.');
           await painel([
             'Vidraria por toda parte, metade dela suja de um resíduo prateado. Alguém aqui tenta uma receita difícil e erra há semanas. Entre os livros, um caderno de capa de couro escrito em anão.',
-            `O dono assinava Urmon. As últimas páginas são de alguém obcecado: uma maça de Lathander, a Invocadora da Luz, que teria se perdido junto com a Mina Perdida de Phandelver e a sua Forja das Magias. ${c.name} guarda o caderno e três frasquinhos de reagentes raros.`,
+            `As últimas páginas não têm mais notas de trabalho: têm uma coisa só, escrita e reescrita em anão, cada vez com menos capricho. Uma maça consagrada a Lathander, chamada Invocadora da Luz, que teria afundado junto com a mina e com a forja que havia dentro dela. O dono do caderno assinava Urmon, e parou de assinar na metade. ${c.name} guarda o caderno e três frasquinhos de reagentes raros.`,
           ]);
         },
       });
@@ -1590,9 +1905,12 @@ export function criarMansao(app, config) {
         fazer: async () => {
           audio.play('chestOpen');
           salvo.bauIarno = true;
+          // O Obelisco: avisado, ele leva os dois pergaminhos na fuga.
+          const levou = salvo.iarno === 'fugiu';
           guardar(c, 'moedaDePrata', 180); guardar(c, 'moedaDeOuro', 130); guardar(c, 'cornalina', 5);
-          guardar(c, 'peridoto', 2); guardar(c, 'perola', 1); guardar(c, 'pergaminhoDeEnfeiticar', 1); guardar(c, 'pergaminhoDeBolaDeFogo', 1);
-          await painel(`A parte do chefe, separada com cuidado: 180 peças de prata, 130 de ouro, uma bolsinha de seda com cinco cornalinas, dois peridotos e uma pérola grande, e dois pergaminhos enrolados — Enfeitiçar Pessoa e Bola de Fogo. ${c.name} guarda.`);
+          guardar(c, 'peridoto', 2);
+          if (!levou) { guardar(c, 'pergaminhoDeImobilizar', 1); guardar(c, 'pergaminhoDeBolaDeFogo', 1); }
+          await painel(`A parte do chefe, separada com cuidado: 180 peças de prata, 130 de ouro, uma bolsinha de seda com cinco cornalinas e dois peridotos${levou ? '. Os pergaminhos que deviam estar aqui sumiram: dá para ver as duas fitas de lacre arrebentadas no fundo do baú. Ele os levou na fuga' : ', e dois pergaminhos enrolados — Imobilizar Pessoa e Bola de Fogo'}. ${c.name} guarda.`);
         },
       });
     }
@@ -1602,12 +1920,17 @@ export function criarMansao(app, config) {
         fazer: async () => {
           salvo.carta = true;
           if (camp.vila) {
-            (camp.vila.pistas ??= []).push('O bilhete do Aranha Negra ao Cajavidro: gente nova vem a Phandalin, talvez mandada pelos anões; viva ou morta, tanto faz. E qualquer mapa anão vai para ele, sem demora.');
+            (camp.vila.pistas ??= []).push('O bilhete da aranha, na mesa do Cajavidro: qualquer mapa anão sobe para quem assina, sem demora — e quem o estiver carregando não precisa chegar inteiro a lugar nenhum.');
             (camp.vila.feito ??= {}).cartaDoCajavidro = true;
           }
+          // A CARTA, LIDA DE BAIXO PARA CIMA. Antes ela repetia o bilhete do livro na ordem em que o livro o
+          // escreve, de cabeçalho a despedida. Agora é o olho do herói que manda: primeiro a aranha desenhada,
+          // que é o que salta da página, depois a ordem que importa (o mapa), e a ameaça fica onde o leitor a
+          // encontra — no meio de uma frase educada, que é o que a torna ameaça.
           await painel([
-            'Contas, listas de compras, um rascunho de discurso para a vila — e, dobrado debaixo do tinteiro, um bilhete curto com uma aranha desenhada no lugar da assinatura.',
-            'Gente nova vem a Phandalin, diz o bilhete, e pode ser que os anões a mandem. Que não cheguem a incomodar: presos ou mortos, tanto faz. E se aparecer qualquer mapa anão, vai para a aranha, sem demora. A última linha é gentil demais para não ser ameaça.',
+            'Contas, lista de compras, um rascunho de discurso para a praça. E, debaixo do tinteiro, meia folha boa demais para a pilha: sem data, sem nome, com uma aranha desenhada a bico de pena onde iria a assinatura.',
+            'A ordem vem primeiro, em três linhas: mapa anão que apareça sobe para a aranha no mesmo dia, em mão, sem cópia. Só depois, numa frase que começa com "quanto aos recém-chegados" e termina em "fico-lhe grato", está dito que ninguém precisa chegar inteiro a lugar nenhum — e é a cortesia que faz o frio descer.',
+            'Quem escreveu não escreve rápido: a tinta está gravada no papel, letra por letra, como quem tem tempo.',
             '(A Halia, do Câmbio de Minério, queria papéis daqui.)',
           ]);
         },
@@ -1671,6 +1994,7 @@ export function criarMansao(app, config) {
     get explorando() { return estado.explorando; },
     get encerrado() { return estado.encerrado; },
     interacoes,
+    pistasEm,
     ganchosMagicos,
     espiou,
     interacoesDoHeroi,

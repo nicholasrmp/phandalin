@@ -10,3 +10,4 @@ export async function narrar(root, opts) {
   return (achou ?? esc.find((e) => e.primaria) ?? esc[0]).valor;
 }
 export const narrativaAberta = () => false;
+export const aceitaCampoDeTexto = () => false;   // em Node não há caixa de texto: "Perguntar outra coisa" não aparece

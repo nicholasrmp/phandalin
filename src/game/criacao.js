@@ -17,8 +17,13 @@
 // se perder quando as regras chegarem.
 
 import { SPELLS } from '../rules/spells.js';
+import { CLASSES_DAS_MAGIAS_PHB } from '../rules/magias-por-classe-phb.js';
+import { CLASSES_DAS_MAGIAS_XGE } from '../rules/magias-por-classe-xge.js';
+import { CLASSES_DAS_MAGIAS_TCE } from '../rules/magias-por-classe-tce.js';
+import { LISTA_EXPANDIDA_TCE } from '../rules/magias-por-classe-tce-expandida.js';
 import { CLASSES } from '../rules/classes/index.js';
-import { criarPersonagem } from '../rules/progressao.js';
+import { criarPersonagem, recalcularVida } from '../rules/progressao.js';
+import { TALENTOS_PHB, completarEscolhaDoTalento, porqueNaoTalento, aplicarTalentoPhb } from '../rules/talentos-phb.js';
 import { abilityMod } from '../rules/abilities.js';
 import { HEROIS, heroiPorId } from './herois.js';
 import { atributoDoIniciado } from '../rules/talentos.js';
@@ -121,7 +126,9 @@ export const MAGIAS_INICIAIS = {
 };
 
 export const nomeDaMagia = (id) => MAGIAS_INICIAIS[id]?.[0] ?? id;
-export const magiaTemRegra = (id) => Boolean(SPELLS[id]);
+// A magia dos livros que o motor ainda não conjura (`semMotor`) existe no catálogo, mas não entra na escolha de ninguém:
+// aprender uma magia que não faz nada seria gastar a vaga.
+export const magiaTemRegra = (id) => Boolean(SPELLS[id]) && !SPELLS[id].semMotor;
 
 // As listas de cada classe no Livro do Jogador, só truques e 1º círculo.
 const L = {
@@ -227,7 +234,7 @@ const ALTAS = {
 
 // O LOTE DE 4º A 6º CÍRCULO (`rules/spells.js`): quem pode aprender cada uma, pelo livro.
 const ALTAS_NOVAS = {
-  mago: ['tempestadeDeGelo', 'peleDePedra', 'invisibilidadeMaior', 'dimensaoPorta', 'coneDeFrio', 'imobilizarMonstro', 'correnteDeRelampagos', 'desintegrar', 'circuloDaMorte'],
+  mago: ['tempestadeDeGelo', 'peleDePedra', 'invisibilidadeMaior', 'assassinoFantasmagorico', 'dimensaoPorta', 'coneDeFrio', 'imobilizarMonstro', 'correnteDeRelampagos', 'desintegrar', 'circuloDaMorte'],
   feiticeiro: ['tempestadeDeGelo', 'peleDePedra', 'invisibilidadeMaior', 'dimensaoPorta', 'coneDeFrio', 'imobilizarMonstro', 'correnteDeRelampagos', 'desintegrar', 'circuloDaMorte'],
   bruxo: ['dimensaoPorta', 'imobilizarMonstro', 'circuloDaMorte'],
   bardo: ['invisibilidadeMaior', 'dimensaoPorta', 'imobilizarMonstro'],
@@ -243,6 +250,25 @@ const ALTAS_NOVAS_2 = {
 };
 for (const [classe, ids] of Object.entries(ALTAS_NOVAS_2)) ALTAS_NOVAS[classe] = [...(ALTAS_NOVAS[classe] ?? []), ...ids];
 for (const [classe, ids] of Object.entries(ALTAS_NOVAS)) ALTAS[classe].push(...ids.filter((id) => SPELLS[id] && !ALTAS[classe].includes(id)));
+// QUEM APRENDE CADA MAGIA, PELO LIVRO (`rules/magias-por-classe-phb.js`, gerado de `spells/sources.json` do 5etools): as
+// feitas à mão e as dos livros. Entram na lista de cada classe as que o motor conjura. As listas escritas à mão acima
+// ficam (o paladino tem Elo de Proteção e Oração de Cura, que o PHB de 2014 não lhe dá e o de 2024 dá).
+for (const [id, classes] of Object.entries(CLASSES_DAS_MAGIAS_PHB)) {
+  if (!magiaTemRegra(id) || !(SPELLS[id].level >= 1)) continue;
+  for (const classe of classes) if (ALTAS[classe] && !ALTAS[classe].includes(id)) ALTAS[classe].push(id);
+}
+// As do GUIA DE XANATHAR (`rules/magias-por-classe-xge.js`, a lista expandida do próprio livro): as de círculo vão com as
+// outras, e os TRUQUES entram nos truques da classe.
+// e as do CALDEIRÃO DE TASHA, do mesmo jeito
+// e a LISTA EXPANDIDA DO TASHA (`rules/magias-por-classe-tce-expandida.js`): o que o Tasha acrescenta a cada classe, das
+// magias do PHB, do Xanathar e dele mesmo (o Auxílio do patrulheiro, o Comando do bardo, a Aura de Vida do clérigo).
+for (const [id, classes] of [...Object.entries(CLASSES_DAS_MAGIAS_XGE), ...Object.entries(CLASSES_DAS_MAGIAS_TCE), ...Object.entries(LISTA_EXPANDIDA_TCE)]) {
+  if (!magiaTemRegra(id)) continue;
+  for (const classe of classes) {
+    if (SPELLS[id].level === 0) { if (L[classe] && !L[classe].truques.includes(id)) L[classe].truques.push(id); }
+    else if (ALTAS[classe] && !ALTAS[classe].includes(id)) ALTAS[classe].push(id);
+  }
+}
 
 /**
  * A lista de magias de uma classe: truques e 1º círculo e, com `circuloMax`
@@ -256,13 +282,27 @@ const ESCOLAS_DA_SUBCLASSE = {
 };
 
 // Magias extras dos patronos do bruxo (Livro do Jogador): entram na lista de onde ele escolhe, sem ficarem sempre preparadas.
-// Só as que o motor joga; Dominar Fera/Pessoa, Aparência, Telecinese e Tentáculos Negros de Evard ficam de fora.
+// Desde o PHB entraram Dominar Fera, Dominar Pessoa, Telecinésia e os Tentáculos Negros; a Aparência ainda não tem efeito
+// (`semMotor`), e `listaDaClasse` a deixa de fora até ter.
 const MAGIAS_DO_PATRONO = {
-  arquifada: ['fogoDasFadas', 'sono', 'acalmarEmocoes', 'forcaFantasmagorica', 'piscar', 'crescimentoDePlantas', 'invisibilidadeMaior'],
-  grandeAntigo: ['sussurrosDissonantes', 'risoHisterico', 'detectarPensamentos', 'forcaFantasmagorica', 'clarividencia', 'enviarMensagem'],
+  arquifada: ['fogoDasFadas', 'sono', 'acalmarEmocoes', 'forcaFantasmagorica', 'piscar', 'crescimentoDePlantas', 'dominarBesta', 'invisibilidadeMaior', 'dominarPessoa', 'aparenciaEnganosa'],
+  grandeAntigo: ['sussurrosDissonantes', 'risoHisterico', 'detectarPensamentos', 'forcaFantasmagorica', 'clarividencia', 'enviarMensagem', 'dominarBesta', 'tentaculosNegrosDeEvard', 'dominarPessoa', 'telecinesia'],
+  // Guia de Xanathar
+  celestial: ['curarFerimentos', 'raioGuiado', 'esferaFlamejante', 'restauracaoMenor', 'luzDoDia', 'revivificar', 'guardiaoDaFe', 'muralhaDeFogo', 'golpeDeChama', 'restauracaoMaior'],
+  laminaMaldita: ['escudoArcano', 'golpeColerico', 'borrao', 'golpeMarcante', 'piscar', 'armaElemental', 'assassinoFantasmagorico', 'destruicaoCambaleante', 'destruicaoBanidora', 'coneDeFrio'],
+  // Costa da Espada (Fingir de Morto não existe no jogo)
+  imortal: ['vidaFalsa', 'raioDeDoenca', 'cegueiraSurdez', 'silencio', 'falarComOsMortos', 'auraDeVida', 'protecaoContraAMorte', 'contagio', 'lendasEHistorias'],
+  // Caldeirão de Tasha (Controlar a Água, Moldar a Pedra e Desejo não existem no jogo)
+  insondavel: ['criarDestruirAgua', 'ondaTrovejante', 'lufadaDeVento', 'silencio', 'relampago', 'tempestadeDeGranizo', 'invocarElemental', 'maoDeBigby', 'coneDeFrio'],
+  genio: (c) => ['detectarBemMal', ...({
+    dao: ['santuario', 'crescimentoDeEspinhos', 'fundirSeComPedra', 'muralhaDePedra'],
+    djinni: ['ondaTrovejante', 'lufadaDeVento', 'muralhaDeVento', 'invisibilidadeMaior', 'aparenciaEnganosa'],
+    efreeti: ['maosFlamejantes', 'raioArdente', 'bolaDeFogo', 'escudoDeFogo', 'golpeDeChama'],
+    marid: ['nevoaObscurecente', 'borrao', 'tempestadeDeGranizo', 'coneDeFrio'],
+  }[c?.tipoDeGenio ?? 'efreeti'] ?? [])],
 };
 
-export const listaDaClasse = (classe, circuloMax = 1, subclasse = null) => {
+export const listaDaClasse = (classe, circuloMax = 1, subclasse = null, heroi = null) => {
   if (subclasse && ESCOLAS_DA_SUBCLASSE[subclasse]) {
     const escolas = ESCOLAS_DA_SUBCLASSE[subclasse];
     const mago = listaDaClasse('mago', circuloMax);
@@ -271,9 +311,17 @@ export const listaDaClasse = (classe, circuloMax = 1, subclasse = null) => {
     // Os TRUQUES vêm da lista inteira do mago; só as magias de 1º círculo ou mais se restringem às duas escolas.
     return { ...mago, truques: [...new Set([...mago.truques, ...(subclasse === 'trapaceiroArcano' ? ['maoMagica'] : [])])], magias: mago.magias.filter(dela) };
   }
+  // MAGIA DIVINA (feiticeiro da Alma Divina, Xanathar): a lista do clérigo também.
+  if (classe === 'feiticeiro' && subclasse === 'almaDivina') {
+    const fe = listaDaClasse('feiticeiro', circuloMax);
+    const cl = listaDaClasse('clerigo', circuloMax);
+    return { ...fe, truques: [...new Set([...fe.truques, ...cl.truques])], magias: [...new Set([...fe.magias, ...cl.magias])] };
+  }
   const base = L[classe] ?? { truques: [], magias: [] };
   const altas = (ALTAS[classe] ?? []).filter((id) => (SPELLS[id]?.level ?? 9) <= circuloMax);
-  const doPatrono = classe === 'bruxo' ? (MAGIAS_DO_PATRONO[subclasse] ?? []).filter((id) => SPELLS[id] && (SPELLS[id].level ?? 9) <= circuloMax) : [];
+  // (o patrono do Gênio depende do tipo de gênio do herói)
+  const doPatronoBruto = typeof MAGIAS_DO_PATRONO[subclasse] === 'function' ? MAGIAS_DO_PATRONO[subclasse](heroi) : MAGIAS_DO_PATRONO[subclasse];
+  const doPatrono = classe === 'bruxo' ? (doPatronoBruto ?? []).filter((id) => magiaTemRegra(id) && (SPELLS[id].level ?? 9) <= circuloMax) : [];
   const extras = [...altas, ...doPatrono].filter((id, i, v) => v.indexOf(id) === i && !base.magias.includes(id));
   return extras.length ? { ...base, magias: [...base.magias, ...extras] } : base;
 };
@@ -310,8 +358,10 @@ export function regrasDeMagia(heroi) {
     // Escolher magias: conhecidas e livro, um número fixo; preparadas, o
     // limite de preparo, da lista inteira da classe.
     escolhe: conj.modo === 'preparadas' ? preparar : conj.magias,
-    listaTruques: L[heroi.classe].truques,
-    listaMagias: L[heroi.classe].magias,
+    // A lista COMPLETA do 1º nível (`listaDaClasse`): a escrita à mão mais as do livro (o PHB e o Xanathar). Antes era só a
+    // escrita à mão, e a Faca de Gelo, o Absorver Elementos e as de 1º círculo do PHB nunca apareciam na criação.
+    listaTruques: listaDaClasse(heroi.classe, 1).truques,
+    listaMagias: listaDaClasse(heroi.classe, 1).magias,
   };
 }
 
@@ -340,6 +390,23 @@ export const SUBCLASSES_1 = {
         resumo: 'Cópia ilusória que dá vantagem nos seus ataques, manto de sombras e veneno no Golpe Divino.' },
       { id: 'guerra', nome: 'Domínio da Guerra', motor: 'guerra', magias: ['favorDivino', 'escudoDaFe'],
         resumo: 'Armas marciais, armadura pesada e um ataque extra de vez em quando.' },
+      // ---- Guia de Xanathar
+      { id: 'forja', nome: 'Domínio da Forja', motor: 'forja', magias: ['identificar', 'golpeAbrasador'],
+        resumo: 'Armadura pesada, e a sua armadura ou a sua arma abençoada com +1.' },
+      { id: 'sepultura', nome: 'Domínio da Sepultura', motor: 'sepultura', magias: ['perdicao', 'vidaFalsa'],
+        resumo: 'Cura no máximo em quem está a 0 PV, e Poupar os Moribundos a 9 m, como ação bônus.' },
+      // ---- Caldeirão de Tasha
+      { id: 'ordem', nome: 'Domínio da Ordem', motor: 'ordem', magias: ['comando', 'heroismo'],
+        resumo: 'Armadura pesada, e a magia que mira um aliado deixa ele atacar com a reação.' },
+      { id: 'paz', nome: 'Domínio da Paz', motor: 'paz', magias: ['heroismo', 'santuario'],
+        resumo: 'Um vínculo que dá 1d4 nos ataques e resistências de quem está junto.' },
+      // ---- Costa da Espada e Livro do Mestre
+      { id: 'dominioArcano', nome: 'Domínio Arcano', motor: 'dominioArcano', magias: ['detectarMagia', 'misselMagico'],
+        resumo: 'Dois truques de mago, Arcanismo, e o Canalizar Divindade que expulsa (ou bane) quem é de outro plano.' },
+      { id: 'dominioDaMorte', nome: 'Domínio da Morte', motor: 'dominioDaMorte', magias: ['vidaFalsa', 'raioDeDoenca'],
+        resumo: 'Armas marciais, um truque de necromancia que pega dois alvos, e o toque que soma necrótico ao golpe.' },
+      { id: 'crepusculo', nome: 'Domínio do Crepúsculo', motor: 'crepusculo', magias: ['fogoDasFadas', 'sono'],
+        resumo: 'Armadura pesada e armas marciais, visão no escuro de 90 m, e vantagem na iniciativa para quem você abençoa.' },
     ],
   },
   bruxo: {
@@ -351,6 +418,25 @@ export const SUBCLASSES_1 = {
         resumo: 'Um lampejo de presença feérica que encanta ou assusta quem está perto.' },
       { id: 'grandeAntigo', nome: 'O Grande Antigo', motor: 'grandeAntigo',
         resumo: 'Você fala com qualquer criatura pela mente, a curta distância.' },
+      // ---- Guia de Xanathar
+      { id: 'celestial', nome: 'O Celestial', motor: 'celestial',
+        resumo: 'Chama Sagrada e Luz de graça, e uma reserva de dados que cura à distância.' },
+      { id: 'laminaMaldita', nome: 'O Lâmina Maldita', motor: 'laminaMaldita',
+        resumo: 'Armadura média, escudo e armas marciais, Carisma na arma, e uma maldição que fere mais e critica com 19.' },
+      // ---- Costa da Espada
+      { id: 'imortal', nome: 'O Imortal', motor: 'imortal',
+        resumo: 'Poupar os Moribundos de graça, e o morto-vivo que o ataca pode desistir do golpe.' },
+      // ---- Caldeirão de Tasha
+      { id: 'insondavel', nome: 'O Insondável', motor: 'insondavel',
+        resumo: 'Um tentáculo espectral que fere de frio e prende o passo, e nado de 12 m.' },
+      { id: 'genioEfreeti', nome: 'O Gênio (efreeti)', motor: 'genio', escolhas: { geniesVessel: 'efreeti' },
+        resumo: 'Uma vez por turno, o acerto soma a proficiência de dano de fogo.' },
+      { id: 'genioDao', nome: 'O Gênio (dao)', motor: 'genio', escolhas: { geniesVessel: 'dao' },
+        resumo: 'Uma vez por turno, o acerto soma a proficiência de dano de concussão.' },
+      { id: 'genioDjinni', nome: 'O Gênio (djinni)', motor: 'genio', escolhas: { geniesVessel: 'djinni' },
+        resumo: 'Uma vez por turno, o acerto soma a proficiência de dano trovejante.' },
+      { id: 'genioMarid', nome: 'O Gênio (marid)', motor: 'genio', escolhas: { geniesVessel: 'marid' },
+        resumo: 'Uma vez por turno, o acerto soma a proficiência de dano de frio.' },
     ],
   },
   feiticeiro: {
@@ -360,6 +446,18 @@ export const SUBCLASSES_1 = {
         resumo: 'Escamas que protegem sem armadura e um ponto de vida a mais por nível.' },
       { id: 'magiaSelvagem', nome: 'Magia Selvagem', motor: 'magiaSelvagem',
         resumo: 'A magia às vezes escapa do controle, para o bem e para o mal.' },
+      // ---- Guia de Xanathar
+      { id: 'almaDivina', nome: 'Alma Divina', motor: 'almaDivina',
+        resumo: 'Uma magia de clérigo pela afinidade e, uma vez por descanso, 2d4 num ataque que erra ou numa resistência que falha.' },
+      { id: 'magiaDasSombras', nome: 'Magia das Sombras', motor: 'magiaDasSombras',
+        resumo: 'Visão no escuro de 36 m, e a força do túmulo: cair a 0 PV pode deixar você com 1.' },
+      { id: 'tempestade', nome: 'Feitiçaria da Tempestade', motor: 'tempestade',
+        resumo: 'Depois de cada magia, um salto de 3 m pelo ar, sem dar ataque de oportunidade.' },
+      // ---- Caldeirão de Tasha
+      { id: 'menteAberrante', nome: 'Mente Aberrante', motor: 'menteAberrante', magias: ['bracosDeHadar', 'sussurrosDissonantes'],
+        resumo: 'Magias psiônicas a mais (Lasca Mental, Braços de Hadar, Sussurros Dissonantes) e, depois, pagas com pontos.' },
+      { id: 'almaMecanica', nome: 'Alma Mecânica', motor: 'almaMecanica', magias: ['alarme', 'protecaoBemMal'],
+        resumo: 'A reação que tira a vantagem do inimigo ou a desvantagem do aliado, e magias de ordem a mais.' },
     ],
   },
 };
@@ -575,6 +673,8 @@ export function escolhaAutomatica(id) {
   const h = heroiPorId(id);
   // o herói criado: o talento que o livro de 2024 dá ao antecedente dele (`game/criador.js`)
   const a = AUTOMATICO[id] ?? (h.criado ? { talento: ANTECEDENTES[h.antecedenteId]?.talento } : {});
+  // O HUMANO VARIANTE já traz um talento do Livro do Jogador: o de origem não pode ser a versão de 2024 do mesmo.
+  if (a.talento && origemEmConflito(h, a.talento)) a.talento = TALENTOS_DE_ORIGEM.find((t) => !origemEmConflito(h, t.id))?.id;
   const m = regrasDeMagia(h);
   const preferir = (lista, quantos, sugeridas = []) => {
     const ok = sugeridas.filter((s) => lista.includes(s));
@@ -593,6 +693,13 @@ export function escolhaAutomatica(id) {
     preparadas: m?.modo === 'livro' ? preferir(m.listaMagias, m.preparar, a.magias) : null,
     iniciado: escolhaDoIniciado(h, h.criado ? ANTECEDENTES[h.antecedenteId]?.iniciado ?? null : null),
   };
+}
+
+/** O talento de origem é o mesmo que o humano variante já toma (a versão de 2024 dele, ou o Vigoroso, que é um só)? */
+export function origemEmConflito(h, origemId) {
+  const t = h?.talentoDaRaca?.id;
+  if (!t) return false;
+  return t === origemId || TALENTOS_PHB[t]?.igualA === origemId;
 }
 
 /** O padrão do Iniciado em Magia: a lista do melhor atributo mental. */
@@ -628,6 +735,7 @@ export function problemasDaEscolha(id, e) {
   }
   if (SUBCLASSES_1[h.classe] && !e.subclasse) p.push('Escolha a subclasse.');
   if (!e.talento) p.push('Escolha o talento de origem.');
+  if (e.talento && origemEmConflito(h, e.talento)) p.push('O talento de origem é o mesmo do humano variante: escolha outro.');
   if (e.talento === 'iniciadoEmMagia') {
     if ((e.iniciado?.truques?.length ?? 0) !== 2) p.push('Iniciado em Magia: escolha 2 truques.');
     if (!e.iniciado?.magia) p.push('Iniciado em Magia: escolha 1 magia de 1º círculo.');
@@ -703,7 +811,8 @@ export function montarHeroi(id, escolha = escolhaAutomatica(id)) {
   }
 
   const escolhas = {};
-  if (sub?.motor && def.subclasse?.nivel === 1) escolhas[1] = { subclasse: sub.motor };
+  // (`escolhas`: o que a opção já decide, como o tipo do Gênio)
+  if (sub?.motor && def.subclasse?.nivel === 1) escolhas[1] = { subclasse: sub.motor, ...(sub.escolhas ?? {}) };
   if (h.classe === 'guerreiro') escolhas[1] = { ...escolhas[1], estiloDeLuta: 'defense' };
   // Corin odeia goblins e cresceu na mata: é o que o Inimigo Favorito e o Explorador Natural dele guardam.
   if (h.classe === 'patrulheiro') escolhas[1] = { ...escolhas[1], favoredEnemy: 'goblinoidesEOrcs', naturalExplorer: 'floresta' };
@@ -730,6 +839,15 @@ export function montarHeroi(id, escolha = escolhaAutomatica(id)) {
   c.escolhaDeCriacao = structuredClone(escolha);
   c.talentos = [escolha.talento];
   aplicarTalento(c, h, escolha);
+  // O TALENTO DO HUMANO VARIANTE, por cima do de origem: a mesma aplicação dos níveis de aumento. O pré-requisito e o
+  // conflito com o de origem já foram conferidos no criador e no preparo; aqui, se ainda assim não couber, não entra.
+  if (h.talentoDaRaca?.id) {
+    const e = completarEscolhaDoTalento(c, h.talentoDaRaca);
+    if (!porqueNaoTalento(c, e.id)) aplicarTalentoPhb(c, e);
+  }
+  // O PV de novo, do zero: o Vigoroso (de origem ou do variante) e a Constituição que o talento subiu entram na conta.
+  recalcularVida(c);
+  c.hp = c.maxHp;
   if (sub && !sub.motor) c.subclasseDoLivro = sub.id;
   return c;
 }

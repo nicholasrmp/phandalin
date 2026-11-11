@@ -142,3 +142,7 @@
   margin: 8px 0 0; padding: 6px 10px; font-size: 13px; font-weight: 600; color: var(--ink);
   background: rgb(214 170 70 / 20%); border-left: 4px solid var(--gold); border-radius: 0 8px 8px 0;
 }
+
+.narrativa-pergunta { width: 100%; box-sizing: border-box; padding: 8px 10px; font: inherit; color: var(--ink, #2a1c10); background: #f6ecd4; border: 1px solid #8a6d3b; border-radius: 3px; }
+.narrativa-pergunta:focus-visible { outline: 2px solid var(--gold, #c9a227); outline-offset: 1px; }
+.narrativa-pensando { position: absolute; left: 50%; bottom: 24px; transform: translateX(-50%); margin: 0; padding: 6px 14px; background: rgba(20, 14, 8, .9); color: #f6ecd4; border-radius: 3px; z-index: 50; font-style: italic; }

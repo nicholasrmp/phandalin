@@ -3484,7 +3484,8 @@ teste('As sete escolas: cada uma dá as características do 2º nível, as do 6�
     assert.ok(!escola(id, 13).features.includes(n14) && escola(id, 14).features.includes(n14), `${id} 14º: ${n14}`);
     assert.ok(Object.keys(CLASSES.mago.subclasse.opcoes).includes(id));
   }
-  assert.equal(Object.keys(CLASSES.mago.subclasse.opcoes).length, 8, 'as oito escolas do livro');
+  // as oito escolas do Livro do Jogador (a Magia de Guerra, do Xanathar, é a nona subclasse do mago)
+  assert.equal(Object.values(CLASSES.mago.subclasse.opcoes).filter((o) => ['srd', 'phb'].includes(o.fonte)).length, 8, 'as oito escolas do livro');
 });
 
 teste('Abjuração: a Proteção Arcana nasce com a primeira abjuração, absorve o dano antes dos PV e se recarrega com outras abjurações', () => {

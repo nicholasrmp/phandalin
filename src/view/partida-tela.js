@@ -326,8 +326,20 @@ export function criarPartidaTela({ aoSair, enviar = () => false, hud = null }) {
     });
   }
 
+  /** "Droop pensa…": a resposta do modelo leva segundos, e sem isto o convidado olharia uma tela parada. */
+  function mostrarPensando(texto) {
+    document.querySelector('.narrativa-pensando')?.remove();
+    if (!texto) return;
+    const aviso = document.createElement('p');
+    aviso.className = 'narrativa-pensando';
+    aviso.setAttribute('role', 'status');
+    aviso.textContent = texto;
+    document.getElementById('app')?.append(aviso);
+  }
+
   /** A narrativa do anfitrião (A-02): todos leem; só o líder escolhe, e o índice volta ao anfitrião. */
   function narrativa(msg) {
+    if (msg.tipo === 'pensando') { mostrarPensando(msg.texto); return; }
     if (msg.tipo === 'contexto-abrir') { abrirContextoRemoto(msg); return; }
     if (msg.tipo === 'descanso-estado') { descansoRemoto(msg); return; }
     if (msg.tipo === 'descanso-fechar') { descansoAberto?.ctl.abort(); descansoAberto = null; return; }
@@ -359,7 +371,7 @@ export function criarPartidaTela({ aoSair, enviar = () => false, hud = null }) {
     const escolhe = Boolean(p.escolhas) && possoEscolher(decide, eu);
     const votando = decide?.modo === 'votacao';
     narrarLocal(document.getElementById('app'), {
-      formato: p.formato, lista: p.lista, pular: false,
+      formato: p.formato, lista: p.lista, pular: false, campoTexto: p.campoTexto ?? null,
       paginas: p.paginas.map((pg) => ({ titulo: pg.titulo, texto: pg.texto, teste: pg.teste, retrato: pg.retrato })),
       escolhas: p.escolhas ? p.escolhas.map((e) => ({ rotulo: e.rotulo, detalhe: e.detalhe, motivo: e.motivo, primaria: e.primaria, valor: e.indice })) : null,
       nota: decide?.titulo || null,
@@ -372,7 +384,8 @@ export function criarPartidaTela({ aoSair, enviar = () => false, hud = null }) {
       if (!p.escolhas && !ctl.signal.aborted) { enviar({ tipo: 'resposta', id: msg.id, indice: null, continuar: true }); return; }
       // Quem decide por ser o dono da cena responde pelo clique (o voto já foi enviado por `aoVotar`).
       if (!escolhe || votando || ctl.signal.aborted) return;
-      enviar({ tipo: 'resposta', id: msg.id, indice: Number.isInteger(r) ? r : null });
+      const indice = p.campoTexto ? r?.valor : r;
+      enviar({ tipo: 'resposta', id: msg.id, indice: Number.isInteger(indice) ? indice : null, ...(p.campoTexto ? { texto: String(r?.texto ?? '') } : {}) });
     });
   }
 
@@ -536,6 +549,7 @@ export function criarPartidaTela({ aoSair, enviar = () => false, hud = null }) {
       vilaObj = {
         titulo: snap.titulo, classe: snap.classe, proporcao: snap.proporcao,
         pintura: snap.chave === 'regiao' ? pinturaDaRegiao : undefined,
+        oficial: snap.oficial ?? undefined,
         lugares: snap.lugares, estado: { missoes: {}, pistas: [], registro: [] }, missoes: {},
         grupo: [], momento: () => vilaObj.__momento, dinheiro: () => vilaObj.__dinheiro,
         aberto: (l) => !l.fechado, novidade: (l) => l.novidade,

@@ -8,7 +8,7 @@ import './nivel-tela.css';
 import { el } from './hud.js';
 import { makePortrait } from '../art/sheet.js';
 import { narrar } from './narrativa.js';
-import { subirUmNivel, depoisDeSubirNivel, dadosDoCartao, escolhasConferidas, escolhaDeSubclasse } from '../game/nivel.js';
+import { subirUmNivel, depoisDeSubirNivel, dadosDoCartao, escolhasConferidas, escolhaDeSubclasse, escolhaDeAumento } from '../game/nivel.js';
 import { audio } from '../core/audio.js';
 
 function retrato(look) {
@@ -62,6 +62,33 @@ export async function telaDoCartao(root, d, { sinal = null, narrarFn = narrar } 
   return selecoes;
 }
 
+/**
+ * O bloco de um herói na página do aumento: a lista (o aumento primeiro, depois os talentos) e, embaixo, o que a opção faz
+ * e a escolha a mais dela, quando tem. `aumentos[c.id]` guarda { id, campo? } e muda conforme o jogador escolhe.
+ */
+export function blocoDeAumento(c, aumentos) {
+  const e = escolhaDeAumento(c);
+  const explica = el('p', { class: 'nivel-nota' });
+  const subCaixa = el('span', {});
+  const regra = el('p', { class: 'nivel-nota nivel-regra' });
+  const mostrar = (id) => {
+    const o = e.opcoes.find((x) => x.id === id);
+    aumentos[c.id] = { id };
+    explica.textContent = o.desc;
+    regra.textContent = o.regra ?? '';
+    subCaixa.replaceChildren();
+    if (o.sub) {
+      aumentos[c.id][o.sub.campo] = o.sub.padrao ?? o.sub.opcoes[0].id;
+      subCaixa.append(el('select', { class: 'nivel-select', onchange: (ev) => { aumentos[c.id][o.sub.campo] = ev.target.value; } },
+        ...o.sub.opcoes.map((s) => el('option', { value: s.id, selected: s.id === aumentos[c.id][o.sub.campo] }, `${o.sub.rotulo}: ${s.nome}`))));
+    }
+  };
+  const sel = el('select', { class: 'nivel-select', onchange: (ev) => mostrar(ev.target.value) },
+    ...e.opcoes.map((o) => el('option', { value: o.id, title: o.desc }, o.nome)));
+  mostrar(e.opcoes[0].id);
+  return el('div', { class: 'nivel-escolha' }, el('span', {}, `${c.name}: ${e.rotulo}`), sel, subCaixa, explica, regra);
+}
+
 /** Sobe um nível de cada herói da lista, com a tela. Devolve as linhas do registro. */
 export async function telaDeSubirNivel(root, herois) {
   // O acorde de subir de nivel: quatro notas que se SOBREPOEM, o unico som
@@ -87,7 +114,21 @@ export async function telaDeSubirNivel(root, herois) {
       escolhas: [{ rotulo: 'Seguir', valor: 'ok', primaria: true }],
     });
   }
-  const itens = herois.map((c) => ({ c, r: subirUmNivel(c, subclasses[c.id] ? { subclasse: subclasses[c.id] } : {}), selecoes: {}, dono: porta?.dono(c) ?? null }));
+  // AUMENTO OU TALENTO: nos níveis de aumento, o jogador troca o aumento de atributo por um talento do Livro do Jogador.
+  const aumentos = {};
+  const quemAumenta = herois.filter((c) => escolhaDeAumento(c) && !porta?.dono(c));
+  if (quemAumenta.length) {
+    await (porta?.local ?? narrar)(root, {
+      formato: 'tela',
+      paginas: [{ titulo: 'Aumento ou talento', texto: ['Cada um pode ficar mais forte no que já é, ou aprender um jeito novo de lutar.'], conteudo: el('div', { class: 'nivel-lista' }, ...quemAumenta.map((c) => blocoDeAumento(c, aumentos))) }],
+      escolhas: [{ rotulo: 'Seguir', valor: 'ok', primaria: true }],
+    });
+  }
+  const escolhasDe = (c) => ({
+    ...(subclasses[c.id] ? { subclasse: subclasses[c.id] } : {}),
+    ...(aumentos[c.id] && aumentos[c.id].id !== 'asi' ? { talento: aumentos[c.id] } : {}),
+  });
+  const itens = herois.map((c) => ({ c, r: subirUmNivel(c, escolhasDe(c)), selecoes: {}, dono: porta?.dono(c) ?? null }));
   // Os heróis de OUTROS jogadores: o cartão vai ao dono, que escolhe em paralelo (sem resposta, valem as sugeridas).
   const esperas = itens.filter((i) => i.dono).map((i) => porta.pedir(i.c, dadosDoCartao(i.c, i.r), i.dono)
     .then((enviadas) => { i.selecoes = escolhasConferidas(i.r.escolhas, enviadas); }));

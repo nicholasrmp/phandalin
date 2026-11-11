@@ -82,8 +82,7 @@ export const TRACOS_RACIAIS = {
 
   // ---- humano ------------------------------------------------------------
   variantSkilled: T('Perícia Adicional', 'passiva', 'Treinado numa perícia à escolha.', { motor: true }),
-  variantFeat: T('Talento', 'passiva', 'Ganha um talento à escolha no 1º nível.',
-    { semEfeito: 'o jogo ainda não tem a escolha de talento do Livro do Jogador' }),
+  variantFeat: T('Talento', 'passiva', 'Ganha um talento do Livro do Jogador à escolha no 1º nível, além do de origem.', { motor: true }),
 
   // ---- draconato ---------------------------------------------------------
   draconicAncestry: T('Ancestralidade Dracônica', 'passiva',
@@ -279,7 +278,8 @@ export function aplicarRaca(c) {
   c.features ??= [];
   for (const t of r.tracos) if (!c.features.includes(t)) c.features.push(t);
   c.deslocamentoRacial = r.deslocamento;
-  c.speedFt = r.deslocamento;
+  // O MÓVEL (talento) soma 3 m ao deslocamento: um save carregado passa por aqui de novo, e não pode perdê-los.
+  c.speedFt = r.deslocamento + ((c.talentos ?? []).includes('movel') ? 10 : 0);
   c.visaoNoEscuro = r.visao;
   c.skills ??= [];
   for (const p of r.pericias ?? []) if (!c.skills.includes(p)) c.skills.push(p);

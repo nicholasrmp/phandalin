@@ -32,7 +32,15 @@
 // `dano` e `condicao` aceitam `alvo: 'todos'`: pegam TODA criatura dentro da região, e não só quem pisou — o teto
 // que desaba sobre o salão, a ponte que cede com quem estiver em cima.
 //
-// `tamanhoMinimo` deixa de fora quem é menor (a laje rachada não cede sob o goblin, que é Pequeno).
+// `tamanhoMinimo` deixa de fora quem é menor.
+//
+// `gatilho: { pericia, cd }`: a região só dispara se quem pisou FALHAR nesse teste — a laje do esconderijo, que o
+// Obelisco faz ceder com quem anda ou briga em cima dela sem passar em Acrobacia CD 10. Passou, nada acontece e a
+// região não gasta o disparo (a próxima passada testa de novo). É o "teste antes" que o `teste` do efeito não é:
+// aquele é a resistência de quem já foi pego.
+//
+// `casas` num efeito com `alvo: 'todos'`: a área do efeito é outra que a da região — a laje cede em duas casas e
+// o entulho cai na metade leste da passagem inteira (quem pisou entra sempre).
 //
 // Quem quer mais que isso (ir para outra cena, uma conversa) ouve o evento `regiao` (`capitulo.naRegiao`), que traz o
 // `resultado`: o dano que entrou e se o teste passou.
@@ -45,6 +53,7 @@ import { key } from '../core/grid.js';
 import { danoPorResistencia } from './passivas.js';
 import { CONDITIONS, conditionEffects, hasCondition } from './conditions.js';
 import { categoriaDeTamanho, categoriaDoNome } from './tamanho.js';
+import { rolarPericia } from './abilities.js';
 
 export const QUANDO = ['entrar', 'sair', 'comecaTurno', 'terminaTurno'];
 export const QUEM = ['todos', 'grupo', 'inimigos'];
@@ -132,8 +141,9 @@ export function regioesNoTurno(enc, side, quando) {
 }
 
 /** Quem está dentro de `r` agora (a pegada de alguma casa dentro), vivo. Começa por `c`, quem pisou. */
-function quemEstaDentro(enc, r, c) {
-  const dentro = enc.combatants.filter((o) => o !== c && !o.dead && o.pos && pegada(o.pos).some((k) => r.casas.has(k)));
+function quemEstaDentro(enc, r, c, casas = null) {
+  const area = casas ? new Set(casas) : r.casas;
+  const dentro = enc.combatants.filter((o) => o !== c && !o.dead && o.pos && pegada(o.pos).some((k) => area.has(k)));
   return [c, ...dentro];
 }
 
@@ -143,6 +153,14 @@ function quemEstaDentro(enc, r, c) {
  */
 export function disparar(enc, r, c, quando, de = null) {
   if (!pega(enc, r, c)) return false;
+  if (r.gatilho?.pericia) {
+    const t = rolarPericia(enc.rng, c, r.gatilho.pericia);
+    if (t.total >= (r.gatilho.cd ?? 10)) {
+      enc.say('acao', `${c.name} se equilibra sobre ${r.nome || r.id} (teste ${t.total} contra CD ${r.gatilho.cd ?? 10}).`);
+      return false;
+    }
+    enc.say('acao', `${c.name} perde o equilíbrio sobre ${r.nome || r.id} (teste ${t.total} contra CD ${r.gatilho.cd ?? 10}).`);
+  }
   r.disparos += 1;
   const nome = r.nome || r.id;
   let para = false;
@@ -168,9 +186,9 @@ export function disparar(enc, r, c, quando, de = null) {
       enc.say('acao', e.texto);
       enc.onEvent({ type: 'regiaoTexto', regiao: r, actor: c, texto: e.texto });
     } else if (e.tipo === 'dano' && e.dados) {
-      for (const o of e.alvo === 'todos' ? quemEstaDentro(enc, r, c) : [c]) if (!o.dead) danoEm(o, e);
+      for (const o of e.alvo === 'todos' ? quemEstaDentro(enc, r, c, e.casas) : [c]) if (!o.dead) danoEm(o, e);
     } else if (e.tipo === 'condicao' && e.condicao) {
-      for (const o of e.alvo === 'todos' ? quemEstaDentro(enc, r, c) : [c]) {
+      for (const o of e.alvo === 'todos' ? quemEstaDentro(enc, r, c, e.casas) : [c]) {
         if (o.dead) continue;
         if (condicaoDaRegiao(enc, r, o, e, nome) && o === c) para = true;
       }
@@ -203,11 +221,16 @@ function danoDaRegiao(enc, r, c, e, nome) {
   let r2 = null;
   let passou = null;
   if (e.teste?.atributo) {
-    const save = enc.resistencia(c, e.teste.atributo, e.teste.cd ?? 10, { contra: { tipoDano: e.dano ?? null } });
+    const save = enc.resistencia(c, e.teste.atributo, e.teste.cd ?? 10, { contra: { tipoDano: e.dano ?? null, armadilha: Boolean(r.escondida || r.armadilha) } });
     passou = save.success;
     r2 = enc.explicarResistencia(c, e.teste.atributo, e.teste.cd ?? 10, save, { contra: nome, seSucesso: e.teste.metade ? 'metade do dano' : 'nenhum dano' });
     total = danoPorResistencia(c, e.teste.atributo, Boolean(e.teste.metade), save.success, total, conditionEffects(c).incapacitated);
     conta = `${r2.conta} · ${conta}`;
+  }
+  // EXPLORADOR DE MASMORRAS (talento): resistência ao dano de armadilha.
+  if (total > 0 && (r.escondida || r.armadilha) && (c.talentos ?? []).includes('exploradorDeMasmorras')) {
+    total = Math.floor(total / 2);
+    conta = `${conta} · metade (Explorador de Masmorras)`;
   }
   enc.say('dano', `${nome}: ${c.name} sofre ${total}${e.dano ? ` de ${e.dano}` : ''}.`, conta, r2 ? { rolagem: r2 } : undefined);
   if (total > 0) enc.applyDamage(c, total, e.dano ?? null, null, {});

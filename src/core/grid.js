@@ -7,6 +7,8 @@
 export const FEET_PER_SQUARE = 5;
 
 export const key = (x, y) => `${x},${y}`;
+/** A rocha que não foi trabalhada: o que o elemental da terra e a broca infernal atravessam. */
+export const ROCHA_NATURAL = new Set(['rocha', 'estalagmite', 'pedra', 'pedregal', 'entulho', 'desabamento']);
 export const parseKey = (k) => {
   const [x, y] = k.split(',');
   return { x: Number(x), y: Number(y) };
@@ -37,6 +39,24 @@ export function footprintOf(size) {
  * passarem a medir certo contra criatura Grande sem serem tocados: medir do
  * canto de um ogro de 2x2 daria 1,5 m a mais de alcance do que ele tem.
  */
+/** As casas, em relação ao cruzamento, que um círculo de `r` casas de raio cobre em pelo menos metade. A conta é por amostra e fica guardada por raio. */
+const CIRCULOS = new Map();
+function casasDoCirculo(r) {
+  let casas = CIRCULOS.get(r);
+  if (casas) return casas;
+  casas = [];
+  const N = 16;
+  for (let y = -r - 1; y <= r; y++) {
+    for (let x = -r - 1; x <= r; x++) {
+      let dentro = 0;
+      for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) if (Math.hypot(x + (i + 0.5) / N, y + (j + 0.5) / N) <= r) dentro += 1;
+      if (dentro * 2 >= N * N) casas.push([x, y]);
+    }
+  }
+  CIRCULOS.set(r, casas);
+  return casas;
+}
+
 export function distanceFt(a, b) {
   const fa = a.f ?? 1;
   const fb = b.f ?? 1;
@@ -108,6 +128,8 @@ export const GLIFOS = {
   'x': { kind: 2, sup: 'entulho' },
   'A': { kind: 3, sup: 'estalagmite' },
   's': { kind: 3, sup: 'mantimentos' },
+  // Espinheiro: terreno difícil. No mapa que pede (`mapa.espinheiroCobre`, o esconderijo), ele também dá três
+  // quartos de cobertura a quem ataca ATRAVÉS dele (`matas`, `coverBetween`).
   '%': { kind: 2, sup: 'espinheiro' },
   'z': { kind: 0, sup: 'leito' },         // cama de pele e palha: passa-se por cima
   'F': { kind: 0, sup: 'fogueira' },       // brasa: pisa-se, e queima (a cena cobra)
@@ -197,6 +219,9 @@ export const GLIFOS = {
   '}': { kind: 3, sup: 'lareiraCasa' },
   '{': { kind: 3, sup: 'estanteCasa' },
   ')': { kind: 3, sup: 'bauCasa' },
+  // O REPOUSO DE ZORZULA (o capítulo 5 do Obelisco): o mar de lava que os janelões da forja olham e os canais do
+  // Santuário Índigo. Como o fosso, não se anda nela (só se voa por cima), e visão, luz e flecha passam.
+  '(': { kind: 2, sup: 'lava' },
 };
 
 export const SUPERFICIES = [...new Set(Object.values(GLIFOS).map((g) => g.sup))];
@@ -336,6 +361,9 @@ export class Battlefield {
     // vão estreito por onde a Forma Gasosa passa.
     this.aguas = new Set();
     this.vaos = new Set();
+    // E esta também: o mato fechado que dá três quartos de cobertura a quem ataca através dele. Quem a enche é o
+    // `montarCampo`, só no mapa que pede (`mapa.espinheiroCobre`).
+    this.matas = new Set();
     const chao = SUPERFICIES.indexOf('chao');
     this.surfaces.fill(chao);
     if (rows) {
@@ -383,19 +411,35 @@ export class Battlefield {
     return this.inside(x, y) ? this.tiles[y * this.w + x] : 1;
   }
 
+  /**
+   * A ROCHA NATURAL que quem cava atravessa (`escavaRocha`: 'desliza' para o elemental da terra, 'tunel' para a broca
+   * infernal): rocha, estalagmite, pedra solta, pedregal, entulho. A parede de alvenaria não — é pedra trabalhada.
+   */
+  escavavel(x, y) {
+    if (!this.escavaRocha || !this.inside(x, y)) return false;
+    const t = this.tileAt(x, y);
+    return (t === 1 || t === 3) && ROCHA_NATURAL.has(this.surfaceAt(x, y));
+  }
+
   /** Parede bloqueia movimento e linha de visão. Cobertura bloqueia só movimento. */
   blocksMove(x, y) {
+    // A MURALHA CONJURADA (Força, Pedra, Gelo) é parede enquanto durar, e não terreno: ela não está
+    // no mapa, vem das zonas e `combat.js atualizarTerrenoDasZonas` a mantém aqui. Mesmo caminho das
+    // casas de terreno difícil, que já chegavam assim — ler o mapa e esquecer a magia era o que
+    // fazia a Muralha de Pedra não parar ninguém.
+    if (this.murosDeMagia?.has(key(x, y))) return true;
     const t = this.tileAt(x, y);
     // Forma Gasosa: a névoa passa pelo vão estreito (grade, seteira). Parede e
     // rocha não — são pedra maciça, e o livro só dá fresta à névoa.
     if (this.atravessaVao && this.vaos.has(key(x, y))) return false;
     // O buraco aberto (o fosso): não se anda nele, só se voa por cima; visão e flecha passam.
-    if (t === 2 && !this.voando && this.surfaceAt(x, y) === 'fosso') return true;
+    if (t === 2 && !this.voando && (this.surfaceAt(x, y) === 'fosso' || this.surfaceAt(x, y) === 'lava')) return true;
     return t === 1 || t === 3;
   }
 
   blocksSight(x, y) {
-    return this.tileAt(x, y) === 1;
+    // A de Pedra e a de Gelo também tapam a vista; a de Força é invisível e não entra aqui.
+    return this.tileAt(x, y) === 1 || !!this.murosOpacosDeMagia?.has(key(x, y));
   }
 
   /** O código da aresta entre duas casas VIZINHAS NO EIXO (0 se não houver). */
@@ -520,7 +564,8 @@ export class Battlefield {
     // Liberdade de Movimento tira TODO terreno difícil, do mapa e de magia —
     // é o que a magia promete, ao contrário do Andar na Água, que é só da água.
     const dificil = !this.semTerrenoDificil && (espacoDeOutro || (this.tileAt(x, y) === 2 && !naAgua && !this.passoDaTerra)
-      || this.dificeis?.has(key(x, y)) || this.dificeisExtra?.has(key(x, y)) || this.dificeisDeRegiao?.has(key(x, y)));
+      || (this.dificeis?.has(key(x, y)) && !(this.andaNaTeia && this.dificeisDeTeia?.has(key(x, y))))
+      || this.dificeisExtra?.has(key(x, y)) || this.dificeisDeRegiao?.has(key(x, y)));
     // Vegetação cerrada (Crescer Plantas): cada 1,5 m custa 6 m.
     const cerrado = this.dificeis4?.has(key(x, y)) && !this.semTerrenoDificil;
     let cost = cerrado ? FEET_PER_SQUARE * 4 : dificil ? FEET_PER_SQUARE * 2 : FEET_PER_SQUARE;
@@ -581,21 +626,31 @@ export class Battlefield {
       for (const { dx, dy } of NEIGHBORS) {
         const nx = cur.x + dx;
         const ny = cur.y + dy;
-        if (!this.inside(nx, ny) || this.blocksMove(nx, ny)) continue;
+        // MOVIMENTO INCORPÓREO (SRD: o espectro, a aparição, o fantasma): passa pela parede e pela criatura como por
+        // terreno difícil, e não para dentro de nada.
+        const dentroDaParede = this.incorporeo && this.inside(nx, ny) && this.blocksMove(nx, ny);
+        // QUEM CAVA (o elemental da terra desliza; a broca abre túnel): a rocha natural da pegada não barra
+        let naRocha = false;
+        if (this.escavaRocha) {
+          for (let py = 0; py < f && !naRocha; py++) for (let px = 0; px < f && !naRocha; px++) naRocha = this.escavavel(nx + px, ny + py);
+        }
+        if (!this.inside(nx, ny) || (this.blocksMove(nx, ny) && !dentroDaParede && !this.escavavel(nx, ny))) continue;
         // Cabe inteiro, ou cabe ESPREMIDO? A segunda pergunta só se faz para quem ocupa mais de um quadrado.
-        const cabeInteiro = cabe(nx, ny) && this.passaPegada(cur.x, cur.y, nx, ny, f) && !(f > 1 && this.paredeNaPegada(nx, ny, f));
+        const cabeInteiro = this.incorporeo || (naRocha && cabe(nx, ny))
+          || (cabe(nx, ny) && this.passaPegada(cur.x, cur.y, nx, ny, f) && !(f > 1 && this.paredeNaPegada(nx, ny, f)));
         const espremendo = !cabeInteiro && f > 1 && apertado(nx, ny);
         if (!cabeInteiro && !espremendo) continue;
         // Não corta quina entre duas paredes.
-        if (dx !== 0 && dy !== 0 && this.blocksMove(cur.x + dx, cur.y) && this.blocksMove(cur.x, cur.y + dy)) continue;
-        if (!this.voando && !this.escalando && this.stepBlocked(cur.x, cur.y, nx, ny)) continue;
+        if (!this.incorporeo && !naRocha && dx !== 0 && dy !== 0 && this.blocksMove(cur.x + dx, cur.y) && this.blocksMove(cur.x, cur.y + dy)) continue;
+        if (!this.voando && !this.escalando && !this.incorporeo && !naRocha && this.stepBlocked(cur.x, cur.y, nx, ny)) continue;
 
         // O ESPAÇO DE OUTRA CRIATURA É TERRENO DIFÍCIL (SRD): atravessar um aliado custa o dobro por casa.
         // Só cobra quando se PASSA por ele; o inimigo que barra a passagem não entra na conta.
         const tomada = occupied(nx, ny);
         const passa = !tomada || atravessa(nx, ny);
         // espremido paga 1,5 m a mais por quadrado, somado ao terreno difícil (como o rastejar)
-        const cost = cur.cost + this.costOf(nx, ny, cur.x, cur.y, tomada && passa) + (espremendo ? FEET_PER_SQUARE : 0);
+        const cost = cur.cost + (dentroDaParede ? FEET_PER_SQUARE * 2 : naRocha && this.blocksMove(nx, ny) ? FEET_PER_SQUARE : this.costOf(nx, ny, cur.x, cur.y, tomada && passa))
+          + (espremendo ? FEET_PER_SQUARE : 0);
         if (cost > budgetFt) continue;
         const nKey = key(nx, ny);
         const prev = seen.get(nKey);
@@ -613,7 +668,9 @@ export class Battlefield {
         // grade e a seteira, e não PARA dentro delas — se a magia acabasse ali,
         // o herói ficaria entalado na grade.
         const soDePassagem = this.atravessaVao && this.vaos.has(nKey);
-        seen.set(nKey, { x: nx, y: ny, cost, from: curKey, parar: !tomada && !soDePassagem, passar: passa, ord, apertado: espremendo });
+        // quem DESLIZA não para dentro da rocha (não dá para desenhar quem está dentro dela); quem abre túnel, sim
+        const naRochaSemParar = naRocha && this.escavaRocha === 'desliza';
+        seen.set(nKey, { x: nx, y: ny, cost, from: curKey, parar: !tomada && !soDePassagem && !dentroDaParede && !naRochaSemParar, passar: passa, ord, apertado: espremendo });
         if (passa) queue.push({ x: nx, y: ny, cost, ord });
       }
     }
@@ -878,7 +935,9 @@ export class Battlefield {
     }
     let maior = 0;
     for (let i = 1; i < pts.length - 1; i++) {
-      if (this.tileAt(pts[i].x, pts[i].y) === 3 || this.heightAt(pts[i].x, pts[i].y) > low) { maior = 2; break; }
+      // o espinheiro no meio da reta: três quartos (+5), e nada cobre mais que isso sem bloquear a linha
+      if (this.matas?.has(key(pts[i].x, pts[i].y))) { maior = 5; break; }
+      if (this.tileAt(pts[i].x, pts[i].y) === 3 || this.heightAt(pts[i].x, pts[i].y) > low) maior = 2;
     }
     // a quina de uma parede livre também cobre, e aí vale a regra dos cantos do SRD
     return Math.max(maior, this.coberturaPorTracos(a, b));
@@ -894,6 +953,22 @@ export class Battlefield {
         if (distanceFt(center, { x, y }) > radiusFt) continue;
         out.push({ x, y });
       }
+    }
+    return out;
+  }
+
+  /**
+   * A esfera da regra de grade do Livro do Mestre: a origem é um CRUZAMENTO de linhas, aqui o canto de cima e da esquerda da casa `canto`, e a casa conta
+   * se o círculo cobre pelo menos metade dela. 6 m de raio dão 52 casas, 8 de lado com os cantos comidos; 1,5 m dá as 4 casas em volta do ponto.
+   * `within` continua sendo a conta de quem mede distância a partir de uma criatura ("a até 3 m de você"), que no quadriculado dá um quadrado.
+   */
+  circulo(canto, radiusFt) {
+    const r = Math.floor(radiusFt / FEET_PER_SQUARE);
+    const out = [];
+    for (const [dx, dy] of casasDoCirculo(r)) {
+      const x = canto.x + dx;
+      const y = canto.y + dy;
+      if (this.inside(x, y)) out.push({ x, y });
     }
     return out;
   }

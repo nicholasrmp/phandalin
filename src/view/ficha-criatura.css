@@ -1,0 +1,173 @@
+/* A ficha da criatura (`ficha-criatura.js`). Nasceu no tema Obsidiana, e lê as variáveis dele com o valor do tema como
+ * reserva: no tema clássico ela continua escura, como uma janela de bestiário por cima do pergaminho. */
+
+.criatura-overlay {
+  --cf-painel: var(--ob-janela, rgba(14, 13, 22, .97));
+  --cf-borda: var(--ob-borda, rgba(255, 255, 255, .10));
+  --cf-borda-forte: var(--ob-borda-forte, rgba(255, 255, 255, .18));
+  --cf-ouro: var(--ob-ouro, #e2bd6b);
+  --cf-ouro-claro: var(--ob-ouro-claro, #f0d49a);
+  --cf-ouro-fundo: var(--ob-ouro-fundo, rgba(226, 189, 107, .14));
+  --cf-texto: var(--ob-texto, #e8e4dc);
+  --cf-suave: var(--ob-suave, #b9b3a6);
+  --cf-verde: #4caf6e;
+  --cf-ambar: #d9a23f;
+  --cf-vermelho: #c9593f;
+  --cf-titulo: var(--ob-titulo, 'Cinzel', 'Palatino Linotype', serif);
+  --cf-corpo: var(--ob-corpo, 'Signika', 'Segoe UI', sans-serif);
+  position: fixed; inset: 0;
+  /* acima da ficha do herói (40) e abaixo da dica (50) e da narrativa (90): o Lembrar abre a narrativa por cima */
+  z-index: 42;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(4, 4, 8, .72);
+  font-family: var(--cf-corpo);
+  color: var(--cf-texto);
+}
+
+.criatura-janela {
+  display: grid;
+  grid-template-columns: minmax(300px, 42%) 1fr;
+  width: min(1080px, 94vw);
+  height: min(720px, 90vh);
+  background: var(--cf-painel);
+  border: 1px solid var(--cf-borda-forte);
+  border-radius: 4px;
+  box-shadow: 0 18px 60px rgba(0, 0, 0, .7);
+  overflow: hidden;
+}
+
+/* ---- a figura ---- */
+.criatura-palco {
+  position: relative;
+  display: flex; flex-direction: column; align-items: center; justify-content: flex-end;
+  min-height: 0;
+  padding: 18px 18px 0;
+  border-right: 1px solid var(--cf-borda);
+  /* a luz de cima e o chão escuro: a figura pisa em algum lugar em vez de flutuar num retângulo */
+  background:
+    radial-gradient(ellipse 70% 55% at 50% 38%, rgba(226, 189, 107, .10), transparent 70%),
+    radial-gradient(ellipse 60% 10% at 50% 97%, rgba(0, 0, 0, .55), transparent 70%),
+    linear-gradient(180deg, #1a1826 0%, #0d0c14 100%);
+}
+.criatura-arte {
+  display: block;
+  max-width: 100%; max-height: 100%;
+  object-fit: contain; object-position: center bottom;
+  filter: drop-shadow(0 10px 18px rgba(0, 0, 0, .6));
+  user-select: none;
+}
+.criatura-palco.cena { justify-content: center; padding: 18px; }
+.criatura-palco.cena .criatura-arte {
+  border: 1px solid var(--cf-borda-forte); border-radius: 3px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, .6); filter: none;
+}
+.criatura-palco.sem-arte { justify-content: center; padding-bottom: 18px; gap: 16px; }
+.criatura-token { width: 240px; height: 240px; border-radius: 50%; object-fit: cover; }
+.criatura-palco canvas.criatura-token { image-rendering: pixelated; border-radius: 4px; }
+.criatura-nota { margin: 0; font-size: 12px; color: var(--cf-suave); text-align: center; }
+
+/* ---- o corpo ---- */
+.criatura-corpo {
+  min-height: 0;
+  overflow-y: auto;
+  padding: 18px 22px 22px;
+  display: flex; flex-direction: column; gap: 14px;
+  scrollbar-width: thin; scrollbar-color: rgba(255, 255, 255, .16) transparent;
+}
+.criatura-cabeca { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.criatura-cabeca h2 {
+  margin: 0; font-family: var(--cf-titulo); font-weight: 600; font-size: 26px; letter-spacing: .03em;
+  color: var(--cf-ouro); text-transform: none;
+}
+.criatura-tipo { margin: 4px 0 0; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 13px; color: var(--cf-suave); }
+.criatura-lado {
+  padding: 1px 7px; border: 1px solid var(--cf-borda-forte); border-radius: 3px;
+  font-size: 11px; letter-spacing: .06em; text-transform: uppercase;
+}
+.criatura-lado.inimigo { color: #f0a08c; border-color: rgba(201, 89, 63, .55); }
+.criatura-lado.aliado { color: #9fdcae; border-color: rgba(76, 175, 110, .55); }
+.criatura-lado.morto { color: var(--cf-suave); }
+.criatura-nd { color: var(--cf-ouro-claro); }
+.criatura-fechar {
+  flex: none; width: 30px; height: 30px; display: grid; place-items: center;
+  background: rgba(255, 255, 255, .05); border: 1px solid var(--cf-borda-forte); border-radius: 3px;
+  color: var(--cf-texto); font-size: 18px; line-height: 1; cursor: pointer;
+}
+.criatura-fechar:hover { border-color: var(--cf-ouro); color: var(--cf-ouro); }
+
+.criatura-estado { display: flex; align-items: center; gap: 14px; }
+.criatura-vida { flex: 1; display: grid; gap: 5px; }
+.criatura-barra { height: 8px; background: rgba(255, 255, 255, .08); border-radius: 2px; overflow: hidden; }
+.criatura-barra i { display: block; height: 100%; border-radius: 2px; }
+.criatura-vida-txt { font-size: 13px; font-variant-numeric: tabular-nums; }
+.criatura-ca {
+  flex: none; width: 58px; height: 62px;
+  display: grid; place-items: center; align-content: center; gap: 0;
+  background: rgba(255, 255, 255, .04); border: 1px solid var(--cf-ouro);
+  border-radius: 4px 4px 22px 22px;  /* o escudo */
+}
+.criatura-ca span { font-size: 10px; letter-spacing: .1em; color: var(--cf-suave); }
+.criatura-ca strong { font-family: var(--cf-titulo); font-size: 22px; color: var(--cf-ouro-claro); line-height: 1.1; }
+
+.criatura-conds { display: flex; flex-wrap: wrap; gap: 6px; }
+.criatura-cond {
+  display: inline-flex; align-items: center; gap: 5px; padding: 2px 8px 2px 4px;
+  background: rgba(201, 89, 63, .12); border: 1px solid rgba(201, 89, 63, .45); border-radius: 3px; font-size: 12px;
+}
+.criatura-cond canvas { image-rendering: pixelated; }
+
+.criatura-blurb { margin: 0; font-size: 14px; line-height: 1.5; font-style: italic; color: #d6d0c4; }
+
+.criatura-nums { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; }
+.criatura-num {
+  display: grid; gap: 2px; padding: 8px 10px;
+  background: rgba(255, 255, 255, .03); border: 1px solid var(--cf-borda); border-radius: 4px;
+}
+.criatura-num-rot { font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--cf-suave); }
+.criatura-num strong { font-size: 14px; font-weight: 600; }
+.criatura-num small { font-size: 11px; color: var(--cf-suave); }
+
+.criatura-bloco { display: grid; gap: 8px; }
+.criatura-bloco h3 {
+  margin: 0; padding-bottom: 5px; border-bottom: 1px solid var(--cf-borda);
+  font-family: var(--cf-titulo); font-size: 13px; font-weight: 600; letter-spacing: .1em; color: var(--cf-ouro);
+  text-transform: uppercase;
+}
+.criatura-atributos { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; }
+.criatura-atr {
+  display: grid; justify-items: center; gap: 1px; padding: 6px 0;
+  background: rgba(255, 255, 255, .03); border: 1px solid var(--cf-borda); border-radius: 4px;
+}
+.criatura-atr span { font-size: 10px; letter-spacing: .1em; color: var(--cf-suave); }
+.criatura-atr strong { font-size: 17px; font-weight: 600; }
+.criatura-atr small {
+  font-size: 11px; padding: 0 6px; border-radius: 3px;
+  background: var(--cf-ouro-fundo); color: var(--cf-ouro-claro);
+}
+.criatura-ataque {
+  display: flex; justify-content: space-between; gap: 12px; padding: 6px 10px;
+  background: rgba(255, 255, 255, .03); border: 1px solid var(--cf-borda); border-radius: 3px; font-size: 13px;
+}
+.criatura-ataque strong { font-weight: 600; }
+.criatura-ataque span { color: var(--cf-suave); font-variant-numeric: tabular-nums; text-align: right; }
+.criatura-multi, .criatura-magias { margin: 0; font-size: 13px; color: #d6d0c4; }
+.criatura-magias strong { color: var(--cf-texto); font-weight: 600; }
+.criatura-saber-tipo { margin: 0; font-size: 13px; color: var(--cf-ouro-claro); }
+.criatura-saber { margin: 0; padding-left: 18px; display: grid; gap: 6px; font-size: 13.5px; line-height: 1.5; color: #d6d0c4; }
+.criatura-desconhecida p { margin: 0; font-size: 13.5px; line-height: 1.5; color: var(--cf-suave); }
+.criatura-lembrar {
+  justify-self: start; display: grid; gap: 2px; padding: 8px 14px; text-align: left; cursor: pointer;
+  background: linear-gradient(#3a2f1c, #261e12); border: 1px solid var(--cf-ouro); border-radius: 3px;
+  color: var(--cf-ouro-claro); font-family: var(--cf-corpo); font-size: 14px; font-weight: 600;
+}
+.criatura-lembrar small { font-weight: 400; font-size: 12px; color: var(--cf-suave); }
+.criatura-lembrar:disabled { cursor: default; opacity: .55; }
+.criatura-lembrar:not(:disabled):hover { border-color: var(--cf-ouro-claro); }
+.criatura-rodape { margin: auto 0 0; font-size: 11px; color: var(--cf-suave); }
+
+/* Em tela estreita a figura sobe e o corpo desce, numa coluna só. */
+@media (max-width: 760px) {
+  .criatura-janela { grid-template-columns: 1fr; grid-template-rows: 42% 1fr; height: 92vh; }
+  .criatura-palco { border-right: 0; border-bottom: 1px solid var(--cf-borda); }
+  .criatura-atributos { grid-template-columns: repeat(3, 1fr); }
+}

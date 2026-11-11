@@ -31,6 +31,8 @@ __pycache__/
 
 # Saida de trabalho dos scripts de dev (plantas exportadas, encaixes medidos, provas visuais).
 src/dev/_tmp/
+# Os retratos das cenas saem por cima da arte da FA, que não entra no repositório.
+src/dev/_retratos/
 
 # Battlemap de terceiro baixado para CONFERÊNCIA (Forgotten Adventures e afins). A licença da FA proíbe
 # "embedding assets ... in ... video games", e vale igual para o release grátis: a arte serve de referência de
@@ -40,4 +42,16 @@ src/dev/_tmp/
 # A mesma arte da FA servida ao navegador: fica no disco para o jogo abrir aqui, e NÃO entra no repositório.
 public/mapas/esconderijo-fa*.webp
 public/mapas/fa/
+# os mapas oficiais do Obelisco (região e vila), do 5e.tools: arte da Wizards, só no disco
+public/mapas/oficial/
+# A ilustração inteira de cada criatura (a ficha do inimigo), do livro via 5etools: arte da Wizards, como os mapas
+# oficiais. `src/dev/baixar-arte-criaturas.py --go` a põe aqui; sem ela, a ficha mostra o token.
+public/criaturas/
 public/mapas/casa-da-morte/
+
+# O caixa do dialogo com modelo (src/dev/servidor-dialogo.mjs): vale so nesta maquina.
+.dialogo-gastos.json
+# O caixa da tradução dos livros pela API de lotes (src/dev/traduzir-*.mjs): vale só nesta máquina.
+.bestiario-gastos.json
+.dialogo-registro.jsonl
+.dialogo-lote.json

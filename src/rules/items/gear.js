@@ -183,18 +183,17 @@ export const GEAR = {
   // Os tesouros do esconderijo dos Marcarrubra (valores da aventura; nomes e
   // frases nossos). Vendem-se pelo valor cheio no Câmbio de Minério.
   granada: pilha('granada', 'Granada', 10, 0, 'Pedra vermelho-escura, lapidada às pressas.', { tipo: 'tesouro', fonte: 'propria', art: 'item-gemaElemental' }),
-  malaquita: pilha('malaquita', 'Malaquita', 15, 0, 'Pedra verde de veios escuros, polida.', { tipo: 'tesouro', fonte: 'propria', art: 'item-gemaElemental' }),
+  malaquita: pilha('malaquita', 'Malaquita', 12, 0, 'Pedra verde de veios escuros, polida.', { tipo: 'tesouro', fonte: 'propria', art: 'item-gemaElemental' }),
   cornalina: pilha('cornalina', 'Cornalina', 10, 0, 'Pedrinha laranja translúcida.', { tipo: 'tesouro', fonte: 'propria', art: 'item-gemaElemental' }),
   peridoto: pilha('peridoto', 'Peridoto', 15, 0, 'Pedra verde-oliva, clara contra a luz.', { tipo: 'tesouro', fonte: 'propria', art: 'item-gemaElemental' }),
   // O Castelo Dentefino.
   bordaoDePenas: item('bordaoDePenas', 'Bordão de penas', 10, 0.5, 'Bordão leve, entalhado com penas estilizadas. Bonito demais para ser de goblin.', { tipo: 'tesouro', fonte: 'propria' }),
-  caliceDeOuro: item('caliceDeOuro', 'Cálice dourado', 150, 0.5, 'Cálice de ritual feito por mãos humanas, roubado de um altar que não era de goblin.', { tipo: 'tesouro', fonte: 'propria' }),
+  caliceDeOuro: item('caliceDeOuro', 'Cálice dourado', 180, 0.5, 'Cálice de ritual feito por mãos humanas, roubado de um altar que não era de goblin.', { tipo: 'tesouro', fonte: 'propria' }),
   facaDeRitual: item('facaDeRitual', 'Faca de ritual', 60, 0.5, 'Lâmina curta de cabo dourado, mais enfeite que arma.', { tipo: 'tesouro', fonte: 'propria' }),
-  incensario: item('incensario', 'Incensário dourado', 120, 1, 'Ainda cheira a resina antiga.', { tipo: 'tesouro', fonte: 'propria' }),
-  // O LIVRO DÁ A REGRA, e ela não era executada: "o barril contém o equivalente a VINTE COPOS. Um
-  // personagem que beber um copo de conhaque recupera 1 ponto de vida, mas um personagem que beber DOIS
-  // copos em menos de 1 hora fica envenenado por 1 hora." A descrição antiga dizia "o terceiro já basta",
-  // que é outra conta, e o item era `tesouro` puro — não dava para beber.
+  incensario: item('incensario', 'Incensário dourado', 150, 1, 'Ainda cheira a resina antiga.', { tipo: 'tesouro', fonte: 'propria' }),
+  // O LIVRO DÁ A REGRA, e ela não era executada: o barril rende VINTE COPOS; o primeiro devolve 1 PV a quem
+  // o bebe, e um segundo copo dentro da mesma hora envenena por uma hora. A descrição antiga dizia "o
+  // terceiro já basta", que é outra conta, e o item era `tesouro` puro — não dava para beber.
   //
   // A hora é marcada pelo DESCANSO CURTO, que no SRD dura exatamente uma hora: enquanto ninguém descansar,
   // o segundo copo derruba. É o mesmo desenho do mal da água parada (`rules/mantimentos.js`).
@@ -208,8 +207,17 @@ export const GEAR = {
   joiaMiuda: pilha('joiaMiuda', 'Joia miúda', 25, 0, 'Pedrinha lapidada, achada numa caixinha de um império que não existe mais.', { tipo: 'tesouro', fonte: 'propria', art: 'item-perolaDoPoder' }),
   perola: pilha('perola', 'Pérola', 100, 0, 'Pérola grande e perfeita, guardada num lenço de seda.', { tipo: 'tesouro', fonte: 'propria', art: 'item-perolaDoPoder' }),
   brincosDeRubi: item('brincosDeRubi', 'Brincos de rubi', 30, 0, 'Um par de brincos com um rubi minúsculo cada.', { tipo: 'tesouro', fonte: 'propria', art: 'item-anelDeSinete' }),
+  // O Obelisco: na cripta dos Tresendar, um bracelete de ouro com pedras no sarcófago da mulher (140 po).
+  // O tributo do culto ao dragão, na Árvore-Trovão (o Obelisco): seis ametistas de 50 po.
+  caixinhaDeJoias: item('caixinhaDeJoias', 'Caixinha cravejada', 25, 0.2, 'Uma caixinha de metal com pedrinhas na tampa, do tamanho da palma da mão. Vazia, vale umas 25 peças de ouro.', { tipo: 'tesouro', fonte: 'propria', art: 'item-anelDeSinete' }),
+  ametista: pilha('ametista', 'Ametista', 50, 0, 'Pedra roxa, lustrosa, lapidada para brilhar à luz de vela. Tributo para um dragão.', { tipo: 'tesouro', fonte: 'propria', art: 'item-gemaElemental' }),
+  // As escamas de dragão de latão da velha ferraria da Árvore-Trovão (o Obelisco): 75 po o saco inteiro.
+  escamasDeLatao: item('escamasDeLatao', 'Escamas de dragão de latão', 75, 5, 'Um saco de couro cheio de placas em losango, castanho-douradas, leves e duras como ferro: escamas de um dragão de latão. Um armeiro paga bem por elas.', { tipo: 'tesouro', fonte: 'propria', art: 'item-cobertor' }),
+  braceleteDeOuro: item('braceleteDeOuro', 'Bracelete de ouro', 140, 0.1, 'Bracelete de ouro trabalhado, com pedrinhas engastadas. Saiu de um sarcófago de família, entre os ossos de uma mulher.', { tipo: 'tesouro', fonte: 'propria', art: 'item-anelDeSinete' }),
+  // O pingente que o Thel Dendrar usava, achado no fundo da fenda: Mirna o reconhece.
+  pingenteDeUnicornio: item('pingenteDeUnicornio', 'Pingente de unicórnio', 0, 0, 'Uma cabeça de unicórnio entalhada em madeira clara, num cordão de couro. Trabalho de marceneiro bom. Não se vende: é do Thel Dendrar.', { fonte: 'propria', vendavel: false, missao: true }),
   anelDePlatina: pilha('anelDePlatina', 'Anel de sinete de platina', 50, 0, 'Sinete de família, com um brasão gasto.', { tipo: 'tesouro', fonte: 'propria', art: 'item-anelDeSinete' }),
-  tapaOlho: item('tapaOlho', 'Tapa-olho com pedras', 50, 0, 'Couro preto com pedrinhas costuradas em volta. Puro enfeite: o dono enxergava bem dos dois lados.', { tipo: 'tesouro', fonte: 'propria' }),
+  tapaOlho: item('tapaOlho', 'Tapa-olho com pedras', 50, 0, 'Couro preto com pedrinhas de vidro costuradas em volta, e nenhuma marca de uso por dentro. Quem o usava tinha os dois olhos bons e gostava de ser olhado duas vezes.', { tipo: 'tesouro', fonte: 'propria' }),
   reagente: pilha('reagente', 'Reagente raro', 25, 0.1, 'Frasquinho de reagente alquímico: mercúrio, bile ou pó de beladona. Um boticário paga bem.', { tipo: 'tesouro', fonte: 'propria', art: 'item-ampola' }),
   pelesDeCastor: pilha('pelesDeCastor', 'Pele de castor', 2, 1, 'Pele curtida, roubada de uma caravana da Trilha de Triboar.', { tipo: 'tesouro', fonte: 'propria', art: 'item-cobertor' }),
   mantoVermelho: pilha('mantoVermelho', 'Manto vermelho', 0.1, 1, 'O manto encardido dos Marcarrubra. Vestido, passa por um deles — com quem não presta muita atenção.', { fonte: 'propria', art: 'item-roupaDeViagem' }),

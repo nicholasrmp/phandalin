@@ -25,6 +25,54 @@
 //   resolve.
 
 export const FERAS = {
+  // O TEXUGO GIGANTE (SRD): a Bessie, mascote dos Sawplee na cozinha de Zorzula (o Obelisco, capítulo 5). Amistosa
+  // com todo mundo; o bloco é o do SRD para quando alguém a irritar.
+  // A VACA DAISY (o Obelisco, capítulo 6): o livro não lhe dá bloco. Aqui, uma vaca de mentira — não luta e não
+  // segura a luta; serve para estar no largo e vomitar as gosmas.
+  vaca: {
+    id: 'vaca',
+    tipo: 'fera',
+    name: 'Vaca',
+    look: 'vaca',
+    fonte: 'propria',
+    size: 'grande',
+    level: 1,
+    cr: '0',
+    xp: 0,
+    abilities: { str: 16, dex: 8, con: 14, int: 2, wis: 10, cha: 4 },
+    ac: 10,
+    maxHp: 15,
+    hpDice: '2d10+4',
+    speedFt: 30,
+    attacks: [],
+    traits: [],
+    blurb: 'Uma vaca malhada. Muge.',
+  },
+
+  texugoGigante: {
+    id: 'texugoGigante',
+    name: 'Texugo Gigante',
+    look: 'texugoGigante',
+    fonte: 'SRD',
+    size: 'médio',
+    level: 1,
+    cr: '1/4',
+    xp: 50,
+    abilities: { str: 13, dex: 10, con: 15, int: 2, wis: 12, cha: 5 },
+    ac: 10,
+    maxHp: 13,
+    hpDice: '2d8+4',
+    speedFt: 30,
+    senses: { darkvisionFt: 30 },
+    attacks: [
+      { name: 'Mordida', bonus: 3, damage: '1d6+1', type: 'perfurante', reachFt: 5, art: 'bite' },
+      { name: 'Garras', bonus: 3, damage: '2d4+1', type: 'cortante', reachFt: 5, art: 'claw' },
+    ],
+    multiattack: { count: 2, sequence: ['Mordida', 'Garras'] },
+    traits: [],
+    blurb: 'Uma mordida e uma garrada por turno. Faro aguçado.',
+  },
+
 
   // -------------------------------------------------------------------------
   // CANÍDEOS — a dupla que ensina o jogador o que é Táticas de Matilha
@@ -358,7 +406,8 @@ export const FERAS = {
     speedFt: 40,
     senses: { passivePerception: 9 },
     attacks: [
-      { name: 'Presas', bonus: 3, damage: '1d6+1', type: 'cortante', reachFt: 5, art: 'claw' },
+      { name: 'Presas', bonus: 3, damage: '1d6+1', type: 'cortante', reachFt: 5, art: 'claw',
+        investida: { pes: 20, dano: '1d6', tipo: 'cortante', save: 'str', dc: 11 } },
     ],
     traits: ['charge', 'relentless'],
     blurb: 'Corre 6 m em linha reta e acerta com +1d6 que derruba; quando o dano o levaria a 0, fica de pé com 1 PV e ataca mais uma vez.',
@@ -448,7 +497,8 @@ export const FERAS = {
     speedFt: 40,
     senses: { passivePerception: 11 },
     attacks: [
-      { name: 'Chifrada', bonus: 5, damage: '2d4+3', type: 'concussão', reachFt: 5, art: 'bite' },
+      { name: 'Chifrada', bonus: 5, damage: '2d4+3', type: 'concussão', reachFt: 5, art: 'bite',
+        investida: { pes: 20, dano: '2d4', tipo: 'concussão', save: 'str', dc: 13 } },
     ],
     traits: ['chargeGoat'],
     blurb: 'Corre e marra: depois de 6 m em linha reta a chifrada ganha +2d4 e o alvo, se falhar em FOR CD 13, cai no chão.',
@@ -472,7 +522,8 @@ export const FERAS = {
     speedFt: 40,
     senses: { passivePerception: 8 },
     attacks: [
-      { name: 'Presas', bonus: 5, damage: '2d6+3', type: 'cortante', reachFt: 5, art: 'claw' },
+      { name: 'Presas', bonus: 5, damage: '2d6+3', type: 'cortante', reachFt: 5, art: 'claw',
+        investida: { pes: 20, dano: '2d6', tipo: 'cortante', save: 'str', dc: 13 } },
     ],
     traits: ['chargeGiantBoar', 'relentlessGiant'],
     blurb: 'Presas de 2d6+3 e investida de +2d6 que derruba (FOR CD 13); quando o dano o levaria a 0, fica de pé com 1 PV.',
@@ -498,7 +549,9 @@ export const FERAS = {
     senses: { passivePerception: 13 },
     voice: 'growlWolf',
     attacks: [
-      { name: 'Garras', bonus: 6, damage: '2d6+5', type: 'cortante', reachFt: 5, art: 'claw' },
+      // o SALTO: 6 m andados antes das garras, Força CD 14 ou cai — e quem cai leva a mordida como ação bônus
+      { name: 'Garras', bonus: 6, damage: '2d6+5', type: 'cortante', reachFt: 5, art: 'claw',
+        investida: { pes: 20, save: 'str', dc: 14, mordeSeCair: 'Mordida' } },
       { name: 'Mordida', bonus: 6, damage: '1d10+5', type: 'perfurante', reachFt: 5, art: 'bite' },
     ],
     multiattack: { count: 2, sequence: ['Garras', 'Mordida'] },
@@ -538,10 +591,118 @@ export const FERAS = {
     blurb: 'Bico e garras no mesmo turno, +7 para acertar e 24 de dano médio: mata um personagem de 1º nível por rodada se ninguém segurar a atenção dela.',
   },
 
+  // ---- as feras que o Obelisco pôs na Mina Perdida (revisoes/obelisco-de-para-2026-11-08.md) ----
+
+  // O ESCONDERIJO, H4: enrolada no ressalto frágil entre os dois barrancos. É a primeira coisa do Obelisco que
+  // não estava na Mina, e é veneno de verdade: 3d6 numa resistência de CON CD 11, metade se passar.
+  cobraVenenosaGigante: {
+    id: 'cobraVenenosaGigante',
+    tipo: 'fera',
+    name: 'Cobra Venenosa Gigante',
+    look: 'cobraVenenosaGigante',
+    fonte: 'MM',
+    size: 'médio',
+    level: 1,
+    cr: '1/4',
+    xp: 50,
+    abilities: { str: 10, dex: 18, con: 13, int: 2, wis: 10, cha: 3 },
+    voice: 'hissSpider',
+    ac: 14,
+    maxHp: 11,
+    hpDice: '2d8+2',
+    speedFt: 30,
+    speeds: { swimFt: 30 },
+    senses: { blindsightFt: 10, passivePerception: 12 },
+    skills: ['percepcao'],
+    attacks: [
+      {
+        name: 'Mordida', bonus: 6, damage: '1d4+4', type: 'perfurante', reachFt: 10, art: 'bite',
+        // O veneno vem À PARTE da mordida, com a resistência dele — somado à notação viraria dano sem teste.
+        extraDamage: { damage: '3d6', type: 'veneno', save: 'con', dc: 11, half: true },
+      },
+    ],
+    blurb: 'Morde a 3 m de distância, e a mordida vem com 3d6 de veneno: quem passa em CON leva metade.',
+  },
+
+  // A ONDA ECO, W10: no poço escuro. Alcança a 3 m com a mordida e, encostada, aperta: quem é apertado fica
+  // preso (CD 16 para escapar) e sofre 2d8+4 a cada aperto.
+  serpenteConstritoraGigante: {
+    id: 'serpenteConstritoraGigante',
+    tipo: 'fera',
+    name: 'Serpente Constritora Gigante',
+    look: 'serpenteConstritoraGigante',
+    fonte: 'MM',
+    size: 'enorme',
+    level: 3,
+    cr: '2',
+    xp: 450,
+    abilities: { str: 19, dex: 14, con: 12, int: 1, wis: 10, cha: 3 },
+    voice: 'hissSpider',
+    ac: 12,
+    maxHp: 60,
+    hpDice: '8d12+8',
+    speedFt: 30,
+    speeds: { swimFt: 30 },
+    senses: { blindsightFt: 10, passivePerception: 12 },
+    skills: ['percepcao'],
+    // A ORDEM É A TÁTICA: encostada, ela aperta, que é o que a torna perigosa; de 3 m, morde. Sem Multiataque no
+    // livro: ou uma coisa ou a outra, por turno.
+    attacks: [
+      {
+        name: 'Constrição', bonus: 6, damage: '2d8+4', type: 'concussão', reachFt: 5, art: 'grab',
+        onHit: { semResistencia: true, dc: 16, escape: 16, condition: 'contido', note: 'é envolvido pelos anéis da serpente' },
+      },
+      { name: 'Mordida', bonus: 6, damage: '2d6+4', type: 'perfurante', reachFt: 10, art: 'bite' },
+    ],
+    blurb: 'Morde de 3 m e, encostada, aperta: quem é envolvido fica preso (escapa com CD 16) e apanha a cada turno. Ela não larga para pegar outro.',
+  },
+
+  // A ONDA ECO, W16: na caverna alagada, e vem atrás de luz na superfície da água. Quinze pés de tentáculo.
+  polvoGigante: {
+    id: 'polvoGigante',
+    tipo: 'fera',
+    name: 'Polvo Gigante',
+    look: 'polvoGigante',
+    fonte: 'MM',
+    size: 'grande',
+    level: 2,
+    cr: '1',
+    xp: 200,
+    abilities: { str: 17, dex: 13, con: 13, int: 4, wis: 10, cha: 4 },
+    ac: 11,
+    maxHp: 52,
+    hpDice: '8d10+8',
+    speedFt: 10,
+    speeds: { swimFt: 60 },
+    senses: { darkvisionFt: 60, passivePerception: 14 },
+    // Percepção +4 e Furtividade +5 no livro: o dobro da proficiência.
+    skills: ['percepcao', 'furtividade'],
+    expertise: ['percepcao', 'furtividade'],
+    attacks: [
+      {
+        name: 'Tentáculos', bonus: 5, damage: '2d6+3', type: 'concussão', reachFt: 15, art: 'grab',
+        // O Obelisco: o polvo puxa para a água quem agarra (`puxaParaAgua`, lido pela cena da Onda Eco).
+        onHit: { semResistencia: true, dc: 16, escape: 16, condition: 'contido', note: 'é agarrado pelos tentáculos', puxaParaAgua: true },
+      },
+    ],
+    // A NUVEM DE TINTA (`combat.js nuvemDeTinta`, só nas casas de água) e a CAMUFLAGEM SUBMERSA (vantagem em
+    // Furtividade na água, `camuflagemSubmersa`). Fora d'água ele prende o fôlego por uma hora: numa luta isso não pesa.
+    traits: ['nuvemDeTinta', 'camuflagemSubmersa'],
+    blurb: 'Alcança 4,5 m com os tentáculos e prende quem toca (escapa com CD 16). É atraído por luz acima da água.',
+  },
+
 };
 
 /** Traços novos desta família, somados ao dicionário geral. */
 export const TRAITS = {
+  nuvemDeTinta: {
+    name: 'Nuvem de Tinta',
+    desc: "Ação, uma vez por descanso, só debaixo d'água: a tinta toma 6 m em volta dele, escuridão pesada por 1 minuto, e ele dispara como ação bônus.",
+  },
+  camuflagemSubmersa: {
+    name: 'Camuflagem Submersa',
+    desc: "Vantagem em Furtividade enquanto está debaixo d'água.",
+  },
   keenHearingSmell: {
     name: 'Audição e Olfato Aguçados',
     desc: 'Vantagem em testes de Percepção por audição ou olfato. Furtividade não esconde o grupo dela.',
@@ -584,11 +745,11 @@ export const TRAITS = {
   },
   chargeGoat: {
     name: 'Investida',
-    desc: 'Movendo-se 6 m em linha reta antes de acertar a chifrada: +2d4 de dano de concussão e resistência de FOR CD 13 ou cai no chão. (O jogo ainda não aplica: a chifrada causa só os 2d4+3 da ficha.)',
+    desc: 'Movendo-se 6 m antes de acertar a chifrada: +2d4 de dano de concussão e resistência de FOR CD 13 ou cai no chão.',
   },
   chargeGiantBoar: {
     name: 'Investida',
-    desc: 'Movendo-se 6 m em linha reta antes de acertar as presas: +2d6 de dano cortante e resistência de FOR CD 13 ou cai no chão. (O jogo ainda não aplica: as presas causam só o dado da ficha.)',
+    desc: 'Movendo-se 6 m antes de acertar as presas: +2d6 de dano cortante e resistência de FOR CD 13 ou cai no chão.',
   },
   relentlessGiant: {
     name: 'Implacável',

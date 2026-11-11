@@ -1,0 +1,49 @@
+// GERADO por src/dev/importar-subclasses.mjs ftd: o nome e a regra, em texto nosso, das subclasses de
+// `subclasses-ftd.js` (o texto vem de src/dev/subclasses/ftd-pt.json).
+export const NOMES_DAS_SUBCLASSES_FTD = {
+ "monge.dragaoAscendente": "Caminho do Dragão Ascendente",
+ "patrulheiro.guardiaoDoDraco": "Guardião Dracônico"
+};
+
+export const TEXTO_FTD = {
+ "breathOfTheDragon": {
+  "nome": "Sopro do Dragão",
+  "desc": "Ao usar a ação de Ataque, troque um dos ataques por um sopro em cone de 6 m ou linha de 9 m × 1,5 m, de ácido, frio, fogo, elétrico ou veneno. Quem estiver na área faz teste de resistência de Destreza contra sua CD de ki: sofre 2 dados de Artes Marciais (3 no 11º nível) se falhar, ou metade se passar. Usos iguais ao bônus de proficiência por descanso longo; sem usos, custa 2 pontos de ki. O sopro sai pelo botão de magia (cone ou linha), no lugar de um golpe da ação de Atacar; o tipo é o do interruptor do dragão."
+ },
+ "draconicDisciple": {
+  "nome": "Discípulo Dracônico",
+  "desc": "Ao falhar em teste de Carisma (Intimidação ou Persuasão), use a reação para rolar de novo; se isso gerar sucesso, só volta após descanso longo. Seus ataques desarmados podem causar dano de ácido, frio, fogo, elétrico ou veneno. Aprende Dracônico ou outro idioma à escolha. No jogo vale o tipo do golpe desarmado, pelo interruptor do dragão; rolar de novo a Intimidação ou a Persuasão e o idioma não existem no jogo."
+ },
+ "wingsUnfurled": {
+  "nome": "Asas Desdobradas",
+  "desc": "Ao usar Passo do Vento, ganha deslocamento de voo igual ao de caminhada até o fim do turno. Usos iguais ao bônus de proficiência, recuperados em descanso longo. No jogo as asas abrem sozinhas no Passo do Vento, enquanto há uso."
+ },
+ "aspectOfTheWyrm": {
+  "nome": "Aspecto da Serpe",
+  "desc": "Com ação bônus, cria uma aura de 3 m por 1 minuto com um efeito à escolha: amedrontar uma criatura na aura ao ativar e, depois, com ação bônus a cada turno (teste de resistência de Sabedoria contra CD de ki, repete ao fim de cada turno dela); ou dar a você e aliados na aura resistência a ácido, frio, fogo, elétrico ou veneno (um tipo escolhido). Uma vez por descanso longo, ou gaste 3 pontos de ki para repetir. O medo sai no inimigo mais perto ao ativar e, depois, pelo menu do inimigo; a resistência é do tipo do interruptor do dragão."
+ },
+ "ascendantAspect": {
+  "nome": "Aspecto Ascendente",
+  "desc": "Gaste 1 ponto de ki no Sopro do Dragão para torná-lo cone de 18 m ou linha de 27 m × 1,5 m, causando 4 dados de Artes Marciais. Ganha percepção às cegas de 3 m, vendo inclusive criaturas invisíveis que não estejam escondidas. Ao ativar o Aspecto da Serpe, escolha criaturas visíveis na aura: cada uma faz teste de resistência de Destreza contra sua CD de ki ou sofre 3d10 de ácido, frio, fogo, elétrico ou veneno. O sopro aumentado é a forma maior no botão de magia. A fúria explosiva sai sozinha ao ativar o Aspecto da Serpe, em todos os inimigos da aura."
+ },
+ "draconicGift": {
+  "nome": "Dádiva Dracônica",
+  "desc": "Você aprende o truque taumaturgia, que conta como magia de patrulheiro para você. Também passa a falar, ler e escrever Dracônico ou outro idioma à sua escolha. O idioma não existe no jogo."
+ },
+ "drakeCompanion": {
+  "nome": "Draco Companheiro",
+  "desc": "Com uma ação, você invoca seu draco num espaço livre a até 9 m, escolhendo um tipo de dano da Essência Dracônica dele. Ele age logo após você na sua iniciativa e só usa Esquivar, a menos que você gaste uma ação bônus para dar outra ordem (ou esteja incapacitado). Ele permanece até cair a 0 PV, ser invocado de novo ou você morrer. Uma vez por descanso longo, ou gastando um espaço de magia de 1º círculo ou maior. O draco só age com a ordem do patrulheiro, pela ação bônus; senão, esquiva. Fica até cair ou até o próximo descanso longo, e entra nas lutas seguintes."
+ },
+ "bondOfFangAndScale": {
+  "nome": "Elo de Presa e Escama",
+  "desc": "O draco invocado ganha asas, com deslocamento de voo igual ao de caminhada, e fica Médio, podendo servir de montaria a você se for Médio ou menor (montado, ele não voa). A Mordida dele causa +1d6 de dano do tipo da Essência Dracônica, e você ganha resistência a esse tipo de dano enquanto ele estiver invocado. Montar no draco não existe no jogo."
+ },
+ "drakesBreath": {
+  "nome": "Sopro do Draco",
+  "desc": "Com uma ação, você ou o draco exalam um cone de 9 m de ácido, frio, fogo, elétrico ou veneno, à sua escolha. Cada criatura faz teste de resistência de Destreza contra sua CD de magia: 8d6 de dano na falha (10d6 no 15º nível), metade no sucesso. Uma vez por descanso longo, ou gastando um espaço de magia de 3º círculo ou maior. Sai de você, pelo botão de magia; gastar um espaço de 3º círculo para repetir não existe no jogo."
+ },
+ "perfectedBond": {
+  "nome": "Elo Aperfeiçoado",
+  "desc": "Com o draco invocado, a Mordida dele causa 2d6 de dano extra no total e ele fica Grande, podendo voar mesmo com você montado. Quando você ou o draco sofrem dano estando a até 9 m um do outro, você pode usar sua reação para dar resistência a esse dano ao alvo; usos iguais ao seu bônus de proficiência, recuperados num descanso longo. No jogo a reação sai sozinha, no dano de 8 ou mais."
+ }
+};

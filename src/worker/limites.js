@@ -8,6 +8,8 @@ import { gerarCodigo } from '../game/sala.js';
 
 export const EMITIR_POR_HORA = 6;
 export const TENTATIVAS_POR_MINUTO = 40;
+/** Perguntas ao NPC por IP. Uma mesa inteira costuma sair pelo mesmo IP; quem passa disso está gastando o crédito de propósito. */
+export const PERGUNTAS_POR_HORA = 120;
 export const VALIDADE_DO_CODIGO_MS = 3_600_000;
 const UM_MINUTO = 60_000;
 
@@ -27,6 +29,15 @@ export function emitir(est, agora, aleatorio, { limitar = true } = {}) {
   est.emitidos.push({ codigo, em: agora });
   if (est.emitidos.length > 50) est.emitidos.shift();      // quem não é limitado (desenvolvimento) não faz a lista crescer sem fim
   return { ok: true, codigo };
+}
+
+/** Uma pergunta ao modelo. Devolve `{ ok }` ou `{ ok: false, espera }` (ms até poder de novo). */
+export function perguntar(est, agora, { contar = true } = {}) {
+  est.perguntas = (est.perguntas ?? []).filter((t) => agora - t < VALIDADE_DO_CODIGO_MS);
+  if (!contar) return { ok: true };
+  if (est.perguntas.length >= PERGUNTAS_POR_HORA) return { ok: false, espera: est.perguntas[0] + VALIDADE_DO_CODIGO_MS - agora };
+  est.perguntas.push(agora);
+  return { ok: true };
 }
 
 /** Uma conexão para `codigo`: conta como tentativa; diz se o código foi emitido a este IP há menos de uma hora. */

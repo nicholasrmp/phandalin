@@ -37,7 +37,7 @@
 //    rola sozinho: quando o turno volta, ninguém sabe o que acabou de doer.
 
 import { makePortrait } from '../art/sheet.js';
-import { iconCanvas, iconeDaArma, iconeDeMagia, iconeDeAcao, temIcone } from '../art/icons.js';
+import { iconCanvas, iconeDaArma, iconeDeMagia, iconeDeAcao, temIcone, familiaDoIcone, coresDoIcone } from '../art/icons.js';
 import { CONDITIONS, hasCondition, maxHpEfetivo, DEGRAUS_DE_EXAUSTAO } from '../rules/conditions.js';
 import { CONDICOES_DE_ENCANTO } from '../rules/passivas.js';
 import { formasDisponiveis } from '../rules/forma-selvagem.js';
@@ -47,6 +47,7 @@ import { ARMORS } from '../rules/items/index.js';
 import { isAdjacent } from '../core/grid.js';
 import { criarMinimapa } from './minimapa.js';
 import { getSpell, SPELLS, magiasProntas, dadosDaMagia } from '../rules/spells.js';
+import { tiposDoGrimorio } from '../rules/subclasses-livros.js';
 import { usoLivreDe } from '../rules/passivas.js';
 import { UTIL_FORA } from '../rules/utilidade.js';
 import { spellSaveDc, spellAttackBonus } from '../rules/abilities.js';
@@ -54,6 +55,7 @@ import { previsaoDeAtaque, chanceD20, pct } from '../rules/odds.js';
 import { HABILIDADES_DE_ALVO, temHabilidadeDeAlvo, descritorDaHabilidade, estadoDoFurtivo } from '../rules/habilidades-alvo.js';
 import { formatModifier } from '../core/dice.js';
 import { audio } from '../core/audio.js';
+import { nomeDaCaracteristica as CARACTERISTICAS_NOME } from '../rules/classes/caracteristicas.js';
 
 export const el = (tag, attrs = {}, ...children) => {
   const node = document.createElement(tag);
@@ -316,6 +318,9 @@ export class Hud {
       // e duas plaquinhas no mesmo canto viram uma mancha só.
       selo !== null ? el('span', { class: 'tile-selo' }, selo) : null,
       tecla ? el('span', { class: 'tecla' }, tecla) : null);
+    // O ESMALTE: o azulejo leva a cor da família do ícone (a de baixo do degradê) para a borda e o brilho do fundo
+    // (`tema-obsidiana.css`). Sem família (o pixel antes de o traço chegar), nada.
+    if (familiaDoIcone(icone)) node.style.setProperty('--cor-icone', coresDoIcone(icone)[1]);
     // A tecla impressa no canto só vale metade: na dica ela aparece escrita,
     // que é onde o jogador procura quando quer decorar o atalho.
     return this.ligarDica(node, dica && tecla ? { atalho: tecla, ...dica } : dica);
@@ -831,6 +836,8 @@ export class Hud {
         // jogador já olha para comparar inimigos.
         onmouseenter: () => this.handlers.onAlvoHover?.(c),
         onmouseleave: () => this.handlers.onAlvoHover?.(null),
+        // o clique abre a ficha da criatura (a figura inteira e o que se sabe dela)
+        onclick: () => this.handlers.onFichaDaCriatura?.(c),
       },
         el('div', { class: 'inimigo-topo' },
           el('strong', {}, c.name),
@@ -1017,8 +1024,9 @@ export class Hud {
     const tiles = (doBloco ? c.attacks.map((a) => a.name) : (c.weapons ?? [])).map((wid, i) => {
       const w = doBloco ? (({ name, ranged, rangeFt, longRangeFt, reachFt, art }) => ({ name, ranged, rangeFt, longRangeFt, reachFt, art }))(enc.weaponAttackProfile(c, wid)) : WEAPONS[wid];
       // Arma guardada não ataca: o azulejo SACA. Custa a interação gratuita
-      // do turno, ou a ação se ela já foi gasta (`custoDeInteracao`).
-      if (!doBloco && !enc.empunha(c, wid)) {
+      // do turno, ou a ação se ela já foi gasta (`custoDeInteracao`). A que não é item (a Lâmina Psíquica, o Raio de Sol)
+      // nasce na mão no golpe: não se saca.
+      if (!doBloco && !enc.empunha(c, wid) && !w?.naoEItem) {
         const custo = enc.custoDeInteracao(c);
         const sacar = () => this.handlers.onAction?.({ kind: 'sacar', weaponId: wid });
         return this.tile(iconeDaArma(wid, w), {
@@ -1184,6 +1192,66 @@ export class Hud {
       invokeDuplicity: ['invokeDuplicity', 'Invocar Duplicidade', 'Canalizar Divindade: uma cópia ilusória por um minuto; vantagem nos seus ataques contra quem está colado nela.', 'Ação', () => !c.actionUsed && c.resources?.channelDivinity > 0 && !hasCondition(c, 'duplicidade'), 'channelDivinity'],
       createThrall: ['createThrall', 'Criar Servo', 'Toca um humanoide incapacitado a seu lado: ele fica enfeitiçado por você.', 'Ação', () => !c.actionUsed, null],
       tidesOfChaos: ['tidesOfChaos', 'Marés do Caos', 'Vantagem na próxima jogada de ataque ou resistência; a próxima magia de 1º círculo ou mais causa um surto e devolve o uso.', 'Livre', () => c.resources?.tidesOfChaos > 0 && !hasCondition(c, 'maresDoCaos'), 'tidesOfChaos'],
+      // ---- as subclasses do Guia de Xanathar
+      stormAura: ['stormAura', 'Aura da Tempestade', 'Em Fúria: dispara de novo o efeito da aura (deserto, mar ou tundra), a até 3 m.', 'Ação bônus', () => !c.bonusUsed && hasCondition(c, 'furia')],
+      zealousPresence: ['zealousPresence', 'Presença Zelosa', 'Até dez aliados a até 18 m: vantagem nos ataques e nas resistências até o seu próximo turno. Uma vez por descanso longo.', 'Ação bônus', () => !c.bonusUsed && c.resources?.zealousPresence > 0, 'zealousPresence'],
+      mantleOfInspiration: ['mantleOfInspiration', 'Manto de Inspiração', `Uma Inspiração de Bardo: até CAR aliados a até 18 m ganham ${c.pvDoMantoDeInspiracao ?? 5} PV temporários.`, 'Ação bônus', () => !c.bonusUsed && c.resources?.bardicInspiration > 0, 'bardicInspiration'],
+      fightingSpirit: ['fightingSpirit', 'Espírito de Luta', `Vantagem nos ataques com arma até o fim do turno e ${c.pvDoEspiritoDeLuta ?? 5} PV temporários. Três usos por descanso longo.`, 'Ação bônus', () => !c.bonusUsed && c.resources?.fightingSpirit > 0, 'fightingSpirit'],
+      otherworldlyWings: ['otherworldlyWings', hasCondition(c, 'asasDeOutroMundo') ? 'Recolher as asas' : 'Asas de Outro Mundo', 'Asas espectrais: voo de 9 m até você dispensar.', 'Ação bônus', () => !c.bonusUsed],
+      unearthlyRecovery: ['unearthlyRecovery', 'Recuperação Sobrenatural', 'Abaixo da metade dos PV: recupera metade do máximo. Uma vez por descanso longo.', 'Ação bônus', () => !c.bonusUsed && c.resources?.unearthlyRecovery > 0 && c.hp < c.maxHp / 2, 'unearthlyRecovery'],
+      umbralForm: ['umbralForm', 'Forma Umbral', '6 pontos de feitiçaria: um minuto de resistência a todo dano, menos energético e radiante.', 'Ação bônus', () => !c.bonusUsed && (c.resources?.sorceryPoints ?? 0) >= 6 && !hasCondition(c, 'formaUmbral'), 'sorceryPoints'],
+      // ---- Costa da Espada, Livro do Mestre, Fizban e Bigby
+      battleragerCharge: ['battleragerCharge', 'Investida do Furioso', 'Em Fúria, a Disparada como ação bônus.', 'Ação bônus', () => !c.bonusUsed && hasCondition(c, 'furia')],
+      arcaneAbjuration: ['arcaneAbjuration', 'Abjuração Arcana', 'Canalizar Divindade: o celestial, elemental, feérico ou corruptor mais perto, a 9 m, testa Sabedoria ou é expulso (do 5º, o fraco é banido). Num alvo escolhido, pelo menu dele.', 'Ação', () => !c.actionUsed && c.resources?.channelDivinity > 0, 'channelDivinity'],
+      hourOfReaping: ['hourOfReaping', 'Hora da Colheita', 'Quem o vê a 9 m testa Sabedoria ou fica amedrontado até o fim do seu próximo turno.', 'Ação', () => !c.actionUsed],
+      championChallenge: ['championChallenge', 'Desafio do Campeão', 'Canalizar Divindade: os inimigos a 9 m testam Sabedoria ou não conseguem se afastar mais de 9 m de você.', 'Ação bônus', () => !c.bonusUsed && c.resources?.channelDivinity > 0, 'channelDivinity'],
+      turnTheTide: ['turnTheTide', 'Virar a Maré', 'Canalizar Divindade: quem está com metade dos PV ou menos, a 9 m, recupera 1d6 + Carisma.', 'Ação bônus', () => !c.bonusUsed && c.resources?.channelDivinity > 0, 'channelDivinity'],
+      exaltedChampion: ['exaltedChampion', 'Campeão Exaltado', 'Uma hora: resistência ao golpe não mágico, e vantagem em Sabedoria e no teste contra a morte para você e os aliados a 9 m.', 'Ação', () => !c.actionUsed && c.resources?.exaltedChampion > 0 && !hasCondition(c, 'campeaoExaltado'), 'exaltedChampion'],
+      indestructibleLife: ['indestructibleLife', 'Vida Indestrutível', `Recupera 1d8 + ${c.level ?? 14} PV. Uma vez por descanso curto ou longo.`, 'Ação bônus', () => !c.bonusUsed && c.resources?.indestructibleLife > 0, 'indestructibleLife'],
+      controlUndead: ['controlUndead', 'Controlar Mortos-Vivos', 'Canalizar Divindade: o morto-vivo mais forte a 9 m (de ND menor que o seu nível) testa Sabedoria ou passa a lutar do seu lado.', 'Ação', () => !c.actionUsed && c.resources?.channelDivinity > 0, 'channelDivinity'],
+      dreadfulAspect: ['dreadfulAspect', 'Aspecto Terrível', 'Canalizar Divindade: os inimigos a 9 m que o veem testam Sabedoria ou ficam amedrontados por um minuto.', 'Ação', () => !c.actionUsed && c.resources?.channelDivinity > 0, 'channelDivinity'],
+      dreadLord: ['dreadLord', 'Senhor do Terror', 'Um minuto de aura de sombra: o medo fere, o grupo na sombra é atacado com desvantagem, e as sombras golpeiam pela ação bônus (menu do inimigo).', 'Ação', () => !c.actionUsed && c.resources?.dreadLord > 0 && !hasCondition(c, 'senhorDoTerror'), 'dreadLord'],
+      // ---- Tasha (4º lote)
+      bastionOfLaw: ['bastionOfLaw', 'Bastião da Lei (em si)', `Até 5 pontos de feitiçaria (tem ${c.resources?.sorceryPoints ?? 0}): uma reserva de d8 que segura o dano até o descanso longo. Num aliado, pelo menu dele.`, 'Ação', () => !c.actionUsed && (c.resources?.sorceryPoints ?? 0) >= 1, 'sorceryPoints'],
+      tranceOfOrder: ['tranceOfOrder', 'Transe da Ordem', 'Um minuto: ninguém o ataca com vantagem, e 9 ou menos no d20 conta como 10. Um uso, depois 5 pontos de feitiçaria.', 'Ação bônus', () => !c.bonusUsed && !hasCondition(c, 'transeDaOrdem') && (c.resources?.tranceOfOrder > 0 || (c.resources?.sorceryPoints ?? 0) >= 5), 'tranceOfOrder'],
+      clockworkCavalcade: ['clockworkCavalcade', 'Cavalgada Mecânica', '100 PV entre os aliados a 9 m, os mais feridos primeiro, e o fim das magias que os inimigos puseram neles. Um uso, depois 7 pontos.', 'Ação', () => !c.actionUsed && (c.resources?.clockworkCavalcade > 0 || (c.resources?.sorceryPoints ?? 0) >= 7), 'clockworkCavalcade'],
+      elementalGift: ['elementalGift', 'Dádiva Elemental: voar', 'Dez minutos de voo de 9 m, pairando.', 'Ação bônus', () => !c.bonusUsed && c.resources?.elementalGift > 0 && !hasCondition(c, 'vooDoGenio'), 'elementalGift'],
+      bladesong: ['bladesong', 'Canção da Lâmina', `Um minuto: +${Math.max(1, Math.floor(((c.abilities?.int ?? 10) - 10) / 2))} na CA e na concentração, +3 m e vantagem em Acrobacia. Sem armadura média ou pesada e sem escudo.`, 'Ação bônus', () => !c.bonusUsed && c.resources?.bladesong > 0 && !hasCondition(c, 'cancaoDaLamina'), 'bladesong'],
+      // ---- Tasha (3º lote)
+      inspiringSmite: ['inspiringSmite', 'Golpe Inspirador', `Logo depois da Destruição Divina, Canalizar Divindade: 2d8 + ${c.level ?? 3} PV temporários repartidos entre você e os aliados a 9 m.`, 'Ação bônus', () => !c.bonusUsed && c.resources?.channelDivinity > 0 && c.destruiuEm === enc.turnoKey(), 'channelDivinity'],
+      peerlessAthlete: ['peerlessAthlete', 'Atleta Sem Igual', 'Canalizar Divindade: dez minutos de vantagem em Atletismo e Acrobacia.', 'Ação bônus', () => !c.bonusUsed && c.resources?.channelDivinity > 0 && !hasCondition(c, 'atletaSemIgual'), 'channelDivinity'],
+      livingLegend: ['livingLegend', 'Lenda Viva', 'Um minuto: vantagem nos testes de Carisma, um erro por turno vira acerto, e a resistência que falha se rola de novo.', 'Ação bônus', () => !c.bonusUsed && c.resources?.livingLegend > 0 && !hasCondition(c, 'lendaViva'), 'livingLegend'],
+      abjureTheExtraplanar: ['abjureTheExtraplanar', 'Abjurar o Extraplanar', 'Canalizar Divindade: aberração, celestial, elemental, feérico e corruptor a 9 m testam Sabedoria ou são expulsos por um minuto, ou até sofrer dano.', 'Ação', () => !c.actionUsed && c.resources?.channelDivinity > 0, 'channelDivinity'],
+      watchersWill: ['watchersWill', 'Vontade do Vigilante', `Canalizar Divindade: você e até ${Math.max(1, Math.floor(((c.abilities?.cha ?? 10) - 10) / 2))} aliados a 9 m ganham vantagem nas resistências de INT, SAB e CAR por um minuto.`, 'Ação', () => !c.actionUsed && c.resources?.channelDivinity > 0, 'channelDivinity'],
+      mortalBulwark: ['mortalBulwark', 'Baluarte Mortal', 'Um minuto: visão verdadeira de 36 m, vantagem contra quem é de outro plano, e o ataque que fere um deles pode bani-lo.', 'Ação bônus', () => !c.bonusUsed && c.resources?.mortalBulwark > 0 && !hasCondition(c, 'baluarteMortal'), 'mortalBulwark'],
+      writhingTide: ['writhingTide', 'Maré Ondulante', 'Um minuto de voo de 3 m, pairando.', 'Ação bônus', () => !c.bonusUsed && c.resources?.writhingTide > 0 && !hasCondition(c, 'mareOndulante'), 'writhingTide'],
+      ghostWalk: ['ghostWalk', 'Caminhar Fantasma', `Dez minutos: voo de 3 m e desvantagem em quem o ataca. Uma vez por descanso longo, ou um berloque de alma (tem ${c.berloquesDeAlma ?? 0}).`, 'Ação bônus', () => !c.bonusUsed && (c.resources?.ghostWalk > 0 || (c.berloquesDeAlma ?? 0) > 0) && !hasCondition(c, 'caminharFantasma'), 'ghostWalk'],
+      psionicPowerSoulknife: ['psionicPower', 'Recuperar energia psiônica', 'Recupera um dado de energia psiônica. Uma vez por descanso curto ou longo.', 'Ação bônus', () => !c.bonusUsed && c.resources?.psionicRecover > 0 && (c.resources?.psionicEnergy ?? 0) < (c.resourcesMax?.psionicEnergy ?? 0), 'psionicEnergy'],
+      psychicVeil: ['psychicVeil', 'Véu Psíquico', 'Invisível por uma hora, até ferir alguém ou forçar um teste. Uma vez por descanso longo, depois um dado de energia psiônica.', 'Ação', () => !c.actionUsed && (c.resources?.psychicVeil > 0 || c.resources?.psionicEnergy > 0), 'psychicVeil'],
+      // ---- Tasha (2º lote)
+      symbioticEntity: ['symbioticEntity', 'Entidade Simbiótica', `Um uso de Forma Selvagem: ${4 * (c.level ?? 2)} PV temporários, o halo em dobro e +1d6 necrótico no golpe de perto.`, 'Ação', () => !c.actionUsed && c.resources?.wildShape > 0, 'wildShape'],
+      summonWildfireSpirit: ['summonWildfireSpirit', 'Espírito do Fogo Selvagem', 'Um uso de Forma Selvagem: o espírito surge ao seu lado, e quem está a 3 m dele testa Destreza ou leva 2d6 de fogo.', 'Ação', () => !c.actionUsed && c.resources?.wildShape > 0, 'wildShape'],
+      psionicPower: ['psionicPower', 'Recuperar energia psiônica', 'Recupera um dado de energia psiônica. Uma vez por descanso curto ou longo.', 'Ação bônus', () => !c.bonusUsed && c.resources?.psionicRecover > 0 && (c.resources?.psionicEnergy ?? 0) < (c.resourcesMax?.psionicEnergy ?? 0), 'psionicEnergy'],
+      telekineticAdept: ['telekineticAdept', 'Salto Psiônico', 'Voo igual ao dobro do andar até o fim do turno. Uma vez por descanso curto; depois, um dado.', 'Ação bônus', () => !c.bonusUsed && (c.resources?.psiPoweredLeap > 0 || c.resources?.psionicEnergy > 0), 'psionicEnergy'],
+      bulwarkOfForce: ['bulwarkOfForce', 'Baluarte de Força', 'Você e os aliados mais perto (até INT) ganham meia cobertura por um minuto.', 'Ação bônus', () => !c.bonusUsed && (c.resources?.bulwarkOfForce > 0 || c.resources?.psionicEnergy > 0), 'psionicEnergy'],
+      giantsMight: ['giantsMight', 'Poder dos Gigantes', `Um minuto: vantagem em Força e +${c.dadoDoGigante ?? '1d6'} uma vez por turno no acerto.`, 'Ação bônus', () => !c.bonusUsed && c.resources?.giantsMight > 0 && !hasCondition(c, 'poderDosGigantes'), 'giantsMight'],
+      armsOfTheAstralSelf: ['armsOfTheAstralSelf', 'Braços do Eu Astral', '1 ki: dez minutos de braços espectrais (golpes a 3 m, com Sabedoria, de energético); quem está a 3 m testa Destreza ou leva dois dados de Artes Marciais.', 'Ação bônus', () => !c.bonusUsed && c.resources?.ki > 0 && !hasCondition(c, 'bracosAstrais'), 'ki'],
+      visageOfTheAstralSelf: ['visageOfTheAstralSelf', 'Semblante do Eu Astral', '1 ki: dez minutos de visão no escuro de 36 m e vantagem em Intuição e Intimidação.', 'Ação bônus', () => !c.bonusUsed && c.resources?.ki > 0 && !hasCondition(c, 'semblanteAstral'), 'ki'],
+      awakenedAstralSelf: ['awakenedAstralSelf', 'Eu Astral Desperto', '5 ki: braços, semblante e corpo astrais, +2 de CA e três golpes de braço na ação de Atacar.', 'Ação bônus', () => !c.bonusUsed && (c.resources?.ki ?? 0) >= 5 && !hasCondition(c, 'euAstralDesperto'), 'ki'],
+      barbarianWildSurge: ['barbarianWildSurge', 'Surto Selvagem: de novo', 'Em Fúria, com o surto do espírito ou do raio: o efeito sai de novo no inimigo mais perto a até 9 m.', 'Ação bônus', () => !c.bonusUsed && hasCondition(c, 'furia') && ['espirito', 'raio'].includes(c.conditions?.find((k) => k.id === 'surtoBarbaro')?.data?.efeito)],
+      animatingPerformance: ['animatingPerformance', 'Apresentação Animada', 'Um objeto ganha vida e luta ao seu lado por 1 hora. Uma vez por descanso longo.', 'Ação', () => !c.actionUsed && c.resources?.animatingPerformance > 0, 'animatingPerformance'],
+      ordersDemand: ['ordersDemand', 'Exigência da Ordem', 'Canalizar Divindade: inimigos a até 9 m testam Sabedoria ou ficam enfeitiçados até o fim do seu próximo turno (ou até sofrer dano).', 'Ação', () => !c.actionUsed && c.resources?.channelDivinity > 0, 'channelDivinity'],
+      emboldeningBond: ['emboldeningBond', 'Vínculo Encorajador', 'Liga você e os aliados mais perto (até a sua proficiência): perto um do outro, 1d4 no primeiro ataque ou resistência de cada turno. Dez minutos.', 'Ação', () => !c.actionUsed && c.resources?.emboldeningBond > 0, 'emboldeningBond'],
+      balmOfPeace: ['balmOfPeace', 'Bálsamo da Paz', 'Canalizar Divindade: cada aliado ferido que você alcançaria andando recupera 2d6 + SAB.', 'Ação', () => !c.actionUsed && c.resources?.channelDivinity > 0, 'channelDivinity'],
+      twilightSanctuary: ['twilightSanctuary', 'Santuário do Crepúsculo', 'Canalizar Divindade: um minuto; quem termina o turno a até 9 m de você se livra do medo ou do encanto, ou ganha 1d6 + nível de PV temporários.', 'Ação', () => !c.actionUsed && c.resources?.channelDivinity > 0, 'channelDivinity'],
+      stepsOfNight: ['stepsOfNight', 'Passos da Noite', 'Na penumbra ou no escuro: voo igual ao andar por um minuto.', 'Ação bônus', () => !c.bonusUsed && c.resources?.stepsOfNight > 0 && !hasCondition(c, 'passosDaNoite'), 'stepsOfNight'],
+      kenseisShot: ['kenseisShot', 'Tiro do Kensei', 'Até o fim do turno, o acerto à distância com arma kensei soma 1d4.', 'Ação bônus', () => !c.bonusUsed && !hasCondition(c, 'tiroDoKensei')],
+      conqueringPresence: ['conqueringPresence', 'Presença Conquistadora', 'Canalizar Divindade: inimigos a até 9 m testam Sabedoria ou ficam amedrontados por um minuto (repetem no fim de cada turno).', 'Ação', () => !c.actionUsed && c.resources?.channelDivinity > 0, 'channelDivinity'],
+      invincibleConqueror: ['invincibleConqueror', 'Conquistador Invencível', 'Um minuto: resistência a todo dano, um ataque a mais na ação de Atacar e crítico com 19. Uma vez por descanso longo.', 'Ação', () => !c.actionUsed && c.resources?.invincibleConqueror > 0, 'invincibleConqueror'],
+      emissaryOfPeace: ['emissaryOfPeace', 'Emissário da Paz', 'Canalizar Divindade: +5 em Persuasão por dez minutos.', 'Ação bônus', () => !c.bonusUsed && c.resources?.channelDivinity > 0, 'channelDivinity'],
+      etherealStep: ['etherealStep', 'Passo Etéreo', 'Fica no Plano Etéreo até o fim do turno: ninguém o alcança. Uma vez por descanso curto ou longo.', 'Ação bônus', () => !c.bonusUsed && c.resources?.etherealStep > 0, 'etherealStep'],
+      elegantManeuver: ['elegantManeuver', 'Manobra Elegante', 'Vantagem no próximo teste de Acrobacia ou Atletismo deste turno (agarrar, empurrar, escapar).', 'Ação bônus', () => !c.bonusUsed && !hasCondition(c, 'manobraElegante')],
+      unbreakableMajesty: ['unbreakableMajesty', 'Majestade Inquebrável', 'Um minuto: na primeira vez em cada turno que alguém o ataca, ele testa Carisma ou perde o ataque. Uma vez por descanso curto ou longo.', 'Ação bônus', () => !c.bonusUsed && c.resources?.unbreakableMajesty > 0 && !hasCondition(c, 'majestadeInquebravel'), 'unbreakableMajesty'],
       warPriest: ['warPriest', 'Sacerdote da Guerra', 'Depois de atacar, um ataque com arma como ação bônus (SAB usos por descanso longo).', 'Ação bônus', () => !c.bonusUsed && c.atacouNoTurno && c.resources?.warPriest > 0, 'warPriest'],
       destructiveWrath: ['destructiveWrath', 'Ira Destrutiva', 'Canalizar Divindade: o próximo dano elétrico ou trovejante que você rolar sai no máximo.', 'Livre', () => c.resources?.channelDivinity > 0 && !c.furiaDestrutivaPronta, 'channelDivinity'],
       radianceOfTheDawn: ['radianceOfTheDawn', 'Esplendor da Aurora', 'Canalizar Divindade: inimigos a até 9 m testam Constituição ou sofrem 2d10 + nível radiante (metade se passam).', 'Ação', () => !c.actionUsed && c.resources?.channelDivinity > 0, 'channelDivinity'],
@@ -1284,6 +1352,19 @@ export class Hud {
         'Fora da luta', () => c.resources?.arcaneRecovery > 0 && !enc.combatants.some((o) => o.side !== c.side && !o.dead),
         'arcaneRecovery'],
     };
+    // DESVIAR OS OLHOS da medusa (Honna, Talhundereth): interruptor de graça, só com uma no campo.
+    if (this.enc?.combatants?.some((o) => !o.dead && o.side !== c.side && o.traits?.includes('olharPetrificante'))) {
+      const ligado = Boolean(c.desviaOlhar);
+      comum('ardilosaEsconder', 'Desviar os olhos', 'Interruptor: ligado, no começo de cada turno você não olha para a medusa e não faz o teste do olhar dela. Em troca, ataca a medusa com desvantagem e ela o ataca com vantagem.',
+        'Livre', { kind: 'feature', featureId: 'desviarOlhar', modo: ligado ? 'desligar' : 'ligar' }, false, null, null,
+        { ativo: ligado, classe: 'interruptor', selo: ligado ? 'LIG' : 'DESL', linhas: [['Estado', ligado ? 'olhos desviados' : 'olhando']] });
+    }
+    // A BÊNÇÃO DE DUMATHOIN (Cripta dos Talhund): visão verdadeira por um minuto, uma vez por descanso longo.
+    if (c.bencaoDeDumathoin) {
+      const semCarga = c.actionUsed || !(c.resources?.visaoDeDumathoin > 0);
+      comum('magia-visaoNoEscuro', 'Visão de Dumathoin', 'Por um minuto, você tem visão verdadeira a até 36 m: vê o invisível, no escuro (o mágico também) e através de ilusões. Uma vez por descanso longo.',
+        'Ação', { kind: 'feature', featureId: 'visaoDeDumathoin' }, semCarga, 'visaoDeDumathoin');
+    }
     for (const f of c.features ?? []) {
       // Ação Ardilosa é UMA escolha por ação bônus: dois azulejos, um por modo.
       // Passo do Vento também é UMA escolha por ação bônus: um azulejo por modo.
@@ -1339,6 +1420,202 @@ export class Hud {
         comum(f, 'Passo Evasivo', `Livre: soma o dado à CA até o fim do turno (vale contra ataques de oportunidade). Dados de superioridade: ${c.resources?.superiorityDice ?? 0}.`, 'Livre',
           { kind: 'feature', featureId: f }, ligado || !(c.resources?.superiorityDice > 0), 'superiorityDice', null,
           { ativo: ligado });
+        continue;
+      }
+      // FLOREIO DE LÂMINA (Colégio das Espadas): um interruptor por floreio; o próximo acerto de arma do turno o usa.
+      if (f === 'bladeFlourish') {
+        const gratis = (c.features ?? []).includes('mastersFlourish');
+        for (const [modo, nome, texto] of [
+          ['defensivo', 'Floreio Defensivo', 'o dado vai ao dano e à sua CA até o seu próximo turno.'],
+          ['cortante', 'Floreio Cortante', 'o dado vai ao dano do alvo e de cada inimigo a 1,5 m de você.'],
+          ['movel', 'Floreio Móvel', 'o dado vai ao dano, e o alvo é empurrado 1,5 m mais 30 cm por ponto.'],
+        ]) {
+          const ligado = c.floreioPronto === modo;
+          comum(f, nome, `Interruptor: no acerto de arma do turno, ${gratis ? 'um d6 (Floreio do Mestre)' : 'uma Inspiração de Bardo'}: ${texto}`, 'Livre',
+            { kind: 'feature', featureId: f, modo }, !gratis && !(c.resources?.bardicInspiration > 0) && !ligado, gratis ? null : 'bardicInspiration', null,
+            { ativo: ligado, classe: 'interruptor', selo: ligado ? 'LIG' : null, linhas: [['Estado', ligado ? 'ARMADO' : 'desarmado']] });
+        }
+        continue;
+      }
+      // DISPARO ARCANO (Arqueiro Arcano): um interruptor por opção conhecida; sai no próximo acerto de arco do turno.
+      if (f === 'arcaneShot') {
+        const TEXTO_DO_DISPARO = {
+          disparoBanidor: 'Carisma ou some para outro plano até o fim do seu próximo turno.',
+          disparoEncantador: '+2d6 psíquico; Sabedoria ou fica enfeitiçado por um aliado seu.',
+          disparoExplosivo: '2d6 energético no alvo e em quem está a 3 m dele.',
+          disparoDebilitante: '+2d6 necrótico; Constituição ou os golpes dele saem pela metade.',
+          disparoSombrio: '+2d6 psíquico; Sabedoria ou fica cego até o seu próximo turno.',
+        };
+        for (const op of Object.keys(TEXTO_DO_DISPARO)) {
+          if (!(c.features ?? []).includes(op)) continue;
+          const ligado = c.disparoPronto === op;
+          comum('arcaneShot', CARACTERISTICAS_NOME(op), `Interruptor: no próximo acerto de arco do seu turno, ${TEXTO_DO_DISPARO[op]} Usos: ${c.resources?.arcaneShot ?? 0}.`, 'Livre',
+            { kind: 'feature', featureId: f, modo: op }, !(c.resources?.arcaneShot > 0) && !ligado, 'arcaneShot', null,
+            { ativo: ligado, classe: 'interruptor', selo: ligado ? 'LIG' : null, linhas: [['Estado', ligado ? 'ARMADO' : 'desarmado']] });
+        }
+        continue;
+      }
+      // FORMA DA FERA (bárbaro, Tasha): a Fúria tem três botões, um por arma natural.
+      if (f === 'rage' && (c.features ?? []).includes('formOfTheBeast')) {
+        const pode = !c.bonusUsed && c.resources?.rage > 0 && !hasCondition(c, 'furia') && ARMORS[c.armor]?.categoria !== 'pesada';
+        for (const [modo, nome, texto] of [
+          ['mordida', 'Fúria: mordida', 'mordida de 1d8 perfurante; abaixo da metade dos PV, cada mordida que acerta cura a sua proficiência (uma vez por turno).'],
+          ['garras', 'Fúria: garras', 'garras de 1d6 cortante; uma vez por turno, o golpe de garra da ação de Atacar ganha outro.'],
+          ['cauda', 'Fúria: cauda', 'cauda de 1d8 perfurante, com 3 m de alcance; a reação soma 1d8 à CA contra quem o ataca a 3 m.'],
+        ]) {
+          comum('furia', nome, `Entra em Fúria com a ${texto}`, 'Ação bônus', { kind: 'feature', featureId: 'rage', modo }, !pode, 'rage');
+        }
+        continue;
+      }
+      // FORMA ESTRELADA (druida das Estrelas): um azulejo por constelação.
+      // OS INTERRUPTORES dos outros livros: o tipo do dragão, do draco e do cutelo; o Toque da Morte do clérigo; o Aspecto da Serpe; o draco.
+      if (['draconicDisciple', 'elementalCleaver'].includes(f)) {
+        const campo = f === 'draconicDisciple' ? 'tipoDoDragao' : 'tipoDoCutelo';
+        const tipos = f === 'draconicDisciple' ? ['fogo', 'frio', 'elétrico', 'ácido', 'veneno'] : ['fogo', 'frio', 'elétrico', 'ácido', 'trovejante'];
+        const agora = c[campo] ?? (f === 'draconicDisciple' ? null : 'fogo');
+        for (const tipo of tipos) {
+          const nome = `${f === 'draconicDisciple' ? 'Dragão' : 'Cutelo'}: ${tipo}`;
+          comum(f, agora === tipo ? `${nome} (escolhido)` : nome, f === 'draconicDisciple'
+            ? `Interruptor: o sopro e o golpe desarmado saem de ${tipo}.` : `Interruptor: em Fúria, a arma da mão vira ${tipo} e soma ${c.dadoDoCutelo ?? '1d6'}.`,
+          'Livre', { kind: 'feature', featureId: f, modo: tipo }, agora === tipo, null, null, { ativo: agora === tipo, classe: 'interruptor', selo: agora === tipo ? 'LIG' : null });
+        }
+        continue;
+      }
+      if (f === 'touchOfDeathCleric') {
+        const ligado = Boolean(c.toqueDaMorteLigado);
+        comum(f, 'Toque da Morte', `Interruptor: ligado, o próximo acerto corpo a corpo gasta o Canalizar Divindade e soma ${5 + 2 * (c.level ?? 2)} de necrótico.`, 'Livre',
+          { kind: 'feature', featureId: f, modo: ligado ? 'desligar' : 'ligar' }, false, 'channelDivinity', null, { ativo: ligado, classe: 'interruptor', selo: ligado ? 'LIG' : 'DESL' });
+        continue;
+      }
+      if (f === 'aspectOfTheWyrm') {
+        for (const [m, nome, texto] of [['medo', 'Aspecto da Serpe: medo', 'o inimigo mais perto na aura testa Sabedoria ou fica amedrontado; depois, um por ação bônus, pelo menu dele'],
+          ['resistencia', 'Aspecto da Serpe: resistência', `você e os aliados a 3 m resistem a ${c.tipoDoDragao ?? 'fogo'}`]]) {
+          comum(f, nome, `Um minuto, aura de 3 m: ${texto}. Um uso, depois 3 de ki.`, 'Ação bônus', { kind: 'feature', featureId: f, modo: m },
+            c.bonusUsed || hasCondition(c, 'aspectoDaSerpe') || !(c.resources?.aspectOfTheWyrm > 0 || (c.resources?.ki ?? 0) >= 3), 'aspectOfTheWyrm');
+        }
+        continue;
+      }
+      if (f === 'drakeCompanion') {
+        const draco = enc.invocadosDe(c).find((x) => x.invocado.spellId === 'dracoCompanheiro');
+        comum(f, draco ? 'Chamar o draco de novo' : 'Chamar o draco', `O draco de ${c.tipoDoDraco ?? 'fogo'} surge ao seu lado. Uma vez por descanso longo; depois, um espaço de magia.`, 'Ação',
+          { kind: 'feature', featureId: f }, c.actionUsed || !(c.resources?.drakeCompanion > 0 || (c.spellcasting?.slots ?? []).some((n, i) => i >= 1 && n > 0)), 'drakeCompanion');
+        if (draco) comum(f, 'Ordem ao draco', 'Ação bônus: o draco age neste turno (sem a ordem, ele só esquiva).', 'Ação bônus', { kind: 'feature', featureId: 'comandarDraco' }, c.bonusUsed || !draco.actionUsed);
+        for (const tipo of ['fogo', 'frio', 'elétrico', 'ácido', 'veneno']) {
+          const agora = (c.tipoDoDraco ?? 'fogo') === tipo;
+          comum(f, agora ? `Essência: ${tipo} (escolhida)` : `Essência: ${tipo}`, `Interruptor: o draco (na próxima vez que vier) e o sopro dele são de ${tipo}.`, 'Livre',
+            { kind: 'feature', featureId: 'essenciaDoDraco', modo: tipo }, agora, null, null, { ativo: agora, classe: 'interruptor', selo: agora ? 'LIG' : null });
+        }
+        continue;
+      }
+      // REVELAÇÃO NA CARNE (Mente Aberrante): um azulejo por benefício, 1 ponto cada.
+      if (f === 'revelationInFlesh') {
+        const ativa = hasCondition(c, 'revelacaoNaCarne') || hasCondition(c, 'veInvisiveis');
+        for (const [m, nome, texto, custo] of [['voo', 'Revelação: voar', 'voo igual ao andar, pairando', 1], ['visao', 'Revelação: ver o invisível', 'vê quem está invisível', 1], ['ambos', 'Revelação: voar e ver', 'os dois', 2]]) {
+          comum(f, nome, `Ação bônus, ${custo} ${custo === 1 ? 'ponto' : 'pontos'} de feitiçaria, dez minutos: ${texto}.`, 'Ação bônus', { kind: 'feature', featureId: f, modo: m },
+            c.bonusUsed || ativa || (c.resources?.sorceryPoints ?? 0) < custo, 'sorceryPoints');
+        }
+        continue;
+      }
+      // GRIMÓRIO DESPERTO (Escribas): o interruptor do tipo de dano, um azulejo por tipo que o grimório tem.
+      if (f === 'awakenedSpellbook') {
+        const agora = c.tipoDoGrimorio ?? null;
+        for (const tipo of [null, ...tiposDoGrimorio(c, SPELLS)]) {
+          const nome = tipo ? `Grimório: ${tipo}` : 'Grimório: o dano da magia';
+          comum(f, agora === tipo ? `${nome} (escolhido)` : nome, tipo
+            ? `Interruptor: a magia de mago com espaço troca o dano por ${tipo}, quando o grimório tem magia de ${tipo} do mesmo círculo do espaço.`
+            : 'Interruptor: a magia sai com o dano dela.', 'Livre', { kind: 'feature', featureId: f, modo: tipo ?? 'nenhum' }, agora === tipo, null, null,
+          { ativo: agora === tipo, classe: 'interruptor', selo: agora === tipo ? 'LIG' : null });
+        }
+        continue;
+      }
+      // ENXAME REUNIDO (Guardião do Enxame): o interruptor do que o enxame faz no acerto.
+      if (f === 'gatheredSwarm') {
+        const modo = c.enxameModo ?? 'dano';
+        for (const [m, nome, texto] of [
+          ['dano', 'Enxame: morder', `no primeiro acerto de ataque de cada turno, +${c.dadoDoEnxame ?? '1d6'} perfurante.`],
+          ['empurrar', 'Enxame: empurrar', `no primeiro acerto de cada turno, o alvo testa Força ou é carregado 4,5 m${(c.features ?? []).includes('mightySwarm') ? ', e cai' : ''}.`],
+        ]) {
+          comum(f, modo === m ? `${nome} (escolhido)` : nome, `Interruptor: ${texto}`, 'Livre', { kind: 'feature', featureId: f, modo: m }, modo === m, null, null,
+            { ativo: modo === m, classe: 'interruptor', selo: modo === m ? 'LIG' : null });
+        }
+        continue;
+      }
+      if (f === 'starryForm') {
+        const ja = c.conditions?.find((k) => k.id === 'formaEstrelada')?.data?.constelacao;
+        for (const [modo, nome, texto] of [
+          ['arqueiro', 'Forma Estrelada: Arqueiro', `a flecha de luz, ${c.dadosDaEstrela ?? '1d8'} + SAB radiante a 18 m, agora e como ação bônus depois (mire um inimigo pelo clique nele).`],
+          ['calice', 'Forma Estrelada: Cálice', `a cura com espaço cura também alguém a 9 m (${c.dadosDaEstrela ?? '1d8'} + SAB).`],
+          ['dragao', 'Forma Estrelada: Dragão', 'no teste de INT e SAB, e na concentração, 9 ou menos vira 10.'],
+        ]) {
+          const troca = ja && (c.features ?? []).includes('twinklingConstellations');
+          comum(f, ja === modo ? `${nome} (ativa)` : nome, `${troca ? 'Troca a constelação: ' : 'Um uso de Forma Selvagem: '}${texto}`, troca ? 'Livre' : 'Ação bônus',
+            { kind: 'feature', featureId: f, modo }, ja === modo || (ja ? !troca : c.bonusUsed || !(c.resources?.wildShape > 0)), 'wildShape', null, { ativo: ja === modo });
+        }
+        continue;
+      }
+      // GOLPE PSIÔNICO, MÃO DO DANO e RUNA DO FOGO: interruptores; as RUNAS de ação bônus, um azulejo cada.
+      if (f === 'psionicStrike' || f === 'handOfHarm') {
+        const campo = f === 'psionicStrike' ? 'golpePsiLigado' : 'maoDoDanoLigada';
+        const ligado = Boolean(c[campo]);
+        const [nome, texto, rec] = f === 'psionicStrike'
+          ? ['Golpe Psiônico', `o primeiro golpe de arma do turno gasta um dado e soma ${c.dadoPsionico ?? 'd6'} + INT de energético.`, 'psionicEnergy']
+          : ['Mão do Dano', `o primeiro golpe desarmado do turno gasta 1 ki e soma ${c.dadoDeArtesMarciais ?? 'd6'} + SAB de necrótico.`, 'ki'];
+        comum(f, nome, `Interruptor: ligado, ${texto}`, 'Livre', { kind: 'feature', featureId: f, modo: ligado ? 'desligar' : 'ligar' }, false, rec, null,
+          { ativo: ligado, classe: 'interruptor', selo: ligado ? 'LIG' : 'DESL', linhas: [['Estado', ligado ? 'LIGADO' : 'desligado']] });
+        continue;
+      }
+      if (f === 'runeCarver') {
+        const NOMES = { runaDoFogo: 'Runa do Fogo', runaDoGelo: 'Runa do Gelo', runaDaColina: 'Runa da Colina', runaDaTempestade: 'Runa da Tempestade' };
+        for (const r of Object.keys(NOMES)) {
+          if (!(c.features ?? []).includes(r)) continue;
+          const armada = r === 'runaDoFogo' && c.runaDoFogoArmada;
+          comum('runeCarver', NOMES[r], r === 'runaDoFogo' ? 'Interruptor: o próximo acerto de arma do turno soma 2d6 de fogo e prende o alvo em correntes de fogo (Força).' : CARACTERISTICAS_NOME(r),
+            r === 'runaDoFogo' ? 'Livre' : 'Ação bônus', { kind: 'feature', featureId: 'runeCarver', modo: r }, !(c.resources?.[r] > 0) || (r !== 'runaDoFogo' && c.bonusUsed), r, null,
+            { ativo: Boolean(armada), selo: armada ? 'LIG' : null });
+        }
+        continue;
+      }
+      // ENCARNAÇÃO DA LEI (Ordem): interruptor.
+      if (f === 'embodimentOfTheLaw') {
+        const ligado = Boolean(c.encarnacaoLigada);
+        comum(f, 'Encarnação da Lei', `Interruptor: ligado, a próxima magia de encantamento de 1 ação sai como ação bônus. Usos: ${c.resources?.embodimentOfTheLaw ?? 0}.`, 'Livre',
+          { kind: 'feature', featureId: f, modo: ligado ? 'desligar' : 'ligar' }, !(c.resources?.embodimentOfTheLaw > 0) && !ligado, 'embodimentOfTheLaw', null,
+          { ativo: ligado, classe: 'interruptor', selo: ligado ? 'LIG' : 'DESL', linhas: [['Estado', ligado ? 'LIGADO' : 'desligado']] });
+        continue;
+      }
+      // TOTEM ESPIRITUAL (druida do Pastor): um azulejo por espírito.
+      if (f === 'spiritTotem') {
+        for (const [modo, nome, texto] of [
+          ['urso', 'Totem do Urso', `PV temporários (${5 + (c.level ?? 2)}) aos aliados a 9 m, e vantagem deles em Força.`],
+          ['falcao', 'Totem do Falcão', 'Sua reação dá vantagem ao ataque de um aliado contra quem está a 9 m do espírito.'],
+          ['unicornio', 'Totem do Unicórnio', 'A sua cura com espaço de magia cura também os aliados a 9 m, pelo seu nível.'],
+        ]) {
+          comum(f, nome, `${texto} Um minuto; uma vez por descanso curto ou longo.`, 'Ação bônus',
+            { kind: 'feature', featureId: f, modo }, c.bonusUsed || !(c.resources?.spiritTotem > 0), 'spiritTotem');
+        }
+        continue;
+      }
+      // GOLPE HÁBIL (Kensei, Um com a Lâmina): interruptor. AFIAR A LÂMINA: 1, 2 ou 3 de ki.
+      if (f === 'oneWithTheBlade') {
+        const ligado = Boolean(c.golpeHabilLigado);
+        comum(f, 'Golpe Hábil', `Interruptor: ligado, o primeiro acerto com arma kensei do turno gasta 1 de ki e soma ${c.dadoDeArtesMarciais ?? 'd6'}.`, 'Livre',
+          { kind: 'feature', featureId: f, modo: ligado ? 'desligar' : 'ligar' }, false, 'ki', null,
+          { ativo: ligado, classe: 'interruptor', selo: ligado ? 'LIG' : 'DESL', linhas: [['Estado', ligado ? 'LIGADO' : 'desligado']] });
+        continue;
+      }
+      if (f === 'sharpenTheBlade') {
+        for (const n of [1, 2, 3]) {
+          comum(f, `Afiar a Lâmina (${n} ki)`, `A arma kensei na mão ganha +${n} no ataque e no dano por um minuto.`, 'Ação bônus',
+            { kind: 'feature', featureId: f, modo: String(n) }, c.bonusUsed || (c.resources?.ki ?? 0) < n || hasCondition(c, 'laminaAfiada'), 'ki');
+        }
+        continue;
+      }
+      // LÂMINAS PSÍQUICAS (Colégio dos Sussurros): interruptor.
+      if (f === 'psychicBlades') {
+        const ligado = Boolean(c.laminasPsiquicasLigadas);
+        comum(f, 'Lâminas Psíquicas', `Interruptor: ligado, o acerto de arma do seu turno gasta uma Inspiração de Bardo e soma ${c.dadosDasLaminasPsiquicas ?? '2d6'} psíquico (uma vez por rodada).`, 'Livre',
+          { kind: 'feature', featureId: f, modo: ligado ? 'desligar' : 'ligar' }, false, 'bardicInspiration', null,
+          { ativo: ligado, classe: 'interruptor', selo: ligado ? 'LIG' : 'DESL', linhas: [['Estado', ligado ? 'LIGADO' : 'desligado']] });
         continue;
       }
       // REAGRUPAR e GOLPE DO COMANDANTE pedem um aliado: ficam no menu do botão direito sobre ele (interacoes-classe.js).

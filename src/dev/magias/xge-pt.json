@@ -1,0 +1,382 @@
+{
+ "Mold Earth": {
+  "nome": "Moldar Terra",
+  "desc": "Truque de transmutação: escolha um trecho de terra ou pedra visível a até 9 m, cabendo num cubo de 1,5 m, e aplique um efeito. Você pode cavar terra solta e deslocá-la instantaneamente até 1,5 m, sem causar dano, ou marcar a superfície com formas, cores, palavras ou desenhos por 1 hora. Também pode transformar o chão em terreno difícil, ou desfazer terreno difícil existente, por 1 hora. Só dois efeitos duradouros podem estar ativos ao mesmo tempo, e você pode encerrar um deles com uma ação."
+ },
+ "Melf's Minute Meteors": {
+  "nome": "Meteoros Diminutos de Melf",
+  "desc": "Seis pequenos meteoros passam a girar ao seu redor enquanto durar a concentração (até 10 minutos). Ao conjurar e, depois, com uma ação bônus em cada turno seu, você lança um ou dois deles contra pontos à sua escolha a até 36 m; cada um explode ao chegar ou ao bater numa superfície sólida. Criaturas a até 1,5 m da explosão fazem teste de resistência de Destreza contra 2d6 de dano de fogo, sofrendo metade se passarem. Para cada círculo acima do 3º, você cria mais dois meteoros."
+ },
+ "Absorb Elements": {
+  "nome": "Absorver Elementos",
+  "desc": "Reação usada quando você sofre dano ácido, de frio, fogo, elétrico ou trovejante: você ganha resistência a esse tipo de dano até o início do seu próximo turno. No seu próximo turno, o primeiro ataque corpo a corpo que acertar causa 1d6 de dano extra do mesmo tipo, e a magia termina. Em círculo maior, o dano extra aumenta em 1d6 por círculo acima do 1º."
+ },
+ "Sickening Radiance": {
+  "nome": "Radiância Nauseante",
+  "desc": "Uma esfera de 9 m de raio de luz verde e fraca surge num ponto a até 36 m e contorna cantos. Quem entra na área pela primeira vez no turno ou começa o turno nela faz um teste de resistência de Constituição; se falhar, sofre 4d10 de dano radiante, ganha um nível de exaustão e passa a brilhar num raio de 1,5 m, o que impede que se beneficie de estar invisível. Dura até 10 minutos (concentração), e o brilho e a exaustão causados por ela desaparecem quando a magia termina."
+ },
+ "Power Word Pain": {
+  "nome": "Palavra de Poder Dor",
+  "desc": "Escolha uma criatura visível a até 18 m; se ela tiver 100 PV ou menos e não for imune a ser enfeitiçada, é tomada por uma dor incapacitante, sem teste inicial; caso contrário, nada acontece. Enquanto sofre a dor, seu deslocamento fica limitado a 3 m e ela tem desvantagem em jogadas de ataque, testes de habilidade e testes de resistência, exceto os de Constituição. Para conjurar uma magia, precisa antes passar num teste de resistência de Constituição, ou a magia é perdida. Ao fim de cada turno dela, um novo teste de resistência de Constituição bem-sucedido encerra o efeito."
+ },
+ "Holy Weapon": {
+  "nome": "Arma Sagrada",
+  "desc": "Com uma ação bônus, você toca uma arma e a enche de poder divino por até 1 hora (concentração): ela se torna mágica, ilumina 9 m com luz plena e mais 9 m com penumbra, e cada ataque que acerta com ela causa 2d8 de dano radiante extra. Em um turno posterior, você pode gastar uma ação bônus para encerrar a magia num clarão: criaturas à sua escolha que você veja a até 9 m da arma fazem um teste de resistência de Constituição. Quem falha sofre 4d8 de dano radiante e fica cego por 1 minuto, repetindo o teste ao fim de cada turno para se livrar; quem passa sofre metade do dano e não fica cego."
+ },
+ "Storm Sphere": {
+  "nome": "Esfera da Tempestade",
+  "desc": "Cria por até 1 minuto (concentração) uma esfera de vento giratório com 6 m de raio, centrada num ponto a até 45 m. A área é terreno difícil, e quem estiver nela quando surge ou terminar o turno ali faz um teste de resistência de Força ou sofre 2d6 de dano de concussão; criaturas a até 9 m da esfera têm desvantagem em testes de Sabedoria (Percepção) para ouvir. Enquanto durar, você pode usar uma ação bônus por turno para lançar um raio do centro contra uma criatura a até 18 m dele, com um ataque de magia à distância (com vantagem se o alvo estiver dentro da esfera) que causa 4d6 de dano elétrico. Para cada círculo acima do 4º, cada efeito causa +1d6 de dano."
+ },
+ "Healing Spirit": {
+  "nome": "Espírito Curador",
+  "desc": "Com uma ação bônus, você invoca um espírito da natureza intangível, em forma de fera ou fada, num cubo de 1,5 m visível a até 18 m. Por até 1 minuto (concentração), sempre que você ou uma criatura que você veja entrar no espaço dele pela primeira vez no turno ou começar o turno ali, você pode fazê-la recuperar 1d6 PV sem gastar ação. Constructos e mortos-vivos não são curados. O espírito cura 1 + seu modificador de conjuração vezes (no mínimo 2) e então some, e com uma ação bônus você pode movê-lo até 9 m. Em círculo maior, a cura aumenta 1d6 por círculo acima do 2º."
+ },
+ "Zephyr Strike": {
+  "nome": "Golpe de Zéfiro",
+  "desc": "Com uma ação bônus, você se torna ágil como o vento e, enquanto a magia durar (concentração, até 1 minuto), seu movimento não provoca ataques de oportunidade. Uma única vez durante a duração, no seu turno, você pode fazer um ataque com arma com vantagem; se acertar, ele causa 1d8 de dano energético extra. Acertando ou errando, seu deslocamento de caminhada aumenta em 9 m até o fim desse turno."
+ },
+ "Whirlwind": {
+  "nome": "Redemoinho",
+  "desc": "Cria, num ponto do chão visível a até 90 m, um cilindro de vento com 3 m de raio e 9 m de altura, que você pode deslocar até 9 m com sua ação; objetos Médios ou menores soltos e não carregados são sugados. Na primeira vez no turno em que uma criatura é atingida pelo redemoinho, ela faz um teste de resistência de Destreza, sofrendo 10d6 de dano de concussão se falhar ou metade se passar; criaturas Grandes ou menores que falharem também fazem um teste de Força ou ficam contidas dentro dele, subindo 1,5 m a cada início de turno, movendo-se com o vento e caindo quando a magia acaba. Com uma ação, a criatura contida pode fazer um teste de Força ou Destreza contra sua CD para escapar, sendo arremessada 3d6 × 3 m em direção aleatória. Concentração, até 1 minuto."
+ },
+ "Tidal Wave": {
+  "nome": "Onda Gigante",
+  "desc": "Uma onda de água desaba sobre uma área de até 9 m de comprimento, 3 m de largura e 3 m de altura, a até 36 m de você. Cada criatura na área faz um teste de resistência de Destreza: se falhar, sofre 4d8 de dano de concussão e fica caída; se passar, sofre metade do dano e permanece de pé. Em seguida a água se espalha e some, apagando chamas desprotegidas na área e a até 9 m dela. Efeito instantâneo, sem concentração."
+ },
+ "Wall of Light": {
+  "nome": "Muralha de Luz",
+  "desc": "Cria, a até 36 m, uma parede de luz de até 18 m de comprimento, 3 m de altura e 1,5 m de espessura, em qualquer orientação; ela bloqueia a visão mas pode ser atravessada, e ilumina 36 m com luz plena e mais 36 m com penumbra (concentração, até 10 minutos). Quem estiver na área ao surgir faz teste de resistência de Constituição: falha causa 4d8 de dano radiante e deixa cego por 1 minuto (novo teste ao fim de cada turno), sucesso causa metade sem cegueira; quem terminar o turno dentro dela sofre 4d8 radiante. Com uma ação, você dispara um raio da parede contra uma criatura visível a até 18 m dela (ataque de magia à distância, 4d8 radiante), e a parede encolhe 3 m a cada disparo, acertando ou não, acabando ao chegar a zero. Em círculo 6 ou maior, todo o dano aumenta 1d8 por círculo acima do 5º."
+ },
+ "Soul Cage": {
+  "nome": "Gaiola de Almas",
+  "desc": "Como reação, quando um humanoide que você vê a até 18 m morre, você aprisiona a alma dele numa pequena gaiola de prata (100 po) por 8 horas. Enquanto ela estiver presa, o morto não pode ser revivido, e destruir a gaiola encerra a magia. Você pode explorar a alma até seis vezes, e na sexta ela se liberta. As opções são: ação bônus para recuperar 2d8 PV; uma pergunta sem gastar ação, que ela responde com verdade em uma ou duas frases, talvez enigmáticas, usando só o que sabia em vida; ação bônus para ganhar vantagem na próxima jogada de ataque, teste de habilidade ou de resistência antes do seu próximo turno; ou uma ação para criar um sensor invisível num lugar que o morto viu no mesmo plano, pelo qual você vê e ouve por até 10 minutos com concentração."
+ },
+ "Infestation": {
+  "nome": "Infestação",
+  "desc": "Truque: uma criatura visível a até 9 m é coberta por um enxame passageiro de pulgas e ácaros e faz um teste de resistência de Constituição contra a sua CD de magia. Se falhar, sofre 1d6 de dano de veneno e, se puder se mover e tiver deslocamento de pelo menos 1,5 m, desloca-se 1,5 m numa direção aleatória (role 1d4: 1 norte, 2 sul, 3 leste, 4 oeste), sem provocar ataques de oportunidade; se o caminho estiver bloqueado, ela fica onde está. Efeito instantâneo. O dano sobe para 2d6 no 5º nível do personagem, 3d6 no 11º e 4d6 no 17º."
+ },
+ "Tenser's Transformation": {
+  "nome": "Transformação de Tenser",
+  "desc": "Em você mesmo, por até 10 minutos (concentração): você não pode conjurar magias, mas recebe 50 PV temporários (que somem ao fim) e proficiência com todas as armaduras, escudos e armas simples e marciais, além de proficiência em testes de resistência de Força e Constituição. Seus ataques com armas simples e marciais têm vantagem, cada acerto com arma causa 2d12 de dano energético extra e a ação de Ataque permite dois ataques (sem somar a Ataque Extra ou efeito semelhante). Quando a magia termina, faça um teste de resistência de Constituição CD 15; se falhar, sofre um nível de exaustão."
+ },
+ "Mighty Fortress": {
+  "nome": "Fortaleza Poderosa",
+  "desc": "Ergue do chão, num quadrado vazio de 36 m de lado visível a até 1,5 km, uma fortaleza de pedra com quatro torres de 9 m de altura nos cantos, muralhas de 30 cm de espessura com até quatro portas e, no centro, uma torre de menagem de três andares (15 m de lado) mobiliada como você quiser, com comida para um banquete diário de até 100 pessoas; criaturas na área são erguidas sem sofrer dano. Cem servos invisíveis (como Servo Invisível) obedecem às criaturas que você designar, e mobília, comida e objetos criados viram pó se saírem do local. Cada seção de 3 m × 3 m tem CA 15, 30 PV por 2,5 cm de espessura e imunidade a dano de veneno e psíquico. A fortaleza afunda inofensivamente após 7 dias ou se você conjurar a magia em outro lugar, mas se torna permanente se for conjurada no mesmo ponto a cada 7 dias durante um ano; consome um diamante de 500 po."
+ },
+ "Catapult": {
+  "nome": "Catapulta",
+  "desc": "Você arremessa um objeto solto de 0,5 a 2,5 kg a até 18 m de você, que voa em linha reta por até 27 m na direção escolhida e para antes se bater numa superfície sólida. Uma criatura no caminho faz um teste de resistência de Destreza; se falhar, é atingida e o objeto para ali. Ao acertar algo, tanto o objeto quanto o que ele atingiu sofrem 3d8 de dano de concussão. Em círculo maior, cada círculo acima do 1º aumenta o peso máximo em 2,5 kg e o dano em 1d8."
+ },
+ "Frostbite": {
+  "nome": "Queimadura de Gelo",
+  "desc": "Truque que cobre de geada uma criatura visível a até 18 m, que faz um teste de resistência de Constituição contra a sua CD de magia. Se falhar, sofre 1d6 de dano de frio e tem desvantagem na próxima jogada de ataque com arma que fizer até o fim do seu próximo turno; se passar, nada acontece. O dano sobe para 2d6 no 5º nível de personagem, 3d6 no 11º e 4d6 no 17º."
+ },
+ "Find Greater Steed": {
+  "nome": "Encontrar Montaria Maior",
+  "desc": "Após 10 minutos de conjuração, um espírito surge num espaço livre a até 9 m na forma escolhida de grifo, pégaso, perytão, lobo atroz, rinoceronte ou tigre-dentes-de-sabre, usando as estatísticas dessa criatura, mas sendo celestial, feérico ou corruptor (à sua escolha); se tiver Inteligência 5 ou menos, ela passa a 6 e a montaria entende um idioma que você fala. Você a controla em combate, fala com ela por telepatia a até 1,5 km e, montado, pode fazer suas magias que miram só você também mirarem a montaria. Ela some ao chegar a 0 PV ou quando você a dispensa com uma ação, largando o que carregava, e reconjurar a traz de volta com PV cheios e sem condições; só é possível ter um vínculo desta magia ou de Encontrar Montaria por vez, e com uma ação você desfaz o vínculo de vez."
+ },
+ "Scatter": {
+  "nome": "Dispersar",
+  "desc": "Escolha até cinco criaturas que você possa ver a até 9 m e teleporte cada uma para um espaço desocupado no chão, visível para você, a até 36 m de distância. Alvos que não aceitem o efeito fazem um teste de resistência de Sabedoria contra a CD da magia e não são movidos se passarem. O efeito é instantâneo e exige apenas componente verbal."
+ },
+ "Dragon's Breath": {
+  "nome": "Sopro do Dragão",
+  "desc": "Com uma ação bônus, você toca uma criatura voluntária que tenha boca e escolhe ácido, frio, fogo, elétrico ou veneno; enquanto durar a concentração (até 1 minuto), ela pode usar a ação dela para soprar essa energia em um cone de 4,5 m. Quem estiver no cone faz um teste de resistência de Destreza contra a sua CD, sofrendo 3d6 de dano do tipo escolhido se falhar, ou metade se passar. Em círculo 3 ou maior, o dano aumenta em 1d6 para cada círculo acima do 2º."
+ },
+ "Pyrotechnics": {
+  "nome": "Pirotecnia",
+  "desc": "Escolha uma chama não mágica visível a até 18 m que caiba num cubo de 1,5 m; ela se apaga e você escolhe um de dois efeitos, de forma instantânea. Fogos de artifício: cada criatura a até 3 m da chama faz um teste de resistência de Constituição (CD de magia) e, se falhar, fica cega até o fim do seu próximo turno. Fumaça: uma nuvem negra com 6 m de raio se espalha a partir da chama, contornando esquinas, deixando a área com escuridão densa por 1 minuto ou até um vento forte dissipá-la."
+ },
+ "Transmute Rock": {
+  "nome": "Transmutar Rocha",
+  "desc": "Escolha uma área visível de pedra ou lama, cabendo num cubo de 12 m, a até 36 m, e transforme-a de forma permanente (até ser dissipada). Rocha em lama: a pedra não mágica vira lama espessa, onde cada 0,3 m de deslocamento custa 1,2 m. Quem estiver no chão ao lançar, entrar na área pela primeira vez no turno ou terminar o turno nela faz teste de resistência de Força (CD de magia) e, se falhar, afunda e fica contido até gastar uma ação para se soltar; se lançada num teto, a lama desaba e quem estiver embaixo faz teste de Destreza, sofrendo 4d8 de concussão (metade se passar). Lama em rocha: lama ou areia movediça não mágica de até 3 m de profundidade vira pedra macia, e quem estiver dentro faz teste de Destreza: se passar, é empurrado à superfície num espaço livre; se falhar, fica contido. A criatura presa, ou outra ao alcance, pode usar uma ação para quebrar a pedra com teste de Força CD 20 ou causando dano a ela (CA 15, 25 PV, imune a veneno e psíquico)."
+ },
+ "Chaos Bolt": {
+  "nome": "Raio do Caos",
+  "desc": "Faça um ataque mágico à distância contra uma criatura a até 36 m; se acertar, ela sofre 2d8 + 1d6 de dano, cujo tipo é definido por um dos d8 à sua escolha (1 ácido, 2 frio, 3 fogo, 4 energético, 5 elétrico, 6 veneno, 7 psíquico, 8 trovejante). Se os dois d8 mostrarem o mesmo número, a energia salta para outra criatura escolhida a até 9 m do alvo, com novo ataque e nova rolagem de dano, podendo saltar de novo. Cada criatura só pode ser atingida uma vez por conjuração. Em círculo maior, cada alvo sofre +1d6 de dano por círculo acima do 1º."
+ },
+ "Earthbind": {
+  "nome": "Prender à Terra",
+  "desc": "Uma criatura que você veja a até 90 m faz um teste de resistência de Força contra a CD da magia; se falhar, seu deslocamento de voo cai para 0 enquanto durar o efeito. Se estiver no ar, ela desce sem sofrer dano a 18 m por rodada até tocar o chão ou a magia acabar. Concentração, até 1 minuto."
+ },
+ "Shadow Blade": {
+  "nome": "Lâmina Sombria",
+  "desc": "Com uma ação bônus, você materializa na mão uma espada de sombra que dura enquanto mantiver a concentração (até 1 minuto). Ela conta como arma simples corpo a corpo na qual você é proficiente, causa 2d8 de dano psíquico e é acuidade, leve e de arremesso (6/18 m), e você tem vantagem ao atacar alvos em penumbra ou escuridão. Se a soltar ou arremessar, ela some no fim do turno, mas uma ação bônus a traz de volta enquanto a magia durar. O dano sobe para 3d8 no 3º ou 4º círculo, 4d8 no 5º ou 6º e 5d8 do 7º em diante."
+ },
+ "Warding Wind": {
+  "nome": "Vento Protetor",
+  "desc": "Você se envolve num vendaval de cerca de 30 km/h que forma um raio de 3 m centrado em você e o acompanha por até 10 minutos (concentração). Dentro dele, você e todas as outras criaturas ficam surdas, chamas do tamanho de uma tocha ou menores que estejam desprotegidas se apagam, e névoas, gases e vapores que um vento forte dispersaria não conseguem entrar. A área é terreno difícil para todos menos você, e ataques à distância com armas que entrem ou saiam do vento têm desvantagem."
+ },
+ "Negative Energy Flood": {
+  "nome": "Inundação de Energia Negativa",
+  "desc": "Uma criatura que você veja a até 18 m é atingida por energia negativa e faz um teste de resistência de Constituição: sofre 5d12 de dano necrótico se falhar, ou metade se passar. Se esse dano a matar, ela se ergue como zumbi no início do seu próximo turno e ataca a criatura visível mais próxima. Se o alvo for um morto-vivo, não há teste: ele recebe PV temporários iguais à metade de 5d12. Efeito instantâneo."
+ },
+ "Ceremony": {
+  "nome": "Cerimônia",
+  "desc": "Ritual de 1 hora que consome 25 po de pó de prata; você toca o alvo, que deve permanecer a até 3 m durante toda a conjuração, e escolhe um rito. Expiação: com um teste de Sabedoria (Intuição) CD 20, uma criatura voluntária que mudou de tendência volta à original; Abençoar Água: um frasco de água vira água benta; Funeral: por 7 dias o cadáver tocado não pode se tornar morto-vivo, exceto por Desejo. Maioridade e Dedicação: por 24 horas, um humanoide jovem adulto soma 1d4 aos testes de habilidade (Maioridade) ou um devoto soma 1d4 aos testes de resistência (Dedicação), uma única vez na vida. Casamento: por 7 dias, os adultos unidos ganham +2 na CA enquanto estiverem a até 9 m um do outro, e só podem repetir o rito se ficarem viúvos."
+ },
+ "Cause Fear": {
+  "nome": "Causar Medo",
+  "desc": "Escolha uma criatura visível a até 18 m; constructos e mortos-vivos não são afetados. O alvo faz um teste de resistência de Sabedoria e, se falhar, fica amedrontado por você por até 1 minuto (concentração), podendo repetir o teste ao fim de cada turno dele para se livrar do efeito. Em círculo 2 ou maior, afeta uma criatura extra por círculo acima do 1º, desde que todas estejam a até 9 m umas das outras."
+ },
+ "Dawn": {
+  "nome": "Alvorada",
+  "desc": "Um cilindro de luz solar intensa, com 9 m de raio e 12 m de altura, surge num ponto a até 18 m e dura até 1 minuto (concentração). Quem estiver na área quando ela aparece, ou terminar o turno dentro dela, faz um teste de resistência de Constituição e sofre 4d10 de dano radiante se falhar, ou metade se passar. Com uma ação bônus, estando a até 18 m do cilindro, você pode deslocá-lo até 18 m. Exige um pingente em forma de sol de pelo menos 100 po."
+ },
+ "Primordial Ward": {
+  "nome": "Proteção Primordial",
+  "desc": "Abjuração em você mesmo que dura até 1 minuto (concentração) e concede resistência a dano de ácido, frio, fogo, elétrico e trovejante. Ao sofrer dano de um desses tipos, você pode usar sua reação para trocar todas as resistências por imunidade àquele tipo, valendo inclusive contra o dano que a provocou. A imunidade dura até o fim do seu próximo turno e, nesse momento, a magia termina."
+ },
+ "Maximilian's Earthen Grasp": {
+  "nome": "Garra Terrena de Maximilian",
+  "desc": "Uma mão Média de terra compactada surge em um espaço desocupado de 1,5 m no chão a até 9 m e tenta agarrar uma criatura a até 1,5 m dela: se falhar num teste de resistência de Força, o alvo sofre 2d6 de dano de concussão e fica contido enquanto a magia durar (concentração, até 1 minuto). Com sua ação, você pode fazer a mão esmagar o alvo contido (2d6 de concussão, metade se passar num teste de Força) ou mandá-la agarrar outra criatura ou mudar de espaço dentro do alcance, o que solta quem ela estiver prendendo. A vítima pode usar a ação para fazer um teste de Força contra a CD da sua magia e escapar se tiver sucesso."
+ },
+ "Create Bonfire": {
+  "nome": "Criar Fogueira",
+  "desc": "Truque de conjuração: surge uma fogueira mágica num cubo de 1,5 m em um ponto do chão visível a até 18 m, que dura até 1 minuto (concentração). Quem estiver no espaço ao conjurar, entrar nele pela primeira vez no turno ou terminar o turno ali faz teste de resistência de Destreza contra a CD da magia e, se falhar, sofre 1d8 de dano de fogo. As chamas incendeiam objetos inflamáveis na área que ninguém esteja vestindo ou carregando. O dano sobe para 2d8 no 5º nível do personagem, 3d8 no 11º e 4d8 no 17º."
+ },
+ "Primal Savagery": {
+  "nome": "Selvageria Primal",
+  "desc": "Seus dentes ou unhas se tornam afiados e corrosivos por um instante, e você faz um ataque mágico corpo a corpo contra uma criatura a até 1,5 m. Se acertar, ela sofre 1d10 de dano ácido; depois do golpe, seu corpo volta ao normal. É um truque: o dano aumenta para 2d10 no 5º nível de personagem, 3d10 no 11º e 4d10 no 17º."
+ },
+ "Flame Arrows": {
+  "nome": "Flechas Flamejantes",
+  "desc": "Ao tocar uma aljava com flechas ou virotes, você encanta a munição dela: cada ataque à distância que acertar com um projétil tirado dali causa 1d6 de dano de fogo adicional. Cada projétil perde o efeito depois de usado, acerte ou erre, e a magia termina quando doze projéteis tiverem sido retirados ou após 1 hora (concentração). Em círculo maior, a aljava encanta dois projéteis a mais por círculo acima do 3º."
+ },
+ "Earth Tremor": {
+  "nome": "Tremor de Terra",
+  "desc": "Você faz o chão tremer ao seu redor, afetando todas as outras criaturas a até 3 m de você, que fazem um teste de resistência de Destreza. Quem falha sofre 1d6 de dano de concussão e fica caído; quem passa não sofre nada. Se o solo da área for de terra solta ou pedra, vira terreno difícil até ser limpo, o que exige pelo menos 1 minuto de trabalho manual para cada trecho de 1,5 m de diâmetro. Efeito instantâneo; em círculo maior, o dano aumenta em 1d6 por círculo acima do 1º."
+ },
+ "Maddening Darkness": {
+  "nome": "Escuridão Enlouquecedora",
+  "desc": "Você escolhe um ponto a até 45 m e enche uma esfera de 18 m de raio com escuridão mágica, que contorna cantos, bloqueia até a visão no escuro e não é iluminada por luz comum nem por magias de 8º círculo ou menor. Dentro dela ecoam gritos e risadas insanas: toda criatura que começa o turno na área faz um teste de resistência de Sabedoria, sofrendo 8d8 de dano psíquico se falhar ou metade se passar. Dura até 10 minutos, com concentração."
+ },
+ "Druid Grove": {
+  "nome": "Bosque Druídico",
+  "desc": "Com 10 minutos de conjuração, você consagra uma área ao ar livre ou subterrânea (cubo de 9 m a 27 m de lado, sem incluir construções) por 24 horas; repetida no mesmo local diariamente por um ano, torna-se permanente até ser dissipada. Aliados escolhidos e quem disser uma senha definida por você ficam imunes aos efeitos: quadrados de névoa densa com 3 m de altura (área de escuridão densa, cada 1,5 m de movimento custa 3 m a mais), vegetação que prende como Constrição em quadrados sem névoa, e até quatro árvores animadas com as estatísticas de árvore desperta (sem fala), que atacam intrusos, obedecem às suas ordens verbais sem gastar ação e não deixam a área. Você ainda escolhe um efeito extra: Lufada de Vento constante em dois pontos, Crescer Espinhos em um ponto ou Muralha de Vento em dois pontos. Dissipar Magia bem-sucedida remove apenas um desses efeitos, escolhido por quem a conjura, e a magia só termina quando todos forem removidos."
+ },
+ "Far Step": {
+  "nome": "Passo Distante",
+  "desc": "Com uma ação bônus, você se teletransporta até 18 m para um espaço desocupado que consiga ver. Enquanto mantiver a concentração, por até 1 minuto, pode repetir o salto em cada um dos seus turnos gastando uma ação bônus. A magia exige apenas componente verbal."
+ },
+ "Summon Greater Demon": {
+  "nome": "Invocar Demônio Maior",
+  "desc": "Traz do Abismo um demônio de ND 5 ou menor, à sua escolha, em um espaço visível a até 18 m. Ele age na própria iniciativa e cumpre suas ordens verbais (sem custo de ação), mas ao fim de cada turno faz um teste de resistência de Carisma, com desvantagem se você disser o nome verdadeiro dele. Se passar, fica livre e ataca os não demônios mais próximos; some ao chegar a 0 PV ou quando a magia acaba (concentração, até 1 hora), e, se você perder a concentração antes, um demônio fora de controle ainda permanece por 1d6 rodadas. Com o sangue do componente você pode traçar um círculo ao seu redor que o demônio não pode cruzar, danificar nem usar para mirar alguém dentro dele (o sangue é consumido), e o ND máximo aumenta em 1 por círculo acima do 4º."
+ },
+ "Mental Prison": {
+  "nome": "Prisão Mental",
+  "desc": "Uma criatura visível a até 18 m faz um teste de resistência de Inteligência (sucesso automático se for imune a ficar enfeitiçado). Com sucesso, sofre 5d10 de dano psíquico e a magia termina. Com falha, sofre o mesmo dano e fica presa numa cela ilusória que só ela percebe, com aparência ameaçadora à sua escolha; enquanto durar, fica contida e não vê nem ouve nada além dela. Se for tirada da ilusão, atacar corpo a corpo através dela ou passar qualquer parte do corpo por ela, sofre 10d10 de dano psíquico e a magia acaba; concentração, até 1 minuto."
+ },
+ "Word of Radiance": {
+  "nome": "Palavra de Radiância",
+  "desc": "Truque que exige um símbolo sagrado: ao pronunciar uma palavra divina, você escolhe quaisquer criaturas que esteja vendo a até 1,5 m de você. Cada uma faz um teste de resistência de Constituição contra a sua CD de magia e, se falhar, sofre 1d6 de dano radiante. O efeito é instantâneo. O dano sobe para 2d6 no 5º nível de personagem, 3d6 no 11º e 4d6 no 17º."
+ },
+ "Aganazzar's Scorcher": {
+  "nome": "Abrasador de Aganazzar",
+  "desc": "Você projeta uma faixa de fogo de 9 m de comprimento por 1,5 m de largura na direção que escolher. Cada criatura atingida faz um teste de resistência de Destreza: sofre 3d8 de dano de fogo se falhar ou metade se passar. O efeito é instantâneo. Em círculo 3 ou maior, o dano sobe 1d8 para cada círculo acima do 2º."
+ },
+ "Investiture of Stone": {
+  "nome": "Investidura de Pedra",
+  "desc": "Por até 10 minutos (concentração), seu corpo se cobre de rocha e você ganha resistência a dano cortante, perfurante e de concussão vindo de ataques não mágicos. Com uma ação, você faz o chão tremer num raio de 4,5 m ao seu redor, e as demais criaturas nesse solo precisam passar num teste de resistência de Destreza contra a sua CD ou ficam caídas. Terreno difícil de terra ou pedra não lhe custa movimento extra, e você atravessa terra e pedra sólidas como se fossem ar, sem abalá-las. Porém, se terminar o movimento dentro delas, é expelido para o espaço livre mais próximo, a magia acaba e você fica atordoado até o fim do seu próximo turno."
+ },
+ "Dust Devil": {
+  "nome": "Redemoinho de Poeira",
+  "desc": "Você cria um redemoinho elemental num cubo de ar vazio de 1,5 m que consiga ver a até 18 m, que dura até 1 minuto (concentração). Quem terminar o turno a até 1,5 m dele faz um teste de resistência de Força: se falhar, sofre 1d8 de dano de concussão e é empurrado 3 m para longe; se passar, sofre metade e fica no lugar. Com uma ação bônus, você desloca o redemoinho até 9 m; se ele passar sobre areia, poeira, terra solta ou cascalho fino, forma ao redor uma nuvem de detritos de 3 m de raio que deixa a área densamente obscurecida até o início do seu próximo turno. Em círculos acima do 2º, o dano aumenta em 1d8 por círculo."
+ },
+ "Gust": {
+  "nome": "Rajada",
+  "desc": "Truque de transmutação: você manipula o ar num ponto visível a até 9 m e escolhe um de três efeitos. Uma criatura Média ou menor faz um teste de resistência de Força e, se falhar, é empurrada até 1,5 m para longe de você; ou um objeto solto de até 2,5 kg, que ninguém esteja segurando ou carregando, é deslocado até 3 m para longe de você, sem causar dano. Também pode criar um efeito sensorial inofensivo, como folhas farfalhando, janelas batendo ou roupas tremulando ao vento. O efeito é instantâneo."
+ },
+ "Mass Polymorph": {
+  "nome": "Metamorfose em Massa",
+  "desc": "Até dez criaturas à sua escolha que você veja a até 36 m viram feras escolhidas por você, iguais ou diferentes para cada uma, que você já tenha visto e com ND não maior que o do alvo (ou metade do nível, se não tiver ND); alvos relutantes resistem com um teste de resistência de Sabedoria, e metamorfos passam automaticamente. Cada alvo usa as estatísticas da fera, inclusive as mentais, mas mantém tendência, personalidade e seus PV, recebendo PV temporários iguais aos PV da nova forma, que não podem ser substituídos por outra fonte. Volta ao normal quando esses PV temporários acabam, quando morre ou quando a magia termina (concentração, até 1 hora). Na forma de fera não fala, não conjura magias nem faz nada que exija mãos ou fala, e o equipamento se funde ao corpo, sem poder ser usado."
+ },
+ "Life Transference": {
+  "nome": "Transferência de Vida",
+  "desc": "Você sofre 4d8 de dano necrótico, que não pode ser reduzido de forma alguma, e uma criatura que você veja a até 9 m recupera PV iguais ao dobro desse dano. O efeito é instantâneo e não exige teste de resistência. Em círculo 4 ou maior, o dano que você sofre aumenta em 1d8 por círculo acima do 3º, e a cura cresce junto."
+ },
+ "Watery Sphere": {
+  "nome": "Esfera Aquosa",
+  "desc": "Cria uma esfera de água com 1,5 m de raio em um ponto visível a até 27 m, que flutua no máximo 3 m acima do chão (concentração, até 1 minuto). Criaturas no espaço dela fazem teste de resistência de Força contra a sua CD: quem falha fica contido e envolvido pela água, repetindo o teste no fim de cada turno; quem passa é empurrado para fora (criaturas Enormes ou maiores passam automaticamente, e as demais podem escolher falhar). A esfera comporta até quatro criaturas Médias ou menores ou uma Grande; se exceder isso, uma aleatória cai caída ao lado. Com uma ação, você a move até 9 m em linha reta, levando os contidos e forçando novos testes em quem atingir; ao fim, ela desaba, apaga chamas comuns a até 9 m e deixa os contidos caídos."
+ },
+ "Steel Wind Strike": {
+  "nome": "Golpe do Vento de Aço",
+  "desc": "Escolha até cinco criaturas visíveis a até 9 m e faça um ataque corpo a corpo com magia contra cada uma; cada acerto causa 6d10 de dano energético. Depois dos ataques, você pode se teletransportar para um espaço desocupado visível a até 1,5 m de qualquer um dos alvos, tenha acertado ou não. O efeito é instantâneo e exige como componente uma arma corpo a corpo que valha pelo menos 1 PP."
+ },
+ "Abi-Dalzim's Horrid Wilting": {
+  "nome": "Murchar Horrendo de Abi-Dalzim",
+  "desc": "Escolha um ponto a até 45 m: toda criatura num cubo de 9 m centrado nele tem a umidade do corpo sugada e faz um teste de resistência de Constituição, sofrendo 12d8 de dano necrótico se falhar ou metade se passar. Mortos-vivos e constructos são imunes, enquanto plantas e elementais da água fazem o teste com desvantagem. Árvores, arbustos e outras plantas comuns que não sejam criaturas secam e morrem na hora. O efeito é instantâneo e não exige concentração."
+ },
+ "Investiture of Wind": {
+  "nome": "Investidura do Vento",
+  "desc": "Por até 10 minutos (concentração), ventos giram ao seu redor: ataques à distância com armas contra você têm desvantagem e você ganha deslocamento de voo de 18 m, caindo se ainda estiver no ar quando a magia acabar. Com sua ação, você pode criar um cubo de vento de 4,5 m centrado num ponto visível a até 18 m; cada criatura ali faz um teste de resistência de Constituição, sofrendo 2d10 de dano de concussão se falhar ou metade se passar. Criaturas Grandes ou menores que falharem também são empurradas até 3 m para longe do centro do cubo."
+ },
+ "Skywrite": {
+  "nome": "Escrita Celeste",
+  "desc": "Você molda até dez palavras feitas de nuvem em um ponto do céu que consiga ver, e elas ficam paradas ali por até 1 hora (concentração). A mensagem some quando a magia termina, e um vento forte pode desfazer as nuvens e encerrá-la antes do tempo. Pode ser conjurada como ritual."
+ },
+ "Synaptic Static": {
+  "nome": "Estática Sináptica",
+  "desc": "Uma explosão psíquica atinge uma esfera de 6 m de raio num ponto a até 36 m; cada criatura na área faz um teste de resistência de Inteligência (CD de INT), sofrendo 8d6 de dano psíquico se falhar ou metade se passar. Criaturas com Inteligência 2 ou menos são imunes. Quem falha fica com a mente confusa por 1 minuto: subtrai 1d6 de suas jogadas de ataque, testes de habilidade e testes de Constituição para manter concentração. O alvo repete o teste de Inteligência ao fim de cada turno seu, encerrando o efeito se passar."
+ },
+ "Magic Stone": {
+  "nome": "Pedra Encantada",
+  "desc": "Com uma ação bônus, você toca até três pedrinhas e as carrega de magia por 1 minuto. Qualquer criatura pode usá-las num ataque mágico à distância, arremessando-as (alcance de 18 m) ou disparando-as com uma funda, sempre somando o seu modificador de conjuração à jogada. Cada acerto causa 1d6 + seu modificador de conjuração de dano de concussão, e a pedra perde a magia após o ataque, acertando ou não. Conjurar a magia de novo anula as pedras que restarem da conjuração anterior."
+ },
+ "Temple of the Gods": {
+  "nome": "Templo dos Deuses",
+  "desc": "Ergue, a até 36 m, um templo de força mágica opaca com até 36 m de lado, consagrado à divindade do símbolo sagrado usado, com aparência e iluminação à sua escolha e uma porta que só você e os aliados designados abrem; dura 24 horas, nada o atravessa fisicamente nem pelo Plano Etéreo, e ele resiste a dissipar magia e campo antimagia, mas desintegrar o destrói. Escolha celestiais, elementais, fadas, corruptores ou mortos-vivos: criaturas desses tipos que tentem entrar fazem teste de resistência de Carisma e, se falharem, ficam barradas por 24 horas; as que entrarem subtraem 1d4 de jogadas de ataque, testes de atributo e testes de resistência lá dentro. Sensores e alvos de adivinhação não funcionam no interior, e quem recuperar PV por magia de 1º círculo ou maior ali ganha PV extras iguais ao seu modificador de Sabedoria (mínimo 1). Conjurá-la no mesmo local diariamente por um ano torna o templo permanente."
+ },
+ "Shape Water": {
+  "nome": "Moldar Água",
+  "desc": "Truque que afeta um volume de água visível a até 9 m, cabendo num cubo de 1,5 m. Você pode deslocar a água ou desviar seu fluxo em até 1,5 m, sem força para causar dano; ou, por 1 hora, dar a ela formas simples que se movem ao seu comando, mudar de maneira uniforme sua cor ou transparência, ou congelá-la se não houver criaturas dentro. No máximo dois efeitos duradouros ficam ativos ao mesmo tempo, e você pode encerrar um deles com uma ação."
+ },
+ "Guardian of Nature": {
+  "nome": "Guardião da Natureza",
+  "desc": "Com uma ação bônus, você assume por até 1 minuto (concentração) uma de duas formas concedidas por um espírito da natureza. Fera Primal: +3 m de deslocamento, visão no escuro de 36 m, vantagem em ataques baseados em Força e +1d6 de dano energético nos acertos com armas corpo a corpo. Grande Árvore: 10 PV temporários, vantagem em testes de resistência de Constituição e em ataques baseados em Destreza ou Sabedoria, e o chão num raio de 4,5 m ao seu redor vira terreno difícil para inimigos enquanto você estiver no solo."
+ },
+ "Danse Macabre": {
+  "nome": "Dança Macabra",
+  "desc": "Até cinco cadáveres Pequenos ou Médios que você veja a até 18 m se erguem como zumbis ou esqueletos, à sua escolha, somando o seu modificador de conjuração às jogadas de ataque e de dano. Com uma ação bônus, você dá a mesma ordem mental a todos os que estiverem a até 18 m, seja uma ação e um deslocamento para o próximo turno ou uma tarefa geral como vigiar um local; sem ordens, eles apenas se defendem. Os mortos-vivos obedecem enquanto durar a concentração, por até 1 hora, e depois voltam a ser cadáveres. Em círculo maior que o 5º, anima dois cadáveres a mais por círculo acima do 5º."
+ },
+ "Immolation": {
+  "nome": "Imolação",
+  "desc": "Uma criatura visível a até 27 m faz um teste de resistência de Destreza: sofre 8d6 de dano de fogo se falhar, ou metade se passar. Quem falha fica em chamas enquanto durar a concentração (até 1 minuto), emitindo luz plena em 9 m e penumbra por mais 9 m, e repete o teste ao fim de cada turno seu: na falha sofre 4d6 de fogo, no sucesso a magia acaba. O fogo só se apaga por meios mágicos, e quem morrer pelo dano da magia vira cinzas."
+ },
+ "Beast Bond": {
+  "nome": "Vínculo com Besta",
+  "desc": "Você toca uma besta amigável ou enfeitiçada por você e cria com ela uma ligação telepática; a magia não funciona se a Inteligência da besta for 4 ou mais. Enquanto vocês estiverem na linha de visão um do outro, a besta entende suas mensagens mentais e lhe responde com emoções e ideias simples. Durante a ligação, ela tem vantagem nas jogadas de ataque contra criaturas que você veja a até 1,5 m de você. Concentração, até 10 minutos."
+ },
+ "Shadow of Moil": {
+  "nome": "Sombra de Moil",
+  "desc": "Você fica envolto por sombras em forma de chamas e passa a ser considerado em área de escuridão densa para os outros. Num raio de 3 m ao seu redor, a luz plena cai para penumbra e a penumbra vira escuridão. Você também ganha resistência a dano radiante, e cada criatura a até 3 m que o acertar com um ataque sofre 2d8 de dano necrótico. Dura 1 minuto (concentração) e exige um olho de morto-vivo engastado numa gema de 150 po."
+ },
+ "Control Winds": {
+  "nome": "Controlar Ventos",
+  "desc": "Você domina o ar de um cubo de 30 m visível a até 90 m e escolhe um modo, podendo trocá-lo, pausá-lo ou retomá-lo com sua ação; dura até 1 hora (concentração). Rajadas: vento horizontal na direção escolhida, calmo, moderado ou forte; moderado ou forte impõe desvantagem a ataques com armas à distância que cruzem o cubo ou mirem alvos nele, e forte transforma o avanço contra o vento em terreno difícil. Corrente descendente: impõe a mesma desvantagem aos ataques à distância, e quem voa para dentro do cubo pela primeira vez no turno ou começa o turno voando nele faz teste de resistência de Força ou fica caído. Corrente ascendente: quedas que terminam no cubo causam metade do dano e saltos verticais ali alcançam até 3 m a mais."
+ },
+ "Maelstrom": {
+  "nome": "Turbilhão",
+  "desc": "Você faz surgir, num ponto visível no chão ou na água a até 36 m, um turbilhão de água com 1,5 m de profundidade e 9 m de raio, que conta como terreno difícil enquanto durar (concentração, até 1 minuto). Toda criatura que começa o turno na área faz um teste de resistência de Força contra a sua CD; se falhar, sofre 6d6 de dano de concussão e é arrastada 3 m em direção ao centro."
+ },
+ "Elemental Bane": {
+  "nome": "Ruína Elemental",
+  "desc": "Escolha uma criatura visível a até 27 m e um tipo de dano entre ácido, frio, fogo, elétrico ou trovejante; ela precisa passar num teste de resistência de Constituição contra a sua CD ou fica sob o efeito por até 1 minuto (concentração). Enquanto durar, o alvo perde a resistência ao tipo escolhido, e na primeira vez em cada turno que sofrer dano desse tipo recebe 2d6 de dano adicional do mesmo tipo. Em círculo 5 ou maior, afeta uma criatura extra por círculo acima do 4º, desde que todas estejam a até 9 m umas das outras."
+ },
+ "Wall of Sand": {
+  "nome": "Muralha de Areia",
+  "desc": "Ergue, num ponto visível a até 27 m, uma muralha de areia rodopiante com até 9 m de comprimento, 3 m de altura e 3 m de espessura, que dura enquanto você mantiver a concentração, por até 10 minutos. A muralha impede a visão através dela, mas não bloqueia a passagem. Quem estiver dentro dela fica cego e gasta 90 cm de deslocamento para cada 30 cm que avança ali."
+ },
+ "Tiny Servant": {
+  "nome": "Servo Minúsculo",
+  "desc": "Com um toque, você dá vida a um objeto Minúsculo e não mágico que esteja solto e que ninguém esteja carregando; ele ganha bracinhos e perninhas e fica sob seu controle por 8 horas, sem concentração, ou até chegar a 0 PV, quando volta a ser objeto e o dano excedente passa para ele. Com uma ação bônus, você comanda mentalmente um ou todos os servos a até 36 m, definindo a ação e o movimento do próximo turno ou dando uma tarefa simples, que eles cumprem até o fim; sem ordens, apenas se defendem. Usa o bloco de estatísticas do servo minúsculo. Em círculo 4 ou maior, anima dois objetos a mais por círculo acima do 3º."
+ },
+ "Vitriolic Sphere": {
+  "nome": "Esfera Vitriólica",
+  "desc": "Uma bola de ácido esmeralda voa até um ponto a até 45 m e explode, atingindo todas as criaturas numa esfera de 6 m de raio, que fazem um teste de resistência de Destreza. Quem falha sofre 10d4 de dano ácido na hora e mais 5d4 de dano ácido no fim do seu próximo turno; quem passa sofre só metade do dano inicial e nada depois. Efeito instantâneo, sem concentração. Em círculo 5 ou maior, o dano inicial aumenta em 2d4 por círculo acima do 4º."
+ },
+ "Ice Knife": {
+  "nome": "Faca de Gelo",
+  "desc": "Arremesse um estilhaço de gelo contra uma criatura a até 18 m com um ataque mágico à distância; se acertar, ela sofre 1d10 de dano perfurante. Acertando ou não, o estilhaço explode: o alvo e quem estiver a até 1,5 m dele fazem teste de resistência de Destreza contra a sua CD, sofrendo 2d6 de dano de frio se falharem. Efeito instantâneo. Em círculo maior, o dano de frio aumenta 1d6 por círculo acima do 1º."
+ },
+ "Skill Empowerment": {
+  "nome": "Aprimorar Perícia",
+  "desc": "Toque uma criatura voluntária e escolha uma perícia em que ela já seja proficiente. Por até 1 hora (concentração), ela dobra o bônus de proficiência nos testes de habilidade com essa perícia. A perícia escolhida não pode já estar recebendo outro efeito que dobre a proficiência, como Especialização."
+ },
+ "Illusory Dragon": {
+  "nome": "Dragão Ilusório",
+  "desc": "Você cria um dragão de sombras Enorme e tangível num espaço desocupado visível a até 36 m; ele dura até 1 minuto (concentração), é imune a dano e condições e passa em todos os testes. Ao surgir, cada inimigo que o veja faz teste de resistência de Sabedoria ou fica amedrontado por 1 minuto, repetindo o teste ao fim de cada turno em que não tiver linha de visão até ele. Com uma ação bônus, você o move até 18 m e pode fazê-lo soprar um cone de 18 m: teste de resistência de Inteligência contra 7d6 de dano (ácido, frio, fogo, elétrico, necrótico ou veneno, escolhido ao conjurar), metade se passar. Quem usar uma ação e passar num teste de Inteligência (Investigação) contra sua CD percebe a ilusão, enxerga através dela e tem vantagem contra o sopro."
+ },
+ "Investiture of Flame": {
+  "nome": "Investidura das Chamas",
+  "desc": "Você se cobre de chamas inofensivas por até 10 minutos (concentração), emitindo luz plena num raio de 9 m e penumbra por mais 9 m. Enquanto durar, você fica imune a dano de fogo e tem resistência a frio, e toda criatura que entrar pela primeira vez no turno a até 1,5 m de você, ou terminar o turno ali, sofre 1d10 de dano de fogo. Com sua ação, você pode disparar uma linha de fogo de 4,5 m por 1,5 m: cada criatura nela faz um teste de resistência de Destreza, sofrendo 4d8 de dano de fogo se falhar ou metade se passar."
+ },
+ "Infernal Calling": {
+  "nome": "Chamado Infernal",
+  "desc": "Você invoca um diabo de nível de desafio 6 ou menor, à sua escolha, num espaço visível a até 27 m; ele é hostil ao grupo, age no próprio turno sob controle do Mestre e some ao chegar a 0 PV ou quando a magia acaba (concentração, até 1 hora). A cada turno você pode dar uma ordem verbal sem gastar ação: se ela agradar ao diabo, ele cumpre; caso contrário, faça um teste de Carisma (Enganação, Intimidação ou Persuasão) contra a Intuição dele, com vantagem se disser seu nome verdadeiro. Se falhar, ele fica imune às suas ordens, e se a concentração cair antes da hora ele permanece agindo livremente por 3d6 minutos; possuir o talismã do diabo permite invocar um de ND 1 maior, que obedece sem testes. Em círculo maior que o 5º, o ND máximo sobe 1 por círculo."
+ },
+ "Toll the Dead": {
+  "nome": "Dobre Fúnebre",
+  "desc": "Escolha uma criatura visível a até 18 m; um sino lúgubre ressoa ao redor dela e ela faz um teste de resistência de Sabedoria (CD de SAB). Se falhar, sofre 1d8 de dano necrótico, ou 1d12 se já estiver com menos que o máximo de PV. Efeito instantâneo. Como truque, o dado de dano aumenta em um nos níveis de personagem 5 (2d8/2d12), 11 (3d8/3d12) e 17 (4d8/4d12)."
+ },
+ "Wrath of Nature": {
+  "nome": "Fúria da Natureza",
+  "desc": "Escolha um ponto visível a até 36 m: a vegetação e as pedras num cubo de 18 m centrado ali ganham vida por até 1 minuto (concentração), e gramado ou mato no cubo vira terreno difícil para seus inimigos. No início de cada turno seu, inimigos a até 3 m de uma árvore do cubo sofrem 4d6 de dano cortante, a menos que passem num teste de resistência de Destreza; no fim de cada turno seu, uma criatura à sua escolha no chão do cubo faz teste de resistência de Força ou fica contida até a magia acabar, podendo usar uma ação para tentar se soltar com um teste de Força (Atletismo) contra a CD da magia. Com uma ação bônus, você arremessa uma pedra solta em uma criatura visível no cubo com um ataque mágico à distância: se acertar, causa 3d8 de dano de concussão não mágico, e o alvo fica caído se falhar num teste de resistência de Força."
+ },
+ "Invulnerability": {
+  "nome": "Invulnerabilidade",
+  "desc": "Magia de 9º círculo, pessoal: você não sofre dano de nenhuma fonte ou tipo enquanto ela durar. Dura até 10 minutos e exige concentração. Requer um fragmento de adamante de pelo menos 500 po, que é destruído ao conjurar."
+ },
+ "Enervation": {
+  "nome": "Enervação",
+  "desc": "Escolha uma criatura visível a até 18 m; ela faz um teste de resistência de Destreza contra a sua CD de magia. Se passar, sofre 2d8 de dano necrótico e a magia termina; se falhar, sofre 4d8 de dano necrótico e, enquanto durar a concentração (até 1 minuto), você pode gastar sua ação em cada turno para causar automaticamente mais 4d8 de dano necrótico a ela. Sempre que causar dano, você recupera PV iguais à metade do dano necrótico sofrido pelo alvo; o efeito acaba se você usar a ação para outra coisa, se o alvo sair do alcance ou se ficar sob cobertura total. Em círculo 6 ou maior, todos os danos aumentam em 1d8 por círculo acima do 5º."
+ },
+ "Wall of Water": {
+  "nome": "Muralha de Água",
+  "desc": "Ergue, num ponto visível a até 18 m, uma parede de água com até 9 m de comprimento, 3 m de altura e 30 cm de espessura, ou um anel de até 6 m de diâmetro e 6 m de altura; seu espaço é terreno difícil e ela dura até 10 minutos (concentração). Ataques à distância com arma que a atravessam sofrem desvantagem, e efeitos de fogo que passam por ela causam metade do dano. Magias de dano de frio que a cruzam congelam o trecho atingido (no mínimo um quadrado de 1,5 m), e cada quadrado congelado tem CA 5 e 15 PV; se for destruído, a água não volta a preenchê-lo."
+ },
+ "Create Homunculus": {
+  "nome": "Criar Homúnculo",
+  "desc": "Ao longo de 1 hora de conjuração, você se fere com uma adaga cravejada de joias (valendo no mínimo 1.000 po), sofrendo 2d4 de dano perfurante que não pode ser reduzido, e com seu sangue transforma argila, cinzas e raiz de mandrágora (consumidas) em um homúnculo, um constructo leal que morre se você morrer. Ao terminar um descanso longo com ele no mesmo plano, você pode gastar até metade dos seus Dados de Vida, somando seu modificador de Constituição a cada um: o total sai do seu máximo de PV (sem cair abaixo de 1) e é somado ao máximo e aos PV atuais do homúnculo até o próximo descanso longo. Essa redução só é desfeita antes disso se o homúnculo morrer, e você só pode ter um homúnculo por vez; conjurar a magia com ele vivo faz ela falhar."
+ },
+ "Catnap": {
+  "nome": "Cochilo",
+  "desc": "Até três criaturas voluntárias que você veja a até 9 m ficam inconscientes por 10 minutos, sem exigir concentração. O efeito acaba mais cedo para quem sofrer dano ou for acordado por alguém que gaste uma ação para sacudi-lo. Quem dormir a duração inteira recebe os benefícios de um descanso curto e não pode ser afetado de novo por esta magia até terminar um descanso longo. Em círculo 4 ou maior, afeta uma criatura voluntária extra por círculo acima do 3º."
+ },
+ "Summon Lesser Demons": {
+  "nome": "Invocar Demônios Menores",
+  "desc": "Role 1d6 para definir os demônios que surgem em espaços visíveis à sua escolha a até 18 m: com 1-2 vêm dois de ND 1 ou menor, com 3-4 vêm quatro de ND 1/2 ou menor e com 5-6 vêm oito de ND 1/4 ou menor (o mestre escolhe quais). Eles são hostis a todos, inclusive a você, agem em grupo com iniciativa própria, atacam os não demônios mais próximos e somem ao chegar a 0 PV ou quando a magia acaba (concentração, até 1 hora). Se você usar o sangue do componente para traçar um círculo ao seu redor, os demônios não podem cruzá-lo, danificá-lo nem mirar quem está dentro, e o sangue é consumido ao fim da magia. Em 6º ou 7º círculo surgem o dobro de demônios, e em 8º ou 9º, o triplo."
+ },
+ "Bones of the Earth": {
+  "nome": "Ossos da Terra",
+  "desc": "Até seis pilares de pedra (1,5 m de diâmetro, até 9 m de altura, CA 5 e 30 PV) brotam do chão em pontos visíveis a até 36 m; ao serem destruídos, viram entulho que forma terreno difícil num raio de 3 m. Uma criatura Média ou menor sob um pilar faz teste de resistência de Destreza (pode falhar de propósito) e, se falhar, é erguida por ele. Se o teto ou outro obstáculo impedir o pilar de crescer, quem estiver em cima sofre 6d6 de dano de concussão e fica contido, podendo usar uma ação para um teste de Força ou Destreza contra a CD da magia para se soltar e sair ou cair do pilar. Em círculo 7 ou maior, surgem dois pilares a mais por círculo acima do 6º."
+ },
+ "Enemies Abound": {
+  "nome": "Inimigos em Abundância",
+  "desc": "Uma criatura que você veja a até 36 m faz um teste de resistência de Inteligência (CD de INT da magia); quem é imune a ficar amedrontado passa automaticamente. Se falhar, por até 1 minuto (concentração) ela passa a ver todas as criaturas visíveis como inimigas e precisa escolher ao acaso o alvo de seus ataques, magias e habilidades entre as criaturas ao alcance que consiga ver. Ela também é obrigada a fazer os ataques de oportunidade provocados por inimigos, se puder. Sempre que sofre dano, repete o teste e encerra o efeito ao passar."
+ },
+ "Investiture of Ice": {
+  "nome": "Investidura de Gelo",
+  "desc": "Por até 10 minutos (concentração), seu corpo fica coberto de gelo: você ganha imunidade a frio, resistência a fogo e ignora o terreno difícil feito de gelo ou neve. O chão num raio de 3 m ao seu redor congela e vira terreno difícil para todos menos você, acompanhando seus movimentos. Com sua ação, você pode soprar um cone de vento gélido de 4,5 m; cada criatura nele faz teste de resistência de Constituição contra a CD da magia, sofrendo 4d6 de dano de frio e tendo o deslocamento reduzido à metade até o início do seu próximo turno se falhar, ou metade do dano sem a redução se passar."
+ },
+ "Mind Spike": {
+  "nome": "Lança Mental",
+  "desc": "Escolha uma criatura visível a até 18 m: ela faz um teste de resistência de Sabedoria (CD de SAB) e sofre 3d8 de dano psíquico se falhar, ou metade se passar. Se falhar, você sabe onde ela está enquanto mantiver a concentração (até 1 hora) e ambos estiverem no mesmo plano; nesse período ela não consegue se esconder de você e ficar invisível não lhe dá vantagem nenhuma contra você. Em círculo 3 ou maior, o dano aumenta em 1d8 por círculo acima do 2º."
+ },
+ "Crown of Stars": {
+  "nome": "Coroa de Estrelas",
+  "desc": "Sete pontos de luz semelhantes a estrelas giram ao redor da sua cabeça por até 1 hora, sem exigir concentração. Com uma ação bônus, você lança um deles contra uma criatura ou objeto a até 36 m e faz um ataque mágico à distância, causando 4d12 de dano radiante se acertar; o ponto se gasta mesmo que você erre, e a magia acaba quando o último for usado. Com quatro ou mais pontos restantes, eles emitem luz plena em 9 m e penumbra por mais 9 m; com um a três, apenas penumbra em 9 m. Em círculo 8 ou maior, surgem dois pontos extras por círculo acima do 7º."
+ },
+ "Thunderclap": {
+  "nome": "Trovão",
+  "desc": "Truque de evocação: todas as outras criaturas a até 1,5 m de você fazem um teste de resistência de Constituição contra a CD da sua magia; quem falhar sofre 1d6 de dano trovejante. O estrondo é instantâneo e pode ser ouvido a até 30 m de distância. O dano aumenta para 2d6 no 5º nível de personagem, 3d6 no 11º e 4d6 no 17º."
+ },
+ "Charm Monster": {
+  "nome": "Enfeitiçar Monstro",
+  "desc": "Uma criatura visível a até 9 m faz um teste de resistência de Sabedoria contra a sua CD de SAB, com vantagem se você ou seus aliados estiverem lutando contra ela. Se falhar, fica enfeitiçada e amistosa com você por 1 hora (sem concentração), mas o efeito termina se você ou seus companheiros a prejudicarem de qualquer forma. Quando a magia acaba, a criatura sabe que foi enfeitiçada por você. Em círculo 5 ou maior, afeta uma criatura extra por círculo acima do 4º, desde que todas estejam a até 9 m umas das outras."
+ },
+ "Thunder Step": {
+  "nome": "Passo Trovejante",
+  "desc": "Você se teleporta para um espaço desocupado que consiga ver a até 27 m, e um estrondo audível a 90 m explode no ponto de onde saiu: cada criatura a até 3 m dali faz um teste de resistência de Constituição contra a sua CD, sofrendo 3d10 de dano trovejante se falhar ou metade se passar. Você leva o que conseguir carregar e pode levar junto uma criatura voluntária do seu tamanho ou menor que esteja a até 1,5 m, desde que haja espaço livre a até 1,5 m do destino para ela; caso contrário, ela fica para trás. Efeito instantâneo, só com componente verbal. Em círculo 4 ou maior, o dano aumenta 1d10 por círculo acima do 3º."
+ },
+ "Psychic Scream": {
+  "nome": "Grito Psíquico",
+  "desc": "Escolha até dez criaturas que você veja a até 27 m; as que têm Inteligência 2 ou menos são imunes. Cada alvo faz um teste de resistência de Inteligência (CD de INT): se falhar, sofre 14d6 de dano psíquico e fica atordoado; se passar, sofre metade e não fica atordoado. Quem morre por esse dano tem a cabeça explodida, se tiver uma. O atordoado repete o teste ao fim de cada turno seu e se livra do efeito ao passar; a magia é instantânea e não exige concentração."
+ },
+ "Control Flames": {
+  "nome": "Controlar Chamas",
+  "desc": "Truque de transmutação: escolha uma chama não mágica visível a até 18 m que caiba num cubo de 1,5 m. Você pode espalhá-la 1,5 m numa direção onde haja combustível, apagá-la na hora, dobrar ou reduzir à metade a luz que ela emite e/ou mudar sua cor, ou fazer surgir nela formas simples que se movem como você quiser. A alteração de luz e as formas duram 1 hora, com até três desses efeitos ativos ao mesmo tempo, e você pode encerrar um deles com uma ação."
+ },
+ "Snilloc's Snowball Swarm": {
+  "nome": "Enxame de Bolas de Neve de Snilloc",
+  "desc": "Escolha um ponto a até 27 m: uma rajada de bolas de neve mágicas atinge todas as criaturas numa esfera de 1,5 m de raio ao redor dele. Cada uma faz um teste de resistência de Destreza e sofre 3d6 de dano de frio se falhar, ou metade se passar. Efeito instantâneo, sem concentração. Em círculo maior que o 2º, o dano aumenta em 1d6 por círculo acima do 2º."
+ },
+ "Snare": {
+  "nome": "Armadilha",
+  "desc": "Em 1 minuto, você dispõe 7,5 m de corda (consumida) num círculo de 1,5 m de raio no chão, que vira uma armadilha mágica quase invisível por 8 horas; só é notada com um teste de Inteligência (Investigação) contra a CD da sua magia. A primeira criatura Pequena, Média ou Grande que pisar na área faz um teste de resistência de Destreza; se falhar, fica pendurada de cabeça para baixo a 90 cm do chão, contida. Ao fim de cada turno ela repete o teste de Destreza para se soltar, ou ela ou alguém ao alcance pode gastar uma ação num teste de Inteligência (Arcanismo) contra a sua CD para libertá-la. Depois de disparada, a magia acaba quando ninguém mais estiver preso nela."
+ },
+ "Erupting Earth": {
+  "nome": "Erupção de Terra",
+  "desc": "Escolha um ponto visível no chão a até 36 m; terra e pedras explodem num cubo de 6 m centrado nele. Quem estiver na área faz um teste de resistência de Destreza, sofrendo 3d12 de dano de concussão se falhar ou metade se passar. O solo da área vira terreno difícil até ser limpo, o que leva pelo menos 1 minuto de trabalho manual por quadrado de 1,5 m. Em círculo maior que o 3º, o dano aumenta em 1d12 por círculo acima."
+ }
+}

@@ -10,6 +10,11 @@
 import { makeMonster } from '../rules/monsters.js';
 import { makeNpc } from '../rules/npcs.js';
 import { MAPA_ESCONDERIJO, PONTOS_DO_ESCONDERIJO } from './esconderijo.js';
+import { MAPA_CAVERNA_DO_POCO, MAPA_ACAMPAMENTO_SAWPLEE, MAPA_TELHADO_GIGANTE, MAPA_GIGANTE_TERREO, PONTOS_CAP5_VILA } from './obelisco5-mapas.js';
+import { MAPA_ZORZULA_POSTO, MAPA_ZORZULA_MINAS, MAPA_ZORZULA_SANTUARIO, PONTOS_ZORZULA } from './zorzula-mapas.js';
+import { MAPA_CASA_MARTHUNGRIM, MAPA_MINA_HARDYHAMMER, MAPA_LARGO_DA_VACA, PONTOS_CAP6_VILA } from './obelisco6-mapas.js';
+import { MAPA_TALHUNDERETH, PONTOS_TALHUNDERETH } from './talhundereth-mapa.js';
+import { MAPA_CRIPTA, PONTOS_CRIPTA } from './cripta-mapa.js';
 import { MAPA_MANSAO, MANSAO } from './mansao.js';
 import { MAPA_CASA_DA_MORTE_1, MAPA_CASA_DA_MORTE_2, MAPA_CASA_DA_MORTE_3, MAPA_CASA_DA_MORTE_4, MAPA_CASA_DA_MORTE_PORAO_1, MAPA_CASA_DA_MORTE_PORAO_2 } from './casadamorte.js';
 import { foesDaCasa } from './casadamorte-criaturas.js';
@@ -69,7 +74,8 @@ export const PARTIDA_ARENA = [
 // os cavalos.
 export const MAPA_EMBOSCADA = {
   //   `:` estrada            `%` espinheiro (terreno difícil, a moita do livro, de onde os goblins saltam)
-  //   `T` mata fechada       `C` carroça e destroço, `h` cavalo morto (cobertura, e não se atravessa)
+  //   `T` mata fechada       `C` carroça e destroço, `h` os cavalos de Gundren e de Sildar (vivos, no Obelisco;
+  //                          ocupam a casa e não se atravessam)
   terreno: [
     'TTTTTTTTTTTTTTTTTTTTTT',
     'TTTTTTTTTTTTTTTTTTTTTT',
@@ -112,7 +118,7 @@ export const MAPA_RUA = [
   '::HHH,,,YYYYYY::u,HHHT',
   ':,HHH,,,YYYYYY::u:HHHT',
   ',,HHH,,:YYYYYY::,,HHH,',
-  ',,,:,,,:,,,:,,:,,:,,,,',
+  ',,,:,,,:,,,:,,uu,:,,,,',   // os dois `u` são os barris do Gigante Adormecido, (14,5) e (15,5): ver abaixo
   '::::::::::::::::::::::',
   '::::::::::::::::::::::',
   ',,,,,,,::,,:,:,,,T,,,T',
@@ -196,6 +202,17 @@ export function mapaDo(variante) {
       altura: null,
       // Os prédios JÁ ESTÃO PINTADOS no mapa; o sprite por cima seria desenhá-los duas vezes. Eles continuam
       // valendo como regra: `H` e `Y` barram passo e visão.
+      //
+      // OS BARRIS DO GIGANTE ADORMECIDO entraram como TERRENO (`u`, que barra o passo e dá meia cobertura),
+      // em (14,5) e (15,5), e não como peça: o pátio de barris já está pintado logo acima, em x16, e estes
+      // dois só o estendem até a esquina da rua. O texto da provocação sempre disse "um sentado num barril,
+      // os outros encostados nas colunas" (`phandalin.js`), e a briga não tinha barril nenhum onde se
+      // encostar — quatro bandidos e quatro heróis em campo liso. Agora o lado leste tem onde se abrigar, que
+      // é de quem é a varanda. As fileiras 6 e 7, que são a rua, continuam livres de ponta a ponta.
+      //
+      // E não mexeram no equilíbrio, que é o que se temia: remedido em 300 lutas de 2º nível depois dos
+      // barris — 96% de vitória, 3% de morte de herói, 73% de vida de pé, 4,6 rodadas —, contra os 95,5%,
+      // 3,8% e 75% que o comentário de `buildFoes` já media sem eles.
       objetos: [],
       // O grupo vem pela rua, do oeste; os Marcarrubra esperam a leste, na frente do Gigante Adormecido. Todos
       // desceram UMA fileira em relação ao mapa antigo: a rua pintada passa nas fileiras 6 e 7, e as casas 4 e 5
@@ -203,6 +220,22 @@ export function mapaDo(variante) {
       // os dois blocos desceram juntos —, e é ela que o comentário de `buildFoes` mediu.
       grupo: [{ x: 3, y: 5 }, { x: 3, y: 7 }, { x: 2, y: 6 }, { x: 4, y: 6 }],
       olhar: { dx: 1, dy: 0 },
+      // O LAMPIÃO DA VARANDA DO GIGANTE ADORMECIDO. A rua anoitece pelo relógio da vila
+      // (`capitulo3-rua.js` chama `definirEscuridao(field, 0.8)` depois do último momento do dia), e MEDIDO
+      // antes de pôr isto aqui: as 188 casas livres da rua ficavam TODAS no breu, com zero fontes de luz no
+      // mapa — e nenhum dos quatro Marcarrubra tem visão no escuro, porque são humanos. Quatro bandidos
+      // bebendo na varanda de uma taverna aberta, às escuras, e depois uma briga em que metade do grupo e o
+      // inimigo inteiro lutavam cegos. O texto da provocação sempre descreveu a varanda com gente sentada
+      // nela; faltava a luz que isso implica.
+      //
+      // Um lampião só, em (10,5), na frente da varanda: 15 pés de claro e 30 de penumbra, que acendem a
+      // frente da taverna e deixam o resto da rua escuro — a briga continua tendo noite, só deixa de ser cega
+      // dos dois lados. De dia não muda nada (sem escuridão, a rua já está clara). E, como toda chama do
+      // jogo, dá para apagá-lo pelo botão direito (`game/fogo.js`), o que é uma jogada e não um bug.
+      // `soNoEscuro`: ninguém acende lampião de varanda ao meio-dia. De dia ele fica apagado e a rua é a de
+      // sempre; quando a escuridão da cena chega, ele acende sozinho (`rules/luz.js`).
+      luzes: [{ pos: { x: 10, y: 5 }, claro: 15, penumbra: 30, tipo: 'lanterna', soNoEscuro: true,
+        nome: 'o lampião da varanda do Gigante Adormecido' }],
       // O mapa pintado por baixo, nosso, servido de `public/`: 80 px por casa, canto da casa (0,0) no canto da imagem.
       fundo: { nome: 'rua.webp', url: '/mapas/rua.webp', escala: 80, x0: 0, y0: 0, giro: 0, opacidade: 1 },
       cena: 'rua',
@@ -273,7 +306,7 @@ export function mapaDo(variante) {
       // arrastar aquilo (Atletismo CD 20, no lugar do teste de Força do livro).
       regioes: [{
         id: 'barricadaCulto', nome: 'A barricada dos cultistas', quem: 'grupo', quando: ['entrar'],
-        casas: ARVORE_TROVAO.celulas.casa9.map((c) => `${c.x},${c.y}`),
+        casas: ARVORE_TROVAO.celulas.cultistas.map((c) => `${c.x},${c.y}`),
         efeitos: [
           { tipo: 'texto', texto: 'Móveis, vigas e um carroção de mão entulham o vão: não se passa por cima disso andando.' },
           { tipo: 'voltar' },
@@ -353,6 +386,73 @@ export function mapaDo(variante) {
       // seria errado em todas as quarenta.
       frente: { cor: { verde: 12, escuro: 92 } },
       ...(noite ? { luz: 'escuro', luzes: [{ pos: { x: 11, y: 5 }, claro: 20, penumbra: 20, tipo: 'fogueira' }] } : {}),
+    };
+  }
+  // AS TRÊS LUTAS PEQUENAS DO CAPÍTULO 5 DO OBELISCO, na vila (`obelisco5-lutas.js`), sobre os mapas da FA.
+  const LUTAS_CAP5 = { cavernaDoPoco: [MAPA_CAVERNA_DO_POCO, 'CAVERNA_DO_POCO'], acampamentoSawplee: [MAPA_ACAMPAMENTO_SAWPLEE, 'ACAMPAMENTO_SAWPLEE'], telhadoGigante: [MAPA_TELHADO_GIGANTE, 'TELHADO_GIGANTE'], giganteTerreo: [MAPA_GIGANTE_TERREO, 'GIGANTE_TERREO'] };
+  if (LUTAS_CAP5[variante]) {
+    const [mapa, chave] = LUTAS_CAP5[variante];
+    const pt = PONTOS_CAP5_VILA[chave];
+    // o térreo do Gigante é exploração (`obelisco5-terreo.js`); as outras três são luta (`obelisco5-lutas.js`)
+    return { ...mapa, altura: null, objetos: [], grupo: pt.grupo, olhar: pt.olhar, cena: variante === 'giganteTerreo' ? 'gigante5' : 'cap5luta' };
+  }
+  // O REPOUSO DE ZORZULA (capítulo 5 do Obelisco): o posto (`zorzula-posto.js`) e o Santuário Índigo
+  // (`zorzula-santuario.js`), sobre a planta da FA sem a arte (`zorzula-mapas.js`).
+  // O CAPÍTULO 6 NA VILA (`obelisco6-lugares.js`): a casa de Marthungrim, a Mina Hardyhammer e o largo da vaca.
+  const CAP6 = {
+    casaMarthungrim: [MAPA_CASA_MARTHUNGRIM, 'CASA_MARTHUNGRIM'],
+    minaHardyhammer: [MAPA_MINA_HARDYHAMMER, 'MINA_HARDYHAMMER'],
+    largoDaVaca: [MAPA_LARGO_DA_VACA, 'LARGO_DA_VACA'],
+  };
+  if (CAP6[variante]) {
+    const [mapa, chave] = CAP6[variante];
+    const pt = PONTOS_CAP6_VILA[chave];
+    return { ...mapa, altura: null, objetos: [], grupo: pt.grupo, olhar: pt.olhar, cena: 'cap6lugar' };
+  }
+  // TALHUNDERETH (o Obelisco, capítulo 6): o templo de Dumathoin tomado pelo culto (`talhundereth.js`).
+  // A CRIPTA DOS TALHUND (o Obelisco, capítulo 6), debaixo de Talhundereth (`cripta-talhund.js`).
+  if (variante === 'criptaTalhund') {
+    return { ...MAPA_CRIPTA, altura: null, objetos: [], grupo: PONTOS_CRIPTA.grupo, olhar: PONTOS_CRIPTA.olhar, cena: 'cripta' };
+  }
+  if (variante === 'talhundereth') {
+    return { ...MAPA_TALHUNDERETH, altura: null, objetos: [], grupo: PONTOS_TALHUNDERETH.grupo, olhar: PONTOS_TALHUNDERETH.olhar, cena: 'talhundereth' };
+  }
+  const ZORZULA = {
+    zorzulaPosto: [MAPA_ZORZULA_POSTO, 'ZORZULA_POSTO', 'zorzula'],
+    zorzulaMinas: [MAPA_ZORZULA_MINAS, 'ZORZULA_MINAS', 'minas'],
+    santuarioIndigo: [MAPA_ZORZULA_SANTUARIO, 'ZORZULA_SANTUARIO', 'santuario'],
+  };
+  if (ZORZULA[variante]) {
+    const [mapa, chave, cena] = ZORZULA[variante];
+    const pt = PONTOS_ZORZULA[chave];
+    return { ...mapa, altura: null, objetos: [], grupo: pt.grupo, olhar: pt.olhar, cena };
+  }
+  if (variante === 'covilAgatha') {
+    // A CABANA DA AGATHA (Conyberry): uma clareira na mata com a casinha de galhos trançados no meio — as árvores
+    // vergadas são a parede (`T`), a porta baixa é o vão de duas casas ao sul, e dentro há a mesa posta e os dois
+    // baús. O grupo está dentro, onde a conversa acabou; ela surge no canto do fundo (`capitulo4-agatha.js`).
+    return {
+      terreno: [
+        'TTTTTTTTTTTTTTTT',
+        'TT,,,,,,,,,,,,TT',
+        'T,,,,TTTTTT,,,,T',
+        'T,,,TT....TT,,,T',
+        'T,,,T..m...T,,,T',
+        'T,,,T.....KT,,,T',
+        'T,,,T......T,,,T',
+        'T,,,T.K....T,,,T',
+        'T,,,TT....TT,,,T',
+        'T,,,,TT..TT,,,,T',
+        'T,,,,,,,,,,,,,,T',
+        'T,,,,,,,,,,,,,,T',
+        'TT,,,,,,,,,,,,TT',
+        'TTTTTTTTTTTTTTTT',
+      ],
+      altura: null,
+      objetos: [],
+      grupo: [{ x: 7, y: 7 }, { x: 8, y: 7 }, { x: 7, y: 8 }, { x: 8, y: 8 }],
+      olhar: { dx: 0, dy: -1 },
+      cena: 'agatha',
     };
   }
   if (variante === 'editor') {
@@ -438,7 +538,9 @@ export function mapaDo(variante) {
   if (variante === 'esconderijo') {
     return {
       ...MAPA_ESCONDERIJO,
-      paredeDeCaverna: true,          // a rocha junto do chão é parede de verdade (3 níveis), e não um degrau de 22 px
+      paredeDeCaverna: true,
+      // O mato fechado do posto dos vigias: quem ataca através dele tem três quartos de cobertura (H1/H2).
+      espinheiroCobre: true,          // a rocha junto do chão é parede de verdade (3 níveis), e não um degrau de 22 px
       // A ponte cruza o canal na diagonal, de noroeste para sudeste, como o desenho da FA a põe.
       objetos: [{ tipo: 'ponte', x: 15, y: 4, olha: { dx: 1, dy: 1 } }],
       // O grupo chega pela trilha dos goblins, pelo oeste da clareira da área 1.
@@ -448,7 +550,7 @@ export function mapaDo(variante) {
       // pintura da FA com o fogo dando cor à sala —, e quem apaga a fogueira apaga as duas coisas juntas: a luz
       // que a regra conta e a cor que o desenho mostra (`game/fogo.js`).
       luzes: [
-        { pos: { x: 3, y: 6 }, claro: 10, penumbra: 10, tipo: 'fogueira', sobreposicao: 'fogoDoCovil', nome: 'a fogueira do covil' },
+        { pos: { x: 3, y: 6 }, claro: 15, penumbra: 15, tipo: 'fogueira', sobreposicao: 'fogoDoCovil', nome: 'a fogueira do covil' },
         { pos: { x: 23, y: 13 }, claro: 10, penumbra: 10, tipo: 'fogueira', sobreposicao: 'fogoDeKlarg', nome: 'a fogueira de Klarg' },
       ],
       // O BATTLEMAP DA FORGOTTEN ADVENTURES por baixo (Cragmaw Hideout 30x20, release grátis, versão sem
@@ -469,19 +571,18 @@ export function mapaDo(variante) {
         { id: 'diqueRompido1', url: '/mapas/fa/FirstBreak.webp', x: 21, y: 3, w: 3, h: 3 },
         { id: 'diqueRompido2', url: '/mapas/fa/SecondBreak.webp', x: 23, y: 3, w: 4, h: 5 },
       ],
-      // A LAJE RACHADA DO RESSALTO (área 4), como REGIÃO (`rules/regioes.js`) — era roteiro do capítulo. Escondida:
-      // a Percepção passiva de quem vai pisar nota antes (CD 12), o Procurar e o Encontrar Armadilhas acham, e o
-      // Investigar da cena também. Quem tem peso (Médio ou maior) e pisa nela sem saber testa Destreza: a laje
-      // desce rolando com ele até o pé da passagem (2d6, metade se passar, e no chão se falhar), e o desenho do
-      // desabamento acende. O goblin, Pequeno, passa por ela. Uma vez só: caída, não há mais laje.
+      // A LAJE INSTÁVEL DO RESSALTO (área 4), como o Obelisco a põe: não é armadilha escondida, é chão ruim que se
+      // vê. Quem do grupo anda em cima dela — ou ataca corpo a corpo de cima dela (`capitulo2.js`, evento `attack`) —
+      // faz Acrobacia CD 10 (`gatilho`); falhou, a massa inteira se solta e cai para leste: quem disparou, a cobra e
+      // quem estiver na metade leste da passagem fazem Destreza CD 10, 2d6 de concussão e caídos na falha, metade e
+      // de pé no sucesso. O desenho do desabamento acende. Uma vez só: caída, não há mais laje.
       regioes: [{
-        id: 'ressalto', nome: 'A laje rachada', casas: PONTOS_DO_ESCONDERIJO.ressalto.map((p) => `${p.x},${p.y}`),
-        vezes: 1, tamanhoMinimo: 'medio',
-        escondida: { cd: 12, achado: 'A laje no meio da subida está rachada por baixo e solta da rocha: não aguenta o peso de um adulto. Rente à parede, um de cada vez, dá para passar.' },
+        id: 'ressalto', nome: 'a laje do ressalto', casas: PONTOS_DO_ESCONDERIJO.ressalto.map((p) => `${p.x},${p.y}`),
+        vezes: 1, quem: 'grupo', gatilho: { pericia: 'acrobacia', cd: 10 },
         efeitos: [
           { tipo: 'sobreposicao', id: 'ressaltoCaido', ligada: true },
-          { tipo: 'dano', dados: '2d6', dano: 'contundente', teste: { atributo: 'dex', cd: 10, metade: true }, seFalhar: 'caido' },
-          { tipo: 'teleporte', x: PONTOS_DO_ESCONDERIJO.peDaPassagem.x, y: PONTOS_DO_ESCONDERIJO.peDaPassagem.y },
+          { tipo: 'dano', dados: '2d6', dano: 'concussão', teste: { atributo: 'dex', cd: 10, metade: true }, seFalhar: 'caido',
+            alvo: 'todos', casas: [...PONTOS_DO_ESCONDERIJO.ressalto.map((p) => `${p.x},${p.y}`), '11,6'] },
         ],
       }],
       cena: 'esconderijo',
@@ -508,7 +609,7 @@ export function mapaDo(variante) {
  */
 export function buildFoes(variante = 'arena') {
   // Os da estrada e do Poço saem da cena (o sorteio do encontro e o livro).
-  if (['ermo', 'ermoNoite', 'poco', 'cume', 'castelo', 'arvoreTrovao', 'ondaEco', 'editor'].includes(variante)) return [];
+  if (['ermo', 'ermoNoite', 'poco', 'cume', 'castelo', 'arvoreTrovao', 'ondaEco', 'editor', 'covilAgatha', 'cavernaDoPoco', 'acampamentoSawplee', 'telhadoGigante', 'giganteTerreo', 'zorzulaPosto', 'zorzulaMinas', 'santuarioIndigo', 'casaMarthungrim', 'minaHardyhammer', 'largoDaVaca', 'talhundereth', 'criptaTalhund'].includes(variante)) return [];
   if (variante.startsWith('casaDaMorte')) return foesDaCasa(variante);
   if (variante === 'grandes') return foesGrandes();
   if (variante === 'emboscada') return foesEmboscada();
@@ -576,39 +677,67 @@ function foesEsconderijo() {
   sildar.hp = 1;
   sildar.grupo = 'covil';
   sildar.refem = true;
-  // Yeemik tem 12 PV na aventura.
+  // O Yeemik do Obelisco é um chefe goblin de bloco cheio (21 PV); a Mina lhe dava 12.
   const yeemik = m('yeemik', 5, 9, 'covil', '', { dx: 0, dy: -1 });
-  yeemik.maxHp = 12;
-  yeemik.hp = 12;
+  // O ERRK, o outro chefe goblin do covil no Obelisco, em cima, ao lado do Yeemik.
+  const errk = Object.assign(m('goblinChefe', 6, 9, 'covil', '', { dx: 0, dy: -1 }), { name: 'Errk', tesouro: 'errk' });
   const klargLobo = m('lobo', 26, 13, 'chefe', '', { dx: -1, dy: -1 });
   klargLobo.name = 'Serrote';
   return [
     // Área 2: dois vigias no abrigo de ripas desenhado em (13,16)–(14,17), de olho no riacho e na boca.
     m('goblin', 13, 16, 'vigias', 'vigia', { dx: -1, dy: -1 }, { arma: 'Arco curto' }),
     m('goblin', 14, 17, 'vigias', 'vigia', { dx: -1, dy: -1 }, { arma: 'Arco curto' }),
+    // O Obelisco põe um CHEFE GOBLIN no posto, com os dois. Caído ele, os outros correm para soltar os lobos do
+    // canil (`capitulo2.js`). A bolsa dele: 16 pp.
+    Object.assign(m('goblinChefe', 13, 17, 'vigias', 'do posto', { dx: -1, dy: -1 }), { chefeDoPosto: true, tesouro: 'chefeDoPosto' }),
     // Área 3: três lobos acorrentados ao espeto ao pé da estalagmite desenhada em (15,10). O canil da FA é mais
     // estreito que o nosso antigo: com o espeto em (16,11) e 5 pés de corrente, a mordida alcança até x 14, e os
     // degraus da entrada (x 13) ficam fora — o livro diz que eles não alcançam os degraus.
     ...[[16, 10], [17, 11], [16, 12]].map(([x, y]) => Object.assign(
       m('lobo', x, y, 'canil', 'do canil', { dx: -1, dy: 0 }),
       { corrente: { x: 16, y: 11, raioFt: 5 } })),
+    // Área 4: a COBRA do Obelisco — uma cobra venenosa gigante enrolada na laje rachada, no meio da subida de
+    // entulho. Não estava na Mina; o Obelisco a pôs ali, e a passagem do oeste deixou de ser só o caminho dos fundos.
+    m('cobraVenenosaGigante', 9, 6, 'cobra', '', { dx: 1, dy: 0 }),
     // Área 5: um goblin escondido na ponte, vigiando o riacho lá embaixo.
     m('goblin', 16, 5, 'ponte', 'da ponte', { dx: -1, dy: 1 }, { arma: 'Arco curto' }),
-    // Área 6: quatro goblins junto ao fogo, na parte de baixo; Yeemik em cima.
-    // Eram cinco, e com o bloco de ND 1 do Yeemik isso dava 900 de XP
-    // ajustado — "mortal" para quatro de 2º nível, com 18% de derrota medida
-    // mesmo com o grupo inteiro e descansado. Com quatro: 95,5% de vitória.
+    // Área 6: quatro goblins junto ao fogo, na parte de baixo; Yeemik em cima. ERAM CINCO, como no livro, e
+    // com o bloco de ND 1 do Yeemik isso dava 900 de XP ajustado — "mortal" para quatro de 2º nível. Os
+    // números que justificavam o corte (18% de derrota com cinco, 95,5% de vitória com quatro) eram da planta
+    // ANTERIOR, de 40×28, aposentada quando o esconderijo passou para o battlemap da FA.
+    //
+    // REMEDIDO no mapa de hoje, 300 lutas por coluna, grupo de 2º nível chegando pela entrada leste, as
+    // mesmas sementes, com o Sildar amarrado em cena (`node --import ./src/dev/cena-node/register.mjs
+    // src/dev/medir-covil.mjs 300 2 [--livro]`):
+    //
+    //                        nosso (4 + Yeemik)    livro (5 + Yeemik)
+    //    vitórias do grupo           94%                   84%
+    //    DERROTAS                     6%                   16%
+    //    alguma morte                 5%                   10%
+    //    alguém a 0 PV               20%                   39%
+    //    rodadas                     5,9                   7,6
+    //    vida que sobra              70%                   56%
+    //
+    // A planta mudou e o achado continuava valendo: o quinto goblin TRIPLICAVA a derrota. Ficou em quatro até
+    // 2026-11-08, quando o dono do jogo mandou aplicar o Obelisco inteiro: o covil do Obelisco é CINCO goblins e
+    // DOIS chefes (o Yeemik de 21 PV e o Errk). Medido assim (`medir-covil.mjs 300 2 --obelisco`): 25% de
+    // derrota no 2º nível, contra 1% do covil de quatro. É o livro, e é decisão do dono.
     // Em volta da fogueira de cozinha em (3,6), na parte de baixo, junto da entrada.
     m('goblin', 4, 5, 'covil', 'do covil', { dx: 1, dy: 0 }),
     m('goblin', 5, 5, 'covil', 'do covil', { dx: 1, dy: 1 }),
     m('goblin', 5, 6, 'covil', 'do covil', { dx: 1, dy: 0 }),
     m('goblin', 4, 7, 'covil', 'do covil', { dx: 1, dy: -1 }),
+    m('goblin', 3, 7, 'covil', 'do covil', { dx: 1, dy: -1 }),
     yeemik,
+    errk,
     sildar,
     // Área 7: três goblins na margem sul dos tanques, entre o dique e a saída para Klarg.
     m('goblin', 22, 7, 'pocos', 'dos poços', { dx: -1, dy: 0 }),
     m('goblin', 25, 7, 'pocos', 'dos poços', { dx: -1, dy: 0 }, { tatica: 'atirador', arma: 'Arco curto' }),
     m('goblin', 26, 8, 'pocos', 'dos poços', { dx: -1, dy: 0 }),
+    // O Obelisco põe DOIS LOBOS com os goblins dos poços.
+    m('lobo', 23, 8, 'pocos', 'dos poços', { dx: -1, dy: 0 }),
+    m('lobo', 24, 8, 'pocos', 'dos poços B', { dx: -1, dy: 0 }),
     // Área 8: Klarg, o lobo Serrote e dois goblins.
     // Klarg espera FORA DA VISTA da soleira, encostado na estalagmite desenhada em (28,13). Medido: nesta caverna
     // não há casa com meia cobertura de quem entra pela soleira (24,10)/(25,10) — ou se vê tudo, ou nada —, então
@@ -651,59 +780,65 @@ function foesMansao() {
   // próprio grupo — medido, a família morria em 4 das 14 posições de onde um
   // mago pegaria os dois guardas, e o Sono adormecia um deles em 100 de 100.
   for (const p of presos) { p.preso = true; p.refem = true; p.attacks = []; }
-  // Área 9: Mosk, o chefe dos bugbears, com o tapa-olho e a chave.
+  // Área 9: Nosk, o chefe dos bugbears, com o tapa-olho e a chave.
   const mosk = m('bugbear', 4, 17, 'guardas', '', { dx: 0, dy: -1 });
-  mosk.name = 'Mosk';
+  mosk.name = 'Nosk';
   mosk.chave = true;
   const droop = neutro(m('droop', 4, 15, 'guardas', '', { dx: 0, dy: 1 }), 'Droop');
   // O Droop desmaia de medo quando a luta começa, e inconsciente ele falha
   // sozinho em toda resistência de Destreza: sem `refem`, um Mãos Flamejantes
-  // mirado no Mosk o matava em 182 de 200 lances.
+  // mirado no Nosk o matava em 182 de 200 lances.
   droop.refem = true;
   // Área 12: o Cajavidro na escrivaninha, de costas para a passagem secreta;
-  // o rato dele vigia a oficina (11). Ninguém sabe o nome dele até ele falar.
+  // o familiar dele vigia a oficina (11). Ninguém sabe o nome dele até ele falar.
   const iarno = makeNpc('iarno', { x: 8, y: 2 }, {});
   iarno.grupo = 'cajavidro';
   iarno.name = 'Cajavidro';
   iarno.facingVec = { dx: -1, dy: 0 };
   iarno.chave = true;
-  const rato = neutro(m('ratoGigante', 4, 4, 'rato', '', { dx: 1, dy: 0 }), 'Rato do mago');
-  Object.assign(rato, { maxHp: 1, hp: 1, ac: 10, attacks: [], familiar: true });
-  // Área 10: quatro Marcarrubra bêbados no jogo de pedrinhas.
+  // Área 11: ZEOND, o quasit do Cajavidro. É o Obelisco: na Mina o familiar era um rato de 1 PV, e o Obelisco pôs no
+  // lugar um diabinho que fica invisível e fala. O papel é o mesmo, o alarme da oficina; o que muda é que ele LUTA
+  // ao lado do mestre se o grupo chegar ao quarto sem passar por ele (a passagem secreta do 7). Neutro até lá: na
+  // oficina ele não ataca, vai avisar. `naoSeguraALuta`: invisível, ele não pode manter a luta aberta sozinho
+  // (`combat.js checkEnd`). NÃO leva `familiar: true` — essa marca é a do familiar DO GRUPO (`rules/familiar.js`), e o
+  // rato antigo a levava, o que deixava as magias de fora tratá-lo como bicho de um herói.
+  const zeond = neutro(m('quasit', 4, 4, 'familiar', '', { dx: 1, dy: 0 }), 'Zeond');
+  Object.assign(zeond, { familiarDoMago: true, naoSeguraALuta: true });
+  // Área 10: quatro bêbados no jogo de pedrinhas — dois Rufiões Marcarrubra e dois bandidos (o Obelisco).
   const estar = [[3, 9, 0, -1], [4, 9, 0, -1], [5, 8, -1, 0], [2, 8, 1, 0]]
-    .map(([x, y, dx, dy], i) => m('marcarrubra', x, y, 'estar', 'da mesa ' + 'ABCD'[i], { dx, dy }));
+    .map(([x, y, dx, dy], i) => m(i < 2 ? 'marcarrubra' : 'bandido', x, y, 'estar', 'da mesa ' + 'ABCD'[i], { dx, dy }));
   return [
-    // Área 2: três Marcarrubra de folga no alojamento.
-    m('marcarrubra', 17, 13, 'alojamento', 'do beliche', { dx: 1, dy: 0 }),
-    m('marcarrubra', 17, 14, 'alojamento', 'do beliche', { dx: 1, dy: 0 }),
-    m('marcarrubra', 17, 12, 'alojamento', 'do beliche', { dx: 1, dy: 0 }),
-    // Área 4: três esqueletos diante dos sarcófagos.
+    // Área 2: três BANDIDOS de folga no alojamento (o Obelisco; na Mina eram Rufiões).
+    m('bandido', 17, 13, 'alojamento', 'do beliche', { dx: 1, dy: 0 }),
+    m('bandido', 17, 14, 'alojamento', 'do beliche', { dx: 1, dy: 0 }),
+    m('bandido', 17, 12, 'alojamento', 'do beliche', { dx: 1, dy: 0 }),
+    // Área 4: SEIS esqueletos encostados nas paredes da cripta, como guardas (o Obelisco; na Mina, três).
     m('esqueleto', 17, 6, 'cripta', 'da cripta', { dx: 1, dy: 0 }),
     m('esqueleto', 17, 9, 'cripta', 'da cripta', { dx: 1, dy: 0 }),
     m('esqueleto', 18, 7, 'cripta', 'da cripta', { dx: -1, dy: 0 }),
-    // Área 5: dois Marcarrubra de guarda nas jaulas.
+    m('esqueleto', 16, 5, 'cripta', 'da cripta', { dx: 1, dy: 1 }),
+    m('esqueleto', 19, 5, 'cripta', 'da cripta', { dx: -1, dy: 1 }),
+    m('esqueleto', 19, 10, 'cripta', 'da cripta', { dx: -1, dy: -1 }),
+    // Área 5: TRÊS Rufiões Marcarrubra de guarda nas jaulas (o Obelisco; na Mina, dois).
     m('marcarrubra', 21, 4, 'jaulas', 'das jaulas', { dx: -1, dy: 0 }),
     m('marcarrubra', 21, 5, 'jaulas', 'das jaulas', { dx: -1, dy: 0 }),
+    m('marcarrubra', 21, 6, 'jaulas', 'das jaulas', { dx: -1, dy: 0 }),
     ...presos,
     // Área 8: o vigia de um olho só, encolhido junto da coluna do oeste.
     m('vigiaCiclopico', 9, 12, 'fenda', '', { dx: 1, dy: 0 }),
-    // Área 9: três bugbears e o goblin Droop. O terceiro bugbear dorme no
-    // beliche e só levanta na quarta rodada: os três de pé ao mesmo tempo
-    // matavam um herói de nível 2 em uma luta de cada quatro (revisor de
-    // encontro, 300 lutas); com um dormindo, em menos de uma em dez.
+    // Área 9: QUATRO bugbears, todos de pé, e o goblin Droop (o Obelisco). Na nossa cena eram três, com um dormindo
+    // até a quarta rodada — decisão de equilíbrio nossa, que o dono trocou pelo livro em 2026-11-08.
     mosk,
     m('bugbear', 3, 16, 'guardas', 'da porta', { dx: 0, dy: -1 }),
-    Object.assign(m('bugbear', 5, 17, 'guardas', 'do beliche', { dx: -1, dy: -1 }), { dormindo: true }),
+    m('bugbear', 5, 17, 'guardas', 'do beliche', { dx: -1, dy: -1 }),
+    m('bugbear', 5, 16, 'guardas', 'da mesa', { dx: -1, dy: 0 }),
     droop,
     ...estar,
     iarno,
-    // Dois guarda-costas no quarto. Sozinho, o chefe do capítulo media 100% de
-    // vitória com 0 a 2,6% de PV perdidos, e morria antes de agir em 40 a 63%
-    // das lutas: 200 de XP ajustado, "abaixo de fácil" no 3º nível. Com estes
-    // dois são 800 ajustados ("médio") e 9 a 19% de PV perdidos.
-    m('marcarrubra', 7, 3, 'cajavidro', 'de guarda', { dx: 0, dy: -1 }),
-    m('marcarrubra', 8, 3, 'cajavidro', 'de guarda', { dx: 0, dy: -1 }),
-    rato,
+    // O QUARTO É DELE SÓ, como no livro (Mina e Obelisco). Até 2026-11-08 havia dois guarda-costas nossos: o chefe
+    // sozinho, com o bloco do mago maligno da Mina, morria antes de agir em 40 a 63% das lutas. O bloco do Obelisco
+    // (dois Estouros Chocantes por turno, Teleporte, Escudo) é outro, e o dono mandou aplicar o livro.
+    zeond,
   ];
 }
 
@@ -764,11 +899,22 @@ function foesGrandes() {
  * surpreendido e em 98% quando não é, e morre alguém em 6 a 8% das vezes.
  */
 function foesEmboscada() {
-  // Os três esperam de arco na mão, agachados na moita. A e C são atiradores
-  // declarados; B a IA também deixa atirando. Eram quatro (o livro): de 1º nível, quatro goblins
-  // são o limiar MORTAL do DMG (200 XP, ×2) e a emboscada derrotava o grupo em 9,9% das lutas medidas (496 lutas, 4 heróis de
-  // 1º nível); com três, em 2,8%. Esses dois números foram medidos no mapa anterior; os do mapa de hoje estão em
-  // `REFORCOS_EMBOSCADA`, e saem de `node src/dev/simular-emboscada.mjs`.
+  // QUATRO GOBLINS, DOIS DE CADA LADO DA ESTRADA — o livro, na Mina e no Obelisco. Até 2026-11-08 eram três e dois
+  // lobos na rodada 2 (decisão nossa, medida abaixo); o dono mandou aplicar o livro, e voltou a ser o livro.
+  //
+  // A MEDIDA DA DECISÃO ANTIGA, NO MAPA DE HOJE, 400 lutas por coluna, as mesmas sementes, com `--livro` trocando o bando pelos
+  // quatro goblins do livro e tirando os lobos (`node --import ./src/dev/cena-node/register.mjs
+  // src/dev/simular-emboscada.mjs 400 [--livro]`):
+  //
+  //                        nosso (3 goblins + 2 lobos)    livro (4 goblins)
+  //    vitórias do grupo              97%                       99%
+  //    alguma morte                    0%                        1%
+  //    alguém a 0 PV                  28%                       14%
+  //    duas quedas ou mais            11%                        7%
+  //    rodadas                        3,1                       2,6
+  //    vida que sobra                 78%                       86%
+  //
+  // A nossa desgastava mais e matava menos. O livro é mais curto e mais limpo, com 1% de morte.
   const arco = { arma: 'Arco curto' };
   // Na moita (`%`), dos dois lados da estrada e entre o grupo e os cavalos mortos: é onde o livro os põe.
   const norte = [
@@ -777,6 +923,7 @@ function foesEmboscada() {
   ];
   const sul = [
     makeMonster('goblin', { x: 16, y: 11 }, { nameSuffix: 'C', tatica: 'atirador', ...arco }),
+    makeMonster('goblin', { x: 19, y: 11 }, { nameSuffix: 'D', ...arco }),
   ];
   // Cada lado olha para a estrada.
   for (const f of norte) f.facingVec = { dx: 0, dy: 1 };
@@ -812,21 +959,12 @@ export const REINFORCEMENTS = [
  * em 3,1 rodadas e com 78% dos PV do grupo de pé. Saíam de três casas: 6% de
  * derrota. No mapa antigo, que era mais largo: 7% e 4%.
  */
-const REFORCOS_EMBOSCADA = [
-  {
-    round: 2,
-    aviso: 'Lobos saem do mato!',
-    olhar: { dx: 0, dy: -1 },
-    spawn: [
-      { id: 'lobo', at: { x: 16, y: 12 }, nameSuffix: 'do mato' },
-      { id: 'lobo', at: { x: 19, y: 11 }, nameSuffix: 'da moita' },
-    ],
-  },
-];
+// A emboscada do livro não tem reforço (os lobos da rodada 2 eram nossos, e saíram com o Obelisco).
+const REFORCOS_EMBOSCADA = [];
 
 /** Monta os reforços de uma rodada, ou null se não houver. */
 export function reinforcementsFor(round, variante = 'arena') {
-  if (['esconderijo', 'rua', 'mansao', 'mansaoTunel', 'ermo', 'ermoNoite', 'poco', 'cume', 'castelo', 'arvoreTrovao', 'ondaEco', 'editor', 'grandes', 'casaDaMorte1', 'casaDaMorte2', 'casaDaMorte3', 'casaDaMorte4', 'casaDaMortePorao1', 'casaDaMortePorao2'].includes(variante)) return null;
+  if (['esconderijo', 'rua', 'mansao', 'mansaoTunel', 'ermo', 'ermoNoite', 'poco', 'cume', 'castelo', 'arvoreTrovao', 'ondaEco', 'editor', 'covilAgatha', 'cavernaDoPoco', 'acampamentoSawplee', 'telhadoGigante', 'giganteTerreo', 'zorzulaPosto', 'zorzulaMinas', 'santuarioIndigo', 'casaMarthungrim', 'minaHardyhammer', 'largoDaVaca', 'talhundereth', 'criptaTalhund', 'grandes', 'casaDaMorte1', 'casaDaMorte2', 'casaDaMorte3', 'casaDaMorte4', 'casaDaMortePorao1', 'casaDaMortePorao2'].includes(variante)) return null;
   const ondas = variante === 'emboscada' ? REFORCOS_EMBOSCADA : REINFORCEMENTS;
   const wave = ondas.find((w) => w.round === round);
   if (!wave) return null;

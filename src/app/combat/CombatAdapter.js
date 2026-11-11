@@ -164,6 +164,8 @@ export class CombatAdapter {
       point = null,
       targets = null,
       opcao = null,
+      // As dobras da muralha de forma livre (`rules/combat.js muralhaDaMagia`).
+      escalas = null,
     } = options;
 
     // Verificar se precisa de menu de opções
@@ -202,7 +204,7 @@ export class CombatAdapter {
             o.id === sugerida ? `sugerida — ${o.detalhe ?? ""}` : o.detalhe,
           destaque: o.id === sugerida,
           fazer: () =>
-            this.tryCast(c, spellId, { target, point, targets, opcao: o.id }),
+            this.tryCast(c, spellId, { target, point, targets, escalas, opcao: o.id }),
         })),
       });
       return;
@@ -217,6 +219,7 @@ export class CombatAdapter {
         point,
         targets,
         circulo,
+        escalas,
         opcao: opcaoFinal,
       },
       {

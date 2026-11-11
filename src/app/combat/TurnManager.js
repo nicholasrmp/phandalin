@@ -9,6 +9,13 @@ import { conditionEffects } from "../../rules/conditions.js";
  *
  * Gerencia a ordem de turnos, fim de turno e transições entre combatentes.
  *
+ * O MODELO DE TURNO DESTE MOTOR É POR LADO, não por ponteiro de iniciativa. `enc.side` diz de quem é
+ * a fase ('party' ou 'foes'), todo mundo daquele lado joga na ordem que quiser, cada um fecha o seu
+ * com `acted`, e quando não sobra ninguém o motor vira o lado sozinho (`combat.js maybeEndSide`) e
+ * conta a rodada. NÃO existe `encounter.current`, e este arquivo inteiro foi escrito perguntando por
+ * ele: `encounter.current ?? 0` caía em zero e respondia SEMPRE "o primeiro da lista". O preço disso
+ * está medido em `isCurrentTurn`, abaixo.
+ *
  * Responsabilidades:
  * - Finalizar turno do combatente atual
  * - Determinar próximo combatente ativo
@@ -35,6 +42,7 @@ export class TurnManager {
   endTurn(combatant, callbacks = {}) {
     const { onTurnEnd, onNextTurn, onRoundEnd } = callbacks;
 
+    const rodadaAntes = this.getCurrentRound();
     // Processa fim de turno no encounter
     const result = this.encounter.endTurn?.(combatant) ?? { ok: true };
 
@@ -42,8 +50,9 @@ export class TurnManager {
       onTurnEnd(combatant, result);
     }
 
-    // Verifica fim de rodada ANTES de avançar
-    const wasRoundEnd = this.isRoundEnd();
+    // A RODADA VIROU se o motor a virou. Antes isto era "o índice chegou ao fim da lista", com o
+    // índice que não existe. Agora é a conta do próprio motor, comparada antes e depois.
+    const wasRoundEnd = this.getCurrentRound() > rodadaAntes;
 
     // Próximo combatente
     const next = this.getNextCombatant();
@@ -72,24 +81,16 @@ export class TurnManager {
       return null;
     }
 
-    const combatants = this.encounter.combatants;
-    if (!combatants || combatants.length === 0) {
-      return null;
-    }
+    // O PRÓXIMO É O PRÓXIMO DO LADO DA VEZ que ainda não agiu — não "o seguinte no array". Dar a vez
+    // em volta da lista inteira entregava o turno a um inimigo no meio da fase do grupo.
+    return this.porJogarDoLado()[0] ?? null;
+  }
 
-    const current = this.encounter.current ?? 0;
-
-    // Procura próximo vivo e não incapacitado
-    for (let i = 0; i < combatants.length; i++) {
-      const index = (current + i + 1) % combatants.length;
-      const c = combatants[index];
-
-      if (!c.dead && !conditionEffects(c).incapacitated) {
-        return c;
-      }
-    }
-
-    return null;
+  /** Quem, do lado da vez, ainda tem turno: vivo, de pé e sem `acted`. Em ordem da lista. */
+  porJogarDoLado() {
+    return this.getActiveCombatants(this.encounter.side ?? null).filter(
+      (c) => !c.acted,
+    );
   }
 
   /**
@@ -113,23 +114,18 @@ export class TurnManager {
   }
 
   /**
-   * Verifica se é fim de rodada.
-   *
-   * Fim de rodada ocorre quando o índice atual é o último combatente
-   * ou quando volta ao início.
+   * A FASE do lado da vez acabou: ninguém dele tem turno por jogar. Não é o fim da RODADA — a rodada
+   * só vira quando o lado que joga por último termina, e quem conta isso é o motor (`enc.round`).
+   * `endTurn` compara a rodada antes e depois justamente por isso.
    *
    * @returns {boolean}
    */
   isRoundEnd() {
-    const current = this.encounter.current ?? 0;
     const combatants = this.encounter.combatants;
-
     if (!combatants || combatants.length === 0) {
       return false;
     }
-
-    // Fim de rodada quando está no último combatente
-    return current >= combatants.length - 1;
+    return this.porJogarDoLado().length === 0;
   }
 
   /**
@@ -170,14 +166,30 @@ export class TurnManager {
    * @returns {Object|null}
    */
   getCurrentCombatant() {
-    const combatants = this.encounter.combatants;
-    const current = this.encounter.current ?? 0;
+    // Não há UM combatente da vez: a fase é do lado inteiro. O mais perto disso é o primeiro que
+    // ainda tem turno, que é quem o tabuleiro seleciona sozinho (`main.js firstActive`).
+    return this.porJogarDoLado()[0] ?? null;
+  }
 
-    if (!combatants || current >= combatants.length) {
-      return null;
-    }
-
-    return combatants[current];
+  /**
+   * É A VEZ DELE? Com a fase sendo do LADO, a resposta é: o combate não acabou, ele é do lado da vez
+   * e está vivo e de pé. Perguntar por índice respondia sempre "o primeiro da lista", e por isso só a
+   * primeira heroína atacava, conjurava, usava item e entrava em mira — os outros três levavam "Não é
+   * o turno deste combatente" em toda porta de `CombatManager`. É o mesmo defeito que
+   * `CombatAdapter.terminarTurnoDe` já tinha corrigido no botão de passar a vez, e que sobrava aqui.
+   *
+   * Quem já AGIU não é barrado AQUI, de propósito: o motor recusa com a palavra certa ("a ação deste
+   * turno já foi usada") e sabe do Ataque Extra, que deixa golpear de novo com a ação gasta. Barrar
+   * aqui trocaria uma recusa certa por uma mentira.
+   *
+   * @param {Object} combatant
+   * @returns {boolean}
+   */
+  ehAVezDe(combatant) {
+    if (!combatant || this.encounter.over) return false;
+    const lado = this.encounter.side ?? null;
+    if (lado && combatant.side !== lado) return false;
+    return this.isActive(combatant);
   }
 
   /**

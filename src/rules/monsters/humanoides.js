@@ -190,26 +190,48 @@ export const HUMANOIDES = {
     // 13), mais vida (3d8+3) e uma segunda cimitarra, que é o que faz o papel
     // deles no módulo — valentão que anda em bando e bate dois por turno.
     // Estava marcado 'aventura', que não é um dos rótulos do projeto e
-    // escondia um bloco de livro. Medido: com estes números a briga da rua
-    // mantém a mesma faixa de antes.
-    fonte: 'propria',
+    // escondia um bloco de livro.
+    //
+    // UM REVISOR DE FIDELIDADE ACHOU ISTO DURO DEMAIS — ND 1/2 onde o livro
+    // usa 1/8 —, e a pergunta era justa, porque até aqui só se tinha medido a
+    // briga da rua. Medido agora nas TRÊS lutas de bandido da Mansão, com
+    // `src/dev/medir-marcarrubra.mjs` (300 lutas por caso, alojamento com 3,
+    // jaulas com 2 e a sala de estar com 4 envenenados, as mesmas sementes nas
+    // duas colunas):
+    //
+    //            grupo de 2º nível      nosso bloco     bandido do SRD
+    //            vitórias do grupo          100%             100%
+    //            vida que sobra              89%              95%
+    //            alguém a 0 PV                6%               1%
+    //            alguém morto                 0%               0%
+    //
+    // No 3º nível a diferença encolhe para 92% contra 96% de vida. Ou seja: o
+    // nosso bloco custa SEIS pontos percentuais de vida do grupo por luta e
+    // não mata ninguém em 900 lutas. Não é duro demais — é o que impede que as
+    // três salas de bandido sejam nada: com o bloco do SRD o grupo sai delas
+    // com 95% da vida e ninguém encosta no chão. Fica como está.
+    //
+    // O OBELISCO TEM O BLOCO: o Rufião Marcarrubra do apêndice dele (ND 1/2, CA 11 de couro, 16 PV, espada curta +4 de
+    // 1d6+2, um golpe só, Intimidação +2). Desde 2026-11-08 os números são esses, e a medida acima ficou de história:
+    // ela comparava o NOSSO bloco com o bandido do SRD, e a pergunta agora tem resposta no livro.
+    fonte: 'PaBTSO',
     size: 'médio',
     level: 1,
     cr: '1/2',
     xp: 100,
-    abilities: { str: 11, dex: 14, con: 12, int: 10, wis: 10, cha: 11 },
-    ac: 13,
-    acNote: 'couro batido',
+    abilities: { str: 14, dex: 10, con: 12, int: 9, wis: 9, cha: 11 },
+    ac: 11,
+    acNote: 'couro',
     maxHp: 16,
     hpDice: '3d8+3',
     speedFt: 30,
+    senses: { passivePerception: 9 },
     skills: ['intimidacao'],
     attacks: [
-      { name: 'Cimitarra', bonus: 3, damage: '1d6+1', type: 'cortante', reachFt: 5, art: 'sword' },
+      { name: 'Espada curta', bonus: 4, damage: '1d6+2', type: 'perfurante', reachFt: 5, art: 'sword' },
     ],
-    multiattack: { count: 2, sequence: ['Cimitarra', 'Cimitarra'] },
     traits: [],
-    blurb: 'Ladrão mesquinho de manto vermelho encardido. Dois golpes de cimitarra por turno; vive de intimidar quem não revida.',
+    blurb: 'Valentão de manto vermelho encardido. Um golpe de espada curta, forte, e muita vontade de intimidar quem não revida.',
   },
 
   batedor: {
@@ -292,8 +314,9 @@ export const HUMANOIDES = {
       // inventar id de magia aqui quebra `getSpell`, que lança erro.
       prepared: ['misselMagico', 'maosFlamejantes', 'sono', 'contramagia'],
       slots: [0, 4, 3, 3, 3, 1],
-      // Entra no motor de magias: o Mago reage com Contramágica (a IA ainda não o faz conjurar no turno dele).
+      // Entra no motor de magias: o Mago reage com Contramágica e conjura no turno dele (`ai.js conjuracaoGeral`).
       noMotor: true,
+      conjuraNoTurno: 'geral',
     },
     traits: ['conjuracao'],
     blurb: 'Abre com Sono para tirar dois personagens da luta sem rolar ataque, depois Mãos Flamejantes em quem se amontoar; 40 PV e CA 12 significam que o grupo tem uma rodada para alcançá-lo.',
@@ -301,9 +324,15 @@ export const HUMANOIDES = {
 
   // O CAJAVIDRO (Iarno Albrek), chefe dos Marcarrubra. Os números são os do
   // livro da aventura (A Mina Perdida de Phandelver): o bloco de mago maligno
-  // que ela traz, mais o Cajado de Defesa que dá o nome a ele (+1 na CA, 10
-  // cargas: Armadura Arcana por 1, Escudo Arcano por 2). Conteúdo de fã, com
-  // as regras escritas por nós; nenhum texto do livro copiado.
+  // que ela traz, mais o Cajado de Defesa que dá o nome a ele (10 cargas:
+  // Armadura Arcana por 1, Escudo Arcano por 2). Conteúdo de fã, com as regras
+  // escritas por nós; nenhum texto do livro copiado.
+  //
+  // A CA ERA 16, e o +1 que a fazia 16 era invenção nossa — contra o próprio
+  // livro, cuja ficha dele diz "CA 12 (15 com Armadura Arcana)". O cajado do
+  // livro não dá bônus de CA nenhum: ele CONJURA, e quem defende é a magia.
+  // Então 15 (13 da Armadura Arcana + 2 de DES), e o Escudo Arcano por duas
+  // cargas leva a 20 quando ele o ergue.
   cajavidro: {
     id: 'cajavidro',
     name: 'Cajavidro',
@@ -315,31 +344,38 @@ export const HUMANOIDES = {
     cr: '1',
     xp: 200,
     abilities: { str: 9, dex: 14, con: 11, int: 17, wis: 12, cha: 11 },
-    // Chega já sob a Armadura Arcana do cajado (13 + DES 2) e com o +1 do
-    // próprio cajado; sem a armadura seria 13 (12 + 1).
+    // O OBELISCO DÁ O BLOCO DELE ("Iarno Glasstaff Albrek", ND 1): CA 12, 16 com a Armadura Arcana e o Cajado de
+    // Defesa; 22 PV; DOIS Estouros Chocantes por turno (ataque mágico +5, corpo a corpo ou a 36 m, 1d6+3 elétrico);
+    // Teleporte de 9 m como ação bônus, duas vezes por dia; e, uma vez por dia cada, Enfeitiçar Pessoa, Imobilizar
+    // Pessoa e Mísseis Mágicos, CD 13. Ele chega já sob a Armadura Arcana.
+    // As três magias saem UMA VEZ POR DIA cada (`porDia`, sem espaço de magia nenhum), e o Teleporte é o Passo
+    // Nebuloso, duas vezes por dia — a mesma distância (9 m) e a mesma ação bônus; a diferença é que o Passo pede fala.
     ac: 16,
-    acNote: 'Armadura Arcana do cajado, +1 do Cajado de Defesa',
+    acNote: 'Armadura Arcana e Cajado de Defesa',
     maxHp: 22,
     hpDice: '5d8',
     speedFt: 30,
     saves: ['int', 'wis'],
     skills: ['arcanismo', 'historia'],
     attacks: [
-      { name: 'Cajado de vidro', bonus: 1, damage: '1d6-1', type: 'concussão', reachFt: 5, art: 'staff' },
+      { name: 'Estouro Chocante', bonus: 5, damage: '1d6+3', type: 'elétrico', reachFt: 5, art: 'staff', magico: true },
+      { name: 'Estouro Chocante (longe)', bonus: 5, damage: '1d6+3', type: 'elétrico', ranged: true, rangeFt: 120, longRangeFt: 120, art: 'staff', magico: true },
     ],
+    multiattack: { count: 2 },
     spellcasting: {
       ability: 'int',
-      cantrips: ['luz', 'maoMagica', 'toqueChocante'],
+      cantrips: ['luz', 'maoMagica'],
       // Escudo Arcano sai do cajado (2 cargas), não de espaço: `cajado`.
       prepared: ['enfeiticarPessoa', 'misselMagico', 'imobilizarPessoa', 'passoNebuloso', 'escudoArcano'],
-      slots: [0, 4, 3],
+      slots: [],
+      porDia: { enfeiticarPessoa: 1, imobilizarPessoa: 1, misselMagico: 1, passoNebuloso: 2 },
       cajado: { cargas: 10, magias: { armaduraArcana: 1, escudoArcano: 2 } },
       noMotor: true,
       // A IA conjura no turno dele (`conjurarNoTurno` em `rules/ai.js`).
       conjuraNoTurno: true,
     },
     traits: ['conjuracao', 'cajadoDeDefesa'],
-    blurb: 'Prende o mais forte com Imobilizar Pessoa, solta Mísseis Mágicos de longe, some com Passo Nebuloso quando encurralado e ergue o Escudo Arcano pelo cajado. Sem fuga e com 8 PV ou menos, se rende.',
+    blurb: 'Dois Estouros Chocantes por turno, de perto ou de longe; prende o mais forte com Imobilizar Pessoa, some com um teleporte quando encurralado e ergue o Escudo Arcano pelo cajado. Sem fuga e com 8 PV ou menos, se rende.',
   },
 
   // NEZZNAR, A ARANHA NEGRA (Parte 4: a Caverna Onda Eco). O bloco é o do LIVRO (apêndice B): ND 2, 450 XP, 27 PV,
@@ -370,22 +406,28 @@ export const HUMANOIDES = {
     skills: ['arcanismo', 'furtividade', 'percepcao'],
     senses: { darkvisionFt: 120, passivePerception: 14 },
     attacks: [
-      // O Cajado da Aranha: o bordão que ele carrega, com mais 1d6 de veneno em cada acerto.
-      { name: 'Cajado da Aranha', bonus: 1, damage: '1d6-1', type: 'concussão', reachFt: 5, art: 'staff',
-        danoExtra: { damage: '1d6', type: 'veneno' } },
+      // O OBELISCO dá ao Nezznar DUAS Rajadas Venenosas por turno (ataque mágico +5, corpo a corpo ou a 36 m, 2d8 de
+      // veneno). Na Mina ele batia com o cajado e soltava truques.
+      { name: 'Rajada Venenosa', bonus: 5, damage: '2d8', type: 'veneno', reachFt: 5, art: 'staff', magico: true },
+      { name: 'Rajada Venenosa (longe)', bonus: 5, damage: '2d8', type: 'veneno', ranged: true, rangeFt: 120, longRangeFt: 120, art: 'staff', magico: true },
     ],
+    multiattack: { count: 2 },
+    // As magias do Obelisco: à vontade, Luzes Dançantes e Mão Mágica, e pelo Cajado da Aranha Patas de Aranha e Teia
+    // (`aVontade`); uma vez por dia cada, Escuridão, Fogo das Fadas, Invisibilidade, Armadura Arcana, Mísseis Mágicos e
+    // Sugestão (`porDia`). Nenhuma sai de espaço de magia. A Teia do cajado tem CD 15, e as outras a 13 dele (`cdPorMagia`).
     spellcasting: {
       ability: 'int',
-      cantrips: ['raioDeGelo', 'toqueChocante'],
-      // Armadura Arcana, Escudo Arcano e Mísseis Mágicos (1º); Invisibilidade e Sugestão (2º); e o Fogo das Fadas, da
-      // conjuração inata do drow (uma vez por dia).
-      prepared: ['armaduraArcana', 'escudoArcano', 'misselMagico', 'invisibilidade', 'sugestao', 'fogoDasFadas'],
-      slots: [0, 3, 3],
+      cantrips: ['luzesDancantes', 'maoMagica'],
+      prepared: ['armaduraArcana', 'misselMagico', 'fogoDasFadas', 'escuridao', 'invisibilidade', 'sugestao', 'teia', 'patasDeAranha'],
+      slots: [],
+      porDia: { escuridao: 1, fogoDasFadas: 1, invisibilidade: 1, armaduraArcana: 1, misselMagico: 1, sugestao: 1 },
+      aVontade: ['patasDeAranha', 'teia'],
+      cdPorMagia: { teia: 15 },
       noMotor: true,
       conjuraNoTurno: true,
     },
     traits: ['conjuracao', 'ascendenciaFeerica', 'sensibilidadeALuzSolar'],
-    blurb: 'Drow mago de CA 14: abre com Fogo das Fadas para acender o grupo e depois solta mísseis e toques chocantes. Bate com o Cajado da Aranha (1d6 de veneno a mais). Enxerga 36 m no escuro, mas sob luz do sol ataca com desvantagem.',
+    blurb: 'Drow mago de CA 14: duas Rajadas Venenosas por turno, de perto ou a 36 m. Uma vez por dia cada, Fogo das Fadas, Mísseis Mágicos, Escuridão, Invisibilidade e Sugestão; a Teia, à vontade pelo cajado. Enxerga 36 m no escuro, mas sob luz do sol ataca com desvantagem.',
   },
 
   // BRUGHOR MACHADO-MORDEDOR, chefe do bando orc do Cume da Wyvern (Parte 3).
@@ -480,6 +522,8 @@ export const HUMANOIDES = {
       cantrips: ['chamaSagrada'],
       prepared: ['curarFerimentos'],
       slots: [0, 3],
+      noMotor: true,
+      conjuraNoTurno: 'geral',
     },
     traits: ['conjuracao'],
     blurb: 'Cura 1d8+2 num aliado em vez de atacar: enquanto estiver de pé, o inimigo ao lado dele volta de 1 PV duas vezes. Nove PV — derrube-o primeiro.',
@@ -532,6 +576,8 @@ export const HUMANOIDES = {
       cantrips: ['chamaSagrada'],
       prepared: ['bencao', 'curarFerimentos', 'palavraCurativa'],
       slots: [0, 4, 3, 2],
+      noMotor: true,
+      conjuraNoTurno: 'geral',
     },
     traits: ['conjuracao', 'eminenciaDivina'],
     blurb: 'Gasta o primeiro turno em Bênção e transforma o bando todo: +1d4 em cada ataque e cada resistência dos aliados dele enquanto mantiver concentração. Dano nele quebra a concentração — é o alvo mais rentável do encontro.',

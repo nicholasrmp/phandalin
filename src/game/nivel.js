@@ -20,6 +20,7 @@ import { getSpell, SPELLS } from '../rules/spells.js';
 import { aplicarInvocacoes, desfazerInvocacoes, gravarAssinaturas } from '../rules/passivas.js';
 import { listaDaClasse, magiaTemRegra } from './criacao.js';
 import { darMagiasDeCaracteristica } from '../rules/passivas.js';
+import { TALENTOS_PHB, talentosPossiveis, infoDoTalentoPhb, textoDoTalento, NOME_DO_ATRIBUTO, ELEMENTOS_DO_ADEPTO, CLASSES_DE_MAGIA, completarEscolhaDoTalento } from '../rules/talentos-phb.js';
 
 /** As magias que costumam render mais no jogo, para a sugestão. */
 const PREFERIDAS = ['curarFerimentos', 'palavraCurativa', 'misselMagico', 'sono', 'raioGuiado', 'bencao',
@@ -79,6 +80,45 @@ export function escolhaDeSubclasse(c) {
   };
 }
 
+/** O próximo nível dá AUMENTO DE ATRIBUTO? (o da classe ou o da subclasse) */
+function proximoDaAumento(c) {
+  const def = CLASSES[c.classe];
+  const n = (c.level ?? 1) + 1;
+  const sub = def?.subclasse?.opcoes?.[c.subclasse];
+  return [...(def?.niveis?.[n] ?? []), ...(sub?.niveis?.[n] ?? [])].includes('asi');
+}
+
+const NOMES_DA_CLASSE = { bardo: 'Bardo', bruxo: 'Bruxo', clerigo: 'Clérigo', druida: 'Druida', feiticeiro: 'Feiticeiro', mago: 'Mago' };
+
+/**
+ * A escolha de AUMENTO OU TALENTO que o próximo nível pede, ou `null` (o nível não dá aumento). Para a tela perguntar
+ * ANTES de subir, como a subclasse: `{ opcoes: [{ id, nome, desc, sub? }] }`, a primeira é o aumento de atributo (o padrão
+ * da classe) e as outras são os talentos que o herói pode tomar. `sub` é a escolha a mais do talento que a tela mostra
+ * (`{ campo, rotulo, opcoes: [{ id, nome }] }`): o atributo do +1, o elemento do Adepto, a classe das magias. O resto
+ * (perícias, armas, manobras, as magias) sai do padrão do talento e aparece na linha do que o nível deu.
+ */
+export function escolhaDeAumento(c) {
+  if (!proximoDaAumento(c)) return null;
+  const opcoes = [{ id: 'asi', nome: 'Aumento de atributo', desc: '+2 num atributo ou +1 em dois, pelo padrão da classe.' }];
+  for (const id of talentosPossiveis(c)) {
+    const t = TALENTOS_PHB[id];
+    const info = infoDoTalentoPhb(id);
+    let sub = null;
+    if (Array.isArray(t.atributo) && t.atributo.length > 1) {
+      sub = { campo: 'atributo', rotulo: 'Atributo', opcoes: t.atributo.filter((a) => (c.abilities[a] ?? 10) < 20).map((a) => ({ id: a, nome: NOME_DO_ATRIBUTO[a] })) };
+      if (!sub.opcoes.length) sub = null;
+    } else if (id === 'adeptoElemental') {
+      sub = { campo: 'elemento', rotulo: 'Elemento', opcoes: ELEMENTOS_DO_ADEPTO.filter((e) => !(c.elementosDoAdepto ?? []).includes(e)).map((e) => ({ id: e, nome: e })) };
+    } else if (['iniciadoEmMagiaPhb', 'conjuradorDeRituais', 'atiradorArcano'].includes(id)) {
+      sub = { campo: 'classe', rotulo: 'Lista de magias', opcoes: Object.keys(CLASSES_DE_MAGIA).map((k) => ({ id: k, nome: NOMES_DA_CLASSE[k] })) };
+    }
+    // O padrão da escolha a mais é o que o talento sugere (o atributo que arredonda, o elemento das magias do herói).
+    if (sub) sub.padrao = completarEscolhaDoTalento(c, id)[sub.campo] ?? sub.opcoes[0]?.id;
+    opcoes.push({ id, nome: info.nome, desc: info.noJogo, regra: info.desc, sub });
+  }
+  return { rotulo: 'Aumento de atributo ou talento', opcoes };
+}
+
 /**
  * Sobe UM nível. Devolve o que mudou e as escolhas de magia pendentes:
  *   { ganhos: [texto], escolhas: [{ id, rotulo, quantas, opcoes, sugeridas }], aplicar(escolhidas) }
@@ -111,6 +151,12 @@ export function subirUmNivel(c, escolhasDeNivel = {}) {
   if (novidades.length) ganhos.push(`Novo: ${novidades.map(nomeDaCaracteristica).join(', ')}.`);
   for (const p of pendentes ?? []) {
     if (p.tipo === 'subclasse') ganhos.push(`Subclasse: ${def?.subclasse?.opcoes?.[p.valor]?.nome ?? p.valor}.`);
+    if (p.tipo === 'asi') ganhos.push(`Aumento de atributo: ${Object.entries(p.valor).map(([k, v]) => `+${v} ${NOME_DO_ATRIBUTO[k]}`).join(', ')}.`);
+  }
+  // O talento escolhido no lugar do aumento (não é pendente: veio da tela).
+  for (const f of (c.escolhasFeitas ?? []).filter((x) => x.nivel === c.level && x.tipo === 'talento')) ganhos.push(textoDoTalento(c, f.valor));
+  if (escolhasDeNivel.asi && typeof escolhasDeNivel.asi === 'object') {
+    ganhos.push(`Aumento de atributo: ${Object.entries(escolhasDeNivel.asi).map(([k, v]) => `+${v} ${NOME_DO_ATRIBUTO[k]}`).join(', ')}.`);
   }
   const slots = c.spellcasting?.slotsMax ?? [];
   if (slots.some((n, i) => n !== (antes.slots[i] ?? 0))) {
@@ -123,12 +169,12 @@ export function subirUmNivel(c, escolhasDeNivel = {}) {
   // TRUQUES NOVOS: quem passa a conhecer mais truques do que tem (o Cavaleiro Místico no 3º, o Trapaceiro no 3º e no 10º) escolhe.
   if (sc && conj && (sc.truquesConhecidos ?? 0) > (sc.cantrips ?? []).length) {
     const quantos = sc.truquesConhecidos - (sc.cantrips ?? []).length;
-    const todos = listaDaClasse(c.classe, 0, c.subclasse).truques.filter((s) => magiaTemRegra(s) && !(sc.cantrips ?? []).includes(s));
+    const todos = listaDaClasse(c.classe, 0, c.subclasse, c).truques.filter((s) => magiaTemRegra(s) && !(sc.cantrips ?? []).includes(s));
     if (todos.length >= quantos) escolhas.push({ id: 'truques', rotulo: `Aprende ${quantos} truque${quantos > 1 ? 's' : ''}`, quantas: quantos, opcoes: todos, sugeridas: todos.slice(0, quantos) });
   }
   if (sc && conj) {
     const maior = slots.reduce((m, n, i) => (n > 0 ? i : m), 0);
-    const lista = listaDaClasse(c.classe, maior, c.subclasse).magias.filter(magiaTemRegra);
+    const lista = listaDaClasse(c.classe, maior, c.subclasse, c).magias.filter(magiaTemRegra);
     const mod = abilityMod(c.abilities[conj.atributo]);
     if (conj.prepara === 'conhecidas') {
       const total = (conj.conhecidas?.[c.level] ?? 0) - conhecidasAntes;

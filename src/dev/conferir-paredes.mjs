@@ -29,6 +29,9 @@ import { MANSAO } from '../game/mansao.js';
 import { ANDARES } from '../game/casadamorte.js';
 import { CRIPTAS, SEGREDO_SANTUARIO, SEGREDO_PRISAO, PONTE } from '../game/casadamorte-porao-cena.js';
 import { PAR_DA_BIBLIOTECA } from '../game/capitulo-casadamorte.js';
+import { PONTOS_ZORZULA } from '../game/zorzula-mapas.js';
+import { PONTOS_TALHUNDERETH } from '../game/talhundereth-mapa.js';
+import { PONTOS_CRIPTA } from '../game/cripta-mapa.js';
 
 // O QUE O ROTEIRO ABRE, e o mapa guarda fechado. Sem isto a conferência acusa metade das masmorras de
 // inalcançável — e não é: é SEGREDO, que é outra coisa. Vem das constantes de verdade, importadas, e não de
@@ -41,10 +44,19 @@ const SEGREDOS = {
     mansao: Object.values(MANSAO.secretas ?? {}),
     mansaoTunel: Object.values(MANSAO.secretas ?? {}),
     casaDaMorte2: [{ a: PAR_DA_BIBLIOTECA[0], b: PAR_DA_BIBLIOTECA[1] }],
+    // o Repouso de Zorzula: a secreta das latrinas para a fonte e a das runas para o cofre
+    zorzulaPosto: Object.values(PONTOS_ZORZULA.ZORZULA_POSTO.secretas),
+    // Talhundereth: a secreta da despensa para o quarto do bibliotecário, a porta do cofre (três fechaduras) e a da cripta (o disco)
+    talhundereth: Object.values(PONTOS_TALHUNDERETH.secretas),
+    // a cripta: as três secretas para as antessalas do santuário; o anel e a parede que desliza só abrem com o giro
+    criptaTalhund: [...Object.values(PONTOS_CRIPTA.secretas), { a: { x: 21, y: 24 }, b: { x: 21, y: 25 } },
+      ...[...PONTOS_CRIPTA.arestasDoGiro, ...PONTOS_CRIPTA.arestasDaParede].map(([a, b]) => ({ a, b }))],
   },
   casas: {
     casaDaMortePorao1: [...SEGREDO_SANTUARIO, ...Object.values(CRIPTAS).flatMap((c) => c.laje ?? [])],
     casaDaMortePorao2: [...SEGREDO_PRISAO, ...PONTE],
+    // a cripta: o anel do santuário e a parede que desliza, que o giro das duas alavancas abre
+    criptaTalhund: [...Object.values(PONTOS_CRIPTA.anel).flat(), ...PONTOS_CRIPTA.paredeQueDesliza].map((c) => [c.x, c.y]),
   },
 };
 
@@ -66,6 +78,7 @@ function casasDeEscada(cena) {
 const CENAS = [
   'emboscada', 'ermo', 'ermoNoite', 'rua', 'esconderijo', 'mansao', 'mansaoTunel',
   'poco', 'cume', 'castelo', 'arvoreTrovao', 'ondaEco',
+  'covilAgatha', 'cavernaDoPoco', 'acampamentoSawplee', 'telhadoGigante', 'giganteTerreo', 'zorzulaPosto', 'zorzulaMinas', 'santuarioIndigo', 'casaMarthungrim', 'minaHardyhammer', 'largoDaVaca', 'talhundereth', 'criptaTalhund',
   'casaDaMorte1', 'casaDaMorte2', 'casaDaMorte3', 'casaDaMorte4', 'casaDaMortePorao1', 'casaDaMortePorao2',
 ];
 const BARRA = new Set([ARESTA.parede, ARESTA.porta, ARESTA.seteira]);

@@ -45,9 +45,13 @@ export const PHANDELVER_ITEMS = {
     'Bordão de adamante negro com uma aranha esculpida na ponta. Bate com mais 1d6 de veneno. Dez cargas gastam Patas de Aranha (1) e Teia (2, CD 15); recupera 1d6 + 4 ao anoitecer, e se a última carga acaba, um 1 no d20 o desfaz em pó.',
     { tipo: 'cajado', art: 'cajado', peso: 5, sintonia: true, base: 'bordao', danoExtra: '1d6', tipoExtra: 'veneno', cargas: 10 }),
 
+  // O CAJADO QUE DÁ O NOME AO CAJAVIDRO, e por um tempo o nome não batia com a peça: o item era um "bordão de
+  // ponta recurvada" de SEIS cargas, enquanto o bloco do Cajavidro (`monsters/humanoides.js`) já falava de
+  // cajado de VIDRO com DEZ. O livro é o do bloco: cajado de vidro, dez cargas, 1d6 + 4 ao amanhecer, Armadura
+  // Arcana por uma e Escudo Arcano por duas. Quem acha a peça na Mansão lê a descrição dela, não o bloco.
   cajadoDeDefesa: nomeado('cajadoDeDefesa', 'Cajado de Defesa', 'incomum',
-    'Bordão de ponta recurvada com seis cargas. Gasta uma para Armadura Arcana, uma para Escudo. Recarrega ao amanhecer.',
-    { tipo: 'cajado', art: 'cajado', peso: 4, sintonia: true, base: 'bordao', cargas: 6 }),
+    'Cajado de vidro fosco, fino, pouco mais de um metro, que não parece aguentar uma pancada e aguenta. Dez cargas: uma para Armadura Arcana, duas para Escudo Arcano. Recupera 1d6 + 4 cargas ao amanhecer.',
+    { tipo: 'cajado', art: 'cajado', peso: 4, sintonia: true, base: 'bordao', cargas: 10 }),
 
   // ------------------------------------------------ tesouro com nome próprio ----
   penteDeAgatha: nomeado('penteDeAgatha', 'Pente de prata de Agatha', 'incomum',
@@ -73,9 +77,10 @@ export const PHANDELVER_ITEMS = {
     'Pedra clara e dura, lapidada com capricho. Quem a deixou no cofre sabia o que valia.',
     { tipo: 'tesouro', pilha: true, peso: 0, valor: 100 }),
   // CAVERNA ONDA ECO: o tesouro que a mina guarda (valores em po; o electro do livro entra em prata, 1 pe = 5 pp).
-  anelDePlatinaDoMago: nomeado('anelDePlatinaDoMago', 'Anel de platina do mago', 'incomum',
-    'Um aro de platina liso, gasto por dentro: o anel de um mago que morreu defendendo as minas, e que a água do lago não enferrujou.',
-    { tipo: 'tesouro', pilha: true, peso: 0, valor: 75 }),
+  // O Obelisco: TRÊS anéis de ouro com pedras, de 150 po cada (a Mina dava dois de platina). O id ficou, pelo save.
+  anelDePlatinaDoMago: nomeado('anelDePlatinaDoMago', 'Anel de ouro do mago', 'incomum',
+    'Um aro de ouro com pedrinhas engastadas: o anel de um mago que morreu defendendo as minas, e que a água do lago não escureceu.',
+    { tipo: 'tesouro', pilha: true, peso: 0, valor: 150 }),
   cachimboDePlatina: nomeado('cachimboDePlatina', 'Cachimbo de madeira e platina', 'incomum',
     'Um cachimbo de madeira escura com filigrana de platina no bojo. Quem o fumava gostava de coisa bem-feita, e ficou sem ele.',
     { tipo: 'tesouro', peso: 0, valor: 150 }),
@@ -117,6 +122,10 @@ export const PHANDELVER_ITEMS = {
   pergaminhoDeEnfeiticar: nomeado('pergaminhoDeEnfeiticar', 'Pergaminho de Enfeitiçar Pessoa', 'comum',
     'Enfeitiçar Pessoa, escrito para uma leitura só. Por ora, vale o que um mago pagar.',
     { tipo: 'pergaminho', art: 'arcano', pilha: true, peso: 0, valor: 25, magia: 'enfeiticarPessoa' }),
+  // O do baú do Cajavidro, no Obelisco (a Mina dava Enfeitiçar Pessoa).
+  pergaminhoDeImobilizar: nomeado('pergaminhoDeImobilizar', 'Pergaminho de Imobilizar Pessoa', 'incomum',
+    'Imobilizar Pessoa, escrito para uma leitura só. Por ora, vale o que um mago pagar.',
+    { tipo: 'pergaminho', art: 'arcano', pilha: true, peso: 0, valor: 50, magia: 'imobilizarPessoa' }),
   // O do Poço da Coruja Velha, num tubo de osso.
   pergaminhoDeEscuridao: nomeado('pergaminhoDeEscuridao', 'Pergaminho de Escuridão', 'incomum',
     'Escuridão, escrita para uma leitura só, guardada num tubo de osso. Por ora, vale o que um mago pagar.',
@@ -188,6 +197,95 @@ export const PHANDELVER_ITEMS = {
   ossosDeThorn: nomeado('ossosDeThorn', 'Os ossos de Thorn', 'comum',
     'Um embrulho de ossinhos de menino, ainda abraçados ao boneco de pano. Um enterro digno é o que Thorn nunca teve.',
     { tipo: 'chave', peso: 2, valor: 0 }),
+
+  // ------------------------------------------- o Repouso de Zorzula (Obelisco, capítulo 5) ----
+  chaveDaSuite: nomeado('chaveDaSuite', 'Chave de bronze com runas', 'comum',
+    'Uma chave anã de bronze, comprida, com runas gastas no anel. O Ruxithid a trazia no pescoço. Abre a suíte do capitão.',
+    { tipo: 'chave', peso: 0, valor: 0 }),
+  pocaoDeFortitudePsionica: nomeado('pocaoDeFortitudePsionica', 'Poção de fortitude psiônica', 'incomum',
+    'Um líquido violeta que zumbe baixinho no frasco. Bebida (uma ação), dá vantagem nos testes de resistência de '
+    + 'Inteligência, Sabedoria e Carisma por uma hora.',
+    { tipo: 'poção', art: 'pocao', peso: 0.5, valor: 150, pilha: true }),
+  adagaDeVeneno: nomeado('adagaDeVeneno', 'Adaga de veneno', 'raro',
+    'Adaga +1 de lâmina negra. Uma vez por dia, a lâmina se cobre de veneno: o próximo golpe faz 2d10 de veneno a '
+    + 'mais e envenena por um minuto quem falhar num teste de Constituição CD 15.',
+    { tipo: 'arma mágica', art: 'espada', peso: 1, bonusAtaque: 1, bonusDano: 1, base: 'adaga' }),
+  espadaDeFiligrana: nomeado('espadaDeFiligrana', 'Espada longa com filigrana', 'comum',
+    'Uma espada longa anã sem fio, inacabada, com filigrana de prata no copo. Uma peça de colecionador.',
+    { tipo: 'tesouro', art: 'espada', peso: 3, valor: 200 }),
+  peitoralDeQuartzo: nomeado('peitoralDeQuartzo', 'Peitoral de bronze cravejado de quartzo', 'comum',
+    'Um peitoral de bronze trabalhado, com pedras de quartzo em volta da gola. Feito para um capitão que nunca o vestiu.',
+    { tipo: 'tesouro', peso: 20, valor: 500 }),
+  jade: nomeado('jade', 'Jade', 'comum', 'Uma pedra verde-leitosa, polida em gota.',
+    { tipo: 'tesouro', art: 'item-gemaElemental', peso: 0, valor: 100, pilha: true }),
+  peridotoGrande: nomeado('peridotoGrande', 'Peridoto grande', 'comum', 'Um peridoto do tamanho de um ovo de codorna, verde-oliva e limpo.',
+    { tipo: 'tesouro', art: 'item-gemaElemental', peso: 0, valor: 500 }),
+  tapecariaDuergar: nomeado('tapecariaDuergar', 'Tapeçaria duergar', 'comum',
+    'Uma tapeçaria escura com anões cavando e forjando, tecida com fio de metal. Pesada e bem-feita.',
+    { tipo: 'tesouro', peso: 10, valor: 75, pilha: true }),
+  brocadoDeVeludo: nomeado('brocadoDeVeludo', 'Brocado de veludo', 'comum', 'Um corte de veludo vinho bordado a ouro, dobrado com cuidado.',
+    { tipo: 'tesouro', peso: 3, valor: 145 }),
+  // as minas do Repouso de Zorzula
+  braceletesDeCeleridade: nomeado('braceletesDeCeleridade', 'Braceletes de celeridade', 'incomum',
+    'Braceletes de couro com placas de bronze, tirados do braço de um anão morto. Quem os usa (sintonia) ganha 3 m de '
+    + 'deslocamento e pode Disparar como ação bônus uma vez por descanso curto.',
+    { tipo: 'maravilhoso', art: 'arcano', peso: 1, sintonia: true, valor: 500 }),
+  picaretaLuminosa: nomeado('picaretaLuminosa', 'Picareta de guerra luminosa', 'incomum',
+    'Picareta de guerra +1 de cabeça de cristal pálido. Com uma palavra, a cabeça acende e ilumina 6 m em volta (e 6 m '
+    + 'de penumbra além); com outra, apaga.',
+    { tipo: 'arma mágica', art: 'espada', peso: 2, bonusAtaque: 1, bonusDano: 1, base: 'picareta' }),
+  lascaDeCristal: nomeado('lascaDeCristal', 'Lasca de cristal', 'comum',
+    'Uma lasca de cristal roxo que zumbe na mão. Serve de foco de conjuração e põe para andar as máquinas a cristal do '
+    + 'Repouso de Zorzula sem gastar magia. Um conjurador paga 15 po por uma.',
+    { tipo: 'tesouro', art: 'item-gemaElemental', peso: 0, valor: 15, pilha: true }),
+  quartzoAzul: nomeado('quartzoAzul', 'Quartzo azul', 'comum', 'Uma pedra azul-clara, transparente, do tamanho de uma noz.',
+    { tipo: 'tesouro', art: 'item-gemaElemental', peso: 0, valor: 30, pilha: true }),
+  ametistaGrande: nomeado('ametistaGrande', 'Ametista grande', 'comum', 'Uma ametista funda, cor de vinho, do tamanho de um polegar.',
+    { tipo: 'tesouro', art: 'item-gemaElemental', peso: 0, valor: 250 }),
+  minerioDeFerro: nomeado('minerioDeFerro', 'Minério de ferro', 'comum',
+    'Uns quinze quilos de minério bom. O ferreiro de Phandalin tira dele sete lingotes de 25 po cada.',
+    { tipo: 'tesouro', peso: 30, valor: 175 }),
+  // Talhundereth (o Obelisco, capítulo 6)
+  simboloDeDumathoin: nomeado('simboloDeDumathoin', 'Símbolo sagrado de Dumathoin', 'comum',
+    'Uma montanha de platina do tamanho de uma palma, com uma gema lapidada no coração. Vale 150 po, e os guardiões de '
+    + 'pedra do templo não atacam quem o usa à vista.',
+    { tipo: 'tesouro', art: 'bencao', peso: 1, valor: 150 }),
+  estatuetaDeGuerreiroAnao: nomeado('estatuetaDeGuerreiroAnao', 'Estatueta de guerreiro anão', 'comum',
+    'Um guerreiro anão de ouro maciço, de machado no ombro, do tamanho de um antebraço.',
+    { tipo: 'tesouro', peso: 2, valor: 400, pilha: true }),
+  gemaPequena: nomeado('gemaPequena', 'Gema pequena', 'comum', 'Uma gema lapidada do tamanho de uma ervilha, das que os anões '
+    + 'guardavam aos punhados.', { tipo: 'tesouro', art: 'item-gemaElemental', peso: 0, valor: 100, pilha: true }),
+  medalhaoDeLagarto: nomeado('medalhaoDeLagarto', 'Medalhão de prata', 'comum',
+    'Um medalhão de prata com uma cabeça de lagarto na frente e uma pena gravada atrás. Coisa de drow.',
+    { tipo: 'tesouro', peso: 0, valor: 15 }),
+  pocaoDeInvulnerabilidade: nomeado('pocaoDeInvulnerabilidade', 'Poção de invulnerabilidade', 'raro',
+    'Um líquido que parece ferro derretido e frio. Quem bebe tem resistência a todo dano por 1 minuto.',
+    { tipo: 'poção', art: 'cura', peso: 0.5, valor: 500, pilha: true, consumivel: 'condicao', condicao: 'resistenciaTotal', rodadas: 10 }),
+  jarraAlquimica: nomeado('jarraAlquimica', 'Jarra alquímica', 'incomum',
+    'Uma jarra de cerâmica que, com uma palavra, se enche de um líquido à escolha: água doce ou salgada, cerveja, vinho, '
+    + 'vinagre, mel, maionese, óleo, ácido ou veneno básico. Uma vez por dia cada.',
+    { tipo: 'maravilhoso', peso: 12, valor: 300 }),
+  periaptoDaSaude: nomeado('periaptoDaSaude', 'Periapto da saúde', 'incomum',
+    'Um pingente de pedra vermelha numa corrente de prata. Quem o usa não pega doença nenhuma.',
+    { tipo: 'maravilhoso', peso: 0, valor: 500 }),
+  // a Cripta dos Talhund
+  contasDeForca: nomeado('contasDeForca', 'Conta de força', 'raro',
+    'Uma esfera de vidro escuro do tamanho de uma uva. Arremessada (ação, 18 m), explode: quem está a 3 m faz Destreza CD 15 '
+    + 'ou leva 5d4 de energia e fica preso numa esfera de força por 1 minuto.', { tipo: 'maravilhoso', art: 'item-gemaElemental', peso: 0, valor: 960, pilha: true }),
+  anelDoOrador: nomeado('anelDoOrador', 'Anel do orador', 'incomum',
+    'Um anel grande de ouro com uma gema lapidada em montanha, da fundadora do templo. Quem o usa fala e entende a língua de '
+    + 'quem o escuta.', { tipo: 'maravilhoso', peso: 0, valor: 500, sintonia: true }),
+  coroaGuardaMente: nomeado('coroaGuardaMente', 'Coroa guarda-mente', 'incomum',
+    'Um aro de ferro com um fio de mitral em volta, da general Brelta Gemblade. Quem a usa (sintonia) tem vantagem nas '
+    + 'resistências de Inteligência e não pode ter a mente lida.', { tipo: 'maravilhoso', peso: 1, valor: 500, sintonia: true }),
+  gemaDe500: nomeado('gemaDe500', 'Gema lapidada', 'comum', 'Uma gema do tamanho de um polegar, lapidada em montanha, que estava '
+    + 'escondida no peito do arquiteto.', { tipo: 'tesouro', art: 'item-gemaElemental', peso: 0, valor: 500 }),
+  lascaDaEsmeralda: nomeado('lascaDaEsmeralda', 'Lasca da grande gema', 'comum', 'Uma lasca verde e morna da gema do santuário '
+    + 'giratório. Não vale nada no mercado, e vale tudo para um fiel de Dumathoin.', { tipo: 'tesouro', art: 'item-gemaElemental', peso: 0, valor: 0, missao: true }),
+  livroDeGranito: nomeado('livroDeGranito', 'O Livro de Granito', 'comum',
+    'Páginas de metal entre capas de granito fino. Os segredos do templo, a lista dos que dormem na cripta e, em anão, '
+    + 'como abrir a porta dela: girar o disco do entalhe menos lapidado ao mais lapidado e pôr uma gema no centro.',
+    { tipo: 'tesouro', peso: 8, valor: 0, missao: true }),
 };
 
 /**
@@ -203,7 +301,12 @@ export const TESOURO_POR_INIMIGO = {
   // (Sem entrada para o chefe goblin: as duas poções de Klarg estão no BAÚ do covil, não no corpo — `capitulo2.js` as
   // entrega. A chave antiga `chefeGoblin` não casava com id de monstro nenhum, e ligá-la a Klarg as daria em dobro.)
   hobgoblin: ['moedaDeOuro'],
-  // A algibeira de Yeemik (livro, área 6): três dentes de ouro de 1 po e 15 pp. É o único tesouro do esconderijo que
-  // está num CORPO — o baú de Klarg está entre os suprimentos, e sai de "Revirar os suprimentos" (`capitulo2.js`).
-  yeemik: [{ id: 'denteDeOuro', qtd: 3 }, { id: 'moedaDePrata', qtd: 15 }],
+  // As bolsas do esconderijo pelo Obelisco: o Yeemik leva três gemas de 10 po e uma poção de cura (a Mina lhe dava
+  // dentes de ouro e prata); o Errk, 21 pc; o chefe do posto dos vigias, 16 pp. O baú de Klarg está entre os
+  // suprimentos e sai de "Revirar os suprimentos" (`capitulo2.js`).
+  yeemik: [{ id: 'gemaPequena', qtd: 3 }, 'pocaoDeCura'],
+  errk: [{ id: 'moedaDeCobre', qtd: 21 }],
+  chefeDoPosto: [{ id: 'moedaDePrata', qtd: 16 }],
+  // O Obelisco: o Ruxithid carrega a chave da suíte do capitão (Z10).
+  ruxithid: ['chaveDaSuite'],
 };

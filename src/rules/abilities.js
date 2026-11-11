@@ -65,7 +65,13 @@ export function skillBonus(actor, skill, { contexto = null, bioma = null } = {})
   // Reviver os Mortos: a conta de quem voltou pesa em TODO teste de perícia, e
   // por isso mora aqui — é por este ponto que passam a iniciativa, a
   // Furtividade, a Sobrevivência, os testes dos capítulos e as previsões.
-  const volta = -(penalidadeDeQuemVoltou(actor));
+  // CORTESÃO ELEGANTE (Samurai, Xanathar): a Persuasão soma o modificador de Sabedoria.
+  const volta = -(penalidadeDeQuemVoltou(actor))
+    + (skill === 'persuasao' && actor.features?.includes('elegantCourtier') ? abilityMod(actor.abilities.wis ?? 10) : 0)
+    // EMISSÁRIO DA PAZ (Redenção): +5 na Persuasão enquanto dura.
+    + (skill === 'persuasao' && actor.conditions?.some((c) => c.id === 'emissarioDaPaz') ? 5 : 0)
+    // ENCANTO SOBRENATURAL (Andarilho Feérico, Tasha): os testes de Carisma somam a Sabedoria (mínimo +1).
+    + (ability === 'cha' && actor.features?.includes('otherworldlyGlamour') ? Math.max(1, abilityMod(actor.abilities.wis ?? 10)) : 0);
   const f = actor.features;
   if (skill === 'historia' && f?.length
     && ((contexto === 'pedra' && f.includes('stonecunning')) || (contexto === 'itemMagico' && f.includes('artificersLore')))) {
@@ -124,6 +130,12 @@ export function rolarPericia(rng, actor, skill, opts = {}) {
   if (skill === 'furtividade' && actor?.conditions?.some((c) => c.id === 'bencaoTrapaceiro')) d20opts.advantage = true;
   // OLHO DO CAOS (surto): vantagem em Percepção.
   if (skill === 'percepcao' && actor?.conditions?.some((c) => c.id === 'olhoDoCaos')) d20opts.advantage = true;
+  // ATLETA SEM IGUAL (Glória): Atletismo e Acrobacia. LENDA VIVA (Glória, 20º): todo teste de Carisma.
+  if (['atletismo', 'acrobacia'].includes(skill) && actor?.conditions?.some((c) => c.id === 'atletaSemIgual')) d20opts.advantage = true;
+  if (SKILLS[skill] === 'cha' && actor?.conditions?.some((c) => c.id === 'lendaViva')) d20opts.advantage = true;
+  // CANÇÃO DA LÂMINA (Acrobacia) e UM COM A PALAVRA (Escribas, Arcanismo)
+  if (skill === 'acrobacia' && actor?.conditions?.some((c) => c.id === 'cancaoDaLamina')) d20opts.advantage = true;
+  if (skill === 'arcanismo' && actor?.features?.includes('oneWithTheWord')) d20opts.advantage = true;
   const mare = actor?.conditions?.find((c) => c.id === 'maresDoCaos');
   if (mare) {
     d20opts.advantage = true;
@@ -132,7 +144,9 @@ export function rolarPericia(rng, actor, skill, opts = {}) {
   // INIMIGO FAVORITO (patrulheiro): vantagem em Sobrevivência para rastrear e em testes de INT para lembrar do que se sabe dele.
   if (inimigo && actor.features?.includes('favoredEnemy') && actor.inimigosFavoritos?.includes(inimigo)
     && (skill === 'sobrevivencia' || SKILLS[skill] === 'int')) d20opts.advantage = true;
-  const r = d20(rng, bonus, d20opts);
+  let r = d20(rng, bonus, d20opts);
+  // TRANSE DA ORDEM (Alma Mecânica): 9 ou menos no d20 conta como 10
+  if (r.natural < 10 && actor?.conditions?.some((c) => c.id === 'transeDaOrdem')) r = { ...r, natural: 10, total: 10 + bonus };
   return ajustarTeste(rng, actor, r, bonus, { ability: SKILLS[skill], treinada: treinadoEm(actor, skill) });
 }
 
@@ -173,13 +187,22 @@ export function saveBonus(actor, ability) {
 // motor não carrega. Sem isto os traços eram só texto: o blurb do lobo prometia
 // que "Furtividade não esconde o grupo dela" e a conta usava 13, não 18 — o
 // grupo passava escondido em 48% das vezes em vez de 12%.
-const SENTIDOS_AGUCADOS = ['keenHearingSmell', 'keenSmell', 'keenHearing', 'keenSightSmell'];
+const SENTIDOS_AGUCADOS = ['keenHearingSmell', 'keenSmell', 'keenHearing', 'keenSightSmell', 'audicaoEVisaoApuradas', 'visaoAgucada'];
 
 export const passivePerception = (actor) => 10 + skillBonus(actor, 'percepcao')
   - (actor.conditions?.some((c) => c.id === 'cativado') ? 5 : 0)
   + (actor.traits?.some((t) => SENTIDOS_AGUCADOS.includes(t)) ? 5 : 0)
   + (actor.percepcaoMarcha ?? 0)
-  + (actor.conditions?.some((c) => c.id === 'olhoDoCaos') ? 5 : 0);
+  + (actor.conditions?.some((c) => c.id === 'olhoDoCaos') ? 5 : 0)
+  // OBSERVADOR (talento): +5 na Percepção passiva (e na Investigação passiva, `investigacaoPassiva`).
+  + ((actor.talentos ?? []).includes('observador') ? 5 : 0);
+
+/** EXPLORADOR DE MASMORRAS (talento): vantagem para achar porta secreta — no teste, vantagem; na passiva, +5. */
+export const achaSecretaComVantagem = (actor) => (actor.talentos ?? []).includes('exploradorDeMasmorras');
+export const percepcaoParaSecreta = (actor) => passivePerception(actor) + (achaSecretaComVantagem(actor) ? 5 : 0);
+
+/** A Investigação passiva: 10 + o bônus, com os +5 do Observador. */
+export const investigacaoPassiva = (actor) => 10 + skillBonus(actor, 'investigacao') + ((actor.talentos ?? []).includes('observador') ? 5 : 0);
 
 /** CD de magia = 8 + proficiência + modificador de conjuração. */
 export function spellSaveDc(actor) {

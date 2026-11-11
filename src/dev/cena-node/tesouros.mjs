@@ -16,7 +16,7 @@ const ok = (nome) => console.log('ok   ', nome);
   for (let seed = 1; seed < 60 && !achou; seed += 1) {
     const S = await novaCena(seed * 977, { nivel: 3 });
     const h = S.party[0];
-    const cel = A.celulas.casa7[0];
+    const cel = A.celulas.redutoDoDruida[0];
     h.pos = { x: cel.x, y: cel.y };
     const tile = { x: cel.x, y: cel.y };
     const op = S.cena.interacoes(tile, S.field.surfaceAt(tile.x, tile.y), h).find((o) => o.rotulo === 'Revistar a cabana');
@@ -46,7 +46,7 @@ const ok = (nome) => console.log('ok   ', nome);
   const S2 = await novaCena(4242, { nivel: 3 });
   S2.app.campanha.vila.missoes.mirna = 'ativa';
   const h = S2.party[0];
-  const cel = A.celulas.ervas[0];
+  const cel = A.celulas.herborista[0];
   h.pos = { x: cel.x, y: cel.y };
   const rev = S2.cena.interacoes(cel, S2.field.surfaceAt(cel.x, cel.y), h).find((o) => o.rotulo === 'Revistar a loja');
   assert.ok(rev && !rev.motivo, 'a loja oferece a revista');
@@ -227,12 +227,12 @@ const ok = (nome) => console.log('ok   ', nome);
   const barricada = S.field.regioes?.find((r) => r.id === 'barricadaCulto');
   assert.ok(barricada, 'a barricada do culto está no mapa');
   assert.equal(barricada.desligada ?? false, false, 'ela começa de pé');
-  assert.equal(barricada.casas.size, A.celulas.casa9.length, 'ela cobre a ruína inteira');
-  const dentro = A.celulas.casa9[0];
+  assert.equal(barricada.casas.size, A.celulas.cultistas.length, 'ela cobre a ruína inteira');
+  const dentro = A.celulas.cultistas[0];
   const fora = [[1, 0], [-1, 0], [0, 1], [0, -1]]
     .map(([dx, dy]) => ({ x: dentro.x + dx, y: dentro.y + dy }))
     .find((q) => S.field.inside(q.x, q.y) && !S.field.blocksMove(q.x, q.y)
-      && !A.celulas.casa9.some((c) => c.x === q.x && c.y === q.y));
+      && !A.celulas.cultistas.some((c) => c.x === q.x && c.y === q.y));
   assert.ok(fora, 'há casa livre do lado de fora da ruína do culto');
   const h = S.party[0];
   h.pos = { ...fora };
@@ -315,7 +315,10 @@ const ok = (nome) => console.log('ok   ', nome);
   assert.equal(S.field.vistaExtra ?? null, null, 'a vista do alto não revela casa nenhuma do mapa');
   assert.equal(visaoDoGrupo(S.enc).size, antesDeSubir, 'o que o grupo enxerga não muda: a vista é texto');
   assert.ok(VISTA.length >= 3, `o texto do alto tem ${VISTA.length} parágrafo(s)`);
-  for (const alvo of ['torre', 'estátua', 'esquina', 'celeiro']) {
+  // O texto tem de nomear o que se vê DAQUI, e os rumos mudaram com o de-para do mapa do livro: a
+  // guarnição (área 11) é a construção do canto nordeste, não a do centro-sul. Daqui a torre fica a oeste
+  // e a aldeia inteira a sudoeste.
+  for (const alvo of ['torre', 'estátua', 'praça', 'armazém', 'taverna', 'ferraria', 'nordeste']) {
     assert.ok(VISTA.join(' ').toLowerCase().includes(alvo.toLowerCase()), `o texto do alto não cita: ${alvo}`);
   }
   ok(`o alto da guarnição: ${VISTA.length} parágrafos de vista, sem revelar casa nenhuma do mapa`);

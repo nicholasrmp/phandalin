@@ -92,8 +92,24 @@ export const PACOTES_DE_ANIMAIS = {
 };
 
 import { ANCESTRALIDADES_DRACONICAS, AREA_DO_SOPRO } from './racas.js';
+// AS MAGIAS DOS LIVROS (`src/dev/importar-magias.mjs`): entram ANTES das feitas à mão, que vencem.
+import { MAGIAS_PHB } from './magias-livro-phb.js';
+import { MAGIAS_XGE } from './magias-livro-xge.js';
+import { MAGIAS_TCE } from './magias-livro-tce.js';
+// as ações que uma magia concede (o sopro do Sopro do Dragão, o meteoro, a estrela): magias internas, fora de toda lista
+import { MAGIAS_CONCEDIDAS, concedidasDe } from './magias-concedidas.js';
+
+/**
+ * A esfera que nasce num cruzamento de linhas, pela regra de grade do Livro do Mestre. Ficam de fora quem sai de quem lança (`centradoEmSi`), quem conta a partir
+ * de uma casa ocupada (`emVoltaDaCasa`: "a até 3 m do guardião") e a de raio zero, que é a própria casa.
+ */
+export const esferaDoCruzamento = (spell) => spell?.shape === 'sphere' && !spell.centradoEmSi && !spell.emVoltaDaCasa && (spell.areaFt ?? 0) >= 5;
 
 export const SPELLS = {
+  ...MAGIAS_TCE,
+  ...MAGIAS_XGE,
+  ...MAGIAS_PHB,
+  ...MAGIAS_CONCEDIDAS,
   chamaSagrada: {
     id: 'chamaSagrada', name: 'Chama Sagrada', level: 0, school: 'evocação', fonte: 'srd',
     castTime: 'action', rangeFt: 60, kind: 'save', save: 'dex',
@@ -128,7 +144,7 @@ export const SPELLS = {
     id: 'sono', name: 'Sono', level: 1, school: 'encantamento', fonte: 'srd',
     castTime: 'action', rangeFt: 90, shape: 'sphere', areaFt: 20,
     kind: 'sleep', pool: '5d8', upcast: { reserva: '2d8' },
-    desc: 'Rola 5d8. Criaturas na área (9×9 casas) adormecem em ordem crescente de PV atuais, até esgotar o total. Mortos-vivos, elfos e meio-elfos não dormem; o dano acorda.',
+    desc: 'Rola 5d8. Criaturas na área (um círculo de 8 casas de lado) adormecem em ordem crescente de PV atuais, até esgotar o total. Mortos-vivos, elfos e meio-elfos não dormem; o dano acorda.',
   },
   curarFerimentos: {
     id: 'curarFerimentos', name: 'Curar Ferimentos', level: 1, school: 'evocação', fonte: 'srd',
@@ -595,11 +611,11 @@ export const SPELLS = {
     castTime: 'action', rangeFt: 120, shape: 'sphere', areaFt: 5, kind: 'save', soZona: true, reuso: 'acao',
     zona: { em: 'no', rodadas: 10, quando: 'inicio', aoEntrar: true, dificil: false, semTeste: true, movel: 60, dano: { dados: '2d10', tipo: 'radiante', save: 'con', metade: true } },
     concentration: true, duracaoRodadas: 10, upcast: { dados: 1 },
-    desc: 'Um feixe de luz pálida (3×3 casas). Quem entra nele ou começa o turno nele faz CD de CON: 2d10 radiante, metade se passar. Com a ação, o feixe anda até 18 m. Concentração, até 1 minuto. +1d10 por círculo acima do 2º.',
+    desc: 'Um feixe de luz pálida (as 4 casas em volta do ponto). Quem entra nele ou começa o turno nele faz CD de CON: 2d10 radiante, metade se passar. Com a ação, o feixe anda até 18 m. Concentração, até 1 minuto. +1d10 por círculo acima do 2º.',
   },
   esferaFlamejante: {
     id: 'esferaFlamejante', name: 'Esfera Flamejante', level: 2, school: 'conjuração', fonte: 'srd',
-    castTime: 'action', rangeFt: 60, shape: 'sphere', areaFt: 5, kind: 'save', soZona: true, reuso: 'bonus',
+    castTime: 'action', rangeFt: 60, shape: 'sphere', areaFt: 5, emVoltaDaCasa: true, kind: 'save', soZona: true, reuso: 'bonus',
     zona: { rodadas: 10, quando: 'fimDono', aoEntrar: false, dificil: false, semTeste: true, movel: 30, ocupaCasa: true, dano: { dados: '2d6', tipo: 'fogo', save: 'dex', metade: true } },
     concentration: true, duracaoRodadas: 10, upcast: { dados: 1 },
     desc: 'Uma esfera de fogo numa casa vazia. No fim do seu turno, quem está a 1,5 m dela (você também) faz CD de DES: 2d6 de fogo, metade se passar. Com a ação bônus, ela rola até 9 m (no jogo, sem a investida). Concentração, até 1 minuto. +1d6 por círculo acima do 2º.',
@@ -716,6 +732,14 @@ export const SPELLS = {
     kind: 'save', save: 'wis', onFail: { condition: 'amedrontado', repete: 'semVisao', foge: true },
     concentration: true, duracaoRodadas: 10,
     desc: 'Cone de 9 m. CD de SAB ou fica amedrontado e foge correndo de você; só repete o teste quando termina o turno sem ver você. Concentração, até 1 minuto.',
+  },
+  // ASSASSINO FANTASMAGÓRICO (SRD): o pesadelo que só o alvo vê. É o que o guardião-escudo do Santuário Índigo guarda.
+  assassinoFantasmagorico: {
+    id: 'assassinoFantasmagorico', name: 'Assassino Fantasmagórico', level: 4, school: 'ilusão', fonte: 'srd',
+    castTime: 'action', rangeFt: 120, kind: 'debuff', targets: 1,
+    save: 'wis', condition: 'amedrontado', repete: 'sempre', danoAoFalhar: { dano: '4d10', tipo: 'psíquico', porCirculo: 1 },
+    concentration: true, duracaoRodadas: 10,
+    desc: 'Uma criatura a até 36 m faz CD de SAB ou fica amedrontada pelo pior medo dela. No fim de cada turno dela, nova resistência de SAB: falhando, 4d10 psíquicos; passando, a magia acaba. Concentração, até 1 minuto. +1d10 por círculo acima do 4º.',
   },
   padraoHipnotico: {
     id: 'padraoHipnotico', name: 'Padrão Hipnótico', level: 3, school: 'ilusão', fonte: 'srd',
@@ -852,9 +876,12 @@ export const SPELLS = {
     id: 'muralhaDeVento', name: 'Muralha de Vento', level: 3, school: 'evocação', fonte: 'srd',
     castTime: 'action', rangeFt: 120, shape: 'muralha', areaFt: 50, kind: 'save', save: 'str',
     damage: '3d8', damageType: 'concussão', halfOnSave: true,
+    // O livro deixa dar a esta muralha a forma que se quiser, desde que ela faça um caminho contínuo
+    // pelo chão: é o que `muralhaLivre` liga, e as escalas do jogador (Ctrl+clique) são as dobras.
+    muralhaLivre: true,
     zona: { rodadas: 10, quando: 'nunca', aoEntrar: false, dificil: false, semTeste: true, barraProjetil: true },
     concentration: true, duracaoRodadas: 10,
-    desc: 'Uma muralha de vento forte, em linha reta de 15 m (10 casas; na diagonal a linha tem mais casas), centrada no ponto que você mira e de través para você. Ao surgir, quem está nela faz CD de FOR ou sofre 3d8 concussão, metade se passar. Enquanto durar, todo ataque à distância com arma (flecha, virote, pedra) que cruze a muralha erra sozinho. Concentração, até 1 minuto. (No jogo, só os projéteis de arma são barrados: magias, criaturas Grandes e gás atravessam; o livro também sopra névoa e voadores, o que o jogo não faz.)',
+    desc: 'Uma muralha de vento forte de 15 m (10 casas). Em linha reta, centrada no ponto que você mira e de través para você — ou com a FORMA que você quiser: marque as dobras com Ctrl+clique e ela faz um caminho contínuo pelo chão, como no livro (um L para fechar uma esquina, um U para cercar). Ao surgir, quem está nela faz CD de FOR ou sofre 3d8 concussão, metade se passar. Enquanto durar, todo ataque à distância com arma (flecha, virote, pedra) que cruze a muralha erra sozinho. Concentração, até 1 minuto. (No jogo, só os projéteis de arma são barrados: magias, criaturas Grandes e gás atravessam; o livro também sopra névoa e voadores, o que o jogo não faz.)',
   },
 
   // ---- lote 11: ilusão, visão, atributo, sugestão, luz do dia, maldição, plantas, voo ----
@@ -898,8 +925,8 @@ export const SPELLS = {
   },
   removerMaldicao: {
     id: 'removerMaldicao', name: 'Remover Maldição', level: 3, school: 'abjuração', fonte: 'srd',
-    castTime: 'action', rangeFt: 5, kind: 'restaurar', remove: ['rogado', 'bruxaria'], todas: true,
-    desc: 'Toque num aliado: toda maldição que pese sobre ele acaba — Rogar Maldição e Bruxaria, as duas que existem no jogo. (Objetos amaldiçoados e a sintonia com itens malditos ainda não existem no jogo.)',
+    castTime: 'action', rangeFt: 5, kind: 'restaurar', remove: ['rogado', 'bruxaria', 'podridaoDaMumia'], todas: true,
+    desc: 'Toque num aliado: toda maldição que pese sobre ele acaba — Rogar Maldição, Bruxaria e a podridão da múmia (que devolve o PV máximo que tirou). (Objetos amaldiçoados e a sintonia com itens malditos ainda não existem no jogo.)',
   },
   crescimentoDePlantas: {
     id: 'crescimentoDePlantas', name: 'Crescimento de Plantas', level: 3, school: 'transmutação', fonte: 'srd',
@@ -1247,10 +1274,90 @@ export const SPELLS = {
   // ---- o segundo lote: do 4º ao 9º círculo ----
   muralhaDeFogo: {
     id: 'muralhaDeFogo', name: 'Muralha de Fogo', level: 4, school: 'evocação', fonte: 'srd',
-    castTime: 'action', rangeFt: 120, shape: 'line', areaFt: 60, kind: 'save', save: 'dex', soZona: true,
-    zona: { rodadas: 10, quando: 'inicio', aoEntrar: true, dificil: false, semTeste: true, dano: { dados: '5d8', tipo: 'fogo', save: 'dex', metade: true } },
+    castTime: 'action', rangeFt: 120, shape: 'muralha', areaFt: 60, kind: 'save', save: 'dex', soZona: true,
+    // O livro dá a esta muralha DUAS formas (reta de 18 m ou anel de 6 m de diâmetro) e UM LADO
+    // quente, escolhido ao conjurar, que queima a até 3 m dele. Forma livre ela não tem — isso é da
+    // Muralha de Vento. `quando: 'fim'` porque o livro cobra de quem TERMINA o turno, não começa.
+    muralhaAnel: 20, ladoQuenteFt: 10,
+    // A opção aqui MUDA A ÁREA, e por isso ela se escolhe ANTES de mirar: decidir depois do clique
+    // deixaria a prévia mostrando uma reta e o fogo saindo em anel. No Glifo e no Círculo Mágico a
+    // opção é o tipo de dano ou de criatura, não mexe no desenho, e segue escolhida depois.
+    opcoesMudamAArea: true,
+    opcoes: [
+      { id: 'reta-longe', rotulo: 'Reta, quente do lado de lá', detalhe: 'linha de 18 m; queima a até 3 m do lado oposto a você' },
+      { id: 'reta-perto', rotulo: 'Reta, quente do lado de cá', detalhe: 'linha de 18 m; queima a até 3 m do seu lado' },
+      { id: 'anel-dentro', rotulo: 'Anel de 6 m, quente por dentro', detalhe: 'cerca quatro casas; queima quem fica dentro do anel' },
+      { id: 'anel-fora', rotulo: 'Anel de 6 m, quente por fora', detalhe: 'cerca quatro casas; queima a até 3 m por fora' },
+    ],
+    zona: { rodadas: 10, quando: 'fim', aoEntrar: true, dificil: false, semTeste: true, dano: { dados: '5d8', tipo: 'fogo', save: 'dex', metade: true } },
     concentration: true, duracaoRodadas: 10, upcast: { dados: 1 },
-    desc: 'Uma muralha de fogo de 18 m. Quem entra nela ou começa o turno nela faz CD de DES: 5d8 de fogo, metade se passar. Concentração, até 1 minuto. +1d8 por círculo acima do 4º. (O livro põe também o dano no lado da muralha; aqui só vale quem está nela.)',
+    desc: 'Uma muralha de fogo de 18 m em linha reta, OU um anel de 6 m de diâmetro (12 casas de perímetro, que é o mesmo comprimento). Um LADO dela é o quente, escolhido ao conjurar: quem entra na muralha, ou termina o turno nela ou a até 3 m do lado quente, faz CD de DES e sofre 5d8 de fogo, metade se passar. O outro lado é só luz e calor. Concentração, até 1 minuto. +1d8 por círculo acima do 4º.',
+  },
+  // ---- as outras quatro muralhas do SRD ------------------------------------------------------
+  //
+  // A máquina de forma é a mesma da Muralha de Fogo e da de Vento (`combat.js muralhaDaMagia`):
+  // `muralhaLivre` dá as dobras por Ctrl+clique, `muralhaAnel` dá o anel de 6 m, e sem nenhum dos
+  // dois sai a reta de través. O que estas quatro trouxeram de novo foi a zona que BARRA — as três
+  // primeiras são parede enquanto durarem, e até agora nenhuma zona do jogo parava alguém.
+  //
+  // O QUE FICA DE FORA, nas quatro: o livro deixa QUEBRAR a muralha de pedra, a de gelo e a de
+  // espinhos (CA e PV por painel) e o jogo ainda não tem objeto que se ataca. Então elas duram o que
+  // a concentração durar, e quem quiser passar derruba o conjurador. Está dito em cada `desc`.
+
+  muralhaDeForca: {
+    id: 'muralhaDeForca', name: 'Muralha de Força', level: 5, school: 'evocação', fonte: 'srd',
+    castTime: 'action', rangeFt: 120, shape: 'muralha', areaFt: 100, kind: 'save', soZona: true,
+    // Dez painéis de 3 m que só precisam encostar uns nos outros: é a forma livre, e o livro também
+    // dá a cúpula, que aqui é o anel. Invisível: barra o passo e NÃO barra a visão.
+    muralhaLivre: true, muralhaAnel: 20,
+    zona: {
+      rodadas: 10, quando: 'nunca', aoEntrar: false, dificil: false, semTeste: true,
+      barraPasso: true, barraProjetil: true,
+    },
+    concentration: true, duracaoRodadas: 10,
+    desc: 'Uma parede invisível de 30 m (20 casas), reta, com a forma que você quiser (Ctrl+clique dobra) ou em anel de 6 m. Nada a atravessa: nem criatura, nem flecha. Vê-se através dela. Quem estiver na linha dela é empurrado para o lado de lá. Não se quebra — é IMUNE a dano, como no livro. Concentração, até 10 minutos (aqui, 1 minuto). (No livro só Desintegrar a destrói; o jogo ainda não tem essa magia, então aqui ela cai com a concentração.)',
+  },
+  muralhaDePedra: {
+    id: 'muralhaDePedra', name: 'Muralha de Pedra', level: 5, school: 'evocação', fonte: 'srd',
+    castTime: 'action', rangeFt: 120, shape: 'muralha', areaFt: 100, kind: 'save', soZona: true,
+    // "A muralha pode ter a forma que você quiser": forma livre, e sem anel declarado no livro.
+    muralhaLivre: true,
+    zona: {
+      rodadas: 10, quando: 'nunca', aoEntrar: false, dificil: false, semTeste: true,
+      barraPasso: true, barraVisao: true, barraProjetil: true,
+      // CA 15 e 180 PV por painel de 3 m: aqui a casa tem 1,5 m, então metade por casa.
+      objeto: { ca: 15, pv: 90 },
+    },
+    concentration: true, duracaoRodadas: 10,
+    desc: 'Uma parede de pedra maciça de 30 m (20 casas), com a forma que você quiser (Ctrl+clique dobra). Barra o passo, a flecha e a VISTA. Quem estiver na linha dela é empurrado para o lado de lá. Pode ser derrubada: cada trecho tem CA 15 e 90 PV, e o trecho a zero abre um vão. Concentração, até 10 minutos (aqui, 1 minuto). (No livro ela vira permanente se a concentração durar os 10 minutos; aqui cai com a concentração.)',
+  },
+  muralhaDeGelo: {
+    id: 'muralhaDeGelo', name: 'Muralha de Gelo', level: 6, school: 'evocação', fonte: 'srd',
+    castTime: 'action', rangeFt: 120, shape: 'muralha', areaFt: 100,
+    kind: 'save', save: 'dex', damage: '10d6', damageType: 'frio', halfOnSave: true,
+    muralhaLivre: true, muralhaAnel: 20,
+    zona: {
+      rodadas: 10, quando: 'nunca', aoEntrar: false, dificil: false, semTeste: true,
+      barraPasso: true, barraVisao: true, barraProjetil: true,
+      // CA 12 e 30 PV por trecho de 3 m — metade por casa —, e o fogo a derrete.
+      objeto: { ca: 12, pv: 15, vulneravel: 'fogo' },
+    },
+    concentration: true, duracaoRodadas: 10, upcast: { dados: 2 },
+    desc: 'Uma parede de gelo de 30 m (20 casas), com a forma que você quiser (Ctrl+clique dobra) ou em anel de 6 m. Ao surgir, quem está na linha dela faz CD de DES: 10d6 de frio, metade se passar, e é empurrado para o lado de lá. Depois, barra o passo, a flecha e a vista. Pode ser derretida: cada trecho tem CA 12 e 15 PV e é VULNERÁVEL A FOGO (dano dobrado), e o trecho a zero abre um vão. Concentração, até 10 minutos (aqui, 1 minuto). +2d6 por círculo acima do 6º. (No livro o vão deixa um sopro gélido que fere quem passa; aqui o vão fica limpo.)',
+  },
+  muralhaDeEspinhos: {
+    id: 'muralhaDeEspinhos', name: 'Muralha de Espinhos', level: 6, school: 'conjuração', fonte: 'srd',
+    castTime: 'action', rangeFt: 120, shape: 'muralha', areaFt: 60,
+    kind: 'save', save: 'dex', damage: '7d8', damageType: 'perfurante', halfOnSave: true,
+    // Dezoito metros de sebe OU um círculo de 6 m — as mesmas duas formas da Muralha de Fogo, e
+    // pelo mesmo motivo: é o que o livro dá a ela. Forma livre, não.
+    muralhaAnel: 20,
+    zona: {
+      rodadas: 10, quando: 'fim', aoEntrar: true, dificil: false, dificil4: true, semTeste: true,
+      dano: { dados: '7d8', tipo: 'cortante', save: 'dex', metade: true },
+    },
+    concentration: true, duracaoRodadas: 10, upcast: { dados: 1 },
+    desc: 'Uma sebe de espinhos de 18 m (12 casas), reta ou em anel de 6 m. Ao surgir, quem está nela faz CD de DES: 7d8 perfurante, metade se passar. Atravessa-se, devagar e doendo: cada 30 cm custa 1,2 m de deslocamento (no tabuleiro, cada casa custa quatro). Entrar nela ou terminar o turno dentro pede outro CD de DES: 7d8 cortante, metade se passar. Concentração, até 10 minutos (aqui, 1 minuto). +1d8 nos dois danos por círculo acima do 6º. (A sebe não tem CA nem PV: o livro não os dá a ela, e quem quiser passar paga o deslocamento e o dano.)',
   },
   nuvemMortal: {
     id: 'nuvemMortal', name: 'Nuvem Mortal', level: 5, school: 'conjuração', fonte: 'srd',
@@ -1300,7 +1407,7 @@ export const SPELLS = {
   },
   guardiaoDaFe: {
     id: 'guardiaoDaFe', name: 'Guardião da Fé', level: 4, school: 'conjuração', fonte: 'srd',
-    castTime: 'action', rangeFt: 30, shape: 'sphere', areaFt: 10, kind: 'save', soZona: true,
+    castTime: 'action', rangeFt: 30, shape: 'sphere', areaFt: 10, emVoltaDaCasa: true, kind: 'save', soZona: true,
     zona: { em: 'no', rodadas: 4800, quando: 'nunca', aoEntrar: true, dificil: false, orcamento: 60, soHostis: true,
       dano: { dados: '0d0+20', tipo: 'radiante', save: 'dex', metade: true } },
     desc: 'Um guardião espectral de espada e escudo para numa casa a até 9 m e fica oito horas. Quem é hostil a você e entra a até 3 m dele faz resistência de Destreza: 20 de dano radiante, metade se passar. Ele some depois de causar 60 de dano no total. O livro diz "a primeira vez num turno", e é isso: quem entra, sai e entra de novo no mesmo turno só paga uma vez. (Simplificações: o guardião não ocupa a casa, então ninguém tem de desviar dele; a área é um quadrado de 5 por 5 casas em volta do ponto, enquanto no livro ele é Grande e os 3 m em volta dariam 6 por 6; e ele se desfaz quando o combate acaba, porque é zona de encontro e não do relógio das oito horas. O dano é exatamente 20, sem dado, como no livro.)',
@@ -1351,7 +1458,7 @@ export const SPELLS = {
   respirarNaAgua: {
     id: 'respirarNaAgua', name: 'Respirar na Água', level: 3, school: 'transmutação', fonte: 'srd', ritual: true, soFora: true, utilidade: true,
     castTime: 'action', rangeFt: 30, kind: 'utilidade', duracaoMin: 1440,
-    desc: 'Por vinte e quatro horas, até dez criaturas que você escolher respiram debaixo da água — sem perder o ar de cima. Ritual. (Simplificação: o jogo ainda não afoga ninguém, então a magia gasta o espaço e o tempo e só é narrada. Fica pronta para quando a água funda cobrar o ar. Só fora de combate.)',
+    desc: 'Por vinte e quatro horas, até dez criaturas que você escolher respiram debaixo da água — sem perder o ar de cima. Ritual. Quem respira na água não gasta o fôlego debaixo dela e não se afoga. (Simplificação: as 24 horas acabam no descanso longo seguinte. Só fora de combate.)',
   },
   fundirSeComPedra: {
     id: 'fundirSeComPedra', name: 'Fundir-se com a Pedra', level: 3, school: 'transmutação', fonte: 'srd', ritual: true, soFora: true, utilidade: true,
@@ -1536,12 +1643,14 @@ export const getSpell = (id) => {
  */
 export function magiasProntas(actor) {
   const sc = actor.spellcasting;
-  if (!sc) return [];
+  // A AÇÃO QUE UMA MAGIA CONCEDE vale também para quem não conjura (o guerreiro tocado pelo Sopro do Dragão).
+  const concedidas = concedidasDe(actor).filter((id) => SPELLS[id]);
+  if (!sc) return concedidas;
   // As magias RACIAIS (Legado Infernal, Magia Drow) entram na lista de quem as tem: uma vez por descanso longo, sem espaço.
   const raciais = [...(actor.magiasRaciais ?? []), ...(actor.magiasDeInvocacao ?? [])].map((m) => m.magia);
   // PASSO DO CAOS (surto de magia selvagem): vale enquanto a condição durar.
   const doSurto = (actor.conditions ?? []).some((c) => c.id === 'passoDoCaos') ? ['passoDoCaos'] : [];
-  return [...new Set([...(sc.cantrips ?? []), ...(sc.prepared ?? []), ...(sc.sempreProntas ?? []), ...raciais, ...(actor.magiasDeCaracteristica ?? []), ...doSurto])]
+  return [...new Set([...(sc.cantrips ?? []), ...(sc.prepared ?? []), ...(sc.sempreProntas ?? []), ...raciais, ...(actor.magiasDeCaracteristica ?? []), ...doSurto, ...concedidas])]
     .filter((id) => SPELLS[id]);
 }
 

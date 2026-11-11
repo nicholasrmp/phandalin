@@ -1,0 +1,339 @@
+/* TEMA OBSIDIANA — a interface no estilo do Foundry v13 escuro (a proposta A, escolhida pelo dono em 2026-11-09).
+ *
+ * O que muda, e por quê (medido contra o Foundry e o sistema 5e, ver `revisoes/interface-2026-11-09.md`):
+ *   1. O MAPA OCUPA A TELA INTEIRA. Antes ele ficava num quadro de 50% da tela; agora o grupo, o topo, a barra e o
+ *      registro FLUTUAM por cima dele, como no Foundry.
+ *   2. PAINEL ESCURO TRANSLÚCIDO, borda de 1 px, canto de 3 a 4 px. O dourado só em detalhe (o ativo, o título). Nada
+ *      de pílula, de moldura de latão em 9-slice nem de pergaminho opaco.
+ *   3. FONTE PRÓPRIA, guardada no jogo (`public/fontes/`, licença OFL): Signika no corpo, Cinzel nos títulos.
+ *   4. UMA ESCALA SÓ: os tamanhos e as cores saem das variáveis abaixo.
+ *
+ * Folha à parte, como `layout.css`: só sobrescreve, com `#app.obsidiana` na frente. `?tema=classico` (ou a opção nas
+ * Opções) tira a classe e devolve o pergaminho, para comparar. Os ícones de pixel continuam: trocar os ícones é outro
+ * trabalho. */
+
+@font-face {
+  font-family: 'Signika';
+  src: url('/fontes/signika.woff2') format('woff2');
+  font-weight: 300 700;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Cinzel';
+  src: url('/fontes/cinzel.woff2') format('woff2');
+  font-weight: 500 700;
+  font-display: swap;
+}
+
+#app.obsidiana {
+  /* o painel: preto-azulado translúcido, a cor do Foundry v13 escuro */
+  --ob-painel: rgba(11, 10, 19, .84);
+  --ob-painel-forte: rgba(11, 10, 19, .92);
+  --ob-borda: rgba(255, 255, 255, .10);
+  --ob-borda-forte: rgba(255, 255, 255, .18);
+  --ob-ouro: #e2bd6b;
+  --ob-ouro-claro: #f0d49a;
+  --ob-ouro-linha: rgba(226, 189, 107, .55);
+  --ob-ouro-fundo: rgba(226, 189, 107, .14);
+  --ob-texto: #e8e4dc;
+  --ob-suave: #b9b3a6;
+  --ob-verde: #4caf6e;
+  --ob-vermelho: #c9593f;
+  --ob-azul: #8fb4e8;
+  --ob-sombra: 0 6px 18px rgba(0, 0, 0, .45);
+  --ob-raio: 4px;
+  --ob-titulo: 'Cinzel', 'Palatino Linotype', serif;
+  --ob-corpo: 'Signika', 'Segoe UI', sans-serif;
+  /* a escala: 11, 12, 13, 14, 16, 20 */
+  --ob-11: 11px; --ob-12: 12px; --ob-13: 13px; --ob-14: 14px; --ob-16: 16px; --ob-20: 20px;
+
+  /* as variáveis do tema antigo, viradas para o escuro: o que só as lê já acompanha */
+  --ink: var(--ob-texto);
+  --muted: var(--ob-suave);
+  --font: var(--ob-corpo);
+  --serif: var(--ob-titulo);
+  --line: rgba(255, 255, 255, .08);
+  --line-forte: rgba(255, 255, 255, .16);
+  --gold: var(--ob-ouro);
+  --gold-claro: var(--ob-ouro-claro);
+  --gold-escuro: var(--ob-ouro);
+  --green: var(--ob-verde);
+  --red: var(--ob-vermelho);
+  --blue: var(--ob-azul);
+  --papelada: var(--ob-painel);
+  --bisel: none;
+  --carimbo: none;
+  --relevo: var(--ob-sombra);
+
+  position: relative;
+  display: block;
+  padding: 0;
+  font-family: var(--ob-corpo);
+  color: var(--ob-texto);
+  background: #07060b;
+}
+/* só os títulos do HUD: o menu inicial também mora dentro de #app, e o título dele tem tamanho próprio */
+#app.obsidiana .hud-meio h2 { font-family: var(--ob-titulo); font-size: var(--ob-12); letter-spacing: .12em; color: var(--ob-ouro); }
+
+/* ============================================================ o mapa em tela cheia */
+#app.obsidiana .hud-meio { position: absolute; inset: 0; display: block; }
+#app.obsidiana .palco { position: absolute; inset: 0; gap: 0; }
+#app.obsidiana .board-wrap { position: absolute; inset: 0; }
+#app.obsidiana .board { border: 0; border-radius: 0; box-shadow: none; }
+
+/* ============================================================ topo */
+#app.obsidiana .hud-topo {
+  position: absolute; left: 12px; right: 12px; top: 10px; z-index: 6;
+  pointer-events: none;
+}
+#app.obsidiana .hud-topo > * { pointer-events: auto; }
+#app.obsidiana .turn-banner,
+#app.obsidiana .ordem,
+#app.obsidiana .viewbar {
+  background: var(--ob-painel);
+  border: 1px solid var(--ob-borda);
+  border-radius: var(--ob-raio);
+  box-shadow: var(--ob-sombra);
+  color: var(--ob-texto);
+}
+#app.obsidiana .turn-banner { font-family: var(--ob-titulo); font-size: var(--ob-14); font-weight: 700; letter-spacing: .08em; padding: 6px 14px; }
+#app.obsidiana .turn-banner.party { color: var(--ob-ouro); border-color: var(--ob-ouro-linha); }
+#app.obsidiana .turn-banner.foes { color: #f0a08c; border-color: rgba(201, 89, 63, .6); }
+#app.obsidiana .turn-banner.vitoria { color: var(--ob-ouro-claro); border-color: var(--ob-ouro); }
+#app.obsidiana .turn-banner.derrota { color: #f0a08c; }
+#app.obsidiana .vez { background: rgba(255, 255, 255, .04); border-radius: 3px; box-shadow: none; }
+#app.obsidiana .vez.agora { border-color: var(--ob-ouro); }
+#app.obsidiana .vez.alvo { border-color: var(--ob-ouro); box-shadow: 0 0 0 1px var(--ob-ouro), 0 0 10px rgba(226, 189, 107, .45); }
+#app.obsidiana .vez-pv { background: rgba(255, 255, 255, .1); }
+#app.obsidiana .vez-sep { color: var(--ob-suave); }
+#app.obsidiana .icon-btn { color: var(--ob-texto); border-radius: 3px; }
+#app.obsidiana .icon-btn:hover { background: var(--ob-ouro-fundo); color: var(--ob-ouro); }
+#app.obsidiana .divider { background: var(--ob-borda-forte); }
+
+/* os botões do canto (Menu, Registro) */
+#app.obsidiana .btn {
+  font-family: var(--ob-corpo);
+  font-size: var(--ob-13);
+  color: var(--ob-texto);
+  background: var(--ob-painel);
+  border: 1px solid var(--ob-borda);
+  border-radius: var(--ob-raio);
+  box-shadow: var(--ob-sombra);
+  text-shadow: none;
+}
+#app.obsidiana .btn:hover { border-color: var(--ob-ouro-linha); color: var(--ob-ouro-claro); filter: none; }
+#app.obsidiana .btn.primary { background: linear-gradient(#3a2f1c, #261e12); border-color: var(--ob-ouro-linha); color: var(--ob-ouro-claro); }
+#app.obsidiana .btn-registro.aberto { border-color: var(--ob-ouro); color: var(--ob-ouro); background: var(--ob-painel-forte); box-shadow: var(--ob-sombra); filter: none; }
+#app.obsidiana .btn-registro .novidades { background: var(--ob-vermelho); border-radius: 3px; font-family: var(--ob-corpo); }
+
+/* ============================================================ o grupo, flutuando à esquerda */
+#app.obsidiana .coluna-grupo {
+  position: absolute; left: 12px; top: 62px; z-index: 5;
+  width: 236px; max-height: calc(100% - 200px);
+  border: 0; border-image: none; background: none; box-shadow: none;
+  padding: 0; overflow-y: auto; scrollbar-width: thin;
+}
+#app.obsidiana .trilho { gap: 5px; }
+#app.obsidiana .trilho-titulo {
+  font-family: var(--ob-titulo); font-size: var(--ob-11); letter-spacing: .12em; color: var(--ob-suave);
+  margin: 6px 0 0; padding: 4px 8px; border-top: 0;
+  background: var(--ob-painel); border-radius: 3px;
+}
+#app.obsidiana .ficha {
+  background: var(--ob-painel);
+  border: 1px solid var(--ob-borda);
+  border-radius: var(--ob-raio);
+  box-shadow: none;
+  color: var(--ob-texto);
+  padding: 6px 8px;
+}
+#app.obsidiana .ficha:hover { border-color: var(--ob-borda-forte); }
+#app.obsidiana .ficha.on { border-color: var(--ob-ouro-linha); box-shadow: inset 2px 0 0 var(--ob-ouro); background: var(--ob-painel-forte); }
+#app.obsidiana .ficha-corpo strong { font-family: var(--ob-corpo); font-size: var(--ob-14); font-weight: 600; }
+#app.obsidiana .ficha-sub, #app.obsidiana .ficha-pv { font-size: var(--ob-11); color: var(--ob-suave); }
+#app.obsidiana .ficha-ca { background: rgba(255, 255, 255, .06); color: var(--ob-texto); border-color: var(--ob-borda); }
+#app.obsidiana .ficha .bar, #app.obsidiana .bar { background: rgba(255, 255, 255, .08); border-color: transparent; border-radius: 2px; box-shadow: none; }
+#app.obsidiana .slots { color: var(--ob-azul); }
+#app.obsidiana .eco { background: rgba(255, 255, 255, .06); border-color: var(--ob-borda); color: var(--ob-texto); }
+#app.obsidiana .eco.gasto { opacity: .4; }
+#app.obsidiana .inimigo {
+  background: var(--ob-painel);
+  border: 1px solid var(--ob-borda);
+  border-radius: var(--ob-raio);
+  color: var(--ob-texto);
+  box-shadow: none;
+}
+#app.obsidiana .inimigo-topo strong { font-family: var(--ob-corpo); font-size: var(--ob-13); font-weight: 600; }
+#app.obsidiana .inimigo-ca { color: var(--ob-suave); }
+#app.obsidiana .inimigo-chance.boa { color: #7fd29a; }
+#app.obsidiana .inimigo-chance.media { color: var(--ob-ouro); }
+#app.obsidiana .inimigo-chance.ruim { color: #f0a08c; }
+#app.obsidiana .cond { border-radius: 3px; }
+
+/* ============================================================ o registro, barra lateral à direita */
+#app.obsidiana .gaveta-registro {
+  top: 0; right: 0; bottom: 0; z-index: 7;
+  width: 320px;
+  border: 0; border-image: none;
+  border-left: 1px solid var(--ob-borda);
+  border-radius: 0;
+  background: var(--ob-painel-forte);
+  padding: 56px 12px 12px;
+  box-shadow: -8px 0 24px rgba(0, 0, 0, .35);
+}
+#app.obsidiana .gaveta-registro::before, #app.obsidiana .gaveta-registro::after { display: none; }
+#app.obsidiana .gaveta-registro h2 { padding-bottom: 8px; border-bottom: 1px solid var(--ob-ouro-linha); }
+#app.obsidiana .log-list { gap: 6px; }
+#app.obsidiana .log-entry {
+  background: rgba(255, 255, 255, .04);
+  border: 1px solid rgba(255, 255, 255, .07);
+  border-left-width: 1px;
+  border-radius: var(--ob-raio);
+  color: var(--ob-texto);
+  font-size: var(--ob-13);
+  padding: 6px 8px;
+}
+#app.obsidiana .log-detail { font-family: var(--ob-corpo); font-size: var(--ob-11); color: var(--ob-suave); }
+#app.obsidiana .log-turno { color: var(--ob-ouro); border-color: var(--ob-ouro-linha); }
+#app.obsidiana .log-fim { color: var(--ob-ouro-claro); border-color: var(--ob-ouro); }
+#app.obsidiana .log-aviso { color: #f0c27a; }
+#app.obsidiana .log-morte { border-color: rgba(201, 89, 63, .6); }
+#app.obsidiana .log-cura { border-color: rgba(76, 175, 110, .6); }
+
+/* o aviso legal: discreto no canto de baixo, à esquerda, na largura da coluna do grupo (no menu ele aparece inteiro).
+   Com 640 px ele passava por baixo da barra de ações, que no meio da tela começa em 500 px numa tela de 1440. */
+#app.obsidiana .legal-rodape {
+  position: absolute; left: 12px; bottom: 6px; z-index: 4;
+  max-width: 236px; text-align: left; pointer-events: none;
+}
+#app.obsidiana .legal-rodape p { display: block; margin: 0; font-size: 9px; line-height: 1.3; color: rgba(232, 228, 220, .38); }
+
+/* a dica do cursor e o resumo do turno inimigo */
+#app.obsidiana .hint {
+  position: absolute; left: 50%; bottom: 146px; transform: translateX(-50%); z-index: 5;
+  min-height: 0; padding: 0; color: var(--ob-texto); font-size: var(--ob-12);
+  text-shadow: 0 1px 3px #000, 0 0 8px #000;
+  pointer-events: none;
+}
+#app.obsidiana .hint:empty { display: none; }
+#app.obsidiana .resumo, #app.obsidiana .dica {
+  background: var(--ob-painel-forte);
+  border: 1px solid var(--ob-borda-forte);
+  border-radius: var(--ob-raio);
+  color: var(--ob-texto);
+  box-shadow: var(--ob-sombra);
+  font-family: var(--ob-corpo);
+}
+#app.obsidiana .dica-topo strong, #app.obsidiana .resumo-topo strong { font-family: var(--ob-titulo); color: var(--ob-ouro); }
+#app.obsidiana .dica-texto, #app.obsidiana .resumo-linhas li { color: #d6d0c4; }
+#app.obsidiana .dica-val { color: var(--ob-texto); }
+#app.obsidiana .dica-val.boa, #app.obsidiana .resumo-cura { color: #7fd29a; }
+#app.obsidiana .dica-val.ruim, #app.obsidiana .resumo-dano { color: #f0a08c; }
+#app.obsidiana .dica-aviso { color: #f0c27a; }
+
+/* ============================================================ a barra de ações, embaixo e no meio */
+#app.obsidiana .hud-baixo {
+  position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); z-index: 6;
+  width: max-content; max-width: calc(100% - 24px);
+}
+#app.obsidiana .barra-acao {
+  border: 1px solid var(--ob-borda);
+  border-image: none;
+  border-radius: var(--ob-raio);
+  background: var(--ob-painel-forte);
+  box-shadow: 0 8px 26px rgba(0, 0, 0, .55);
+  padding: 6px;
+  gap: 0;
+  width: auto;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+#app.obsidiana .barra-acao > * + * { border-left: 1px solid rgba(255, 255, 255, .08); }
+#app.obsidiana .bandeja-acoes, #app.obsidiana .zona-turno {
+  border: 0; border-image: none; background: none;
+  padding: 2px 10px;
+}
+#app.obsidiana .barra-aviso { font-family: var(--ob-titulo); font-size: var(--ob-14); color: var(--ob-suave); }
+#app.obsidiana .separador { background: rgba(255, 255, 255, .1); }
+#app.obsidiana .grade-acoes { grid-template-columns: repeat(var(--colunas), 44px); grid-auto-rows: 44px; gap: 4px; }
+#app.obsidiana .pag { background: rgba(255, 255, 255, .06); border: 1px solid var(--ob-borda); color: var(--ob-texto); border-radius: 3px; }
+#app.obsidiana .pag-num { color: var(--ob-suave); }
+
+/* o azulejo: um encaixe escuro com borda de 1 px; o ativo, em ouro */
+#app.obsidiana .tile {
+  width: 44px; height: 44px;
+  background: rgba(255, 255, 255, .03);
+  border: 1px solid var(--ob-borda);
+  border-radius: 3px;
+}
+#app.obsidiana .tile.item { background: rgba(255, 255, 255, .02); }
+#app.obsidiana .tile:hover:not(.off) { border-color: var(--ob-ouro-linha); filter: none; background: rgba(255, 255, 255, .06); }
+#app.obsidiana .tile.on { border-color: var(--ob-ouro); background: var(--ob-ouro-fundo); box-shadow: 0 0 10px rgba(226, 189, 107, .35); }
+#app.obsidiana .tile.off { opacity: .32; }
+#app.obsidiana .tile .tecla {
+  background: none; border: 0; box-shadow: none;
+  color: var(--ob-suave); font-family: var(--ob-corpo); font-size: 10px;
+}
+#app.obsidiana .tile-selo { border-radius: 3px; font-family: var(--ob-corpo); }
+/* o ESMALTE: a família do ícone na borda e num brilho baixo no fundo (o HUD põe --cor-icone); na magia, a borda segue
+   dizendo o CÍRCULO, que é dado de regra, e a família fica só no brilho */
+#app.obsidiana .tile[style*='--cor-icone'] {
+  border-color: color-mix(in srgb, var(--cor-icone) 42%, transparent);
+  background: radial-gradient(circle at 50% 44%, color-mix(in srgb, var(--cor-icone) 20%, transparent), transparent 72%), #1b1926;
+}
+#app.obsidiana .tile[class*='circulo-'] { border-color: color-mix(in srgb, var(--circulo) 60%, transparent); }
+
+/* o núcleo: retrato, nome e vida de quem joga */
+#app.obsidiana .nucleo {
+  display: grid; grid-template-columns: 56px 112px; column-gap: 10px; row-gap: 4px; align-content: center;
+  padding: 2px 12px 2px 6px; color: var(--ob-texto);
+}
+#app.obsidiana .nucleo-retrato { grid-row: 1 / span 3; width: 56px; height: 56px; background: none; }
+#app.obsidiana .nucleo-retrato > canvas { border: 2px solid var(--ob-ouro); box-shadow: 0 0 0 3px rgba(226, 189, 107, .2); }
+#app.obsidiana .nucleo-nome { font-family: var(--ob-titulo); font-size: var(--ob-14); color: var(--ob-ouro); }
+#app.obsidiana .nucleo-vitais { font-size: var(--ob-12); color: var(--ob-texto); }
+#app.obsidiana .nucleo-ca { color: var(--ob-suave); }
+#app.obsidiana .nucleo-pv, #app.obsidiana .mov-trilho {
+  height: 6px; padding: 0;
+  border: 0; border-image: none;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, .1);
+  overflow: hidden;
+}
+#app.obsidiana .mov-rot, #app.obsidiana .mov-rot strong { color: var(--ob-suave); font-size: var(--ob-11); }
+
+/* a zona do turno: a economia e o botão de terminar */
+#app.obsidiana .zona.zona-turno { width: 210px; }
+#app.obsidiana .economia-linha { color: var(--ob-texto); font-size: var(--ob-12); }
+#app.obsidiana .economia-linha.gasta { color: var(--ob-suave); }
+#app.obsidiana .gema-luz { background-image: none !important; width: 9px; height: 9px; border-radius: 50%; }
+#app.obsidiana .gema-luz.acao, #app.obsidiana .gema-luz.bonus { background: var(--ob-ouro); }
+#app.obsidiana .gema-luz.reacao { background: #d98a6f; }
+#app.obsidiana .economia-linha.gasta .gema-luz { background: transparent; border: 1px solid var(--ob-suave); }
+#app.obsidiana .btn-terminar {
+  margin: 4px 0 0;
+  height: 32px; padding: 0 14px;
+  border: 1px solid var(--ob-ouro-linha);
+  border-image: none;
+  border-radius: 3px;
+  background: linear-gradient(#3a2f1c, #261e12);
+  color: var(--ob-ouro-claro);
+  font-family: var(--ob-titulo); font-size: var(--ob-12); letter-spacing: .08em; text-transform: uppercase;
+  justify-content: center;
+}
+#app.obsidiana .btn-terminar .lacre { display: none; }
+#app.obsidiana .tecla-inline { background: rgba(255, 255, 255, .08); border-color: var(--ob-borda); color: var(--ob-suave); border-radius: 3px; }
+#app.obsidiana .espaco-num { color: var(--ob-texto); font-family: var(--ob-corpo); }
+#app.obsidiana .espaco-livre { color: var(--ob-suave); }
+#app.obsidiana .economia-estado { color: #7fd29a; }
+
+/* telas estreitas: a barra ocupa a largura toda */
+@media (max-width: 1100px) {
+  #app.obsidiana .hud-baixo { max-width: calc(100% - 24px); }
+  #app.obsidiana .coluna-grupo { width: 200px; }
+}
+
+/* com o registro aberto, a câmera e o som saem de baixo dele */
+#app.obsidiana:has(.gaveta-registro.aberta) .viewbar { margin-right: 320px; }
+#app.obsidiana .viewbar { transition: margin-right .2s ease-out; }
+@media (prefers-reduced-motion: reduce) { #app.obsidiana .viewbar { transition: none; } }

@@ -1,9 +1,199 @@
 {
   "_fonte": "https://github.com/5etools-mirror-3/5etools-2014-img (bestiary/tokens/<livro>/<arquivo>). Mesmo anel dourado da galeria do imgur. Vale sobre a ficha da galeria; a de fichas-proprias.json vale sobre esta.",
-  "mormesk": ["LMoP", "Mormesk the Wraith.webp"],
-  "zumbiDasCinzas": ["LMoP", "Ash Zombie.webp"],
-  "dragaoVerdeJovem": ["LMoP", "Venomfang.webp"],
-  "vassouraAnimada": ["CoS", "Broom of Animated Attack.webp"],
-  "rose": ["CoS", "Rosavalda Rose Durst.webp"],
-  "thorn": ["CoS", "Thornboldt Thorn Durst.webp"]
+  "mormesk": [
+    "LMoP",
+    "Mormesk the Wraith.webp"
+  ],
+  "zumbiDasCinzas": [
+    "LMoP",
+    "Ash Zombie.webp"
+  ],
+  "dragaoVerdeJovem": [
+    "LMoP",
+    "Venomfang.webp"
+  ],
+  "vassouraAnimada": [
+    "CoS",
+    "Broom of Animated Attack.webp"
+  ],
+  "rose": [
+    "CoS",
+    "Rosavalda Rose Durst.webp"
+  ],
+  "thorn": [
+    "CoS",
+    "Thornboldt Thorn Durst.webp"
+  ],
+  "cobraVenenosaGigante": [
+    "MM",
+    "Giant Poisonous Snake.webp"
+  ],
+  "serpenteConstritoraGigante": [
+    "MM",
+    "Giant Constrictor Snake.webp"
+  ],
+  "polvoGigante": [
+    "MM",
+    "Giant Octopus.webp"
+  ],
+  "zumbiOgro": [
+    "MM",
+    "Ogre Zombie.webp"
+  ],
+  "grell": [
+    "MM",
+    "Grell.webp"
+  ],
+  "fungoVioleta": [
+    "MM",
+    "Violet Fungus.webp"
+  ],
+  "quasit": [
+    "MM",
+    "Quasit.webp"
+  ],
+  "chefeGoblinArqueiro": [
+    "PaBTSO",
+    "Goblin Boss Archer.webp"
+  ],
+  "zeond": [
+    "PaBTSO",
+    "Zeond.webp"
+  ],
+  "banshee": [
+    "MM",
+    "Banshee.webp"
+  ],
+  "goblinPsiLutador": [
+    "PaBTSO",
+    "Goblin Psi Brawler.webp"
+  ],
+  "goblinPsiComandante": [
+    "PaBTSO",
+    "Goblin Psi Commander.webp"
+  ],
+  "ashenwightFeral": [
+    "PaBTSO",
+    "Feral Ashenwight.webp"
+  ],
+  "ashenwightPsionico": [
+    "PaBTSO",
+    "Psionic Ashenwight.webp"
+  ],
+  "otyughMutante": [
+    "PaBTSO",
+    "Otyugh Mutate.webp"
+  ],
+  "brocaInfernal": [
+    "PaBTSO",
+    "Fiendish Auger.webp"
+  ],
+  "ruxithid": [
+    "PaBTSO",
+    "Ruxithid the Chosen.webp"
+  ],
+  "otyugh": [
+    "MM",
+    "Otyugh.webp"
+  ],
+  "guardiaoEscudo": [
+    "MM",
+    "Shield Guardian.webp"
+  ],
+  "texugoGigante": [
+    "MM",
+    "Giant Badger.webp"
+  ],
+  "gemulaEncefalica": [
+    "PaBTSO",
+    "Encephalon Gemmule.webp"
+  ],
+  "gosmaCinzentaPsiquica": [
+    "MM",
+    "Gray Ooze.webp"
+  ],
+  "monteErrantePsionico": [
+    "PaBTSO",
+    "Psionic Shambling Mound.webp"
+  ],
+  "vaca": [
+    "VGM",
+    "Cow.webp"
+  ],
+  "galebDuhr": [
+    "MM",
+    "Galeb Duhr.webp"
+  ],
+  "medusa": [
+    "MM",
+    "Medusa.webp"
+  ],
+  "horrorDeElmo": [
+    "MM",
+    "Helmed Horror.webp"
+  ],
+  "mefitDePoeira": [
+    "MM",
+    "Dust Mephit.webp"
+  ],
+  "wight": [
+    "MM",
+    "Wight.webp"
+  ],
+  "mutanteHumanoide": [
+    "PaBTSO",
+    "Humanoid Mutate.webp"
+  ],
+  "armadilhaDeIntelecto": [
+    "PaBTSO",
+    "Intellect Snare.webp"
+  ],
+  "drowGuerreiroDeElite": [
+    "MM",
+    "Drow Elite Warrior.webp"
+  ],
+  "elementalDaTerra": [
+    "MM",
+    "Earth Elemental.webp"
+  ],
+  "aglomeradoEncefalico": [
+    "PaBTSO",
+    "Encephalon Cluster.webp"
+  ],
+  "pedregulhoAnimado": [
+    "MM",
+    "Galeb Duhr.webp"
+  ],
+  "revenant": [
+    "MM",
+    "Revenant.webp"
+  ],
+  "hidra": [
+    "MM",
+    "Hydra.webp"
+  ],
+  "aguaViva": [
+    "MM",
+    "Water Weird.webp"
+  ],
+  "golemDeArgila": [
+    "MM",
+    "Clay Golem.webp"
+  ],
+  "fantasma": [
+    "MM",
+    "Ghost.webp"
+  ],
+  "mumia": [
+    "MM",
+    "Mummy.webp"
+  ],
+  "esqueletoAnao": [
+    "PaBTSO",
+    "Dwarf Skeleton.webp"
+  ],
+  "gnomoDasProfundezas": [
+    "MM",
+    "Deep Gnome (Svirfneblin).webp"
+  ]
 }

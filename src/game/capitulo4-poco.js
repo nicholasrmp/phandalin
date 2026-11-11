@@ -4,9 +4,10 @@
 //   - seis zumbis esperam dentro da base da torre, sem ser vistos de fora
 //     (eram doze, antes de a Tenacidade Mortoviva existir no motor).
 //     Saem pela porta, que tem uma casa de largura: três de início e mais
-//     dois a cada três rodadas (decisão nossa, medida pelo revisor de
+//     DOIS A CADA QUATRO RODADAS (decisão nossa, medida pelo revisor de
 //     encontro: os doze de uma vez matavam o grupo inteiro de nível 3 em uma
-//     luta de cada quatro). Com o grupo abaixo do nível 3, a torre tem oito;
+//     luta de cada quatro). São seis em qualquer nível: este cabeçalho já
+//     prometeu oito para grupo abaixo do 3º, e isso nunca existiu no código;
 //     Quem tem Percepção passiva 10 ou mais sente cheiro de morte vindo dela;
 //   - quando o grupo chega perto da torre ou da tenda, os zumbis saem, e o
 //     mago sai da tenda perguntando o que é aquilo;
@@ -151,7 +152,7 @@ export function criarPoco(app, config) {
   async function depoisDeMover(c) {
     if (!estado.explorando) return;
     c.movementLeftFt = MOVIMENTO;
-    if (!salvo.cheiro && herois().some((h) => passivePerception(h) >= 10 && dentro(h.pos, { x0: 4, y0: 3, x1: 21, y1: 18 }))) {
+    if (!salvo.cheiro && herois().some((h) => passivePerception(h) >= 10 && dentro(h.pos, { x0: 4, y0: 3, x1: 17, y1: 18 }))) {
       salvo.cheiro = true;
       const quem = herois().find((h) => passivePerception(h) >= 10);
       await painel(`${quem.name} franze o nariz: um cheiro doce e podre vem da torre caída, forte demais para ser bicho morto no mato.`);
@@ -218,7 +219,7 @@ export function criarPoco(app, config) {
             { texto: '(Examinar o manto vermelho)', teste: { pericia: 'historia', cd: 10 }, sucesso: 'manto', falha: 'nadaManto', uma: true },
             { texto: 'Procuramos informação. Sobre a região.', vai: 'favor', uma: true,
               requer: () => (salvo.kost === 'acordo' ? 'nada' : null), oculta: true },
-            { texto: 'Os orcs do Cume da Wyvern não incomodam mais ninguém.', vai: 'pago',
+            { texto: 'Os saqueadores do Cume da Wyvern não incomodam mais ninguém.', vai: 'pago',
               requer: () => (salvo.kost === 'acordo' && feitos.cumeLimpo && !feitos.kostPagou ? null : 'nada'), oculta: true },
             { texto: 'A banshee respondeu: o mago da torre se chamava Arthindol.', vai: 'pago',
               requer: () => (salvo.kost === 'acordo' && feitos.agathaTorre && !feitos.kostPagou ? null : 'nada'), oculta: true },
@@ -243,7 +244,7 @@ export function criarPoco(app, config) {
         favor: {
           fala: [
             'Informação é mercadoria. Eu tenho, vocês querem. Façam-me um favor, e eu pago com o que sei.',
-            'Duas coisas me fariam muito feliz. A primeira: tem orcs morando naquele morro do sul, o Cume da Wyvern, e eles andam passando perto demais daqui. Mortos eu tenho de sobra; orcs vivos, não quero.',
+            'Duas coisas me fariam muito feliz. A primeira: tem um bando morando naquele morro do sul, o Cume da Wyvern — bugbears, um ogro, um orc que se acha chefe —, e eles andam passando perto demais daqui. Mortos eu tenho de sobra; vivos, não quero.',
             'A segunda é mais delicada. Esta torre teve um dono, e quero saber o nome dele. Quem sabe disso é uma banshee lá para os lados de Conyberry. Eu, pessoalmente, prefiro não acordar mortos que não são meus.',
           ],
           opcoes: [
@@ -255,16 +256,17 @@ export function criarPoco(app, config) {
         pago: {
           ao: () => {
             feitos.kostPagou = true;
-            feitos.sabeOCastelo = true;
+            // O livro: quem negocia com ele sai sabendo onde fica a Caverna Onda Eco. O Castelo se acha por outros caminhos.
+            feitos.sabeOndaEco = true;
             (vila.missoes ??= {}).kost = 'feita';
             if (!(vila.pistas ??= []).some((p) => p.startsWith('Hamun Kost contou'))) {
-              vila.pistas.push('Hamun Kost contou onde fica o Castelo Dentefino: goblins passam pelas colinas a caminho da mata de Neverwinter, ao norte da Trilha de Triboar, e voltam para umas torres caídas lá dentro. Agora o castelo aparece no mapa da região.');
+              vila.pistas.push('Hamun Kost contou onde fica a Caverna Onda Eco: nos morros a leste de Phandalin, ao pé das Montanhas Espada. Agora ela aparece no mapa da região.');
             }
           },
           narra: 'Ele sorri pela primeira vez, sem mostrar os dentes.',
           fala: [
-            'Gente de palavra. Que raridade. Então ouçam: goblins passam por estas colinas toda semana, carregando coisa roubada, e todos vão para o mesmo lugar — para o norte, mata adentro, umas torres velhas caindo umas por cima das outras.',
-            'O chefe deles se diz rei. Não vale o título, mas tem muitos súditos. Boa caçada.',
+            'Gente de palavra. Que raridade. Então ouçam: pedra velha é o meu ofício, e pedra velha conversa com pedra velha. A mina que os anões e os gnomos perderam, a tal Onda Eco, fica nos morros a leste da vila de vocês, onde a terra sobe para as Montanhas Espada.',
+            'Quem mais anda atrás dela não é da minha conta, e não me interessa ser da de vocês. Boa caçada.',
           ],
           opcoes: [{ texto: '…', fim: 'paz' }],
         },
@@ -314,7 +316,10 @@ export function criarPoco(app, config) {
     }
     if (kost && !kost.dead) {
       kost.side = 'neutro';
-      kost.pos = { ...kost.pos, x: 9, y: 11 };
+      // (6,11), e não a coordenada crua: o (9,11) que estava aqui era da planta de 26x22, aposentada quando
+      // o Poço passou para o battlemap da FA e encolheu para 18x22. A casa existe e é livre, mas fica duas
+      // casas a leste da parede da tenda — o mago recuava para o meio do pátio em vez de para a porta dela.
+      kost.pos = { ...kost.pos, ...casaPerto(DIANTE_DA_TENDA) };
       if (!enc.combatants.includes(kost)) enc.addCombatant(kost);
     }
     app.refresh();
@@ -376,15 +381,18 @@ export function criarPoco(app, config) {
     if (naTenda(tile) && !salvo.tenda) {
       ops.push({
         rotulo: 'Revistar a tenda', icone: 'acao-procurar', motivo: longe(5)
-          ?? (salvo.kost === 'morto' || salvo.kost === 'preso' ? null : 'o dono está aí dentro'),
+          // ele quase nunca está DENTRO da tenda: sai dela assim que o grupo chega, e fica diante da porta.
+          ?? (salvo.kost === 'morto' || salvo.kost === 'preso' ? null : 'o dono está de olho'),
         fazer: async () => {
           salvo.tenda = true;
+          // O Obelisco: 35 pp, 20 pe, 20 po e 5 pl; cinco gemas de 10 po; poção de cura e pergaminho de escuridão; e a
+          // caixinha cravejada (25 po) com o Anel de Proteção netherese de vidro verde.
           guardar(c, 'moedaDePrata', 35); guardar(c, 'moedaDeOuro', 30); guardar(c, 'moedaDePlatina', 5);
-          guardar(c, 'perola', 1); guardar(c, 'pocaoDeCura', 1); guardar(c, 'pergaminhoDeEscuridao', 1);
-          guardar(c, 'joiaMiuda', 5); guardar(c, 'anelDeProtecao', 1);
+          guardar(c, 'gemaPequena', 5); guardar(c, 'pocaoDeCura', 1); guardar(c, 'pergaminhoDeEscuridao', 1);
+          guardar(c, 'caixinhaDeJoias', 1); guardar(c, 'anelDeProtecaoNetherese', 1);
           await painel([
             'Cama de campanha, cadeira dobrável, uma escrivaninha cheia de rascunhos da torre e um baú de roupas boas.',
-            `No fundo do baú, uma bolsa de couro: 35 peças de prata, 20 de electro, 20 de ouro, 5 de platina, uma pérola, uma poção de cura e um pergaminho de escuridão num tubo de osso. E uma caixinha com cinco joias miúdas e um anel de prata fosca, com um sinal que ninguém mais usa — de um império que caiu antes de qualquer reino de hoje. É mágico. ${c.name} guarda tudo.`,
+            `No fundo do baú, uma bolsa de couro: 35 peças de prata, 30 de ouro — vinte delas em moeda de electro, que vale meio ouro cada — e 5 de platina, cinco pedrinhas lapidadas, uma poção de cura e um pergaminho de escuridão num tubo de osso. E uma caixinha cravejada, o achado de que o mago mais se orgulhava: dentro, um anel inteiro de vidro verde, de uma peça só, mais duro que aço — trabalho de Netheril, o império que caiu antes de qualquer reino de hoje. É mágico. ${c.name} guarda tudo.`,
           ]);
         },
       });

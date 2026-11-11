@@ -74,13 +74,13 @@
 // junto com o grupo e pretende entregá-lo a ele; quem aceita e entra na torre luta contra
 // o dragão com os seis cultistas ao lado dele. Se Favric cai, o resto foge.
 //
-// O PRÊMIO da fase não é nenhum dos seis: é o Reidoth, que diz onde fica o
+// O PRÊMIO da fase não é nenhum dos seis: é a Reidoth (mulher idosa no Obelisco; homem na Mina), que diz onde fica o
 // Castelo Dentefino e, se o dragão sair da torre, guia o grupo até a Caverna Onda Eco. Dá para entrar, falar com ele e sair
 // sem desembainhar nada — e isso é uma vitória, não uma fuga.
 //
 // AS REGRAS são do livro; o TEXTO é nosso. Os FATOS que ficam: a vila morreu
 // quando o Monte Hotenow explodiu e ninguém voltou; um dragão verde jovem tomou
-// a torre; um punhado de cultistas tenta agradá-lo; o druida Reidoth vai e vem
+// a torre; um punhado de cultistas tenta agradá-lo; a druida Reidoth vai e vem
 // por ali e conhece a região como ninguém.
 //
 // O estado mora em `app.campanha.arvoreTrovao` e sobrevive a sair e voltar.
@@ -166,12 +166,15 @@ export function criarArvoreTrovao(app, config) {
   // cada, o bloco do livro (2 na cabana ocidental, 6 na cabana com ramos, 8 na
   // fazenda de ramos, 6 na tecelagem). ZUMBIS DAS CINZAS são o zumbi do SRD com a
   // Brisa das Cinzas: 4 no Cavalo Pardo, 2 na ferraria, 5 na velha guarnição.
-  const ramosDe = (chave) => ninho[chave].map((pos, i) => nasce('galhoInfectado', pos, 'ABCDEFGH'[i]));
+  // O Obelisco pôs DOZE ramos na fazenda: as letras vão até o L. E os ESPETOS INFECTADOS (o arbusto-agulha) entram
+  // junto com os ramos do mesmo mato, no mesmo bando — é a mesma luta, e o fim dela conta os dois.
+  const ramosDe = (chave) => ninho[chave].map((pos, i) => nasce('galhoInfectado', pos, 'ABCDEFGHIJKL'[i]));
+  const espetosDe = (chave) => (ninho[chave] ?? []).map((pos, i) => nasce('espetoInfectado', pos, 'AB'[i]));
   const zumbisDe = (chave) => ninho[chave].map((pos, i) => nasce('zumbiDasCinzas', pos, 'ABCDE'[i]));
   const ramos1 = salvo.ramos1 === 'limpo' ? [] : ramosDe('ramos1');
   const ramos2 = salvo.ramos2 === 'limpo' ? [] : ramosDe('ramos2');
-  const ramos5 = salvo.ramos5 === 'limpo' ? [] : ramosDe('ramos5');
-  const ramos12 = salvo.ramos12 === 'limpo' ? [] : ramosDe('ramos12');
+  const ramos5 = salvo.ramos5 === 'limpo' ? [] : [...ramosDe('ramos5'), ...espetosDe('agulhas5')];
+  const ramos12 = salvo.ramos12 === 'limpo' ? [] : [...ramosDe('ramos12'), ...espetosDe('agulhas12')];
   const zumbisCavalo = salvo.zumbisCavalo === 'limpo' ? [] : zumbisDe('zumbisCavalo');
   const zumbisFerraria = salvo.zumbisFerraria === 'limpo' ? [] : zumbisDe('zumbisFerraria');
   // A velha guarnição (a área 11 do livro): cinco zumbis das cinzas. Era a
@@ -189,6 +192,7 @@ export function criarArvoreTrovao(app, config) {
     ...ninho.culto.slice(1).map((p, i) => nasce('cultista', p, 'ABCDE'[i])),
   ];
   const chefeDoCulto = cultistas[0];
+  if (chefeDoCulto) chefeDoCulto.ficha = 'favric';
   if (chefeDoCulto) chefeDoCulto.name = 'Favric';
   const dragao = salvo.dragao ? null : nasce('dragaoVerdeJovem', ninho.dragao[0]);
   if (dragao) dragao.name = 'Presa Peçonhenta';
@@ -314,7 +318,7 @@ export function criarArvoreTrovao(app, config) {
   async function acordarZumbisDoCavalo() {
     salvo.zumbisCavalo = 'luta';
     await painel([
-      'A tinta da placa quase saiu, mas ainda dá para ver o cavalo e a caneca. Lá dentro a luz cai pelas frestas do telhado e deita em quatro montes de cinza e trapo, entre os tanques velhos. Um cheiro de fermento azedo, de cerveja que morreu há trinta anos.',
+      'A tinta da placa quase saiu, mas ainda dá para ver o cavalo e a caneca. Lá dentro a luz cai pelas frestas do telhado e deita em seis montes de cinza e trapo, entre os tanques velhos e debaixo do balcão. Um cheiro de fermento azedo, de cerveja que morreu há trinta anos.',
       'Um dos montes puxa o joelho para o peito. O outro vira a cabeça — sem pressa nenhuma — para o lado da porta.',
     ], { escolhas: [{ rotulo: 'Às armas!', valor: 'luta', primaria: true }] });
     const bando = zumbisCavalo.filter((f) => !f.dead);
@@ -322,11 +326,11 @@ export function criarArvoreTrovao(app, config) {
     luta(bando);
   }
 
-  // A VELHA FERRARIA (área 8): dois deitados entre as ferramentas.
+  // A VELHA FERRARIA (área 8): quatro deitados entre as ferramentas (o Obelisco; eram dois na Mina).
   async function acordarZumbisDaFerraria() {
     salvo.zumbisFerraria = 'luta';
     await painel([
-      'Uma chaminé comprida sobe da parede quebrada, e do lado de fora uma pilha de lenha apodreceu de tombar. Dentro, pinças, um fole furado e a ponta de uma bigorna estão espalhados pelo chão, entre dois montes de cinza do tamanho de homem.',
+      'Uma chaminé comprida sobe da parede quebrada, e do lado de fora uma pilha de lenha apodreceu de tombar. Dentro, pinças, um fole furado e a ponta de uma bigorna estão espalhados pelo chão, entre quatro montes de cinza do tamanho de homem.',
       'Os montes se mexem quando a primeira bota pisa a soleira.',
     ], { escolhas: [{ rotulo: 'Às armas!', valor: 'luta', primaria: true }] });
     const bando = zumbisFerraria.filter((f) => !f.dead);
@@ -357,7 +361,7 @@ export function criarArvoreTrovao(app, config) {
     if (r === 'luta') { salvo.ramos1 = 'luta'; luta(ramos1.filter((f) => !f.dead)); }
   }
 
-  // A CABANA COM RAMOS (área 2): duas casas lado a lado, seis ramos escondidos no
+  // A CABANA COM RAMOS (área 2): duas casas lado a lado, dois ramos escondidos no
   // mato que cresce dentro delas. O livro faz o teste dos ramos (Furtividade)
   // contra a Percepção passiva de cada herói: quem perde é surpreendido.
   async function acordarRamosDaCabana() {
@@ -366,7 +370,7 @@ export function criarArvoreTrovao(app, config) {
     const furt = furtividadeDe(bando);
     await painel([
       'Duas casas de pedra lado a lado, paredes meio caídas, árvores novas furando o piso. Dá para ver que foram de lojistas ou de fazendeiros bem de vida: sobraram só pilhas de entulho e mato crescido nas sombras.',
-      'O mato mexe. Seis galhos secos se desprendem dele ao mesmo tempo e vêm andando em linha, de pernas tortas.',
+      'O mato mexe. Dois galhos secos se desprendem dele ao mesmo tempo e vêm andando, de pernas tortas.',
     ], { escolhas: [{ rotulo: 'Às armas!', valor: 'luta', primaria: true }] });
     // Os dois da cabana ocidental correm em ajuda um turno depois.
     const vizinhos = ramos1.filter((f) => !f.dead);
@@ -381,31 +385,40 @@ export function criarArvoreTrovao(app, config) {
     luta(bando, { furt });
   }
 
-  // A FAZENDA DE RAMOS (área 5): oito ramos no mato a leste. Mexer na casa os
-  // acorda, e eles chegam em duas levas — quatro agora, quatro na rodada
-  // seguinte —, metade por cada lado.
+  // A FAZENDA DE RAMOS (área 5): no Obelisco são DOZE ramos e DOIS espetos infectados no mato a leste (eram oito
+  // ramos na Mina). Mexer na casa os acorda, e eles chegam em duas levas: os dois espetos, que atiram de longe, e
+  // seis ramos agora; os outros seis na rodada seguinte, pelo outro lado.
   async function acordarRamosDaFazenda() {
     salvo.ramos5 = 'luta';
     const bando = ramos5.filter((f) => !f.dead);
-    const primeira = bando.slice(0, 4);
-    const segunda = bando.slice(4);
+    const espetos = bando.filter((f) => f.defId === 'espetoInfectado');
+    const galhos = bando.filter((f) => f.defId !== 'espetoInfectado');
+    // O OBELISCO: três rodadas, quatro galhos por rodada (dois por porta, a do sul e a do norte), e os dois espetos
+    // na terceira, um por porta.
+    const primeira = galhos.slice(0, 4);
+    const segunda = galhos.slice(4, 8);
+    const terceira = [...galhos.slice(8), ...espetos];
     await painel([
       'A casa da fazenda foi engolida pelo mato até a metade, e o mato cresce por dentro das fundações. Quem mexe no entulho acorda o que dorme debaixo dele.',
-      'A leste, a sarça inteira se levanta: galhos, aos pares, a andar. Quatro agora, e o chão ainda treme com os que vêm atrás.',
+      'A leste, a sarça inteira se levanta: galhos, aos pares, a andar, dois para cada porta da casa. E o mato ainda se mexe atrás deles.',
     ], { escolhas: [{ rotulo: 'Às armas!', valor: 'luta', primaria: true }] });
-    if (segunda.length) prepararReforcos({ 2: { bando: segunda, aviso: 'Mais quatro galhos secos chegam pelo outro lado da casa.' } });
+    const ondas = {};
+    if (segunda.length) ondas[2] = { bando: segunda, aviso: `Mais ${segunda.length} galhos secos chegam, dois por porta.` };
+    if (terceira.length) ondas[3] = { bando: terceira, aviso: 'Os últimos galhos chegam — e atrás deles duas moitas maiores, eriçadas de agulhas, uma em cada porta.' };
+    if (Object.keys(ondas).length) prepararReforcos(ondas);
     luta(primeira);
   }
 
-  // A CABANA DO TECELÃO (área 12): seis ramos nos arbustos ao sul, e o barulho
-  // chega aos cultistas da casa de pedra — que vêm ver, com cuidado.
+  // A CABANA DO TECELÃO (área 12): no Obelisco, quatro ramos nos arbustos ao sul e dois espetos infectados nas
+  // árvores do lado leste da rua (eram seis ramos na Mina). O barulho chega aos cultistas da casa de pedra — que
+  // vêm ver, com cuidado.
   async function acordarRamosDoTecelao() {
     salvo.ramos12 = 'luta';
     const bando = ramos12.filter((f) => !f.dead);
     const furt = furtividadeDe(bando);
     await painel([
       'Um tear quebrado num canto e entulho até a altura do joelho: é o que sobrou da cabana. Pelo vão da parede do sul se vê o mato — e o mato tem pernas.',
-      'Seis galhos secos saem dos arbustos de uma vez.',
+      'Quatro galhos secos saem dos arbustos de uma vez — e do outro lado da rua, entre as árvores, duas moitas eriçadas soltam uma chuva de agulhas.',
     ], { escolhas: [{ rotulo: 'Às armas!', valor: 'luta', primaria: true }] });
     salvo.cultoAlertado = true;
     luta(bando, { furt });
@@ -479,9 +492,9 @@ export function criarArvoreTrovao(app, config) {
    *
    * As quatro saídas, e o que cada uma custa:
    *   - TRIBUTO: 150 po. Compra a informação e a passagem;
-   *   - ACORDO: ele quer o druida morto. Paga a informação E duas poções da
-   *     arca — e custa o Reidoth, que não fala mais com quem fechou isso.
-   *     Quem já ouviu o druida antes sai no lucro, e isso é de propósito;
+   *   - ACORDO: ele quer a druida morta. Paga a informação E duas poções da
+   *     arca — e custa a Reidoth, que não fala mais com quem fechou isso.
+   *     Quem já ouviu a druida antes sai no lucro, e isso é de propósito;
    *   - LISONJA: Persuasão CD 16, de graça. Falhando, ele perde a paciência e
    *     a SAÍDA DE GRAÇA some: sobra pagar, fechar o acordo ou lutar;
    *   - SAIR: grátis, e não rende nada.
@@ -583,7 +596,7 @@ export function criarArvoreTrovao(app, config) {
       await painel([
         'Ele estica uma garra, puxa dois frascos de dentro da arca e os empurra pelo chão de moedas até a porta, sem levantar a cabeça.',
         'O grupo sai andando para trás. O olho acompanha, e agora há duas coisas naquele olho: fome e divertimento.',
-        '(O Reidoth vai saber. Um dragão assim faz questão de contar.)',
+        '(A Reidoth vai saber. Um dragão assim faz questão de contar.)',
       ]);
       return;
     }
@@ -659,7 +672,7 @@ export function criarArvoreTrovao(app, config) {
             { texto: 'Servir a ele junto com vocês.', vai: 'alianca' },
             { texto: 'Vocês sabem que ele vai comer vocês, não sabem?',
               teste: { pericia: 'persuasao', cd: 13 }, sucesso: 'duvida', falha: 'raiva' },
-            { texto: 'Só estamos de passagem. Procuramos um druida.',
+            { texto: 'Só estamos de passagem. Procuramos uma druida.',
               teste: { pericia: 'enganacao', cd: 12 }, sucesso: 'passagem', falha: 'raiva' },
             { texto: 'Saiam da vila. Agora.', fim: 'luta' },
             { texto: 'Então fiquem com ele. Até mais.', fim: 'sai' },
@@ -699,8 +712,8 @@ export function criarArvoreTrovao(app, config) {
   // Eco, e é o único jeito de descobrir a segunda sem queimar a pergunta da
   // banshee. Não briga, não acompanha, e não gosta de quem mexe no mato dele.
   /**
-   * A missão da Qelline era ACHAR o druida (`game/phandalin.js`, `missao
-   * ('reidoth')`). Falar com ele a cumpre — e sem isto ela ficava "ativa" no
+   * A missão da Qelline era ACHAR a druida (`game/phandalin.js`, `missao
+   * ('reidoth')`). Falar com ela a cumpre — e sem isto ela ficava "ativa" no
    * diário para sempre, porque ninguém no jogo chamava `concluir('reidoth')`.
    */
   function acharReidoth() {
@@ -711,7 +724,7 @@ export function criarArvoreTrovao(app, config) {
   function arvoreDoReidoth() {
     // QUEM FECHOU ACORDO COM O DRAGÃO perde o prêmio da fase. O dragão faz
     // questão de contar — é o tipo de coisa que diverte um dragão verde —, e o
-    // druida não é tolo. Quem falou com o Reidoth ANTES de entrar na torre sai
+    // druida não é tola. Quem falou com a Reidoth ANTES de entrar na torre sai
     // no lucro: já tem o castelo e a caverna, e o acordo não custa nada. Isso
     // é de propósito. A ordem em que o jogador faz as coisas tem de importar.
     if (salvo.acordoComDragao) {
@@ -719,8 +732,8 @@ export function criarArvoreTrovao(app, config) {
         inicio: 'oi',
         nos: {
           oi: {
-            narra: 'Ele não está de costas desta vez. Está virado para vocês, e já estava quando vocês entraram no largo.',
-            fala: 'Ele me contou. Achou graça em contar, e eu achei graça em ouvir, porque faz trinta anos que ninguém me oferece nada e agora alguém vendeu a minha cabeça por duas poções.',
+            narra: 'Ela não está de costas desta vez. Está virada para vocês, e já estava quando vocês entraram no largo.',
+            fala: 'O dragão contou. Minha cabeça por duas poções. Barato.',
             opcoes: [
               { texto: 'Não vamos cumprir.', vai: 'naoVamos' },
               { texto: 'Não é nada pessoal.', vai: 'pessoal' },
@@ -728,8 +741,8 @@ export function criarArvoreTrovao(app, config) {
             ],
           },
           naoVamos: {
-            fala: 'Talvez não. Mas vocês ouviram a proposta e disseram sim, e isso eu não desouço. Procurem o castelo sozinhos — vocês têm olhos.',
-            narra: 'Ele dá as costas, e desta vez é de propósito.',
+            fala: 'Disseram sim. Isso eu não desouço. Achem o castelo sozinhos.',
+            narra: 'Ela dá as costas, e desta vez é de propósito.',
             opcoes: [{ texto: '…', fim: 'sai' }],
           },
           pessoal: {
@@ -739,25 +752,25 @@ export function criarArvoreTrovao(app, config) {
         },
       };
     }
-    // O Reidoth do livro é hospitaleiro: recebe, avisa de tudo e dá o caminho do castelo sem
-    // cobrar nada. O que ele guarda para depois do dragão é a Caverna Onda Eco (ele guia o grupo
-    // até lá se a torre ficar livre) e, em particular, o título de Guardião da Primavera.
+    // A Reidoth do Obelisco é uma idosa que não usa duas palavras quando uma basta, e recebe razoavelmente bem quem
+    // aparece: avisa de tudo e dá o caminho do castelo sem cobrar. O que ela guarda para depois do dragão é a Caverna
+    // Onda Eco (guia o grupo até lá se a torre ficar livre) e, em particular, o título de Guardião da Primavera.
     const ideaisDaNatureza = () => herois().find((h) => ['druida', 'patrulheiro'].includes(h.classe));
     return {
       inicio: 'oi',
       nos: {
         oi: {
           ao: () => acharReidoth(),
-          narra: 'Diante do posto há um homem de peles e barba branca, sentado numa pedra. Ele se levanta devagar e abre as mãos, como quem recebe visita em casa.',
+          narra: 'Diante do posto há uma velha de peles e cabelo branco comprido, solto, com folha seca presa nele, sentada numa pedra. Ela mede o grupo de cima a baixo e indica outra pedra com o queixo.',
           fala: salvo.dragao === 'expulso' || salvo.dragao === 'morto'
-            ? 'Vocês tiraram aquilo da torre. Entrem, sentem, não reparem na cinza. O que quiserem saber, eu conto.'
-            : 'Gente viva! Entrem, sentem, não reparem na cinza. Faz tempo que ninguém vem por bem. O que quiserem saber, eu conto — e conto antes que perguntem, porque esta vila tem mais dentes do que parece.',
+            ? 'A torre está livre. Bom. Sentem. Perguntem.'
+            : 'Vivos. Raro. Sentem. Perguntem.',
           opcoes: [
             { texto: 'Procuramos o Castelo Dentefino.', vai: 'castelo',
-              requer: () => (feitos.sabeOCastelo ? 'ele já disse' : null), oculta: true },
+              requer: () => (feitos.sabeOCastelo ? 'ela já disse' : null), oculta: true },
             { texto: 'E a Caverna Onda Eco?', vai: 'ondaEco',
-              requer: () => (feitos.sabeOndaEco ? 'ele já disse' : null), oculta: true },
-            { texto: 'O senhor guarda um título para quem ama a natureza, não é?', vai: 'guardiao',
+              requer: () => (feitos.sabeOndaEco ? 'ela já disse' : null), oculta: true },
+            { texto: 'A senhora guarda um título para quem ama a natureza, não é?', vai: 'guardiao',
               requer: () => (dragaoSaiu() && ideaisDaNatureza() && !feitos.guardiaoDaPrimavera ? null : 'nada a oferecer'), oculta: true },
             { texto: 'O que há de perigoso por aqui?', vai: 'avisos' },
             { texto: 'O que é aquilo na torre?', vai: 'dragao' },
@@ -771,11 +784,11 @@ export function criarArvoreTrovao(app, config) {
             feitos.sabeOCastelo = true;
             pista('Reidoth disse onde fica o Castelo Dentefino: ao norte da Trilha de Triboar, dentro da Floresta de Neverwinter. Agora ele aparece no mapa da região.');
           },
-          fala: 'Sei onde é. Ruína de castelo no meio da mata, ao norte da trilha — torres caindo uma sobre a outra, e goblin em todas elas. O cheiro chega antes da parede.',
-          narra: 'Ele risca o chão de cinza com o pé: uma linha para a trilha, um quadrado para o castelo, e um traço do quadrado até a linha.',
+          fala: 'Norte da trilha. Dentro da mata. Torres caindo, goblin em todas. O cheiro chega antes.',
+          narra: 'Ela risca o chão de cinza com a ponta do cajado: uma linha para a trilha, um quadrado para o castelo, e um traço do quadrado até a linha.',
           opcoes: [{ texto: '…', vai: 'oi' }],
         },
-        // A ONDA ECO: ele só guia o grupo até lá com a torre livre ("tirem o dragão e eu os levo").
+        // A ONDA ECO: ela só guia o grupo até lá com a torre livre ("tirem o dragão e eu os levo").
         ondaEco: {
           ao: () => {
             if (!dragaoSaiu()) return;
@@ -785,9 +798,9 @@ export function criarArvoreTrovao(app, config) {
             pista('Reidoth, que fala pelo Enclave Esmeralda, tem o grupo por amigo: tirou o dragão da torre.');
           },
           fala: dragaoSaiu()
-            ? 'A caverna do mar que secou. Eu levo vocês: fica nos morros a leste da vila nova de vocês, onde o chão começa a virar montanha. Anões e gnomos escavaram lá por gerações, e um dia pararam todos no mesmo dia.'
-            : 'Sei o caminho, e levaria vocês. Mas não saio daqui com aquilo de olho aberto na torre. Tirem o dragão de lá — de pé ou deitado — e eu os levo.',
-          narra: dragaoSaiu() ? 'Pela primeira vez ele parece animado com alguma coisa.' : 'Ele olha para a torre e depois para o grupo, e faz as contas.',
+            ? 'Eu levo. Morros a leste da vila de vocês, onde o chão vira montanha. Anões e gnomos cavaram lá. Um dia pararam todos.'
+            : 'Sei o caminho. Não saio daqui com aquilo de olho aberto na torre. Tirem o dragão. Aí eu levo.',
+          narra: dragaoSaiu() ? 'Pela primeira vez ela parece quase animada.' : 'Ela olha para a torre, depois para o grupo, e faz as contas.',
           opcoes: [{ texto: '…', vai: 'oi' }],
         },
         guardiao: {
@@ -797,34 +810,34 @@ export function criarArvoreTrovao(app, config) {
             feitos.guardiaoDaPrimavera = h.name;
             pista(`Reidoth ofereceu a ${h.name}, em particular, o título de Guardião da Primavera, do Enclave Esmeralda.`);
           },
-          narra: 'Ele chama um de vocês de lado, longe dos outros, e fala baixo.',
-          fala: 'Eu falo por gente que cuida do que nasce e do que morre, e vi como você olhou esta vila. Há um título entre nós, Guardião da Primavera, para quem guarda o ciclo. Não paga nada. Obriga a muito. Pense nele.',
+          narra: 'Ela chama um de vocês de lado, longe dos outros, e fala baixo.',
+          fala: 'Falo por gente que cuida do que nasce e do que morre. Vi como você olhou esta vila. Há um título, Guardião da Primavera. Não paga nada. Obriga a muito. Pense.',
           opcoes: [{ texto: '…', vai: 'oi' }],
         },
         avisos: {
-          fala: 'Quase tudo. O dragão na torre. Seis de máscara na casa de esquina, que o adoram. Mortos de cinza na velha guarnição, na taverna e na ferraria, deitados e de mau humor. Galhos secos que andam, nas cabanas. E duas aranhas do tamanho de cão no armazém: teia de ponta a ponta lá dentro, e elas esperam penduradas nela. Olhem para cima antes de entrar.',
-          narra: 'Ele conta nos dedos, e acaba com as duas mãos abertas.',
+          fala: 'Tudo. Dragão na torre. Seis de máscara na casa de esquina. Mortos de cinza na guarnição, na taverna e na ferraria. Galhos que andam, nas cabanas, e moitas de agulha no mato. Duas aranhas no armazém — olhem para cima.',
+          narra: 'Ela conta nos dedos, e acaba com as duas mãos abertas.',
           opcoes: [{ texto: '…', vai: 'oi' }],
         },
         dragao: {
-          fala: 'É um dragão verde, e é novo — o que quer dizer que vai durar mais que vocês, que eu e que esta vila. Chegou faz pouco mais de um ano e tomou a torre porque a torre estava vazia.',
-          narra: 'Ele diz isso como quem informa a previsão do tempo.',
+          fala: 'Dragão verde. Novo. Vai durar mais que vocês, que eu e que a vila. Chegou faz um ano. A torre estava vazia.',
+          narra: 'Ela diz isso como quem informa a previsão do tempo.',
           opcoes: [
             { texto: 'Dá para matar?', vai: 'matarDragao' },
             { texto: '…', vai: 'oi' },
           ],
         },
         matarDragao: {
-          fala: 'Por vocês, hoje? Não. Por alguém, algum dia, sim. Se entrarem naquela torre, eu não vou atrás buscar o que sobrar — mas se tirarem ele de lá, eu fico em dívida.',
+          fala: 'Por vocês, hoje? Não. Entrem, e eu não busco o que sobrar. Tirem ele de lá, e fico em dívida.',
           opcoes: [{ texto: '…', vai: 'oi' }],
         },
         culto: {
-          fala: 'Vieram atrás dele, acham que ele é um deus e levam comida para a porta da torre. Ele come a comida. Um dia vai comer quem leva, e aí o problema deles acaba. Fiquem de olho no que fala por eles: é ambicioso, e ambição mente.',
-          narra: 'Um canto da boca dele se mexe, e é o mais perto de um sorriso que ele vai chegar.',
+          fala: 'Acham que ele é um deus. Levam comida. Ele come. Um dia come quem leva. O que fala por eles é ambicioso. Ambição mente.',
+          narra: 'Um canto da boca dela se mexe, e é o mais perto de um sorriso que ela vai chegar.',
           opcoes: [{ texto: '…', vai: 'oi' }],
         },
         placa: {
-          fala: 'Fui eu. Plantas que andam, mortos que andam. Pregar aviso é o que se faz quando não se pode fazer mais. Nunca vi um aviso que fizesse recuar quem já decidiu entrar.',
+          fala: 'Minha. Aviso é o que se faz quando não se pode fazer mais. Nunca fez ninguém voltar.',
           opcoes: [{ texto: '…', vai: 'oi' }],
         },
       },
@@ -858,34 +871,34 @@ export function criarArvoreTrovao(app, config) {
       if (vePorta(15) && salvo.avisos === 1) { await avisoDaTorre(2); return; }
     }
     // A VELHA GUARNIÇÃO (área 11): os cinco da farda.
-    if (zumbis.length && !salvo.zumbis && herois().some((h) => naCasa(h.pos, 'guarda'))) {
+    if (zumbis.length && !salvo.zumbis && herois().some((h) => naCasa(h.pos, 'guarnicao'))) {
       await acordarZumbis();
       return;
     }
     // O CAVALO PARDO (3), A VELHA FERRARIA (8): zumbis deitados, como no livro.
-    if (zumbisCavalo.length && !salvo.zumbisCavalo && herois().some((h) => naCasa(h.pos, 'estalagem'))) {
+    if (zumbisCavalo.length && !salvo.zumbisCavalo && herois().some((h) => naCasa(h.pos, 'cavaloPardo'))) {
       await acordarZumbisDoCavalo();
       return;
     }
-    if (zumbisFerraria.length && !salvo.zumbisFerraria && herois().some((h) => naCasa(h.pos, 'ferraria'))) {
+    if (zumbisFerraria.length && !salvo.zumbisFerraria && herois().some((h) => naCasa(h.pos, 'velhaFerraria'))) {
       await acordarZumbisDaFerraria();
       return;
     }
     // OS RAMOS SECOS (1, 2, 5, 12): por cômodo, nunca por raio — um raio acorda
     // o bando do outro lado de uma parede.
     if (ramos2.length && !salvo.ramos2
-      && herois().some((h) => naCasa(h.pos, 'fazenda') || naCasa(h.pos, 'celeiro'))) {
+      && herois().some((h) => naCasa(h.pos, 'cabanaDosRamos'))) {
       await acordarRamosDaCabana();
       return;
     }
-    if (ramos1.length && !salvo.ramos1 && herois().some((h) => naCasa(h.pos, 'casa7'))) {
+    if (ramos1.length && !salvo.ramos1 && herois().some((h) => naCasa(h.pos, 'cabanaOcidental'))) {
       await aoEntrarNaCabanaOcidental();
       if (estado.lutando) return;
     }
     // OS RAMOS DO MATO LESTE ACORDAM NO MATO LESTE. O gatilho era `naCasa('casa20')`, um quadrado de rua do
     // nordeste que ficou da planta antiga: medido, ele está a 10 casas do ramo mais próximo. Pisar nele
     // acordava oito galhos que o grupo não via, e entrar no mato onde eles moram não acordava ninguém.
-    if (ramos5.length && !salvo.ramos5 && herois().some((h) => dentro(h.pos, ARVORE_TROVAO.zonas.matoLeste))) {
+    if (ramos5.length && !salvo.ramos5 && herois().some((h) => dentro(h.pos, ARVORE_TROVAO.zonas.matoDaFazenda))) {
       await acordarRamosDaFazenda();
       return;
     }
@@ -894,8 +907,8 @@ export function criarArvoreTrovao(app, config) {
     // aranhas, entrar no armazém acordava os galhos em vez delas; e parar no acampamento do druida fazia o
     // mesmo. A exceção era só a `embaixada`, escrita à mão; agora vale para qualquer construção.
     if (ramos12.length && !salvo.ramos12
-      && herois().some((h) => naCasa(h.pos, 'tecelagem')
-        || (dentro(h.pos, ARVORE_TROVAO.zonas.tecelagemSul) && !emOutroLugar(h.pos, 'tecelagem')))) {
+      && herois().some((h) => naCasa(h.pos, 'tecelao')
+        || (dentro(h.pos, ARVORE_TROVAO.zonas.arbustosDoTecelao) && !emOutroLugar(h.pos, 'tecelao')))) {
       await acordarRamosDoTecelao();
       return;
     }
@@ -903,14 +916,14 @@ export function criarArvoreTrovao(app, config) {
     // armazém também. POR CASA (a construção), e não por raio, que vazaria por cima de parede.
     if (aranhas.length && !salvo.aranhas) {
       // O ARMAZÉM É A CONSTRUÇÃO QUE A FA COBRIU DE TEIA (o ladrilho `Webs`, casa 23,19), e não a que o
-      // nome antigo dizia: era `'loja'`, 17 casas ao lado, e com isso nem a teia da rua nem entrar no
-      // armazém acordavam aranha nenhuma — elas ninham aqui.
+      // nome antigo dizia: era a construção que hoje se chama `tecelao`, 17 casas ao lado, e com isso nem a
+      // teia da rua nem entrar no armazém acordavam aranha nenhuma — elas ninham aqui.
       // A TEIA DA RUA NÃO EXISTE NESTA PLANTA: a FA publica a teia como ladrilho à parte, que não vem nas
       // três versões do mapa, e pintar terreno difícil invisível seria pior que não ter. O ramo da teia fica,
       // porque o mapa pode voltar a tê-la (o editor pinta `$`); hoje `naTeia` sai sempre vazio e quem acorda
       // as duas é entrar no armazém.
-      const naTeia = herois().filter((h) => enc.field.surfaceAt(h.pos.x, h.pos.y) === 'teia' && !naCasa(h.pos, 'escola'));
-      if (naTeia.length || herois().some((h) => naCasa(h.pos, 'escola'))) { await acordarAranhas(naTeia); return; }
+      const naTeia = herois().filter((h) => enc.field.surfaceAt(h.pos.x, h.pos.y) === 'teia' && !naCasa(h.pos, 'armazem'));
+      if (naTeia.length || herois().some((h) => naCasa(h.pos, 'armazem'))) { await acordarAranhas(naTeia); return; }
     }
   }
 
@@ -1037,7 +1050,7 @@ export function criarArvoreTrovao(app, config) {
   // do mato por cima dela, então não se inventa muro: o que o livro quer vira o que a ruína comporta. Favric
   // entulhou os vãos, e a região `barricadaCulto` (`encounter.js`) empurra de volta quem tenta entrar.
   // `salvo.portaCulto` guarda o estado com o nome de sempre, para o save antigo continuar valendo.
-  const casasDoCulto = new Set(ARVORE_TROVAO.celulas.casa9.map((c) => `${c.x},${c.y}`));
+  const casasDoCulto = new Set(ARVORE_TROVAO.celulas.cultistas.map((c) => `${c.x},${c.y}`));
   const ehCasaDoCulto = (t) => casasDoCulto.has(`${t.x},${t.y}`);
   const porBarricada = () => {
     alternarRegiao(enc.field, 'barricadaCulto', salvo.portaCulto === 'trancada');
@@ -1088,9 +1101,12 @@ export function criarArvoreTrovao(app, config) {
   // saber tudo.
   //
   // Agora quem abre o alçapão sobe pelo que sobrou da escada e OLHA, e o que ele vê vem em prosa, com os
-  // rumos e as distâncias medidos no mapa a partir de (43,24): a torre a 29 m a noroeste, a estátua a 18 m
-  // na mesma direção, a casa de esquina a 11 m a sudeste, o celeiro a 12 m a sudoeste, o armazém a 24 m a
-  // sudoeste. O grupo fica sabendo ONDE estão as coisas; continua sem ver quem está nelas.
+  // rumos e as distâncias medidos no mapa. Os números foram REFEITOS em 2026-11-06: a guarnição (área 11)
+  // era a construção em (43,24) e, medido o de-para contra o mapa do livro, é a do canto NORDESTE, em
+  // (47,4). De lá a torre fica a 20 m a oeste (era 29 m a noroeste), a praça e a estátua a 13 e 17 m a
+  // sudoeste, o tecelão a 25 m ao sul, o armazém a 34 m a sudoeste, e a fileira da taverna, da ferraria e
+  // da fazenda a uns 43 m, também a sudoeste. O grupo fica sabendo ONDE estão as coisas; continua sem ver
+  // quem está nelas.
 
   // OS DOIS OBJETOS ESCONDIDOS DO LIVRO. Nenhum está desenhado até uma busca passar: a cena troca
   // a casa por um baú.
@@ -1110,6 +1126,23 @@ export function criarArvoreTrovao(app, config) {
     if (salvo[chave] && enc.field.surfaceAt(pos.x, pos.y) !== 'bau') revelar(pos);
   }
 
+  // A VELHA FERRARIA (área 8), o Obelisco: um armário meio enterrado sob o telhado caído, com um saco de escamas de
+  // dragão de latão (75 po). Só se revira com os mortos de cinza de lá fora de combate.
+  function armarioDaFerraria(tile, c) {
+    if (salvo.escamas || !naCasa(tile, 'velhaFerraria') || !naCasa(c.pos, 'velhaFerraria')) return null;
+    const vivos = zumbisFerraria.some((f) => !f.dead);
+    return {
+      rotulo: 'Revirar o armário soterrado', icone: 'acao-procurar', detalhe: 'debaixo do telhado caído',
+      motivo: vivos && salvo.zumbisFerraria !== 'limpo' ? 'os mortos de cinza ainda estão aqui' : null,
+      fazer: async () => {
+        salvo.escamas = true;
+        guardar(c, 'escamasDeLatao', 1);
+        await painel(`Debaixo das telhas caídas, um armário velho e torto. Dentro, um saco grande de couro, pesado de um jeito estranho: placas em losango, castanho-douradas, do tamanho de meia mão, leves e duras como ferro. Escamas de dragão de latão — um armeiro pagaria umas setenta e cinco peças de ouro pelo saco. ${c.name} guarda.`);
+        app.refresh();
+      },
+    };
+  }
+
   function interacoes(tile, sup, c) {
     if (!c || !estado.explorando) return [];
     const ops = [];
@@ -1119,6 +1152,8 @@ export function criarArvoreTrovao(app, config) {
     // dava para abri-lo de fora e acordar o espectro com um muro no meio.
     const alcance = () => (distanceFt(c.pos, tile) > 5 ? 'longe demais — chegue a 5 pés'
       : (enc.field.contato(c.pos, tile) ? null : 'tem uma parede no meio'));
+    const armario = armarioDaFerraria(tile, c);
+    if (armario) ops.push(armario);
 
     // A BARRICADA: arrastar o entulho do vão da casa de esquina, de fora dela.
     if (salvo.portaCulto === 'trancada' && ehCasaDoCulto(tile) && !ehCasaDoCulto(c.pos)) {
@@ -1162,12 +1197,12 @@ export function criarArvoreTrovao(app, config) {
 
     // OS DOIS OBJETOS ESCONDIDOS DO LIVRO (`OBJ`, `revelar` e `mesmo`, no topo da cena): nenhum
     // está desenhado até uma busca passar.
-    if (naCasa(tile, 'casa7') && !salvo.bauMercador) {
+    if (naCasa(tile, 'redutoDoDruida') && !salvo.bauMercador) {
       ops.push({
         rotulo: 'Revistar a cabana', icone: 'acao-procurar', detalhe: 'Percepção CD 12',
-        motivo: (naCasa(c.pos, 'casa7') ? null : 'entre na cabana') ?? buscas.ja(c, 'bauMercador'),
+        motivo: (naCasa(c.pos, 'redutoDoDruida') ? null : 'entre na cabana') ?? buscas.ja(c, 'bauMercador'),
         fazer: async () => {
-          if (!naCasa(c.pos, 'casa7')) return;
+          if (!naCasa(c.pos, 'redutoDoDruida')) return;
           buscas.marcar(c, 'bauMercador');
           const t = teste(c, 'percepcao', 12);
           if (!t.passou) {
@@ -1189,10 +1224,10 @@ export function criarArvoreTrovao(app, config) {
         motivo: alcance(),
         fazer: async () => {
           salvo.bauMercador = 'aberto';
-          guardar(c, 'moedaDeCobre', 700);
+          guardar(c, 'moedaDeCobre', 1400);
           guardar(c, 'moedaDePrata', 160);
           guardar(c, 'moedaDeOuro', 90);
-          await painel(`Dentro, em fileiras: setecentas peças de cobre, cento e sessenta de prata e noventa de ouro — a reserva de um comerciante que não voltou. ${c.name} guarda tudo.`);
+          await painel(`Dentro, em fileiras: mil e quatrocentas peças de cobre, cento e sessenta de prata e noventa de ouro — a reserva de um comerciante que não voltou. ${c.name} guarda tudo.`);
           app.refresh();
         },
       });
@@ -1200,13 +1235,13 @@ export function criarArvoreTrovao(app, config) {
     // A CAIXA DA HERBORISTA (área 9): a Percepção passa sozinha se a Mirna
     // mandou o grupo buscar a herança, como no livro.
     const mandadoPelaMirna = Boolean(vila.missoes?.mirna || vila.missoesExtra?.includes('mirna'));
-    if (naCasa(tile, 'ervas') && !salvo.caixaMirna) {
+    if (naCasa(tile, 'herborista') && !salvo.caixaMirna) {
       ops.push({
         rotulo: 'Revistar a loja', icone: 'acao-procurar',
         detalhe: mandadoPelaMirna ? 'a Mirna indicou o lugar' : 'Percepção CD 15',
-        motivo: (naCasa(c.pos, 'ervas') ? null : 'entre na loja') ?? (mandadoPelaMirna ? null : buscas.ja(c, 'caixaMirna')),
+        motivo: (naCasa(c.pos, 'herborista') ? null : 'entre na loja') ?? (mandadoPelaMirna ? null : buscas.ja(c, 'caixaMirna')),
         fazer: async () => {
-          if (!naCasa(c.pos, 'ervas')) return;
+          if (!naCasa(c.pos, 'herborista')) return;
           buscas.marcar(c, 'caixaMirna');
           const t = mandadoPelaMirna ? null : teste(c, 'percepcao', 15);
           if (t && !t.passou) {
@@ -1247,8 +1282,8 @@ export function criarArvoreTrovao(app, config) {
         motivo: alcance() ?? (vigiam ? 'os cultistas estão olhando' : null),
         fazer: async () => {
           salvo.bauCulto = true;
-          guardar(c, 'diamante', 3);
-          await painel(`Dentro do cofre, num pano limpo: três diamantes do tamanho de uma unha, cem peças de ouro cada um. ${c.name} guarda.`);
+          guardar(c, 'ametista', 6);
+          await painel(`Dentro do cofre, num pano limpo: seis ametistas lustrosas, o tributo que o culto juntava para o dragão — umas cinquenta peças de ouro cada uma. ${c.name} guarda.`);
           app.refresh();
         },
       });
@@ -1259,12 +1294,11 @@ export function criarArvoreTrovao(app, config) {
         motivo: alcance() ?? ((salvo.dragao === 'morto' || salvo.dragao === 'expulso') ? null : 'com ele vivo ali? Não'),
         fazer: async () => {
           salvo.arca = true;
-          // O TESOURO DO MAGO MORTO (o livro): oitocentas de prata, cento e
-          // cinquenta de ouro, quatro cálices de prata com selenita (60 po cada) e
-          // dois pergaminhos. E, no meio das moedas, um machado que o dragão não
+          // O TESOURO DO MAGO MORTO (o Obelisco): duas mil e cem de cobre, cento e trinta de ouro, quatro cálices de
+          // prata com selenita (60 po cada) e dois pergaminhos. E, no meio das moedas, um machado que o dragão não
           // notou: a ferrugem é falsa.
-          guardar(c, 'moedaDePrata', 800);
-          guardar(c, 'moedaDeOuro', 150);
+          guardar(c, 'moedaDeCobre', 2100);
+          guardar(c, 'moedaDeOuro', 130);
           guardar(c, 'caliceDeSelenita', 4);
           guardar(c, 'pergaminhoDePassoNebuloso', 1);
           guardar(c, 'pergaminhoDeRelampago', 1);
@@ -1272,7 +1306,7 @@ export function criarArvoreTrovao(app, config) {
           feitos.temHew = true;
           await painel([
             'O baú de madeira velha está aberto desde o dia em que o mago morreu. O dragão passou trinta dias sentado em cima dele, e mal olhou para o que tinha dentro.',
-            `Oitocentas peças de prata, cento e cinquenta de ouro, quatro cálices de prata com uma pedra leitosa na base, dois rolos de pergaminho — e, atravessado nas moedas, um machado de batalha anão enferrujado, com uma palavra em runas na lâmina: Hew. A ferrugem sai com a unha: é pintura. ${c.name} guarda tudo.`,
+            `Duas mil e cem peças de cobre, cento e trinta de ouro, quatro cálices de prata com uma pedra leitosa na base, dois rolos de pergaminho — e, atravessado nas moedas, um machado de batalha anão enferrujado, com uma palavra em runas na lâmina: Hew. A ferrugem sai com a unha: é pintura. ${c.name} guarda tudo.`,
           ]);
         },
       });
@@ -1336,6 +1370,7 @@ export function criarArvoreTrovao(app, config) {
             fazer: async () => {
               salvo.casuloElfo = true;
               for (const [item, qtd] of ACHADO_DO_CASULO.itens) guardar(c, item, qtd);
+              for (const arma of ACHADO_DO_CASULO.armas ?? []) (c.weapons ??= []).push(arma);
               await painel(ACHADO_DO_CASULO.texto);
               app.refresh();
             },

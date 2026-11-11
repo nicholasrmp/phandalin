@@ -965,6 +965,186 @@
    "x": 68,
    "y": 51,
    "n": "o bau de ferro chamuscado dos aposentos dos magos (area 14)"
+  },
+  {
+   "v": "estalagmiteCorda",
+   "x": 29,
+   "y": 13,
+   "n": "as cordas da fenda (ladrilho collapsedcavernropes da FA, 29,10-32,14)"
+  },
+  {
+   "v": "estalagmiteCorda",
+   "x": 31,
+   "y": 13,
+   "n": "a segunda corda da fenda, pela qual o bugbear de vigia sobe"
+  },
+  {
+   "v": "ossosAnao",
+   "x": 11,
+   "y": 33,
+   "n": "o esqueleto do lago (ladrilho DarkPoolSkeleton da FA)"
+  },
+  {
+   "v": "sacoDeDormir",
+   "x": 9,
+   "y": 69,
+   "n": "colchonete do acampamento do Tharden (area 1)"
+  },
+  {
+   "v": "sacoDeDormir",
+   "x": 10,
+   "y": 69,
+   "n": "o segundo colchonete"
+  },
+  {
+   "v": "sacoDeDormir",
+   "x": 10,
+   "y": 70,
+   "n": "o terceiro colchonete, o do Tharden"
+  },
+  {
+   "v": "ferramentas",
+   "x": 20,
+   "y": 55,
+   "n": "tuneis da mina (area 2): o que os mineradores largaram ao desistir"
+  },
+  {
+   "v": "entulhoMina",
+   "x": 4,
+   "y": 40,
+   "n": "tuneis da mina (area 2): o que os mineradores largaram ao desistir"
+  },
+  {
+   "v": "carrinhoVazio",
+   "x": 29,
+   "y": 72,
+   "n": "tuneis da mina (area 2): o que os mineradores largaram ao desistir"
+  },
+  {
+   "v": "montinhoMinerio",
+   "x": 4,
+   "y": 60,
+   "n": "tuneis da mina (area 2): o que os mineradores largaram ao desistir"
+  },
+  {
+   "v": "lanterna",
+   "x": 15,
+   "y": 44,
+   "n": "tuneis da mina (area 2): o que os mineradores largaram ao desistir"
+  },
+  {
+   "v": "entulhoMina",
+   "x": 30,
+   "y": 60,
+   "n": "tuneis da mina (area 2): o que os mineradores largaram ao desistir"
+  },
+  {
+   "v": "ferramentas",
+   "x": 14,
+   "y": 65,
+   "n": "tuneis da mina (area 2): o que os mineradores largaram ao desistir"
+  },
+  {
+   "v": "blocoCaido",
+   "x": 7,
+   "y": 50,
+   "n": "tuneis da mina (area 2): o que os mineradores largaram ao desistir"
+  },
+  {
+   "v": "conchasPedra",
+   "x": 59,
+   "y": 21,
+   "n": "a margem estreita da caverna barulhenta (area 16)"
+  },
+  {
+   "v": "estalagmiteAlta",
+   "x": 51,
+   "y": 11,
+   "n": "a margem estreita da caverna barulhenta (area 16)"
+  },
+  {
+   "v": "conchasPedra",
+   "x": 52,
+   "y": 19,
+   "n": "a margem estreita da caverna barulhenta (area 16)"
+  },
+  {
+   "v": "pedraDeLiquen",
+   "x": 66,
+   "y": 23,
+   "n": "a margem estreita da caverna barulhenta (area 16)"
+  },
+  {
+   "v": "blocoCaido",
+   "x": 46,
+   "y": 9,
+   "n": "o velho corrego (area 17): rochas arredondadas e pedregulhos"
+  },
+  {
+   "v": "entulhoMina",
+   "x": 37,
+   "y": 14,
+   "n": "o velho corrego (area 17): rochas arredondadas e pedregulhos"
+  },
+  {
+   "v": "blocoCaido",
+   "x": 38,
+   "y": 4,
+   "n": "o velho corrego (area 17): rochas arredondadas e pedregulhos"
+  },
+  {
+   "v": "colunaNatural",
+   "x": 50,
+   "y": 14,
+   "n": "o velho corrego (area 17): rochas arredondadas e pedregulhos"
+  },
+  {
+   "v": "entulhoMina",
+   "x": 43,
+   "y": 5,
+   "n": "o velho corrego (area 17): rochas arredondadas e pedregulhos"
+  },
+  {
+   "v": "lanterna",
+   "x": 38,
+   "y": 68,
+   "n": "area 3: as seis lanternas de cobre apagadas e as duas duzias de mortos do livro"
+  },
+  {
+   "v": "lanterna",
+   "x": 37,
+   "y": 85,
+   "n": "area 3: as seis lanternas de cobre apagadas e as duas duzias de mortos do livro"
+  },
+  {
+   "v": "lanterna",
+   "x": 30,
+   "y": 73,
+   "n": "area 3: as seis lanternas de cobre apagadas e as duas duzias de mortos do livro"
+  },
+  {
+   "v": "ossos",
+   "x": 39,
+   "y": 77,
+   "n": "area 3: as seis lanternas de cobre apagadas e as duas duzias de mortos do livro"
+  },
+  {
+   "v": "ossosOrc",
+   "x": 31,
+   "y": 64,
+   "n": "area 3: as seis lanternas de cobre apagadas e as duas duzias de mortos do livro"
+  },
+  {
+   "v": "ossosAnao",
+   "x": 42,
+   "y": 72,
+   "n": "area 3: as seis lanternas de cobre apagadas e as duas duzias de mortos do livro"
+  },
+  {
+   "v": "ossos",
+   "x": 42,
+   "y": 65,
+   "n": "area 3: as seis lanternas de cobre apagadas e as duas duzias de mortos do livro"
   }
  ]
 }

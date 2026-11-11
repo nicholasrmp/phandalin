@@ -34,7 +34,7 @@ const MAX_DAR = 24;
 /** O que se vê de longe, por superfície do mapa. Texto nosso. */
 export const OLHAR = {
   cavalo: ['Dois cavalos', 'Mortos no meio da estrada, cheios de flechas de penas pretas. Os dois ainda estão selados.'],
-  carroca: ['A carroça', 'A carga de Gundren debaixo da lona: uma dúzia de sacos de farinha, caixas de carne de porco salgada, dois barris de cerveja forte, pás, picaretas e pés de cabra, e cinco lanternas com um barrilete de óleo.'],
+  carroca: ['A carroça', 'Debaixo da lona, o que Gundren pagou para ver chegar a Phandalin. Ferramenta de cavar em primeiro lugar: picareta, pá, pé de cabra, e cinco lanternas com um barrilete de óleo para abastecê-las. O resto é comida de quem vai ficar: farinha em saco, porco salgado em caixa, e dois barris de cerveja boa — que é o que não falta a um anão.'],
   arvore: ['Mata fechada', 'Árvores velhas, de tronco largo o bastante para esconder alguém atrás. Bloqueiam a passagem e a visão.'],
   arbusto: ['Mato', 'Arbustos na altura da cintura. Dá para se agachar atrás deles e quase sumir.'],
   pedra: ['Pedra', 'Uma pedra coberta de musgo. Quem se abaixa atrás dela tem meia cobertura.'],
@@ -67,6 +67,7 @@ export const OLHAR = {
   sarcofago: ['Um sarcófago', 'Pedra lavrada, com a tampa pesada no lugar.'],
   grade: ['Grade de ferro', 'Barras grossas, chumbadas na pedra. Dá para ver, e atirar, por entre elas.'],
   fosso: ['Um fosso', 'Um buraco escuro no meio do chão. Pular não dá; pelas beiradas, talvez.'],
+  lava: ['Lava', 'Rocha derretida, de um azul arroxeado que não parece natural, borbulhando devagar. O calor sobe em ondas e cheira a ovo podre.'],
   tocaia: ['O posto dos vigias', 'Ripas de madeira amarradas entre galhos, um abrigo para quem quer ver sem ser visto.'],
   espinheiro: ['Espinheiro', 'Mato baixo e cheio de espinho. Atrapalha o passo, não esconde ninguém.'],
   // O que tinha desenho e caía em "Chão: terra e pedrisco".
@@ -225,6 +226,7 @@ export function opcoesDaCasa(app, tile) {
 
     if (occ.dead) {
       opcoes.push(olhar(occ.name, `${occ.name} está morto. ${occ.blurb ?? ''}`.trim()));
+      if (occ.kind !== 'pc') opcoes.push({ rotulo: 'Ver a ficha', icone: 'acao-procurar', detalhe: 'a figura inteira e o que se sabe dela', fazer: () => app.fichaDaCriatura?.abrir(occ) });
       opcoes.push(...magias);
       return { titulo, subtitulo, alvo, opcoes };
     }
@@ -240,8 +242,12 @@ export function opcoesDaCasa(app, tile) {
       });
     }
 
+    // A FICHA DA CRIATURA (`view/ficha-criatura.js`): a figura inteira e o que o grupo sabe dela. De graça, como olhar.
+    const verFicha = () => ({ rotulo: 'Ver a ficha', icone: 'acao-procurar', detalhe: 'a figura inteira e o que se sabe dela',
+      local: 'ficha', alvoId: occ.id, fazer: () => app.fichaDaCriatura?.abrir(occ) });
     if (inimigo) {
       opcoes.push(olhar(occ.name, [`${occ.name}: ${estadoAparente(occ)}.`, occ.blurb].filter(Boolean).join(' ')));
+      opcoes.push(verFicha());
       // LEMBRAR o que se sabe da criatura: memória, não custa a ação (`game/investigar.js`).
       if (investigavel) {
         const lembra = opcaoDeLembrarCriatura(app, c, occ, { fora });
@@ -291,7 +297,10 @@ export function opcoesDaCasa(app, tile) {
       // O golpe com a outra mão, depois da ação de Atacar.
       if (c && vez && c.offhandWeapon && WEAPONS[c.offhandWeapon]) {
         const leve = (w) => (w?.props ?? []).includes('leve');
-        const dupla = leve(WEAPONS[c.equippedWeapon]) && leve(WEAPONS[c.offhandWeapon]);
+        // COMBATENTE COM DUAS ARMAS (talento): qualquer arma de uma mão de perto, leve ou não.
+        const umaMao = (w) => w && !w.ranged && !(w.props ?? []).includes('duas mãos');
+        const dupla = (leve(WEAPONS[c.equippedWeapon]) && leve(WEAPONS[c.offhandWeapon]))
+          || ((c.talentos ?? []).includes('combatenteComDuasArmas') && umaMao(WEAPONS[c.equippedWeapon]) && umaMao(WEAPONS[c.offhandWeapon]));
         if (dupla) {
           const comEstilo = c.features?.includes('twoWeaponFighting');
           opcoes.push({
@@ -315,6 +324,60 @@ export function opcoesDaCasa(app, tile) {
               : distanceFt(c.pos, occ.pos) > 5 ? 'longe demais' : null,
           fazer: () => app.usarFeature(c, 'martialArts', { target: occ }),
         });
+      }
+      // AGARRAR e EMPURRAR (o livro): cada um toma o lugar de um golpe da ação de Atacar. A disputa é de Atletismo.
+      if (c && vez) {
+        const podeGolpe = !c.actionUsed || (c.ataquesRestantes ?? 0) > 0 ? null : 'a ação deste turno já foi usada';
+        const porque = enc.porqueNaoManobra(c, occ);
+        opcoes.push({
+          grupo: 'Atacar', rotulo: 'Agarrar', icone: 'acao-empurrar',
+          detalhe: 'um golpe do Atacar · Atletismo contra Atletismo ou Acrobacia · deslocamento 0',
+          motivo: podeGolpe ?? enc.porqueNaoAgarrar(c, occ),
+          fazer: () => app.usarFeature(c, 'agarrar', { target: occ }),
+        });
+        opcoes.push({
+          grupo: 'Atacar', rotulo: 'Empurrar: derrubar', icone: 'acao-empurrar',
+          detalhe: 'um golpe do Atacar · Atletismo contra Atletismo ou Acrobacia · cai no chão',
+          motivo: podeGolpe ?? porque,
+          fazer: () => app.usarFeature(c, 'empurrar', { target: occ, modo: 'derrubar' }),
+        });
+        opcoes.push({
+          grupo: 'Atacar', rotulo: 'Empurrar: afastar 1,5 m', icone: 'acao-empurrar',
+          detalhe: 'um golpe do Atacar · Atletismo contra Atletismo ou Acrobacia',
+          motivo: podeGolpe ?? porque,
+          fazer: () => app.usarFeature(c, 'empurrar', { target: occ, modo: 'afastar' }),
+        });
+        // AGARRADOR (talento): imobilizar quem ele já segura.
+        if ((c.talentos ?? []).includes('agarrador') && occ.conditions?.some((k) => k.id === 'agarrado' && k.source === c.id)) {
+          opcoes.push({
+            grupo: 'Atacar', rotulo: 'Imobilizar (Agarrador)', icone: 'acao-empurrar',
+            detalhe: 'ação · nova disputa; vencendo, os dois ficam contidos',
+            motivo: c.actionUsed ? 'a ação deste turno já foi usada' : null,
+            fazer: () => app.usarFeature(c, 'imobilizar', { target: occ }),
+          });
+        }
+        // OS GOLPES DE AÇÃO BÔNUS DOS TALENTOS (Mestre em Armas Grandes, de Haste, Especialista em Besta, Mestre em
+        // Escudos, Investida, Brigão de Taverna): `combat.js golpesDeTalento` diz quando cada um vale.
+        for (const g of enc.golpesDeTalento(c, occ)) {
+          const empurra = g.id === 'empurraoDoEscudo';
+          opcoes.push({
+            grupo: 'Atacar', rotulo: empurra ? `${g.rotulo}: derrubar` : g.rotulo, icone: empurra || g.id === 'agarrarDoBrigao' ? 'acao-empurrar' : 'acao-atacar',
+            detalhe: 'ação bônus', motivo: g.motivo,
+            fazer: () => app.usarFeature(c, g.id, { target: occ, modo: empurra ? 'derrubar' : null }),
+          });
+          if (empurra) {
+            opcoes.push({
+              grupo: 'Atacar', rotulo: `${g.rotulo}: afastar 1,5 m`, icone: 'acao-empurrar', detalhe: 'ação bônus', motivo: g.motivo,
+              fazer: () => app.usarFeature(c, g.id, { target: occ, modo: 'afastar' }),
+            });
+          }
+          if (g.id === 'investidaTalento') {
+            opcoes.push({
+              grupo: 'Atacar', rotulo: 'Investida: empurrar', icone: 'acao-empurrar', detalhe: 'ação bônus · afasta 3 m com a reta de 3 m antes', motivo: g.motivo,
+              fazer: () => app.usarFeature(c, g.id, { target: occ, modo: 'empurrar' }),
+            });
+          }
+        }
       }
       // SARAIVADA (Caçador, 11º): um ataque à distância contra cada criatura a 3 m do alvo.
       if (c && vez && c.features?.includes('volley')) {
@@ -345,6 +408,213 @@ export function opcoesDaCasa(app, tile) {
           fazer: () => app.usarFeature(c, 'frenzy', { target: occ }),
         });
       }
+      // CAMINHO PARA A SEPULTURA (clérigo da Sepultura) e MANTO DE MAJESTADE (bardo do Glamour): miram um inimigo.
+      if (c && vez && c.features?.includes('pathToTheGrave')) {
+        opcoes.push({
+          grupo: 'Atacar', rotulo: 'Caminho para a Sepultura', icone: 'magia-perdicao',
+          detalhe: 'ação · Canalizar Divindade · o próximo ataque do grupo que o acertar fere em dobro',
+          motivo: c.actionUsed ? 'a ação deste turno já foi usada'
+            : !(c.resources?.channelDivinity > 0) ? 'sem Canalizar Divindade'
+              : distanceFt(c.pos, occ.pos) > 30 ? 'a mais de 9 m' : null,
+          fazer: () => app.usarFeature(c, 'pathToTheGrave', { target: occ }),
+        });
+      }
+      if (c && vez && c.features?.includes('mantleOfMajesty') && !hasCondition(c, 'mantoDeMajestade')) {
+        opcoes.push({
+          grupo: 'Conjurar', rotulo: 'Manto de Majestade', icone: 'magia-comando',
+          detalhe: 'ação bônus · concentração, 1 minuto · Comando agora e em cada turno, sem espaço',
+          motivo: c.bonusUsed ? 'a ação bônus deste turno já foi usada'
+            : !(c.resources?.mantleOfMajesty > 0) ? 'já usado: volta no descanso longo'
+              : distanceFt(c.pos, occ.pos) > 60 ? 'a mais de 18 m' : null,
+          fazer: () => app.usarFeature(c, 'mantleOfMajesty', { target: occ }),
+        });
+      }
+      // XANATHAR: os recursos do guerreiro e do ladino que miram um inimigo.
+      const longe = (pes) => distanceFt(c.pos, occ.pos) > pes;
+      const semBonus = 'a ação bônus deste turno já foi usada';
+      if (c && vez && c.features?.includes('unwaveringMark') && c.retaliacao?.alvo === occ.id && c.retaliacao.agora) {
+        opcoes.push({
+          grupo: 'Atacar', rotulo: 'Marca Inabalável', icone: 'classe-frenzy',
+          detalhe: `ação bônus · ataque corpo a corpo com vantagem · +${Math.floor((c.level ?? 3) / 2)} de dano`,
+          motivo: c.bonusUsed ? semBonus : !(c.resources?.unwaveringMark > 0) ? 'sem usos: voltam no descanso longo' : null,
+          fazer: () => app.usarFeature(c, 'unwaveringMark', { target: occ }),
+        });
+      }
+      if (c && vez && c.features?.includes('suddenStrike')) {
+        opcoes.push({
+          grupo: 'Atacar', rotulo: 'Golpe Súbito', icone: 'classe-cunningAction',
+          detalhe: 'ação bônus · depois de atacar · o Ataque Furtivo vale de novo se o alvo for outro',
+          motivo: c.bonusUsed ? semBonus : !c.atacouNoTurno ? 'só depois da ação de Atacar' : null,
+          fazer: () => app.usarFeature(c, 'suddenStrike', { target: occ }),
+        });
+      }
+      if (c && vez && c.features?.includes('panache')) {
+        opcoes.push({
+          grupo: 'Atacar', rotulo: 'Panache', icone: 'magia-comando',
+          detalhe: 'ação · Persuasão contra Intuição · ele ataca outro com desvantagem e só pega você de oportunidade, um minuto',
+          motivo: c.actionUsed ? 'a ação deste turno já foi usada' : longe(60) ? 'a mais de 18 m' : null,
+          fazer: () => app.usarFeature(c, 'panache', { target: occ }),
+        });
+      }
+      if (c && vez && c.features?.includes('insightfulFighting')) {
+        opcoes.push({
+          grupo: 'Atacar', rotulo: 'Combate Perspicaz', icone: 'classe-cunningAction',
+          detalhe: 'ação bônus · Intuição contra Enganação · o Ataque Furtivo vale contra ele sem vantagem, um minuto',
+          motivo: c.bonusUsed ? semBonus : null,
+          fazer: () => app.usarFeature(c, 'insightfulFighting', { target: occ }),
+        });
+      }
+      if (c && vez && c.features?.includes('masterOfTactics')) {
+        opcoes.push({
+          grupo: 'Apoiar', rotulo: 'Mestre da Tática: ajudar', icone: 'magia-bencao',
+          detalhe: 'ação bônus · o próximo ataque de um aliado contra ele tem vantagem',
+          motivo: c.bonusUsed ? semBonus : longe(30) ? 'a mais de 9 m' : null,
+          fazer: () => app.usarFeature(c, 'masterOfTactics', { target: occ }),
+        });
+      }
+      // XANATHAR: as curas à distância (o druida dos Sonhos, o bruxo Celestial), o cão e a maldição.
+      // OS OUTROS LIVROS: os espinhos do Furioso, o Toque da Longa Morte, as sombras do Senhor do Terror, o medo da Serpe, o Impulso
+      // Poderoso, a Abjuração Arcana e o Controlar Mortos-Vivos num alvo escolhido.
+      if (c && vez && occ.side !== c.side) {
+        const perto = (pes) => distanceFt(c.pos, occ.pos) <= pes;
+        const furia = c.conditions?.some((k) => k.id === 'furia');
+        if (c.features?.includes('battleragerArmor') && c.armor === 'armaduraDeEspinhos') {
+          opcoes.push({ grupo: 'Atacar', rotulo: 'Espinhos da armadura', icone: 'classe-rage', detalhe: 'ação bônus · 1d4 perfurante, em Fúria',
+            motivo: !furia ? 'só em Fúria' : c.bonusUsed ? semBonus : !perto(5) ? 'só colado' : null, fazer: () => app.usarFeature(c, 'battleragerArmor', { target: occ }) });
+        }
+        if (c.features?.includes('touchOfTheLongDeath')) {
+          const ki = c.resources?.ki ?? 0;
+          for (const n of [...new Set([1, 3, 5, Math.min(10, ki)])].filter((x) => x >= 1 && x <= Math.min(10, ki))) {
+            opcoes.push({ grupo: 'Atacar', rotulo: `Toque da Longa Morte (${n} ki)`, icone: 'classe-stunningStrike', detalhe: `ação · CON ou ${2 * n}d10 de necrótico (metade no sucesso)`,
+              motivo: c.actionUsed ? 'a ação deste turno já foi usada' : !perto(5) ? 'só no toque' : null, fazer: () => app.usarFeature(c, 'touchOfTheLongDeath', { target: occ, modo: n }) });
+          }
+        }
+        if (c.conditions?.some((k) => k.id === 'senhorDoTerror')) {
+          opcoes.push({ grupo: 'Atacar', rotulo: 'Sombras do Senhor do Terror', icone: 'classe-turnUndead', detalhe: 'ação bônus · ataque de magia, 3d10 + CAR necrótico, na aura',
+            motivo: c.bonusUsed ? semBonus : !perto(30) ? 'fora da aura (9 m)' : null, fazer: () => app.usarFeature(c, 'sombrasDoSenhor', { target: occ }) });
+        }
+        if (c.conditions?.some((k) => k.id === 'aspectoDaSerpe' && k.data?.modo === 'medo')) {
+          opcoes.push({ grupo: 'Conjurar', rotulo: 'Medo da Serpe', icone: 'classe-stunningStrike', detalhe: 'ação bônus · SAB ou amedrontado por um minuto',
+            motivo: c.bonusUsed ? semBonus : !perto(10) ? 'fora da aura (3 m)' : null, fazer: () => app.usarFeature(c, 'medoDaSerpe', { target: occ }) });
+        }
+        if (c.features?.includes('mightyImpel')) {
+          opcoes.push({ grupo: 'Atacar', rotulo: 'Impulso Poderoso', icone: 'classe-rage', detalhe: 'ação bônus · FOR ou é arremessado até 9 m para longe',
+            motivo: !furia ? 'só em Fúria' : c.bonusUsed ? semBonus : !perto(5 + (c.alcanceDoGigante ?? 5)) ? 'fora do alcance' : null, fazer: () => app.usarFeature(c, 'mightyImpel', { target: occ }) });
+        }
+        if (c.features?.includes('arcaneAbjuration') && ['celestial', 'elemental', 'feérico', 'fada', 'corruptor'].includes(occ.tipo)) {
+          opcoes.push({ grupo: 'Conjurar', rotulo: 'Abjuração Arcana', icone: 'classe-turnUndead', detalhe: 'ação · Canalizar Divindade · SAB ou expulso (ou banido)',
+            motivo: c.actionUsed ? 'a ação deste turno já foi usada' : !(c.resources?.channelDivinity > 0) ? 'sem Canalizar Divindade' : !perto(30) ? 'a mais de 9 m' : null,
+            fazer: () => app.usarFeature(c, 'arcaneAbjuration', { target: occ }) });
+        }
+        if (c.features?.includes('controlUndead') && occ.tipo === 'morto-vivo') {
+          opcoes.push({ grupo: 'Conjurar', rotulo: 'Controlar Mortos-Vivos', icone: 'classe-turnUndead', detalhe: 'ação · Canalizar Divindade · SAB ou passa para o seu lado',
+            motivo: c.actionUsed ? 'a ação deste turno já foi usada' : !(c.resources?.channelDivinity > 0) ? 'sem Canalizar Divindade' : !perto(30) ? 'a mais de 9 m' : null,
+            fazer: () => app.usarFeature(c, 'controlUndead', { target: occ }) });
+        }
+      }
+      // TASHA (4º lote): o golpe que o truque deixa à LÂMINA CANTANTE (Ataque Extra).
+      // (vale também para o golpe que o SOPRO do monge do Dragão deixa)
+      if (c && vez && occ.side !== c.side && c.golpeDoTruqueEm === enc.turnoKey()) {
+        opcoes.push({
+          grupo: 'Atacar', rotulo: 'Golpe do Ataque Extra', icone: 'classe-volley',
+          detalhe: 'sem custo · o golpe que sobra da ação, depois do truque',
+          motivo: !enc.canAttack(c, occ, c.equippedWeapon).ok ? enc.canAttack(c, occ, c.equippedWeapon).why : null,
+          fazer: () => app.usarFeature(c, 'golpeDoTruque', { target: occ }),
+        });
+      }
+      // TASHA (3º lote): a SEGUNDA LÂMINA PSÍQUICA (Lâmina da Alma), depois da primeira na ação de Atacar.
+      if (c && vez && occ.side !== c.side && c.features?.includes('psychicBladesSoulknife')) {
+        const usouLamina = c.acaoDeAtaque?.turno === enc.turnoKey() && c.acaoDeAtaque.armas.some((a) => a === 'laminaDaAlma' || a === 'laminaDaAlmaArremesso');
+        opcoes.push({
+          grupo: 'Atacar', rotulo: 'Segunda Lâmina Psíquica', icone: 'classe-volley',
+          detalhe: 'ação bônus · 1d4 + DES de psíquico, a até 18 m',
+          motivo: c.bonusUsed ? semBonus : !usouLamina ? 'antes, golpeie com a Lâmina Psíquica na ação de Atacar' : longe(60) ? 'a mais de 18 m' : null,
+          fazer: () => app.usarFeature(c, 'segundaLamina', { target: occ }),
+        });
+      }
+      // TASHA (2º lote): a flecha do Arqueiro estelar e o golpe do Mestre Telecinético.
+      if (c && vez && occ.side !== c.side && c.conditions?.some((k) => k.id === 'formaEstrelada' && k.data?.constelacao === 'arqueiro')) {
+        opcoes.push({
+          grupo: 'Conjurar', rotulo: 'Flecha Estelar', icone: 'magia-raioGuiado',
+          detalhe: `ação bônus · ataque de magia a 18 m · ${c.dadosDaEstrela ?? '1d8'} + SAB radiante`,
+          motivo: c.bonusUsed ? semBonus : longe(60) ? 'a mais de 18 m' : null,
+          fazer: () => app.usarFeature(c, 'flechaEstelar', { target: occ }),
+        });
+      }
+      if (c && vez && occ.side !== c.side && c.features?.includes('telekineticMaster') && c.concentrating?.spellId === 'telecinesia') {
+        opcoes.push({
+          grupo: 'Atacar', rotulo: 'Golpe do Mestre Telecinético', icone: 'classe-volley',
+          detalhe: 'ação bônus · um ataque com arma, enquanto a Telecinésia dura',
+          motivo: c.bonusUsed ? semBonus : null,
+          fazer: () => app.usarFeature(c, 'telekineticMaster', { target: occ }),
+        });
+      }
+      if (c && vez && occ.side !== c.side && c.features?.includes('unsettlingWords')) {
+        opcoes.push({
+          grupo: 'Conjurar', rotulo: 'Palavras Perturbadoras', icone: 'magia-sussurrosDissonantes',
+          detalhe: 'ação bônus · uma Inspiração · o dado sai da próxima resistência dele',
+          motivo: c.bonusUsed ? semBonus : !(c.resources?.bardicInspiration > 0) ? 'sem Inspiração de Bardo' : longe(60) ? 'a mais de 18 m' : null,
+          fazer: () => app.usarFeature(c, 'unsettlingWords', { target: occ }),
+        });
+      }
+      if (c && vez && occ.side !== c.side && c.features?.includes('houndOfIllOmen')) {
+        opcoes.push({
+          grupo: 'Conjurar', rotulo: 'Cão do Mau Agouro', icone: 'magia-perdicao',
+          detalhe: '3 pontos de feitiçaria · ação bônus · um cão das sombras só para ele; colado, ele resiste mal às suas magias',
+          motivo: c.bonusUsed ? semBonus : (c.resources?.sorceryPoints ?? 0) < 3 ? 'faltam pontos de feitiçaria' : longe(120) ? 'a mais de 36 m' : null,
+          fazer: () => app.usarFeature(c, 'houndOfIllOmen', { target: occ }),
+        });
+      }
+      if (c && vez && occ.side !== c.side && c.features?.includes('hexbladesCurse')) {
+        opcoes.push({
+          grupo: 'Atacar', rotulo: 'Maldição do Lâmina Maldita', icone: 'magia-perdicao',
+          detalhe: `ação bônus · um minuto · +${Math.ceil(1 + (c.level ?? 1) / 4)} de dano e crítico com 19 contra ele`,
+          motivo: c.bonusUsed ? semBonus : !(c.resources?.hexbladesCurse > 0) ? 'já usada: volta no descanso curto' : longe(30) ? 'a mais de 9 m' : null,
+          fazer: () => app.usarFeature(c, 'hexbladesCurse', { target: occ }),
+        });
+      }
+      // XANATHAR: o monge da Alma Solar, o Andarilho do Horizonte e o Matador de Monstros.
+      if (c && vez && c.features?.includes('radiantSunBolt')) {
+        const usouRaio = c.acaoDeAtaque?.turno === enc.turnoKey() && c.acaoDeAtaque.armas.includes('raioSolar');
+        opcoes.push({
+          grupo: 'Atacar', rotulo: 'Raios de Sol: mais dois', icone: 'classe-flurryOfBlows',
+          detalhe: 'ação bônus · 1 ki · depois de usar o Raio de Sol na ação de Atacar',
+          motivo: c.bonusUsed ? semBonus : !(c.resources?.ki > 0) ? 'sem pontos de ki' : !usouRaio ? 'só depois de atacar com o Raio de Sol' : longe(30) ? 'a mais de 9 m' : null,
+          fazer: () => app.usarFeature(c, 'radiantSunBolt', { target: occ }),
+        });
+      }
+      if (c && vez && c.features?.includes('planarWarrior')) {
+        opcoes.push({
+          grupo: 'Atacar', rotulo: 'Guerreiro Planar', icone: 'classe-volley',
+          detalhe: `ação bônus · o próximo acerto de arma neste turno vira energético e soma ${c.dadosDoGuerreiroPlanar ?? '1d8'}`,
+          motivo: c.bonusUsed ? semBonus : longe(30) ? 'a mais de 9 m' : null,
+          fazer: () => app.usarFeature(c, 'planarWarrior', { target: occ }),
+        });
+      }
+      if (c && vez && c.features?.includes('distantStrike')) {
+        opcoes.push({
+          grupo: 'Atacar', rotulo: 'Golpe Distante', icone: 'classe-volley',
+          detalhe: 'um ataque da ação de Atacar, saltando antes para o lado do alvo (até 3 m); atacando dois, um terceiro de graça',
+          motivo: c.actionUsed && !(c.ataquesRestantes > 0) ? 'a ação deste turno já foi usada' : null,
+          fazer: () => app.usarFeature(c, 'distantStrike', { target: occ }),
+        });
+      }
+      if (c && vez && c.features?.includes('slayersPrey')) {
+        opcoes.push({
+          grupo: 'Atacar', rotulo: 'Presa do Matador', icone: 'classe-frenzy',
+          detalhe: 'ação bônus · o primeiro acerto de arma em cada turno contra ele soma 1d6',
+          motivo: c.bonusUsed ? semBonus : longe(60) ? 'a mais de 18 m' : null,
+          fazer: () => app.usarFeature(c, 'slayersPrey', { target: occ }),
+        });
+      }
+      if (c && vez && c.features?.includes('huntersSense')) {
+        opcoes.push({
+          grupo: 'Atacar', rotulo: 'Sentido do Caçador', icone: 'classe-volley',
+          detalhe: 'ação · descobre as imunidades, resistências e vulnerabilidades dele',
+          motivo: c.actionUsed ? 'a ação deste turno já foi usada' : !(c.resources?.huntersSense > 0) ? 'sem usos: voltam no descanso longo' : longe(60) ? 'a mais de 18 m' : null,
+          fazer: () => app.usarFeature(c, 'huntersSense', { target: occ }),
+        });
+      }
       // Os dois gastos de ki que miram um inimigo.
       if (c && vez && c.features?.includes('flurryOfBlows')) {
         opcoes.push({
@@ -356,6 +626,22 @@ export function opcoesDaCasa(app, tile) {
                 : distanceFt(c.pos, occ.pos) > 5 ? 'longe demais' : null,
           fazer: () => app.usarFeature(c, 'flurryOfBlows', { target: occ, modo: 'derrubar' }),
         });
+        // RAJADA DE CURA (Misericórdia, Tasha): um golpe vira cura (no 11º, os dois), sem ki, para a Mão da Cura depois.
+        if (c.features.includes('handOfHealing')) {
+          const motivoR = opcoes[opcoes.length - 1].motivo;
+          opcoes.push({
+            grupo: 'Atacar', rotulo: 'Rajada de Cura: um golpe e uma cura', icone: 'classe-flurryOfBlows',
+            detalhe: 'ação bônus · 1 ki · um golpe, e a Mão da Cura uma vez sem ki',
+            motivo: motivoR, fazer: () => app.usarFeature(c, 'flurryOfBlows', { target: occ, modo: 'curaUm' }),
+          });
+          if (c.features.includes('flurryOfHealingAndHarm')) {
+            opcoes.push({
+              grupo: 'Atacar', rotulo: 'Rajada de Cura: duas curas', icone: 'classe-flurryOfBlows',
+              detalhe: 'ação bônus · 1 ki · nenhum golpe, e a Mão da Cura duas vezes sem ki',
+              motivo: motivoR, fazer: () => app.usarFeature(c, 'flurryOfBlows', { target: occ, modo: 'curaDois' }),
+            });
+          }
+        }
         // TÉCNICA DA MÃO ABERTA: a mesma Rajada, com outro efeito a cada golpe que acerta.
         if (c.features.includes('openHandTechnique')) {
           const motivoRajada = opcoes[opcoes.length - 1].motivo;
@@ -380,7 +666,9 @@ export function opcoesDaCasa(app, tile) {
     if (c !== occ && !app.capitulo?.encerrado) {
       opcoes.push({ rotulo: 'Selecionar', icone: 'acao-preparar', detalhe: 'passar o comando para ele', local: 'selecionar', alvoId: occ.id, fazer: () => app.select(occ) });
     }
-    opcoes.push({ rotulo: 'Abrir a ficha', icone: 'acao-usarObjeto', detalhe: 'atributos, magias e inventário', local: 'ficha', alvoId: occ.id, fazer: () => app.ficha?.abrir(occ, 'ficha') });
+    // o herói abre a ficha dele; a criatura do grupo (a invocação, o familiar) abre a ficha de criatura
+    if (occ.kind === 'pc') opcoes.push({ rotulo: 'Abrir a ficha', icone: 'acao-usarObjeto', detalhe: 'atributos, magias e inventário', local: 'ficha', alvoId: occ.id, fazer: () => app.ficha?.abrir(occ, 'ficha') });
+    else opcoes.push(verFicha());
     if (c && vez) {
       for (const id of magiasProntas(c)) {
         const s = getSpell(id);
@@ -419,6 +707,60 @@ export function opcoesDaCasa(app, tile) {
           detalhe: [cura, `tem ${it.qtd}`].filter(Boolean).join(' · '),
           icone: it.dados.consumivel === 'estabilizar' ? 'acao-estabilizar' : 'acao-usarObjeto',
           fazer: () => app.usarItem(c, it.id, occ, { jogando }),
+        });
+      }
+      // TASHA (4º lote): o BASTIÃO DA LEI (Alma Mecânica) num aliado a 9 m.
+      if (c && vez && occ.side === c.side && occ !== c && c.features?.includes('bastionOfLaw')) {
+        const pts = Math.min(5, c.resources?.sorceryPoints ?? 0);
+        opcoes.push({
+          grupo: 'Socorrer', rotulo: 'Bastião da Lei', icone: 'magia-escudoDaFe',
+          detalhe: `ação · ${pts} ${pts === 1 ? 'ponto' : 'pontos'} de feitiçaria · ${pts}d8 que seguram o dano`,
+          motivo: c.actionUsed ? 'a ação deste turno já foi usada' : pts < 1 ? 'sem pontos de feitiçaria' : distanceFt(c.pos, occ.pos) > 30 ? 'a mais de 9 m' : null,
+          fazer: () => app.usarFeature(c, 'bastionOfLaw', { target: occ }),
+        });
+      }
+      // TASHA: a Mão da Cura e a Mão da Misericórdia Suprema (monge da Misericórdia), no toque.
+      if (c && vez && occ.side === c.side && c.features?.includes('handOfHealing')) {
+        const livre = (c.curasDaRajada ?? 0) > 0 && c.curasDaRajadaEm === enc.turnoKey();
+        opcoes.push({
+          grupo: 'Socorrer', rotulo: livre ? 'Mão da Cura (da Rajada)' : 'Mão da Cura', icone: 'magia-palavraCurativa',
+          detalhe: livre ? 'sem ki e sem ação: a cura que a Rajada guardou' : `ação · 1 ki · ${c.dadoDeArtesMarciais ?? 'd6'} + SAB de cura`,
+          motivo: !livre && c.actionUsed ? 'a ação deste turno já foi usada' : !livre && !(c.resources?.ki > 0) ? 'sem ki' : distanceFt(c.pos, occ.pos) > 5 ? 'só no toque' : null,
+          fazer: () => app.usarFeature(c, 'handOfHealing', { target: occ }),
+        });
+      }
+      // TASHA: a Magia Fortalecedora (o bárbaro da Magia Selvagem) e a Bênção Vigilante (o Crepúsculo), no toque.
+      if (c && vez && occ.side === c.side && c.features?.includes('bolsteringMagic')) {
+        opcoes.push({
+          grupo: 'Socorrer', rotulo: 'Magia Fortalecedora', icone: 'magia-bencao',
+          detalhe: 'ação · toque · devolve um espaço de magia gasto (até 1d3) ou dá +1d3 nos ataques por dez minutos',
+          motivo: c.actionUsed ? 'a ação deste turno já foi usada' : !(c.resources?.bolsteringMagic > 0) ? 'sem usos' : distanceFt(c.pos, occ.pos) > 5 ? 'só no toque' : null,
+          fazer: () => app.usarFeature(c, 'bolsteringMagic', { target: occ }),
+        });
+      }
+      if (c && vez && occ.side === c.side && c.features?.includes('vigilantBlessing')) {
+        opcoes.push({
+          grupo: 'Socorrer', rotulo: 'Bênção Vigilante', icone: 'magia-bencao',
+          detalhe: 'ação · toque · vantagem na próxima iniciativa',
+          motivo: c.actionUsed ? 'a ação deste turno já foi usada' : distanceFt(c.pos, occ.pos) > 5 ? 'só no toque' : null,
+          fazer: () => app.usarFeature(c, 'vigilantBlessing', { target: occ }),
+        });
+      }
+      // XANATHAR: as curas à distância do druida dos Sonhos e do bruxo Celestial.
+      if (c && vez && occ.side === c.side && c.features?.includes('balmOfTheSummerCourt')) {
+        opcoes.push({
+          grupo: 'Socorrer', rotulo: 'Bálsamo da Corte de Verão', icone: 'magia-palavraCurativa',
+          detalhe: `ação bônus · até ${Math.max(1, Math.floor((c.level ?? 2) / 2))}d6 da reserva (${c.resources?.balmOfTheSummerCourt ?? 0}) · e 1 PV temporário por dado`,
+          motivo: c.bonusUsed ? 'a ação bônus deste turno já foi usada' : !(c.resources?.balmOfTheSummerCourt > 0) ? 'a reserva acabou' : distanceFt(c.pos, occ.pos) > 120 ? 'a mais de 36 m' : null,
+          fazer: () => app.usarFeature(c, 'balmOfTheSummerCourt', { target: occ }),
+        });
+      }
+      if (c && vez && occ.side === c.side && c.features?.includes('healingLight')) {
+        opcoes.push({
+          grupo: 'Socorrer', rotulo: 'Luz Curativa', icone: 'magia-palavraCurativa',
+          detalhe: `ação bônus · até ${Math.max(1, Math.floor(((c.abilities?.cha ?? 10) - 10) / 2))}d6 da reserva (${c.resources?.healingLight ?? 0})`,
+          motivo: c.bonusUsed ? 'a ação bônus deste turno já foi usada' : !(c.resources?.healingLight > 0) ? 'a reserva acabou' : distanceFt(c.pos, occ.pos) > 60 ? 'a mais de 18 m' : null,
+          fazer: () => app.usarFeature(c, 'healingLight', { target: occ }),
         });
       }
       if (occ !== c && hasCondition(occ, 'inconsciente') && !occ.stable) {
@@ -590,8 +932,9 @@ export function opcoesDaCasa(app, tile) {
   // que o objeto traz. É isso que faz valer a pena marcar no editor antes de a cena existir: a marca já faz
   // alguma coisa, em vez de ser um botão que não liga em lugar nenhum.
   const alvoInterativo = enc.field.interativos?.get(`${tile.x},${tile.y}`);
-  // Com TESTE (a pista do editor) quem fala é o verbo dele, acima; o "Mexer" só se a cena tiver roteiro para o id.
-  if (alvoInterativo && c && (!alvoInterativo.pista || app.capitulo?.aoInteragir)) {
+  // Com TESTE (a pista do editor) quem fala é o verbo dele, acima; o "Mexer" só se a cena tiver roteiro para o id
+  // ou se o objeto tiver o que mostrar de graça (`olhar`: o que a coisa é, antes de qualquer teste).
+  if (alvoInterativo && c && (!alvoInterativo.pista || alvoInterativo.olhar || app.capitulo?.aoInteragir)) {
     const perto = distanceFt(c.pos, tile) <= (alvoInterativo.alcance ?? 5);
     opcoes.push({
       rotulo: alvoInterativo.rotulo || 'Mexer',
