@@ -40,9 +40,10 @@
 // Sabedoria, `esperarIlha`); a FUMAÇA do Campo, que é a penumbra da grade de luz, menos a até 9 m do moinho enquanto duas
 // das três PÁS girarem, e as pás, objetos de CA 13 e 30 PV que se quebram como trecho de muralha (`montarMoinho`).
 //
-// DE FORA, ditos: o ardil do intelecto de quem voa sem rumo (aqui não se voa sem rumo: viaja-se de ilha em ilha); o
-// "Bound" dos guardiões-escudo (não têm dono aqui, e o traço só vale com o dono); e a ALTURA da Ânima (a plataforma, A4
-// e o estrado acima do chão: todos voam, e ela não barra ninguém). Os PEDAÇOS ENTREGUES à Chishinix entraram: o obelisco
+// DE FORA, dito: o "Bound" dos guardiões-escudo (o livro diz que eles não têm amuleto nem dono aqui, e o traço só vale
+// com o dono). A ALTURA da Ânima entrou (`alturasDaAnima`: cobertura e visão; ninguém paga subida, porque todos voam) e
+// o ARDIL de quem vaga sem rumo também (`vagarSemRumo`: uma hora de deriva, 1d6 ardis do intelecto, duas ilhas novas à
+// vista). Os PEDAÇOS ENTREGUES à Chishinix entraram: o obelisco
 // fica inteiro, os profetas acordam em A3 e o contragolpe deixa de vir em dobro (decisão nossa, porque o livro só diz que
 // ela os pede); o cérebro do tubo do refeitório já se tira (`interacoesDaAnima`).
 //
@@ -61,6 +62,8 @@ import { telaDeSubirNivel } from '../view/nivel-tela.js';
 import { guardar } from './comercio.js';
 import { PONTOS_VAZIO as PV } from './vazio-mapas.js';
 import { darMarco } from './obelisco5-vila.js';
+import * as Refens from './refens-obelisco.js';
+import { oferecerSocorro } from './socorro-obelisco.js';
 
 const MOVIMENTO = 60;
 /** As ilhas do d8, na ordem do livro. */
@@ -154,7 +157,8 @@ export function criarIlhaDoVazio(app, config = {}) {
   const f = (v.feito[ilha] ??= {});
   const vila = (camp.vila ??= { pistas: [], missoes: {} });
   const estado = { explorando: false, encerrado: false, lutando: null };
-  const todos = () => enc.combatants.filter((c) => c.side === 'party' && !c.dead);
+  // os reféns que o grupo escolta (`refens-obelisco.js`) andam junto, mas não são do grupo: nem XP, nem passagem de cena
+  const todos = () => enc.combatants.filter((c) => c.side === 'party' && !c.dead && !c.refemDoObelisco);
   const herois = () => todos().filter((c) => c.hp > 0);
   const titulo = NOME_DA_ILHA[ilha].replace(/^(a|o) /, '').replace(/^./, (s) => s.toUpperCase());
   const painel = (texto, escolhas) => narrar(root, { formato: 'painel', paginas: [{ titulo, texto: [].concat(texto) }], ...(escolhas ? { escolhas } : {}) });
@@ -292,6 +296,7 @@ export function criarIlhaDoVazio(app, config = {}) {
     estado.explorando = false;
     estado.encerrado = true;
     root.classList.remove('explorando');
+    Refens.guardarRefens(enc, camp);
     fazer(todos());
   }
 
@@ -305,7 +310,7 @@ export function criarIlhaDoVazio(app, config = {}) {
   /** A TRAVESSIA DA NÉVOA MORTAL do Miasma: da borda da nuvem à ilhota (e de volta) são umas duas rodadas de voo, cada
    * uma com o teste da névoa (Constituição CD 17, 5d8 de veneno, metade se passar). */
   function atravessarNevoa(rodadas, linhas) {
-    for (const h of herois()) {
+    for (const h of [...herois(), ...enc.combatants.filter((c) => c.refemDoObelisco && !c.dead)]) {
       let total = 0;
       for (let r = 0; r < rodadas; r++) {
         const sv = enc.resistencia(h, 'con', 17, { contra: { tipoDano: 'veneno', magico: true } });
@@ -327,12 +332,14 @@ export function criarIlhaDoVazio(app, config = {}) {
     // Reino Distante, com o teste de Sabedoria de cada um
     const esperaveis = v.visitadas.filter((i) => i !== ilha && !v.aVista.includes(i));
     if (esperaveis.length) escolhas.push({ rotulo: 'Esperar uma ilha conhecida voltar (1d6 dias)', valor: 'esperar' });
+    if (ilha !== 'anima') escolhas.push({ rotulo: 'Vagar pelo Vazio atrás de outras ilhas (uma hora)', valor: 'vagar' });
     escolhas.push({ rotulo: 'Ficar', valor: 'ficar', primaria: !escolhas.length });
     const linhas = ['Daqui, na névoa colorida, se veem:', ...v.aVista.map((i) => `— ${DE_LONGE[i]}${v.feito.diarioLido && DO_DIARIO[i] ? ` (${DO_DIARIO[i]})` : ''}.`)];
     if (!v.aVista.length) linhas.push('— nada, por ora. As ilhas derivam; com o tempo, outras aparecem.');
     const r = await painel(linhas, escolhas);
     if (r === 'descansar') return descansar();
     if (r === 'esperar') return esperarIlha(esperaveis);
+    if (r === 'vagar') return vagarSemRumo();
     if (r && r !== 'ficar') {
       if (ilha === 'miasma') {
         const linhas = ['Para sair, a mesma névoa de novo, até a borda da nuvem.'];
@@ -342,6 +349,33 @@ export function criarIlhaDoVazio(app, config = {}) {
       }
       irPara(r);
     }
+  }
+
+  /**
+   * VAGAR SEM RUMO: quem flutua solto pelo Vazio, sem ilha à vista, chama 1d6 ardis do intelecto por hora (o livro). É o
+   * preço de procurar ilhas sem esperar: uma hora de deriva, a luta com os ardis, e no fim duas ilhas novas à vista. A
+   * luta é na beira da ilha de onde o grupo saiu (decisão nossa: o Vazio não tem mapa, e a deriva volta para perto dela).
+   */
+  async function vagarSemRumo() {
+    const r = await painel(['Sair voando sem destino, longe de qualquer ilha, para ver o que há além da névoa. Coisas famintas flutuam no Vazio, e ninguém que vaga sozinho passa despercebido por elas.'], [
+      { rotulo: 'Vagar', valor: 'vagar', primaria: true },
+      { rotulo: 'Melhor não', valor: 'nao' },
+    ]);
+    if (r !== 'vagar') return;
+    const n = enc.rng.die(6);
+    const lider = herois()[0];
+    const ardis = [];
+    for (let i = 0; i < n; i++) {
+      const m = makeMonster('armadilhaDeIntelecto', { ...lider.pos });
+      const ang = (i / n) * Math.PI * 2;
+      const q = enc.casaLivreMaisProxima({ x: Math.round(lider.pos.x + Math.cos(ang) * 5), y: Math.round(lider.pos.y + Math.sin(ang) * 5) });
+      if (!q) continue;
+      m.pos = { ...m.pos, x: q.x, y: q.y };
+      ardis.push(m);
+    }
+    estado.depoisDaDeriva = true;
+    await painel([`Uma hora de deriva na névoa colorida. Aí, de todos os lados ao mesmo tempo, ${n > 1 ? `${n} coisas` : 'uma coisa'} de pele cinzenta, com fios de nervo pendurados, ${n > 1 ? 'se fecham' : 'se fecha'} em volta de vocês: ardis do intelecto, com fome.`], [{ rotulo: 'Às armas!', valor: 'luta', primaria: true }]);
+    luta(ardis);
   }
 
   /** Esperar a ilha escolhida voltar: 1d6 dias, cada um um descanso longo no Reino Distante; ela fica à vista no fim. */
@@ -457,6 +491,22 @@ export function criarIlhaDoVazio(app, config = {}) {
       }
     }
     return false;
+  }
+
+  // ------------------------------------------------------- a altura da Ânima ----
+  // A ÂNIMA TEM QUATRO ALTURAS (o livro): a plataforma de chegada e A4 a 3 m acima do chão de A1 a A3, e o estrado do
+  // obelisco a 6 m. Todos voam no Vazio, então o desnível não barra ninguém nem custa passo (`grid.js`: quem voa não paga
+  // subida); o que ele muda é o que a altura sempre muda no motor — a cobertura de quem atira de baixo por cima da borda
+  // e a linha de visão que a borda corta. Um nível de altura são 1,5 m: 3 m são dois, 6 m são quatro.
+  function alturasDaAnima() {
+    const fd = enc.field;
+    const ob = P.obelisco;
+    for (let y = 0; y < fd.h; y++) for (let x = 0; x < fd.w; x++) {
+      const s = P.salas?.[y]?.[x];
+      if (s !== 'p' && s !== '4') continue;
+      const estrado = s === '4' && ob && Math.max(Math.abs(x - ob.x), Math.abs(y - ob.y)) <= 2;
+      fd.heights[y * fd.w + x] = estrado ? 4 : 2;
+    }
   }
 
   // ------------------------------------------------------- o moinho e a fumaça ----
@@ -704,6 +754,7 @@ export function criarIlhaDoVazio(app, config = {}) {
 
   // --------------------------------------------------------------- o evento ----
   function evento(ev) {
+    Refens.eventoDosRefens(enc, camp, ev);
     if (ev.type === 'golpeNaMuralha' && ilha === 'campo') { pasGolpeadas(ev); return; }
     if (ilha === 'anima') {
       if (ev.type === 'damage' && ev.target === elenco.chishinix) recuoDaChishinix();
@@ -730,6 +781,8 @@ export function criarIlhaDoVazio(app, config = {}) {
     const lutou = estado.lutando ?? [];
     if (outcome !== 'vitoria') {
       estado.encerrado = true;
+      // vencidos pelos fanáticos na Ânima, o livro manda o grupo de socorro (`socorro-obelisco.js`)
+      if (ilha === 'anima' && await oferecerSocorro(app, camp, enc.combatants.filter((c) => c.side === 'party' && !c.refemDoObelisco && !c.invocado), 'anima')) return;
       await narrar(root, { formato: 'tela', paginas: [{ titulo, texto: ['O Vazio fica com vocês. As cores continuam girando, para ninguém.'] }] });
       app.encerrarPartida();
       return;
@@ -763,6 +816,12 @@ export function criarIlhaDoVazio(app, config = {}) {
         pista('O obelisco virou pó na Ânima de Ilvaash: os fanáticos estão mortos. Agora é voltar pela estrela sem luz e subir a Poça.');
       }
     }
+    if (estado.depoisDaDeriva) {
+      estado.depoisDaDeriva = false;
+      v.aVista = sortearAVista(enc.rng, ilha, v.visitadas);
+      await painel(['Os ardis caem, e a deriva continua. Uma hora depois, vocês voltam a pousar na ilha de onde saíram — e, do alto, viram outras.',
+        ...v.aVista.map((i) => `— ${DE_LONGE[i]}.`)]);
+    }
     prepararExploracao();
   }
 
@@ -773,6 +832,11 @@ export function criarIlhaDoVazio(app, config = {}) {
     // A VIAGEM: de qualquer lugar, no próprio herói
     if (tile.x === c.pos.x && tile.y === c.pos.y) {
       ops.push({ rotulo: 'Voar para outra ilha', icone: 'acao-disparada', detalhe: v.aVista.length ? `${v.aVista.length} à vista` : 'nenhuma à vista', fazer: () => viajar() });
+    }
+    // OS QUE ESPERAM: de volta à ilha, o grupo pode levá-los agora
+    const esperando = Refens.estadoDosRefens(camp).esperando[ilha];
+    if (esperando?.length && tile.x === c.pos.x && tile.y === c.pos.y) {
+      ops.push({ rotulo: 'Chamar os reféns que esperam', icone: 'acao-procurar', detalhe: esperando.join(', '), fazer: () => levarOuDeixar(ilha, P.refens?.map((_, i) => elenco[`refem${i + 1}`]).filter(Boolean) ?? []) });
     }
     if (ilha === 'cupula') {
       P.refens.forEach((p, i) => {
@@ -948,6 +1012,29 @@ export function criarIlhaDoVazio(app, config = {}) {
     return ops;
   }
 
+  /**
+   * LEVAR OU DEIXAR: soltos, os reféns aceitam esperar na ilha (o livro); o grupo pode levá-los consigo. Quem vem junto
+   * passa a andar com o grupo (`refens-obelisco.js`); quem fica, espera — e fica no Reino Distante se ninguém voltar.
+   */
+  async function levarOuDeixar(lugar, criaturasNaIlha = []) {
+    const r = await painel(['Eles olham para vocês e para a névoa colorida em volta. Ninguém quer ficar sozinho aqui, mas ninguém diz isso em voz alta.',
+      'São pessoas comuns, sem armas, e qualquer golpe derruba um deles. Junto do grupo, vão onde o grupo for — pela Poça e pelo labirinto, até o portal.'], [
+      { rotulo: 'Levá-los com o grupo', valor: 'levar', primaria: true },
+      { rotulo: 'Pedir que esperem aqui', valor: 'esperar' },
+    ]);
+    if (r === 'levar') {
+      Refens.juntarAoGrupo(camp, lugar);
+      for (const m of criaturasNaIlha) { const i = enc.combatants.indexOf(m); if (i >= 0) enc.combatants.splice(i, 1); }
+      Refens.montarRefens(enc, camp, herois());
+      darVoo();
+      enc.say('acao', 'Os reféns vêm com o grupo, de mãos dadas, no meio da fila.');
+    } else {
+      Refens.esperarNaIlha(camp, lugar);
+      enc.say('acao', 'Os reféns ficam esperando na ilha.');
+    }
+    app.refresh();
+  }
+
   async function contaramNaCupula() {
     f.refensSoltos = true;
     v.refens = { ...(v.refens ?? {}), cupula: 'esperando' };
@@ -956,8 +1043,9 @@ export function criarIlhaDoVazio(app, config = {}) {
       '— Eram nove de nós. Os três devoradores trouxeram nove; havia mais, que ficaram pelo caminho. Depois de dias de testes, levaram os outros cinco.',
       '— Voaram para uma ilha com uma estátua enorme caída. A gente viu daqui.',
       `— Eles carregavam pedaços de pedra escura — diz o Wramble, o carpinteiro, que contou. — ${n}. Eram ${n}.`,
-      'Pedem que vocês busquem os outros. Vão esperar aqui.']);
+      'Pedem que vocês busquem os outros. Podem esperar aqui, se for preciso.']);
     pista(`Os presos da Cúpula: os fanáticos levaram outros cinco para a ilha da estátua tombada, e carregam ${n} pedaços do obelisco.`);
+    await levarOuDeixar('cupula', P.refens.map((_, i) => elenco[`refem${i + 1}`]).filter(Boolean));
   }
 
   async function contaramNaEstatua(soltos) {
@@ -968,6 +1056,7 @@ export function criarIlhaDoVazio(app, config = {}) {
       '— Abriram a boca da estátua com uma língua de metal, nos trancaram, fecharam e quebraram a língua.',
       '— Eu entendo um pouco da fala deles — diz a Nalpina. — Falaram em esconder a língua na nuvem venenosa.']);
     pista('Os presos da Estátua: os fanáticos querem os cérebros deles para um cérebro ancião novo, quando o ritual acabar, na Ânima de Ilvaash; a língua que abre a base foi escondida na nuvem venenosa.');
+    if (soltos) await levarOuDeixar('estatua');
   }
 
   async function furarMembrana(c) {
@@ -1035,7 +1124,7 @@ export function criarIlhaDoVazio(app, config = {}) {
     get encerrado() { return estado.encerrado; },
     interacoes,
     depoisDeMover(c) {
-      if (c && estado.explorando) c.movementLeftFt = MOVIMENTO;
+      if (c && estado.explorando) { c.movementLeftFt = MOVIMENTO; Refens.seguirOGrupo(enc, c); }
       return depoisDoPasso(c);
     },
     depoisDoPasso,
@@ -1048,6 +1137,7 @@ export function criarIlhaDoVazio(app, config = {}) {
     descansar,
     async iniciar() {
       for (const m of Object.values(elenco)) if (!enc.combatants.includes(m)) enc.addCombatant(m);
+      Refens.montarRefens(enc, camp, herois());
       darVoo();
       if (ilha === 'nematodeo') {
         // a boca nasce aberta (a FA a desenha fechada); fechada pela armadilha, só a membrana a reabre
@@ -1057,6 +1147,7 @@ export function criarIlhaDoVazio(app, config = {}) {
       if (ilha === 'estatua' && f.baseAberta) for (const q of P.porta) enc.field.porAresta(q.a.x, q.a.y, q.b.x, q.b.y, ARESTA.aberta);
       if (ilha === 'anima' && f.obeliscoEmPo) enc.field.alternarSobreposicao?.('obeliscoQuebrado', true);
       if (ilha === 'campo') montarMoinho();
+      if (ilha === 'anima') alturasDaAnima();
       if (ilha === 'miasma') {
         // a travessia até a ilhota: o grupo chega encostado nela
         const linhas = ['A névoa amarelo-esverdeada fecha em volta de vocês, grossa e amarga, por uns trinta metros de voo até um pedaço de chão no meio.'];

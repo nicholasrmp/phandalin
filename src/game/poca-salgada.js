@@ -28,6 +28,7 @@ import { darMarco } from './obelisco5-vila.js';
 import { darXp } from './nivel.js';
 import { tirarVooDoVazio } from './vazio.js';
 import { telaDeSubirNivel } from '../view/nivel-tela.js';
+import * as Refens from './refens-obelisco.js';
 
 const L = 26;
 const MOVIMENTO = 60;
@@ -70,8 +71,9 @@ export function criarPocaSalgada(app, config = {}) {
   const t = (o8.poca ??= { milha: 0 });
   const viuPelaOcular = Boolean(camp.obelisco7?.feito?.viuAPiscinaSalobra);
   const estado = { explorando: false, encerrado: false, verme: null };
-  const todos = () => enc.combatants.filter((c) => c.side === 'party' && !c.dead);
+  const todos = () => enc.combatants.filter((c) => c.side === 'party' && !c.dead && !c.refemDoObelisco);
   const herois = () => todos().filter((c) => c.hp > 0);
+  const refens = () => enc.combatants.filter((c) => c.refemDoObelisco && !c.dead);
   const longe = (c, tile, pes = 5) => (distanceFt(c.pos, tile) > pes ? `longe demais — chegue a ${pes} pés` : null);
   const painel = (texto, escolhas) => narrar(root, { formato: 'painel', paginas: [{ titulo: TITULO, texto: [].concat(texto) }], ...(escolhas ? { escolhas } : {}) });
 
@@ -93,6 +95,8 @@ export function criarPocaSalgada(app, config = {}) {
       const q = enc.casaLivreMaisProxima(PONTOS_POCA.grupo[i] ?? PONTOS_POCA.grupo[0]);
       if (q) h.pos = { ...h.pos, x: q.x, y: q.y };
     });
+    // os reféns no meio do grupo
+    for (const r of refens()) { const q = enc.casaLivreMaisProxima(PONTOS_POCA.grupo[0]); if (q) r.pos = { ...r.pos, x: q.x, y: q.y }; }
   }
 
   /** O VERME, que sai do escuro em cima de quem ele achou. */
@@ -180,7 +184,41 @@ export function criarPocaSalgada(app, config = {}) {
     estado.explorando = false;
     estado.encerrado = true;
     root.classList.remove('explorando');
+    Refens.guardarRefens(enc, camp);
     fazer(todos());
+  }
+
+  /**
+   * A SUBIDA COM OS REFÉNS: as mesmas seis milhas, de volta, e o mesmo teste de cada um por milha — os reféns também
+   * rolam (Atletismo ou Furtividade CD 14), e quem falha chama o verme, que vem atrás dele. Sem reféns, ou com o verme
+   * morto, sobe-se como antes, de uma vez (o livro só pede a escolta pela Poça porque há o verme nela).
+   */
+  async function subir() {
+    const ir = () => sair((v) => app.newEncounter({ ...app.config, modo: 'campanha', capitulo: 3, cenaDaVila: 'labirintoSalgado', chegada: 'poca', continuarCom: v }));
+    if (!refens().length || t.vermeMorto) { t.subindo = false; return ir(); }
+    t.subindo = true;
+    t.milhaSubida ??= 0;
+    while (t.milhaSubida < MILHAS) {
+      t.milhaSubida += 1;
+      juntar();
+      const linhas = [`Subindo: milha ${t.milhaSubida} de ${MILHAS}, com ${refens().length > 1 ? `${refens().length} reféns` : 'um refém'} no meio do grupo.`];
+      const falhou = [];
+      for (const h of [...herois(), ...refens()]) {
+        const r = testeDaMilha(enc.rng, h, viuPelaOcular && !h.refemDoObelisco);
+        linhas.push(`${h.name} (${SKILL_NAME[r.pericia]} ${r.total}) ${r.passou ? 'sobe sem chamar atenção' : 'se debate e esbarra num grumo de carne'}.`);
+        if (!r.passou) falhou.push(h);
+      }
+      if (falhou.length) {
+        linhas.push('Lá embaixo, alguma coisa enorme muda de rumo e sobe atrás de vocês.');
+        await painel(linhas, [{ rotulo: 'Às armas!', valor: 'luta', primaria: true }]);
+        ataqueDoVerme(falhou[0]);
+        return;
+      }
+      await painel(linhas);
+    }
+    t.subindo = false;
+    t.milhaSubida = 0;
+    return ir();
   }
 
   return {
@@ -198,11 +236,13 @@ export function criarPocaSalgada(app, config = {}) {
         ops.push({ rotulo: 'Tocar a estrela sem luz', icone: 'acao-disparada', detalhe: 'o Vazio Sem Fim', motivo: longe(c, tile),
           fazer: () => sair((v) => app.newEncounter({ ...app.config, modo: 'campanha', capitulo: 3, cenaDaVila: 'vazioCupula', continuarCom: v })) });
       }
-      ops.push({ rotulo: 'Subir de volta ao labirinto', icone: 'acao-disparada', detalhe: 'seis milhas', fazer: () => sair((v) => app.newEncounter({ ...app.config, modo: 'campanha', capitulo: 3, cenaDaVila: 'labirintoSalgado', chegada: 'poca', continuarCom: v })) });
+      ops.push({ rotulo: 'Subir de volta ao labirinto', icone: 'acao-disparada', detalhe: refens().length && !t.vermeMorto ? 'seis milhas, com os reféns' : 'seis milhas', fazer: () => subir() });
       return ops;
     },
-    depoisDeMover(c) { if (c && estado.explorando) c.movementLeftFt = MOVIMENTO; return false; },
+    depoisDeMover(c) { if (c && estado.explorando) { c.movementLeftFt = MOVIMENTO; Refens.seguirOGrupo(enc, c); } return false; },
+    subir,
     evento(ev) {
+      Refens.eventoDosRefens(enc, camp, ev);
       const v = estado.verme;
       if (!v) return;
       // o verme conta os turnos dele; no fim do segundo, vai embora
@@ -234,10 +274,14 @@ export function criarPocaSalgada(app, config = {}) {
         if (sobem.length && root) for (const txt of await telaDeSubirNivel(root, sobem)) enc.say('cura', txt);
       }
       estado.verme = null;
-      return descer();
+      return t.subindo ? subir() : descer();
     },
     async iniciar() {
       tirarVooDoVazio(todos());
+      Refens.montarRefens(enc, camp, herois());
+      // descer a Poça depois da Refração leva horas: o portal de Illithinoch fecha (`labirinto-salgado.js relogioDoPortal`)
+      const lab = camp.obelisco8?.lab;
+      if (lab?.feito?.refracaoVencida && !lab.feito.portalFechado && lab.portalMinutos != null) { lab.portalMinutos += 120; lab.feito.portalFechado = true; }
       for (const h of herois()) { const q = enc.casaLivreMaisProxima(PONTOS_POCA.grupo[herois().indexOf(h)] ?? PONTOS_POCA.grupo[0]); if (q) h.pos = { ...h.pos, x: q.x, y: q.y }; }
       if (t.fundo) return chegarAoFundo();
       if (!t.milha) {

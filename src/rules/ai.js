@@ -105,6 +105,8 @@ function scoreTarget(enc, monster, target) {
   // vai em quem leva a luz. Pesa como meia sala de distância — manda na escolha, mas não faz o bicho atravessar
   // a caverna inteira ignorando quem está colado nele.
   if (monster.alvoPreferido === target.id) score -= 60;
+  // ... ou vários: a Refração de Ilvaash mira os reféns que o grupo escolta, para desesperar quem os protege
+  if (monster.alvosPreferidos?.includes(target.id)) score -= 60;
   // QUEM JÁ ESTÁ COLADO NELE é o alvo. Sair de perto para procurar outro dá
   // ataque de oportunidade de graça, e atacar à distância com um inimigo ao
   // lado é com desvantagem — as duas coisas que um goblin não faria.
@@ -120,6 +122,15 @@ export function takeMonsterTurn(enc, monster) {
   // Incapacitado (atordoado, paralisado) não faz nada no turno.
   if (monster.dead || hasCondition(monster, 'inconsciente') || conditionEffects(monster).incapacitated) {
     enc.endTurn(monster);
+    return;
+  }
+
+  // QUEM NÃO LUTA (os reféns que o grupo escolta, `game/refens-obelisco.js`): foge de quem ameaça e se esquiva. Nunca
+  // ataca, e não fica colado em ninguém para não dar ataque de oportunidade de graça.
+  if (monster.naoCombatente) {
+    const ameacas = enc.enemiesOf(monster).filter((c) => !c.dead && c.hp > 0);
+    if (ameacas.length) retreat(enc, monster, ameacas);
+    if (!monster.dead && !enc.dodge(monster)) enc.endTurn(monster);
     return;
   }
 

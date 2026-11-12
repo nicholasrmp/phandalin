@@ -1096,5 +1096,233 @@ await teste('Refração: vencida, o labirinto treme e em B1 se abre o segundo po
   assert.equal(await cap7.cenaDoLugar('gigante'), null, 'a vila curada ainda manda descer pelo buraco');
 });
 
+const Refens = await import(P + 'game/refens-obelisco.js');
+
+await teste('Reféns: soltos na Cúpula, o grupo os leva; eles andam junto, não lutam (fogem e se esquivam) e ficam depois da luta', async () => {
+  escolher('levar');
+  const s = ilhaDoVazio('cupula');
+  await s.cena.iniciar();
+  const f = s.camp.obelisco8.vazio.feito.cupula;
+  for (const m of Object.values(s.cena.elenco)) if (m.defId !== 'plebeu') { m.hp = 0; m.dead = true; }
+  // solta os quatro (Atletismo CD 12 com o dado no máximo)
+  s.enc.rng.die = (n) => n;
+  for (let i = 0; i < 4; i++) {
+    const p = VZ.CUPULA.refens[i];
+    const h = s.party[0];
+    h.pos = { ...h.pos, ...s.enc.casaLivreMaisProxima(p) };
+    await s.cena.interacoes(p, null, h).find((o) => /Soltar/.test(o.rotulo)).fazer();
+  }
+  assert.ok(f.refensSoltos);
+  const rs = s.enc.combatants.filter((c) => c.refemDoObelisco);
+  assert.equal(rs.length, 4, 'os reféns não vieram com o grupo');
+  assert.ok(rs.every((r) => r.side === 'party' && r.naoCombatente && r.invocado?.auto && r.flyFt), 'o refém não é do grupo, não voa, ou luta');
+  assert.deepEqual(Refens.refensComOGrupo(s.camp).sort(), [...Refens.REFENS.cupula].sort());
+  // explorando, seguem quem anda
+  const h = s.party[0];
+  const longe = s.enc.casaLivreMaisProxima({ x: 15, y: 28 });
+  h.pos = { ...h.pos, ...longe };
+  await s.cena.depoisDeMover(h);
+  assert.ok(rs.every((r) => Math.max(Math.abs(r.pos.x - h.pos.x), Math.abs(r.pos.y - h.pos.y)) <= 3), 'os reféns ficaram para trás');
+  // na luta: fogem e se esquivam
+  const { takeMonsterTurn: turno } = await import(P + 'rules/ai.js');
+  const g = makeMonster('goblin', { ...rs[0].pos, x: rs[0].pos.x + 1 });
+  g.pos = { ...g.pos, ...s.enc.casaLivreMaisProxima(g.pos) };
+  g.side = 'foes';
+  s.enc.addCombatant(g);
+  s.enc.side = 'party';
+  for (const c of s.enc.combatants) { c.actionUsed = false; c.acted = false; c.movementLeftFt = 30; }
+  const antes = distanceFt(rs[0].pos, g.pos);
+  turno(s.enc, rs[0]);
+  assert.ok(hasCondition(rs[0], 'esquivando'), 'o refém não se esquivou');
+  assert.ok(distanceFt(rs[0].pos, g.pos) >= antes, 'o refém não fugiu');
+  assert.ok(!s.enc.log.some((l) => /Plebeu|Thawnia.*acerta|Thawnia.*erra/.test(l.text ?? '')), 'o refém atacou');
+  // a luta acaba: o goblin morre, e os reféns ficam
+  g.hp = 0; g.dead = true;
+  s.enc.over = false;
+  s.enc.checkEnd();
+  assert.ok(s.enc.combatants.filter((c) => c.refemDoObelisco).length === 4, 'os reféns foram embora com o fim da luta');
+  // e o que morre fica morto
+  rs[3].hp = 0;
+  s.cena.evento({ type: 'died', target: rs[3] });
+  assert.ok(Refens.estadoDosRefens(s.camp).mortos.includes(rs[3].name));
+  assert.equal(Refens.refensComOGrupo(s.camp).length, 3);
+});
+
+await teste('Reféns: deixados esperando ficam na ilha; voltando lá, o grupo os chama', async () => {
+  escolher('esperar');
+  const camp = { vila: { pistas: [], missoes: {} } };
+  const s = ilhaDoVazio('cupula', camp);
+  await s.cena.iniciar();
+  for (const m of Object.values(s.cena.elenco)) if (m.defId !== 'plebeu') { m.hp = 0; m.dead = true; }
+  s.enc.rng.die = (n) => n;
+  for (let i = 0; i < 4; i++) {
+    const p = VZ.CUPULA.refens[i];
+    s.party[0].pos = { ...s.party[0].pos, ...s.enc.casaLivreMaisProxima(p) };
+    await s.cena.interacoes(p, null, s.party[0]).find((o) => /Soltar/.test(o.rotulo)).fazer();
+  }
+  assert.equal(Refens.estadoDosRefens(camp).esperando.cupula.length, 4);
+  assert.equal(Refens.contaDosRefens(camp).ficaram.length, 4);
+  escolher('levar');
+  const s2 = ilhaDoVazio('cupula', camp);
+  await s2.cena.iniciar();
+  const h = s2.party[0];
+  await s2.cena.interacoes(h.pos, null, h).find((o) => /reféns que esperam/.test(o.rotulo)).fazer();
+  assert.equal(Refens.refensComOGrupo(camp).length, 4);
+  assert.equal(Refens.contaDosRefens(camp).ficaram.length, 0);
+});
+
+await teste('Reféns: a Refração os mira; subindo a Poça eles também rolam a milha e chamam o verme', async () => {
+  escolher();
+  const camp = comObeliscoEmPo({ refens: { comGrupo: { Wramble: 4, Shansa: 4 }, esperando: {}, mortos: [] } });
+  const s = labirinto({ campanha: camp, config: { chegada: 'poca' }, nivel: 12 });
+  await s.cena.iniciar();
+  const ref = s.enc.combatants.find((c) => c.defId === 'refracaoDeIlvaash');
+  const rs = s.enc.combatants.filter((c) => c.refemDoObelisco);
+  assert.equal(rs.length, 2);
+  assert.deepEqual([...ref.alvosPreferidos].sort(), rs.map((r) => r.id).sort(), 'a Refração não mira os reféns');
+  // a Poça: subindo com reféns e o verme vivo, a milha pede teste deles também
+  escolher('luta');
+  const camp2 = { vila: { pistas: [], missoes: {} }, obelisco8: { feito: {}, poca: { milha: 6, fundo: true }, refens: { comGrupo: { Wramble: 4 }, esperando: {}, mortos: [] } } };
+  const p = poca(camp2);
+  await p.cena.iniciar();
+  p.enc.rng.die = () => 1;
+  await p.cena.subir();
+  assert.ok(p.cena.estado.verme, 'o verme não veio atrás de quem falhou');
+  assert.ok(camp2.obelisco8.poca.subindo, 'a subida não ficou marcada');
+});
+
+await teste('O portal: vencida a Refração, ele fecha em uma hora de passos; o descanso do covil o fecha; antes, aos 7 dias, fica instável', async () => {
+  escolher();
+  const s = labirinto({ campanha: comObeliscoEmPo(), config: { chegada: 'poca' }, nivel: 12 });
+  await s.cena.iniciar();
+  const ref = s.enc.combatants.find((c) => c.defId === 'refracaoDeIlvaash');
+  s.enc.applyDamage(ref, 999, 'radiante', s.party[0], { magico: true });
+  s.enc.checkEnd();
+  await s.cena.fimDoCombate('vitoria');
+  const t = s.camp.obelisco8.lab;
+  assert.equal(t.portalMinutos, 0);
+  const h = s.party[0];
+  for (let i = 0; i < 59; i++) await s.ir(h, L.salas.B22[i % 2]);
+  assert.ok(!t.feito.portalFechado, 'fechou antes da hora');
+  h.pos = { ...h.pos, ...L.portal };
+  assert.match(s.op(L.portal, h, /Voltar a Illithinoch/).detalhe, /fecha em 1 minuto/);
+  await s.ir(h, L.salas.B22[0]);
+  assert.ok(t.feito.portalFechado, 'o portal não fechou em uma hora');
+  h.pos = { ...h.pos, ...L.portal };
+  assert.equal(s.op(L.portal, h, /Voltar a Illithinoch/).motivo, 'o portal fechou');
+  assert.ok(s.op(L.portal, h, /Atravessar o segundo portal/));
+  // o covil, depois da Refração: oito horas de sono fecham o portal
+  const camp = { vila: { pistas: [], missoes: {} }, obelisco8: { lab: { feito: { refracaoVencida: true }, mortos: [], portas: {}, portalMinutos: 5 } } };
+  const c = labirinto({ variante: 'covilLowarnizel', criar: criarCovilLowarnizel, campanha: camp });
+  await c.cena.iniciar();
+  await c.cena.descansar();
+  assert.ok(camp.obelisco8.lab.feito.portalFechado);
+  // antes da Refração, com 7 dias no Reino Distante, o portal treme: Arcanismo CD 18
+  escolher();
+  const camp3 = { vila: { pistas: [], missoes: {} }, obelisco8: { lab: { feito: {}, mortos: [], portas: {}, dia: 3 }, vazio: { descansos: 4, feito: {}, mortos: [], visitadas: [], aVista: [] } } };
+  const s3 = labirinto({ campanha: camp3 });
+  await s3.cena.iniciar();
+  const h3 = s3.party[0];
+  h3.pos = { ...h3.pos, ...L.portal };
+  const firmar = s3.op(L.portal, h3, /portal instável/);
+  assert.ok(firmar && !s3.op(L.portal, h3, /^Voltar a Illithinoch$/), 'o portal não ficou instável aos 7 dias');
+  s3.enc.rng.die = () => 1;
+  await firmar.fazer();
+  assert.equal(s3.op(L.portal, h3, /portal instável/).motivo, 'só depois de passar um dia');
+});
+
+await teste('Socorro: vencido pela Refração, o grupo fica colado em B22; quatro heróis novos chegam pelo portal, vencem a Refração e soltam os antigos', async () => {
+  escolher('socorro');
+  const s = labirinto({ campanha: comObeliscoEmPo(), config: { chegada: 'poca' }, nivel: 12 });
+  await s.cena.iniciar();
+  const antigos = s.party.map((c) => c.id);
+  for (const h of s.party) { h.hp = 0; }
+  await s.cena.fimDoCombate('derrota');
+  const soc = s.camp.obelisco8.socorro;
+  assert.equal(soc?.presos?.length, 4, 'os antigos não ficaram presos');
+  assert.ok(soc.presos.every((p) => p.hp === 1 && !p.dead));
+  const novos = s.app.novaCena?.continuarCom ?? [];
+  assert.equal(novos.length, 4, 'o socorro não veio');
+  assert.ok(novos.every((c) => !antigos.includes(c.id) && c.level === 12), 'o socorro repetiu herói ou veio em outro nível');
+  // o socorro entra no labirinto e vai a B22: a Refração espera lá
+  escolher();
+  const mapa = mapaDo('labirintoSalgado');
+  const field = montarCampo(mapa);
+  novos.forEach((c, i) => { c.pos = { x: mapa.grupo[i].x, y: mapa.grupo[i].y, f: 1 }; });
+  const app = appDeMentira(s.camp);
+  const enc = new Encounter({ battlefield: field, party: novos, foes: [], rng: makeRng(4), emboscada: null, reinforcements: () => null });
+  app.enc = enc;
+  const cena = criarLabirintoSalgado(app, { cenaDaVila: 'labirintoSalgado' });
+  enc.onEvent = (ev) => cena.evento?.(ev);
+  await cena.iniciar();
+  const h = novos[0];
+  h.pos = { ...h.pos, ...enc.casaLivreMaisProxima(L.salas.B22[5]) };
+  await cena.depoisDeMover(h);
+  const ref = enc.combatants.find((c) => c.defId === 'refracaoDeIlvaash');
+  assert.ok(ref && !cena.explorando, 'a Refração não esperava o socorro em B22');
+  enc.applyDamage(ref, 999, 'radiante', h, { magico: true });
+  enc.checkEnd();
+  await cena.fimDoCombate('vitoria');
+  h.pos = { ...h.pos, ...enc.casaLivreMaisProxima(L.bastoesB22) };
+  const op = cena.interacoes(L.bastoesB22, null, h).find((o) => /colados na parede/.test(o.rotulo));
+  assert.ok(op && !op.motivo, 'não dá para soltar os antigos');
+  await op.fazer();
+  assert.equal(enc.combatants.filter((c) => c.side === 'party' && antigos.includes(c.id)).length, 4, 'os antigos não voltaram ao grupo');
+  assert.equal(soc.presos.length, 0);
+});
+
+await teste('Vazio: vagar sem rumo chama 1d6 ardis do intelecto; vencidos, duas ilhas novas à vista', async () => {
+  escolher('vagar', 'vagar');
+  const camp = { vila: { pistas: [], missoes: {} }, obelisco8: { vazio: { ilha: 'ponte', visitadas: ['cupula', 'ponte'], aVista: [], feito: {}, mortos: [], descansos: 0 } } };
+  const s = ilhaDoVazio('ponte', camp);
+  await s.cena.iniciar();
+  for (const m of Object.values(s.cena.elenco)) { m.hp = 0; m.dead = true; }
+  await s.cena.viajar();
+  const ardis = s.enc.combatants.filter((c) => c.defId === 'armadilhaDeIntelecto' && !c.dead);
+  assert.ok(ardis.length >= 1 && ardis.length <= 6 && ardis.every((a) => a.side === 'foes'), `${ardis.length} ardis`);
+  for (const a of ardis) { a.hp = 0; a.dead = true; }
+  s.enc.checkEnd();
+  await s.cena.fimDoCombate('vitoria');
+  assert.ok(camp.obelisco8.vazio.aVista.length >= 1, 'a deriva não mostrou ilha nenhuma');
+});
+
+await teste('Ânima: a plataforma e A4 ficam 3 m acima do chão e o estrado 6 m; quem voa não paga a subida', async () => {
+  escolher();
+  const s = ilhaDoVazio('anima', { vila: { pistas: [], missoes: {} }, obelisco6: { fragmentos: { talhundereth: true } } });
+  await s.cena.iniciar();
+  const f = s.enc.field;
+  const ob = VZ.ANIMA.obelisco;
+  assert.equal(f.heightAt(VZ.ANIMA.a4[0].x, VZ.ANIMA.a4[0].y), Math.max(Math.abs(VZ.ANIMA.a4[0].x - ob.x), Math.abs(VZ.ANIMA.a4[0].y - ob.y)) <= 2 ? 4 : 2);
+  assert.equal(f.heightAt(VZ.ANIMA.grupo[0].x, VZ.ANIMA.grupo[0].y), 2, 'a plataforma não está no alto');
+  assert.equal(f.heightAt(VZ.ANIMA.tubos.x, VZ.ANIMA.tubos.y), 0, 'o refeitório não está no chão');
+  // voando, sobe-se à plataforma sem custo a mais
+  const h = s.party[0];
+  const r = s.enc.reachableFor(h);
+  assert.ok(r.size > 20, 'o herói não alcança quase nada');
+});
+
+await teste('Shalfi: convencido no covil, o dragão sobe cavando por baixo da cova de B9 e luta com o grupo; depois desce', async () => {
+  escolher();
+  const camp = { vila: { pistas: [], missoes: {} }, obelisco8: { lab: { feito: { shalfiVisto: true }, mortos: [], portas: {} } } };
+  const c = labirinto({ variante: 'covilLowarnizel', criar: criarCovilLowarnizel, campanha: camp });
+  await c.cena.iniciar();
+  c.enc.rng.die = (n) => n;
+  await c.cena.depoisDaConversa(c.cena.elenco.lowarnizel, 'irAoShalfi');
+  assert.ok(camp.obelisco8.lab.feito.dragaoVaiAoShalfi, 'o dragão não foi convencido');
+  escolher('luta');
+  camp.obelisco8.lab.feito.shalfiVisto = false;
+  const s = labirinto({ campanha: camp });
+  await s.cena.iniciar();
+  await s.ir(s.party[0], L.salas.B9[10]);
+  const drag = s.enc.combatants.find((x) => x.chaveDoLabirinto === 'lowarnizel');
+  assert.ok(drag && drag.side === 'party' && drag.invocado?.auto, 'o dragão não subiu do lado do grupo');
+  assert.equal(s.cena.elenco.shalfi.side, 'foes');
+  for (const f of [s.cena.elenco.shalfi, s.cena.elenco.jitterjaws]) { f.hp = 0; f.dead = true; }
+  s.enc.checkEnd();
+  await s.cena.fimDoCombate('vitoria');
+  assert.ok(!s.enc.combatants.includes(drag), 'o dragão ficou no labirinto');
+  assert.ok(camp.obelisco8.lab.mortos.includes('shalfi') && !camp.obelisco8.lab.mortos.includes('lowarnizel'));
+});
+
 console.log(`\n${total - falhas}/${total} testes passaram.`);
 if (falhas) process.exit(1);

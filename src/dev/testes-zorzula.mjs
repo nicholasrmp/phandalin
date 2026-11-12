@@ -568,9 +568,10 @@ await teste('o refeitório SENTADO à mesa (o livro): todos nos bancos, de frent
   // a mesa entre as fileiras barra o passo e não a vista, e dá cobertura
   assert.ok(!s.field.passa(15, 7, 15, 8, 'passo') && s.field.passa(15, 7, 15, 8, 'visao'));
   for (const f of s.cena.elenco.ferais) assert.ok(s.field.blocksMove(f.pos.x, f.pos.y + 1), `${f.name} está numa bigorna`);
-  // o parapeito aceso, por baixo das fichas
+  // o parapeito aceso, POR CIMA das fichas como peça de frente: o tabuleiro o apaga quando alguém do grupo está debaixo
+  // dele (`tabuleiro-topo.js _tapadas`), e quem está no vestíbulo continua à vista
   const parapeito = s.field.sobreposicoes.find((o) => o.id === 'parapeito');
-  assert.ok(parapeito.ligada && !parapeito.frente);
+  assert.ok(parapeito.ligada && parapeito.frente && parapeito.modo === 'peca');
 });
 
 await teste('as minas: o túnel lateral se anda do túnel de cima ao penhasco, e a visão segue o traço da caverna', () => {

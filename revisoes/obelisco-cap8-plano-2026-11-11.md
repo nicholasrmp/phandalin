@@ -365,3 +365,21 @@ jeito. O cérebro do tubo de A2 já se tirava.
 **Fica de fora, dito:** a Refração mirando reféns; o ardil do intelecto de quem voa sem rumo (aqui se viaja de ilha em ilha); o "Bound" dos guardiões-escudo (sem dono no Vazio); a altura da Ânima (todos voam); a hora do portal fechando; convencer o dragão a ir cavar atrás do
 Shalfi (ele prefere esperar, e o jogo o deixa esperar); o grupo de socorro se a Refração vencer; e o lado de lá do segundo
 portal, que o livro deixa para outra aventura.
+
+## 11. O que ainda ficava de fora (2026-11-12, a pedido do dono)
+
+O dono pediu tudo o que estava listado como de fora, menos o som (fica para depois). Provas em `testes-obelisco8.mjs`
+(69 testes) e `testes-zorzula.mjs`.
+
+| O livro | No jogo |
+|---|---|
+| Os oito reféns aceitam esperar, ou vêm junto; a Refração os mira para desesperar o grupo; o grupo é saudado em dobro se os trouxe | `refens-obelisco.js`: soltos, o grupo escolhe levar ou deixar (e chama os que esperam quando volta à ilha). Quem vem é plebeu do lado do grupo, sozinho e sem lutar (foge e se esquiva, `ai.js naoCombatente`), fica depois da luta, segue o grupo, sobe a Poça rolando a milha (com o verme atrás de quem falha), é mirado pela Refração (`alvosPreferidos`), e o epílogo conta quem voltou, quem morreu e quem ficou. **Decisão nossa**: quem ficou esperando fica no Vazio quando o portal fecha. A névoa do Miasma pega o refém também |
+| O portal de Illithinoch fica aberto 7 dias, depois instável (Arcanismo CD 18; falhou, 24 horas); vencida a Refração, fecha em uma hora | Os dias são os do labirinto e os descansos no Vazio; instável, "Firmar o portal" pede o teste, e falhar trava até passar um dia. Depois da Refração, cada passo explorando é um minuto (**decisão nossa**: o labirinto não contava minutos), o descanso do covil e a descida da Poça o fecham; fechado, sem Mudança de Plano no jogo, resta o segundo portal |
+| O segundo portal leva ao resto do Reino Distante (outra aventura) | Atravessá-lo é um fim de campanha narrado, com os ganchos do livro em palavras nossas |
+| Se a Refração ou os fanáticos vencem, os heróis ficam presos no labirinto e a Gwyn manda buscar heróis em Neverwinter | `socorro-obelisco.js`: a derrota oferece o socorro; os antigos ficam colados em B22 com 1 PV; quatro heróis do rol que não estavam no grupo, no mesmo nível, chegam a B1; a Refração os espera em B22 (se o obelisco já é pó); vencida, solta-se os antigos, que voltam ao grupo |
+| 1d6 ardis do intelecto por hora para quem vaga sem rumo | "Vagar pelo Vazio" no menu da viagem: uma hora, 1d6 ardis em volta do grupo, e duas ilhas novas à vista depois |
+| A Ânima tem quatro alturas (0, +3 m, +3 m, +6 m) | `alturasDaAnima`: a plataforma e A4 a dois níveis, o estrado a quatro; dá cobertura e corta a visão, e quem voa não paga subida |
+| O casal prefere esperar o Shalfi; o grupo pode convencê-los a ir | Persuasão CD 15 (**nossa**) no covil; convencidos, sobem cavando sob a cova de B9 quando o grupo chega, lutam do lado dele e descem depois |
+
+**Fica de fora, dito:** o som de ambiente (o dono deixou para depois) e o "Bound" dos guardiões-escudo, que o próprio
+livro diz não ter amuleto nem dono na Cúpula.

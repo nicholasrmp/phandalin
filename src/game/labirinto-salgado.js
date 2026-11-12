@@ -65,6 +65,8 @@ import { telaDeSubirNivel } from '../view/nivel-tela.js';
 import { guardar } from './comercio.js';
 import { PONTOS_LABIRINTO as P, PONTOS_COVIL as PC } from './labirinto-salgado-mapa.js';
 import { mostraAMudanca } from './transformacao.js';
+import * as Refens from './refens-obelisco.js';
+import { oferecerSocorro, estadoDoSocorro } from './socorro-obelisco.js';
 
 const MOVIMENTO = 60;
 const TITULO = 'O Labirinto Salgado';
@@ -162,7 +164,7 @@ export function criarLabirintoSalgado(app, config = {}) {
   const t = estadoDoLabirinto(camp);
   const vila = (camp.vila ??= { pistas: [], missoes: {} });
   const estado = { explorando: false, encerrado: false, lutando: null };
-  const todos = () => enc.combatants.filter((c) => c.side === 'party' && !c.dead);
+  const todos = () => enc.combatants.filter((c) => c.side === 'party' && !c.dead && !c.refemDoObelisco);
   const herois = () => todos().filter((c) => c.hp > 0);
   const painel = (texto, escolhas) => narrar(root, { formato: 'painel', paginas: [{ titulo: TITULO, texto: [].concat(texto) }], ...(escolhas ? { escolhas } : {}) });
   const pista = (txt) => { if (!(vila.pistas ??= []).includes(txt)) vila.pistas.push(txt); enc.say('acao', `Pista: ${txt}`); };
@@ -315,6 +317,7 @@ export function criarLabirintoSalgado(app, config = {}) {
     estado.explorando = false;
     estado.encerrado = true;
     root.classList.remove('explorando');
+    Refens.guardarRefens(enc, camp);
     fazer(todos());
   }
 
@@ -360,11 +363,35 @@ export function criarLabirintoSalgado(app, config = {}) {
     app.refresh();
   }
 
+  // ------------------------------------------------------------ o relógio do portal ----
+  // DEPOIS DA REFRAÇÃO, o portal de Illithinoch encolhe e fecha em uma hora (o livro). O labirinto não conta minutos, e
+  // aqui eles se contam no passo: cada passo explorando é um minuto (a marcha cautelosa, com o labirinto tremendo), o
+  // descanso do covil são oito horas e descer a Poça são horas. Fechado, quem ficou do lado de cá está preso: o jogo não
+  // tem a Mudança de Plano, então resta o segundo portal, para o resto do Reino Distante.
+  async function relogioDoPortal(minutos) {
+    if (!t.feito.refracaoVencida || t.feito.portalFechado || t.portalMinutos == null) return false;
+    const antes = t.portalMinutos;
+    t.portalMinutos += minutos;
+    if (antes < 45 && t.portalMinutos >= 45 && t.portalMinutos < 60) enc.say('acao', 'Lá na entrada, o portal de Illithinoch já está do tamanho de uma porta. Não falta muito.');
+    if (t.portalMinutos < 60) return false;
+    t.feito.portalFechado = true;
+    await painel('Longe, para os lados da entrada, um estalo seco, como uma bolha que estoura. O portal de Illithinoch se fechou.');
+    pista('O portal de Illithinoch fechou: o caminho de casa se foi. Resta o outro portal, em B1, para o resto do Reino Distante.');
+    return false;
+  }
+  /** Os dias no Reino Distante: os do labirinto (o covil e o Jomlus) e os descansos no Vazio. */
+  const diasNoReino = () => (t.dia ?? 0) + (camp.obelisco8?.vazio?.descansos ?? 0);
+
   // ------------------------------------------------------------- os gatilhos ----
   async function depoisDoPasso() {
     aplicarLobos();
     if (!estado.explorando) return false;
     await mublineshFechaPortas();
+    if (await relogioDoPortal(1)) return true;
+    // O SOCORRO entra em B22, onde a Refração guarda os presos (ela só nasce assim se o obelisco já virou pó)
+    const soc = estadoDoSocorro(camp);
+    if (soc?.presos?.length && !t.feito.refracaoVencida && !elenco.refracao && camp.obelisco8?.vazio?.feito?.anima?.obeliscoEmPo
+      && herois().some((h) => salaNoLabirinto(h.pos) === 'B22')) return chegaARefracao({ peloSocorro: true });
     const hs = herois();
     const em = (sala) => hs.find((h) => salaNoLabirinto(h.pos) === sala);
     const pronto = (sala) => da(sala).filter((m) => m.side === 'neutro');
@@ -415,6 +442,30 @@ export function criarLabirintoSalgado(app, config = {}) {
       return luta(da('B18'));
     }
     // B9: o Shalfi, B10: o Jomlus, B21: a Ashripask — só a chegada; o resto é conversa
+    // O DRAGÃO CONVENCIDO sobe cavando por baixo da cova, e a luta com o Shalfi é dos três contra os dois
+    if (em('B9') && t.feito.dragaoVaiAoShalfi && !t.feito.dragaoSubiu && vivo(elenco.shalfi) && elenco.shalfi.side === 'neutro') {
+      t.feito.dragaoSubiu = true;
+      t.feito.shalfiVisto = true;
+      const dono = hs[0];
+      const aliados = [];
+      for (const [k, id, nome] of [['lowarnizel', 'lowarnizel', null], ['gossa', 'mago', 'Gossa']]) {
+        if (t.mortos.includes(k)) continue;
+        const m = makeMonster(id, { ...P.shalfi });
+        const q = enc.casaLivreMaisProxima({ ...P.shalfi, f: m.pos.f });
+        if (!q) continue;
+        m.pos = { ...m.pos, x: q.x, y: q.y };
+        if (nome) m.name = nome;
+        m.chaveDoLabirinto = k;
+        m.side = 'party';
+        m.invocado = { donoId: dono.id, spellId: 'aliadoDoCovil', auto: true };
+        enc.addCombatant(m);
+        aliados.push(m);
+      }
+      estado.aliadosDoCovil = aliados;
+      await painel(['O chão da cova estremece debaixo da pá do Shalfi. Ele para, sorri, e o sorriso some: a terra se abre de baixo para cima, e uma cabeça violeta enorme sai do buraco, com a Gossa agarrada ao pescoço.',
+        '— ACHEI! — grita o Shalfi, sem medo nenhum, e o bolo de dentes do teto despenca sobre o dragão.'], [{ rotulo: 'Às armas!', valor: 'luta', primaria: true }]);
+      return luta([elenco.shalfi, elenco.jitterjaws].filter(vivo));
+    }
     if (em('B9') && vivo(elenco.shalfi) && elenco.shalfi.side === 'neutro' && !t.feito.shalfiVisto) {
       t.feito.shalfiVisto = true;
       await painel('Num canto, uma cova rasa de borda preta. Um homem de roupa em farrapos cava com uma pá enferrujada, assobiando. Pendurado no teto acima dele, um bolo enorme de dentes e carne balança devagar, olhando a pá.');
@@ -521,6 +572,7 @@ export function criarLabirintoSalgado(app, config = {}) {
 
   // --------------------------------------------------------------- o evento ----
   function evento(ev) {
+    Refens.eventoDosRefens(enc, camp, ev);
     if (ev.type === 'downed' && ev.target && hasCondition(ev.target, 'loboParietal') && hasCondition(ev.target, 'caido')) removeCondition(ev.target, 'caido');
     if (['damage', 'died', 'downed'].includes(ev.type) && estado.flumphs?.length) fugirFlumphs();
     if (ev.type !== 'died' && ev.type !== 'damage') return;
@@ -569,14 +621,20 @@ export function criarLabirintoSalgado(app, config = {}) {
   /** De onde o verme sobe: o meio da poça. */
   const CASA_DO_VERME = { x: P.poca.x - 1, y: P.poca.y - 1 };
 
-  async function chegaARefracao() {
+  async function chegaARefracao({ peloSocorro = false } = {}) {
     const ref = makeMonster('refracaoDeIlvaash', { ...CASA_DA_REFRACAO });
     ref.chaveDoLabirinto = 'refracao';
     elenco.refracao = ref;
     enc.addCombatant(ref);
     const vermeVivo = !camp.obelisco8?.poca?.vermeMorto;
-    await painel(['Vocês saem do líquido para a beira da poça, e o ar do labirinto pesa mais do que antes. Diante da porta da frente, a única saída, flutua um cérebro enorme e meio transparente, como uma lembrança de cérebro, com garras compridas penduradas embaixo dele.',
-      'A voz dele não entra pelos ouvidos. Ela já está lá dentro, cansada e enorme: vocês tiraram uma coisa dele, e agora ele vai tirar tudo de vocês. Sair, ninguém sai.'],
+    // OS REFÉNS: ela os mira de propósito, com a garra que alcança 36 m, para desesperar quem os protege (o livro)
+    const refens = enc.combatants.filter((c) => c.refemDoObelisco && !c.dead);
+    if (refens.length) ref.alvosPreferidos = refens.map((r) => r.id);
+    await painel([peloSocorro
+      ? 'O ar de B22 pesa mais do que no resto do labirinto. Entre vocês e a poça, onde os outros estão colados na parede, flutua um cérebro enorme e meio transparente, com garras compridas penduradas embaixo dele.'
+      : 'Vocês saem do líquido para a beira da poça, e o ar do labirinto pesa mais do que antes. Diante da porta da frente, a única saída, flutua um cérebro enorme e meio transparente, como uma lembrança de cérebro, com garras compridas penduradas embaixo dele.',
+      'A voz dele não entra pelos ouvidos. Ela já está lá dentro, cansada e enorme: vocês tiraram uma coisa dele, e agora ele vai tirar tudo de vocês. Sair, ninguém sai.',
+      ...(refens.length ? ['As garras dele se viram, devagar, para os de Phandalin que vocês trouxeram. — Primeiro, os pequenos — diz a voz. — Para vocês verem.'] : [])],
     [{ rotulo: 'Às armas!', valor: 'luta', primaria: true }]);
     luta([ref]);
     // o verme púrpura, se ainda vive, sobe da poça no começo da 3ª rodada (o motor chama com o número da rodada)
@@ -592,24 +650,60 @@ export function criarLabirintoSalgado(app, config = {}) {
     return true;
   }
 
+  /**
+   * O LADO DE LÁ DO SEGUNDO PORTAL. O livro não o escreve: dá só ganchos para outra aventura (os portos seguros dos
+   * exploradores do Reino Distante, a vingança de Ilvaash). Aqui ele é um FIM: quem atravessa deixa Phandalin para trás,
+   * curada, e a campanha termina com o que o grupo leva consigo. Texto nosso.
+   */
+  async function atravessarOSegundoPortal() {
+    const r = await painel(['O segundo portal não tem borda: as cores de dentro escorrem para fora e voltam. Do outro lado não há labirinto nem ilhas, só a distância, enorme, e coisas que nadam nela.',
+      'Quem atravessar não volta por este caminho. Phandalin está curada, e ninguém lá vai saber o que foi feito de vocês.'], [
+      { rotulo: 'Ainda não', valor: 'nao', primaria: true },
+      { rotulo: 'Atravessar', valor: 'sim' },
+    ]);
+    if (r !== 'sim') return;
+    estado.encerrado = true;
+    camp.obelisco8.feito.segundoPortal = true;
+    await narrar(root, { formato: 'tela', paginas: [{ titulo: 'Além do segundo portal', texto: [
+      'O portal se fecha atrás de vocês sem barulho. A luz aqui não vem de lugar nenhum e não ilumina nada.',
+      'Dizem que há portos seguros no Reino Distante, para quem sabe procurar: uma colônia de fungos que choram com rostos pequenos, uma abadia de nagas que guardam segredos. Dizem também que Ilvaash não esquece quem o feriu.',
+      'Em Phandalin, a vila curada conta a história de quem a salvou e não voltou. A história de vocês continua, mas não aqui.',
+    ] }] });
+    app.encerrarPartida();
+  }
+
   async function venceuARefracao() {
     t.feito.refracaoVencida = true;
     (camp.obelisco8.feito ??= {}).refracaoVencida = true;
     await painel(['O cérebro fantasma se desfaz como névoa num vento que não existe. O labirinto inteiro estremece, das paredes ao chão, e em algum lugar longe alguma coisa enorme geme.',
       'O que ainda mora aqui entendeu o golpe que Ilvaash levou. Ninguém vai incomodar vocês na saída: cada um está ocupado salvando a própria pele.',
       'Lá na entrada, o portal de Illithinoch começou a encolher. Ao lado dele, outro se abriu, cheio de cores que não deviam existir juntas.']);
-    pista('A Refração de Ilvaash foi destruída. Em B1, o portal de Illithinoch está fechando; ao lado dele, abriu-se outro, para o resto do Reino Distante. É hora de voltar para casa.');
+    pista('A Refração de Ilvaash foi destruída. Em B1, o portal de Illithinoch está fechando; ao lado dele, abriu-se outro, para o resto do Reino Distante. É hora de voltar para casa: o portal fecha em uma hora.');
+    t.portalMinutos = 0;
   }
 
   async function fimDoCombate(outcome) {
     const lutou = estado.lutando ?? [];
     if (outcome !== 'vitoria') {
       estado.encerrado = true;
+      // vencidos pela Refração, o livro manda o grupo de socorro (`socorro-obelisco.js`)
+      if (elenco.refracao && lutou.includes(elenco.refracao) && await oferecerSocorro(app, camp, enc.combatants.filter((c) => c.side === 'party' && !c.refemDoObelisco && !c.invocado), 'refracao')) return;
       await narrar(root, { formato: 'tela', paginas: [{ titulo: TITULO, texto: ['As paredes de carne se fecham devagar sobre os corpos, como sobre todos os outros que o labirinto já engoliu.'] }] });
       app.encerrarPartida();
       return;
     }
     for (const f of lutou) if ((f.dead || f.fugiu) && f.chaveDoLabirinto && !f.chaveDoLabirinto.startsWith('cranio')) t.mortos.push(f.chaveDoLabirinto);
+    // o dragão e a Gossa, que subiram para pegar o Shalfi, descem de volta ao covil
+    for (const a of estado.aliadosDoCovil ?? []) {
+      if (a.dead && !t.mortos.includes(a.chaveDoLabirinto)) t.mortos.push(a.chaveDoLabirinto);
+      const i = enc.combatants.indexOf(a);
+      if (i >= 0) enc.combatants.splice(i, 1);
+    }
+    if (estado.aliadosDoCovil?.length && t.mortos.includes('shalfi')) {
+      t.feito.shalfiMortoPeloDragao = true;
+      await painel('O dragão sacode a terra das escamas. — Agora a casa fica quieta. — Ele e a Gossa descem de volta pelo buraco, sem pressa.');
+    }
+    estado.aliadosDoCovil = [];
     // os flumphs que morreram não voltam
     const flumphsMortos = (estado.flumphs ?? []).filter((f) => f.dead);
     if (flumphsMortos.length) {
@@ -941,13 +1035,56 @@ export function criarLabirintoSalgado(app, config = {}) {
       ops.push({ rotulo: 'Mergulhar na poça', icone: 'acao-disparada', detalhe: 'seis milhas até o fundo', motivo: longe(c, tile),
         fazer: () => sair((v) => app.newEncounter({ ...app.config, modo: 'campanha', capitulo: 3, cenaDaVila: 'pocaSalgada', continuarCom: v })) });
     }
+    // OS PRESOS DO SOCORRO, colados na parede de B22 (`socorro-obelisco.js`): soltos, voltam ao grupo como estão
+    const soc = estadoDoSocorro(camp);
+    if (soc?.presos?.length && salaNoLabirinto(tile) === 'B22' && distanceFt(tile, P.bastoesB22) <= 15 && distanceFt(c.pos, P.bastoesB22) <= 15) {
+      const hostis = enc.combatants.some((m) => m.side === 'foes' && !m.dead && salaNoLabirinto(m.pos) === 'B22');
+      ops.push({ rotulo: 'Soltar os que estão colados na parede', icone: 'acao-usarObjeto', detalhe: soc.presos.map((p) => p.name).join(', '), motivo: hostis ? 'há inimigo na sala' : null, fazer: async () => {
+        const voltam = soc.presos.splice(0);
+        for (const p of voltam) {
+          const q = enc.casaLivreMaisProxima(P.bastoesB22);
+          p.pos = { x: q.x, y: q.y, f: 1 };
+          p.side = 'party';
+          p.movementLeftFt = MOVIMENTO;
+          enc.addCombatant(p);
+          soc.soltos.push(p.name);
+        }
+        await painel(`A carne da parede cede devagar, com um som de boca que se abre. ${voltam.map((p) => p.name).join(', ')} ${voltam.length > 1 ? 'caem' : 'cai'} no chão, fracos e vivos. Ainda dava tempo.`);
+        app.refresh();
+      } });
+    }
     // B1: voltar a Illithinoch
     if (aqui(P.portal, tile)) {
       if (t.feito.refracaoVencida) {
         ops.push({ rotulo: 'Olhar o segundo portal', icone: 'acao-procurar', motivo: longe(c, tile, 15), fazer: () => painel(
           'Ao lado do portal de Illithinoch, que encolhe devagar, abriu-se outro: dentro dele, cores que não têm nome giram umas por dentro das outras. É o resto do Reino Distante, aberto. Quem entrar ali vai longe de casa, e este capítulo acaba aqui.') });
       }
-      ops.push({ rotulo: 'Voltar a Illithinoch', icone: 'acao-disparada', detalhe: t.feito.refracaoVencida ? 'pelo portal, que está fechando' : 'pelo portal', motivo: longe(c, tile), fazer: () => sair((v) => app.newEncounter({ ...app.config, modo: 'campanha', capitulo: 3, cenaDaVila: 'illithinoch', chegada: 'portal', continuarCom: v })) });
+      const voltar = () => sair((v) => app.newEncounter({ ...app.config, modo: 'campanha', capitulo: 3, cenaDaVila: 'illithinoch', chegada: 'portal', continuarCom: v }));
+      // O PORTAL INSTÁVEL: aberto há 7 dias (os dias passados no Reino Distante), ele treme e não leva ninguém. Reabre com
+      // Inteligência (Arcanismo) CD 18 de quem toca; falhou, ninguém tenta de novo antes de passar um dia (o livro).
+      const dias = diasNoReino();
+      const instavel = !t.feito.refracaoVencida && dias - (t.feito.portalReabertoDia ?? 0) >= 7;
+      if (t.feito.portalFechado) {
+        ops.push({ rotulo: 'Voltar a Illithinoch', icone: 'acao-disparada', motivo: 'o portal fechou', fazer: () => {} });
+      } else if (instavel) {
+        const tentou = t.feito.portalFalhouDia === dias;
+        ops.push({ rotulo: 'Firmar o portal instável', icone: 'acao-procurar', detalhe: 'Arcanismo CD 18', motivo: longe(c, tile) ?? (tentou ? 'só depois de passar um dia' : null), fazer: async () => {
+          const r = rolarPericia(enc.rng, c, 'arcanismo');
+          if (r.total < 18) {
+            t.feito.portalFalhouDia = dias;
+            await painel(`${c.name} (${SKILL_NAME.arcanismo} ${r.total}) põe as mãos na borda do portal, e ela foge dos dedos como água. O portal treme mais forte. Ninguém consegue firmá-lo antes de amanhã.`);
+            return;
+          }
+          t.feito.portalReabertoDia = dias;
+          await painel(`${c.name} (${SKILL_NAME.arcanismo} ${r.total}) segura a borda do portal e a puxa para o lugar, como quem estica um pano. Ele para de tremer.`);
+          voltar();
+        } });
+      } else {
+        ops.push({ rotulo: 'Voltar a Illithinoch', icone: 'acao-disparada', detalhe: t.feito.refracaoVencida ? `pelo portal, que fecha em ${Math.max(1, 60 - (t.portalMinutos ?? 0))} minutos` : 'pelo portal', motivo: longe(c, tile), fazer: voltar });
+      }
+      // O SEGUNDO PORTAL: o resto do Reino Distante, que o livro deixa para outra aventura. Atravessá-lo encerra a
+      // campanha aqui, com o que se sabe do lado de lá (`atravessarOSegundoPortal`).
+      if (t.feito.refracaoVencida) ops.push({ rotulo: 'Atravessar o segundo portal', icone: 'acao-disparada', detalhe: 'o resto do Reino Distante', motivo: longe(c, tile), fazer: () => atravessarOSegundoPortal() });
     }
     return ops;
   }
@@ -980,7 +1117,7 @@ export function criarLabirintoSalgado(app, config = {}) {
     get encerrado() { return estado.encerrado; },
     interacoes,
     depoisDeMover(c) {
-      if (c && estado.explorando) c.movementLeftFt = MOVIMENTO;
+      if (c && estado.explorando) { c.movementLeftFt = MOVIMENTO; Refens.seguirOGrupo(enc, c); }
       return depoisDoPasso(c);
     },
     depoisDoPasso,
@@ -1008,6 +1145,8 @@ export function criarLabirintoSalgado(app, config = {}) {
       if (config.chegada === 'buraco') for (const h of herois()) { const q = enc.casaLivreMaisProxima(P.buracoB16); if (q) h.pos = { ...h.pos, x: q.x, y: q.y }; }
       // quem sobe da poça sai na beira dela, junto dos bastões
       if (config.chegada === 'poca') for (const h of herois()) { const q = enc.casaLivreMaisProxima(P.bastoesB22); if (q) h.pos = { ...h.pos, x: q.x, y: q.y }; }
+      // os reféns que o grupo escolta (`refens-obelisco.js`)
+      Refens.montarRefens(enc, camp, herois());
       // A REFRAÇÃO espera quem sobe da Poça com o obelisco em pó
       if (config.chegada === 'poca' && camp.obelisco8?.vazio?.feito?.anima?.obeliscoEmPo && !t.feito.refracaoVencida) {
         prepararExploracao();
@@ -1034,7 +1173,7 @@ export function criarCovilLowarnizel(app, config = {}) {
   const t = estadoDoLabirinto(camp);
   const vila = (camp.vila ??= { pistas: [], missoes: {} });
   const estado = { explorando: false, encerrado: false, lutando: null };
-  const todos = () => enc.combatants.filter((c) => c.side === 'party' && !c.dead);
+  const todos = () => enc.combatants.filter((c) => c.side === 'party' && !c.dead && !c.refemDoObelisco);
   const herois = () => todos().filter((c) => c.hp > 0);
   const painel = (texto, escolhas) => narrar(root, { formato: 'painel', paginas: [{ titulo: 'O covil do dragão', texto: [].concat(texto) }], ...(escolhas ? { escolhas } : {}) });
   const pista = (txt) => { if (!(vila.pistas ??= []).includes(txt)) vila.pistas.push(txt); enc.say('acao', `Pista: ${txt}`); };
@@ -1072,6 +1211,7 @@ export function criarCovilLowarnizel(app, config = {}) {
     estado.explorando = false;
     estado.encerrado = true;
     root.classList.remove('explorando');
+    Refens.guardarRefens(enc, camp);
     app.newEncounter({ ...app.config, modo: 'campanha', capitulo: 3, cenaDaVila: 'labirintoSalgado', chegada: 'buraco', continuarCom: todos() });
   }
 
@@ -1086,6 +1226,12 @@ export function criarCovilLowarnizel(app, config = {}) {
     }
     for (const k of Object.keys(t.portas)) t.portas[k] = false;
     linhas.push('Lá em cima, as portas mentais que estavam abertas já se fecharam sozinhas.');
+    // depois da Refração, oito horas de sono fecham o portal de Illithinoch
+    if (t.feito.refracaoVencida && !t.feito.portalFechado && t.portalMinutos != null) {
+      t.portalMinutos += 480;
+      t.feito.portalFechado = true;
+      linhas.push('Quando vocês acordam, já sabem sem precisar ver: o portal de Illithinoch fechou enquanto dormiam.');
+    }
     await painel(linhas);
     app.refresh();
     if (passarUmDia(t)) return shalfiNoCovil();
@@ -1162,7 +1308,10 @@ export function criarCovilLowarnizel(app, config = {}) {
       shalfi: {
         fala: 'Então é isso o barulho. — O dragão olha o teto. — Que venha. A Gossa e eu preferimos esperar aqui do que ir cavar atrás dele.',
         ao: () => { t.feito.lowarnizelAvisado = true; pista('O Lowarnizel e a Gossa sabem do Shalfi e preferem esperá-lo no covil.'); },
-        opcoes: [{ texto: '…', vai: 'oi' }],
+        opcoes: [
+          { texto: 'Melhor ir atrás dele agora, antes que ele chegue. (Persuasão, CD 15)', fim: 'irAoShalfi', requer: () => (t.mortos.includes('shalfi') ? 'o Shalfi já morreu' : t.feito.dragaoVaiAoShalfi ? 'já combinado' : null) },
+          { texto: '…', vai: 'oi' },
+        ],
       },
     },
   });
@@ -1215,11 +1364,26 @@ export function criarCovilLowarnizel(app, config = {}) {
       }
       prepararExploracao();
     },
-    evento() {},
+    evento(ev) { Refens.eventoDosRefens(enc, camp, ev); },
     dialogoDe: (npc) => (npc === elenco.lowarnizel && npc.side === 'neutro' ? arvore() : null),
     async depoisDaConversa(npc, fim) {
       if (fim === 'atacar') return luta();
       if (fim === 'descansar') return descansar();
+      // CONVENCER O DRAGÃO A IR ATRÁS DO SHALFI (o livro: o casal prefere esperar, e o grupo pode convencê-los a ir; a
+      // CD é nossa). Convencidos, eles sobem cavando por baixo da cova de B9 quando o grupo chegar lá (`labirinto`).
+      if (fim === 'irAoShalfi') {
+        const quem = herois().reduce((a, b) => (skillBonus(b, 'persuasao') > skillBonus(a, 'persuasao') ? b : a));
+        const r = rolarPericia(enc.rng, quem, 'persuasao');
+        if (r.total < 15) {
+          await painel(`${quem.name} (${SKILL_NAME.persuasao} ${r.total}) fala de pegar o Shalfi desprevenido. — Não — diz o Lowarnizel. — Ele vem até nós, e nós esperamos. Aqui é a nossa casa.`);
+          return null;
+        }
+        t.feito.dragaoVaiAoShalfi = true;
+        await painel([`${quem.name} (${SKILL_NAME.persuasao} ${r.total}) convence. O dragão pensa um tempo longo e solta o ar. — Está bem. Subam e vão até o buraco dele. Quando ouvirmos vocês lá em cima, a Gossa e eu subimos por baixo, cavando.`,
+          '— Façam barulho — diz a Gossa. — E saiam da frente.']);
+        pista('O Lowarnizel e a Gossa vão subir cavando por baixo da cova do Shalfi, em B9, quando o grupo estiver lá.');
+        return null;
+      }
       return null;
     },
     elenco,
@@ -1227,6 +1391,7 @@ export function criarCovilLowarnizel(app, config = {}) {
     descansar,
     async iniciar() {
       for (const m of Object.values(elenco)) if (!enc.combatants.includes(m)) enc.addCombatant(m);
+      Refens.montarRefens(enc, camp, herois());
       if (!t.feito.covilVisto) {
         t.feito.covilVisto = true;
         await painel('A corda desce seis metros até uma sala abobadada, coberta de um muco escorregadio que cheira a gordura rançosa. A única saída é o buraco por onde vocês vieram. No meio, enrolado, um dragão de escamas violeta abre um olho. Ao lado dele, uma mulher de túnica já tem as mãos erguidas, prontas para conjurar.');

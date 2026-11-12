@@ -19,6 +19,7 @@
 // O estado mora em `app.campanha.obelisco7`.
 
 import { narrar } from '../view/narrativa.js';
+import { contaDosRefens } from './refens-obelisco.js';
 
 /** O capítulo 7 começa quando os guardiões dos três fragmentos caíram (o marco do 9º nível, `obelisco6-marcos.js`). */
 export const capitulo7Ativo = (camp) => Boolean(camp?.obelisco6?.marco9);
@@ -38,11 +39,19 @@ export function criarCapitulo7NaVila(ctx) {
     const o8 = camp.obelisco8;
     if (o8.feito.epilogo) return;
     o8.feito.epilogo = true;
+    // OS REFÉNS (`refens-obelisco.js`): quem voltou com o grupo é festa em dobro; quem ficou no Vazio, ou morreu, é luto
+    const { voltaram, mortos, ficaram } = contaDosRefens(camp);
+    const dosRefens = [];
+    if (voltaram.length) dosRefens.push(`E com vocês voltam ${voltaram.join(', ')}. A vila, que os dava por perdidos, para tudo para recebê-los: há abraço, choro e festa até tarde, e é a vocês que todos levantam o copo, duas vezes.`);
+    if (mortos.length) dosRefens.push(`${mortos.join(', ')} não ${mortos.length > 1 ? 'voltaram' : 'voltou'}. As famílias agradecem, de olhos vermelhos, por vocês terem tentado.`);
+    if (ficaram.length) dosRefens.push(`${ficaram.join(', ')} ${ficaram.length > 1 ? 'ficaram' : 'ficou'} esperando numa ilha do Vazio, e o portal fechou. Na vila ninguém diz nada, mas todo mundo sabe.`);
     await narrar(app.root, { formato: 'tela', paginas: [{ titulo: 'Phandalin', texto: [
       'A vila está como era. As casas que tinham entortado estão retas, as janelas no lugar, e ninguém na rua tem nada de estranho na pele ou nos olhos. Há um alívio no ar que dá para sentir, como depois de uma febre que passa.',
       'A irmã Garaele está no santuário, varrendo, e ri quando vê vocês. A Halia Thornton voltou a contar moedas e a fazer perguntas demais. Quem foi tomado pelo ritual voltou a ser quem era.',
+      ...dosRefens,
       'A vila inteira quer ouvir a história, e ninguém mais do que a Gwyn Oresong, que quer cada detalhe do Reino Distante para os livros dela. Em Phandalin, daqui em diante, a porta de toda casa está aberta para vocês.',
     ] }] });
+    if (voltaram.length) ctx.registro.push(`Voltaram com o grupo: ${voltaram.join(', ')}.`);
     ctx.registro.push('O grupo volta a Phandalin depois de destruir a Refração de Ilvaash: a vila está curada.');
     ctx.pista('Phandalin está curada: o ritual dos fanáticos acabou com o obelisco em pó e a Refração de Ilvaash destruída.');
   }

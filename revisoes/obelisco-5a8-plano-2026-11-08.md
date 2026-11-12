@@ -228,11 +228,13 @@ cena a cena). O que faltava, e entrou:
   os livros e o baú da suíte; os barris, as escadas e os sacos do depósito, a passarela, o vagonete virado; os relevos,
   o mezanino e a plataforma do Santuário).
 
-O que fica de fora, dito: o SOM de ambiente das cenas (o jogo ainda não toca som por região, em mapa nenhum); a peça
-"Overhang" do posto (o parapeito por cima do vestíbulo, onde os vigias ficam — desenhá-lo por cima das fichas os
-esconderia); os túneis laterais das minas (as peças Tunnel1/2/3 abrem passagens que o livro deixa ao mestre, sem
-conteúdo) e as versões da esteira parada (NoConveyor) e do elevador e do pedestal com energia, cujo momento o livro não
-dá. As paredes são as arestas derivadas da cena do Foundry: no posto, de paredes retas, batem; nas minas a visão segue o
+O que fica de fora, dito: o SOM de ambiente das cenas (o jogo ainda não toca som por região, em mapa nenhum; o dono o
+deixou para depois). A peça "Overhang" do posto ENTROU em 2026-11-12, como peça de frente (`frente`, `modo: 'peca'`): o
+tabuleiro abre um furo em volta de cada ficha e a apaga quando alguém do grupo está debaixo dela, então ninguém some; e a
+plataforma do Santuário com energia ("EnergyLift") brilha enquanto o Ruxithid vive. Ainda de fora, e por quê: das três peças de túnel da FA, a Tunnel3 já está no jogo (o túnel lateral); a Tunnel1 refaz
+a fossa e a Tunnel2 apaga o santuário de Ilsensine, duas salas do livro, então usá-las seria tirar conteúdo da aventura.
+A "NoConveyor" tira a esteira, que o livro tem e o jogo usa; a esteira GIRANDO é um vídeo (`ConveyorMines.webm`) que a cena
+do Foundry cita e o pacote baixado não traz. O pedestal com energia já estava (`pedestalEnergia`). As paredes são as arestas derivadas da cena do Foundry: no posto, de paredes retas, batem; nas minas a visão segue o
 contorno da caverna em degraus de casa.
 
 **O restante da conferência, e o que o dono viu na tela** (2026-11-08). O refeitório aparecia com oito goblins numa fila

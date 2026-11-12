@@ -1847,8 +1847,9 @@ export class Encounter {
         const k = c.concentrating && SPELLS[c.concentrating.spellId]?.kind;
         if (k === 'levitar' || k === 'invocar') c.concentrating = null;
       }
-      // O encontro acaba e as criaturas invocadas vão embora com ele.
-      this.dispensarInvocados(() => true, 'o encontro acabou');
+      // O encontro acaba e as criaturas invocadas vão embora com ele — menos quem só anda com o grupo (os reféns do
+      // Obelisco, `game/refens-obelisco.js`), que continua no tabuleiro.
+      this.dispensarInvocados((c) => !c.invocado.ficaAposALuta, 'o encontro acabou');
       this.onEvent({ type: 'end', outcome: this.outcome });
     }
     return this.over;

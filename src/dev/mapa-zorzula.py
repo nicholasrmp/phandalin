@@ -107,9 +107,13 @@ def luzes_da_fa(b, trocas=None, fora=()):
     return out
 
 
-def peca(id_, nome, x, y, w, h, ligada=False):
-    """Uma PEÇA DE ARTE do pacote da FA que o roteiro acende (`mapa.sobreposicoes`): o suporte vazio, o cofre vazio."""
-    return {'id': id_, 'url': f'/mapas/fa/{nome}.jpg', 'x': x, 'y': y, 'w': w, 'h': h, 'ligada': ligada}
+def peca(id_, nome, x, y, w, h, ligada=False, frente=False):
+    """Uma PEÇA DE ARTE do pacote da FA que o roteiro acende (`mapa.sobreposicoes`): o suporte vazio, o cofre vazio.
+    `frente`: desenhada POR CIMA das fichas, e apagada quando alguém do grupo está debaixo dela (o parapeito)."""
+    d = {'id': id_, 'url': f'/mapas/fa/{nome}.jpg', 'x': x, 'y': y, 'w': w, 'h': h, 'ligada': ligada}
+    if frente:
+        d.update({'frente': True, 'modo': 'peca'})
+    return d
 
 
 # O TÚNEL LATERAL das minas, casa a casa (lido da peça "Tunnel3" sobre a arte)
@@ -313,7 +317,7 @@ def posto():
                           peca('semEspada', 'zorzula-sem-espada', 16, 13, 2, 1), peca('semTesouro', 'zorzula-sem-tesouro', 24, 7, 3, 1),
                           # O PARAPEITO (o livro: liga as duas seteiras, por cima da porta, com a alavanca). A FA o dá como
                           # peça de cima; aqui ele fica aceso e por BAIXO das fichas, porque os vigias ficam em cima dele
-                          peca('parapeito', 'zorzula-parapeito', 13, 3, 6, 3, ligada=True)],
+                          peca('parapeito', 'zorzula-parapeito', 13, 3, 6, 3, ligada=True, frente=True)],
     }
     pontos = {
         'grupo': [{'x': 15, 'y': 1}, {'x': 16, 'y': 1}, {'x': 14, 'y': 1}, {'x': 17, 'y': 1}],
@@ -568,7 +572,7 @@ def santuario():
             # O PEDESTAL, quando a estátua desce para lutar: com a energia verde enquanto o Ruxithid a comanda, apagado
             # depois que ele morre. E o POÇO VAZIO, quando a plataforma está lá embaixo, na ponte.
             'sobreposicoes': [peca('pedestalVazio', 'santuario-pedestal-vazio', 9, 7, 3, 3), peca('pedestalEnergia', 'santuario-pedestal-energia', 9, 7, 3, 3),
-                              peca('pocoVazio', 'santuario-poco-vazio', 9, 17, 3, 3)],
+                              peca('pocoVazio', 'santuario-poco-vazio', 9, 17, 3, 3), peca('pocoEnergia', 'santuario-poco-energia', 9, 17, 3, 3)],
             # o traço da FA (as quinas em diagonal do salão); a parede invisível da borda da lava não corta a visão
             'tracos': b['tracos'], 'tracosTipo': b['tracosTipo']}
     pontos = {

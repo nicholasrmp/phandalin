@@ -190,8 +190,9 @@ export function criarZorzulaSantuario(app, config = {}) {
       return;
     }
     z.santuario = 'vencido';
-    // o cristal apaga: o pedestal perde a energia
+    // o cristal apaga: o pedestal perde a energia, e a plataforma também (ela continua a subir e descer, mas apagada)
     enc.field.alternarSobreposicao?.('pedestalEnergia', false);
+    enc.field.alternarSobreposicao?.('pocoEnergia', false);
     enc.field.alternarSobreposicao?.('pedestalVazio', true);
     const linhas = [
       'O Ruxithid cai, e o cristal da cabeça dele racha com um som de sino. Por um instante, o salão inteiro canta: um coro sem boca, de dentro da pedra.',
@@ -278,6 +279,7 @@ export function criarZorzulaSantuario(app, config = {}) {
       if (poco?.ligada && herois().some((h) => salaDoSantuario(h.pos) === 'elevador')) {
         z.santuarioPlataforma = true;
         enc.field.alternarSobreposicao('pocoVazio', false);
+        if (z.santuario !== 'vencido') enc.field.alternarSobreposicao('pocoEnergia', true);
         enc.say('acao', 'Um zumbido sobe pelo poço, e a plataforma de pedra aparece, devagar, e para no lugar com um baque surdo.');
         app.refresh();
       }
@@ -305,6 +307,10 @@ export function criarZorzulaSantuario(app, config = {}) {
       if (z.santuario === 'vencido') enc.field.alternarSobreposicao?.('pedestalVazio', true);
       // PRESOS, o grupo chega desacordado, e a plataforma está lá embaixo: o poço fica vazio até alguém ir até ela
       if (config.comoPresos && !z.santuarioPlataforma) enc.field.alternarSobreposicao?.('pocoVazio', true);
+      // A PLATAFORMA COM ENERGIA (a peça "EnergyLift" da FA): o cristal do Ruxithid move o santuário, e enquanto ele vive a
+      // plataforma brilha do mesmo verde do pedestal; vencido, ela fica apagada. O livro não dá o momento: é o do pedestal.
+      const pocoVazio = enc.field.sobreposicoes?.find((o) => o.id === 'pocoVazio')?.ligada;
+      if (z.santuario !== 'vencido' && !pocoVazio) enc.field.alternarSobreposicao?.('pocoEnergia', true);
       prepararExploracao();
     },
   };
