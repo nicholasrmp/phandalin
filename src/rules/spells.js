@@ -98,6 +98,9 @@ import { MAGIAS_XGE } from './magias-livro-xge.js';
 import { MAGIAS_TCE } from './magias-livro-tce.js';
 // as ações que uma magia concede (o sopro do Sopro do Dragão, o meteoro, a estrela): magias internas, fora de toda lista
 import { MAGIAS_CONCEDIDAS, concedidasDe } from './magias-concedidas.js';
+import { ACOES_RACIAIS } from './racas-motor.js';
+import { MAGIAS_DE_ITENS } from './magias-de-itens.js';
+import { magiasDosItens } from './itens-que-conjuram.js';
 
 /**
  * A esfera que nasce num cruzamento de linhas, pela regra de grade do Livro do Mestre. Ficam de fora quem sai de quem lança (`centradoEmSi`), quem conta a partir
@@ -110,6 +113,8 @@ export const SPELLS = {
   ...MAGIAS_XGE,
   ...MAGIAS_PHB,
   ...MAGIAS_CONCEDIDAS,
+  ...ACOES_RACIAIS,
+  ...MAGIAS_DE_ITENS,
   chamaSagrada: {
     id: 'chamaSagrada', name: 'Chama Sagrada', level: 0, school: 'evocação', fonte: 'srd',
     castTime: 'action', rangeFt: 60, kind: 'save', save: 'dex',
@@ -498,8 +503,8 @@ export const SPELLS = {
   },
   restauracaoMenor: {
     id: 'restauracaoMenor', name: 'Restauração Menor', level: 2, school: 'abjuração', fonte: 'srd',
-    castTime: 'action', rangeFt: 5, kind: 'restaurar', remove: ['paralisado', 'cego', 'envenenado'],
-    desc: 'Toque num aliado: tira a paralisia, a cegueira ou o envenenamento.',
+    castTime: 'action', rangeFt: 5, kind: 'restaurar', remove: ['paralisado', 'cego', 'envenenado', 'febreDoRiso', 'pesteDoEsgoto', 'podridaoDaVista', 'doencaDoOtyugh'],
+    desc: 'Toque num aliado: tira a paralisia, a cegueira, o envenenamento ou uma doença.',
   },
   passoDasSombras: {
     id: 'passoDasSombras', name: 'Passo das Sombras', level: 0, school: 'conjuração', fonte: 'propria',
@@ -1645,12 +1650,14 @@ export function magiasProntas(actor) {
   const sc = actor.spellcasting;
   // A AÇÃO QUE UMA MAGIA CONCEDE vale também para quem não conjura (o guerreiro tocado pelo Sopro do Dragão).
   const concedidas = concedidasDe(actor).filter((id) => SPELLS[id]);
-  if (!sc) return concedidas;
+  // AS MAGIAS DOS ITENS (a varinha, o cajado): valem também para quem não conjura (`itens-que-conjuram.js`)
+  const dosItens = magiasDosItens(actor).filter((id) => SPELLS[id]);
+  if (!sc) return [...new Set([...concedidas, ...dosItens])];
   // As magias RACIAIS (Legado Infernal, Magia Drow) entram na lista de quem as tem: uma vez por descanso longo, sem espaço.
   const raciais = [...(actor.magiasRaciais ?? []), ...(actor.magiasDeInvocacao ?? [])].map((m) => m.magia);
   // PASSO DO CAOS (surto de magia selvagem): vale enquanto a condição durar.
   const doSurto = (actor.conditions ?? []).some((c) => c.id === 'passoDoCaos') ? ['passoDoCaos'] : [];
-  return [...new Set([...(sc.cantrips ?? []), ...(sc.prepared ?? []), ...(sc.sempreProntas ?? []), ...raciais, ...(actor.magiasDeCaracteristica ?? []), ...doSurto, ...concedidas])]
+  return [...new Set([...(sc.cantrips ?? []), ...(sc.prepared ?? []), ...(sc.sempreProntas ?? []), ...raciais, ...(actor.magiasDeCaracteristica ?? []), ...doSurto, ...concedidas, ...dosItens])]
     .filter((id) => SPELLS[id]);
 }
 

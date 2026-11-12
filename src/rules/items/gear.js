@@ -158,10 +158,10 @@ export const GEAR = {
     rangeFt: 20, acao: 'acao',
   }),
   antitoxina: pilha('antitoxina', 'Antitoxina', 50, 0, 'Uma ação para beber: vantagem em resistências contra veneno por uma hora.', {
-    tipo: 'poção', art: 'cura', consumivel: 'beneficio', acao: 'acao',
+    tipo: 'poção', art: 'cura', consumivel: 'condicao', condicao: 'antitoxina', rodadas: 600, acao: 'acao',
   }),
-  venenoBasico: pilha('venenoBasico', 'Veneno básico', 100, 0, 'Uma ação para untar uma lâmina. O próximo acerto soma 1d4 de veneno, CD 10 de Constituição para metade.', {
-    tipo: 'poção', art: 'fogo', consumivel: 'untar', damage: '1d4', damageType: 'veneno', acao: 'acao',
+  venenoBasico: pilha('venenoBasico', 'Veneno básico', 100, 0, 'Uma ação para untar a lâmina da mão. Por um minuto, o próximo acerto de corte ou ponta pede Constituição CD 10, ou 1d4 de veneno.', {
+    tipo: 'poção', art: 'fogo', consumivel: 'untar', veneno: { cd: 10, dano: '1d4' }, acao: 'acao',
   }),
   oleo: pilha('oleo', 'Óleo', 0.1, 1, 'Meio litro. Arremesso: 5 de fogo se algo acender depois. Ou seis horas de lâmpada.', {
     tipo: 'poção', art: 'fogo', consumivel: 'arremesso', damage: '5', damageType: 'fogo',

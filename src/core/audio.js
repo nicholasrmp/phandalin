@@ -972,7 +972,8 @@ const FAMILIAS_COM_NOTA = new Set(['cura', 'protecao', 'reforco', 'movimento', '
 // de 24 magias, e três notas não as separavam.
 export const GRAUS_DO_DANO = [-2, 0, 3, -4, 5];
 /** O sopro tem a altura do ELEMENTO: os dois dragões de ácido soam igual entre si e diferente dos de raio, que é o que a mesa espera. */
-const TOM_DO_SOPRO = { fogo: 0, 'ácido': -3, 'elétrico': 4, veneno: -5, frio: 7 };
+// os cinco do Fizban (o draconato de gema) ganham altura própria: sem ela, cairiam todos no 0 do fogo
+const TOM_DO_SOPRO = { fogo: 0, 'ácido': -3, 'elétrico': 4, veneno: -5, frio: 7, 'energético': 2, radiante: 9, 'psíquico': -7, trovejante: 5, 'necrótico': -9 };
 
 // `tom`: a nota que a magia traz escrita — a dos livros, que o importador escolhe entre as menos usadas do timbre dela
 // (`importar-magias.mjs notasDasMagias`), para cem magias novas não se empilharem nas notas que o id sorteia.

@@ -42,15 +42,17 @@ import { CONDITIONS, hasCondition, maxHpEfetivo, DEGRAUS_DE_EXAUSTAO } from '../
 import { CONDICOES_DE_ENCANTO } from '../rules/passivas.js';
 import { formasDisponiveis } from '../rules/forma-selvagem.js';
 import { MONSTERS } from '../rules/monsters.js';
-import { WEAPONS, consumiveisDe } from '../rules/equipment.js';
+import { WEAPONS, consumiveisDe, itemDeId } from '../rules/equipment.js';
 import { ARMORS } from '../rules/items/index.js';
 import { isAdjacent } from '../core/grid.js';
 import { criarMinimapa } from './minimapa.js';
 import { getSpell, SPELLS, magiasProntas, dadosDaMagia } from '../rules/spells.js';
 import { tiposDoGrimorio } from '../rules/subclasses-livros.js';
 import { usoLivreDe } from '../rules/passivas.js';
+import { magiasDosItens } from '../rules/itens-que-conjuram.js';
+import { concedidasDe } from '../rules/magias-concedidas.js';
 import { UTIL_FORA } from '../rules/utilidade.js';
-import { spellSaveDc, spellAttackBonus } from '../rules/abilities.js';
+import { spellSaveDc, spellAttackBonus, abilityMod as modDoAtributo, proficiencyBonus as bonusDeProficiencia } from '../rules/abilities.js';
 import { previsaoDeAtaque, chanceD20, pct } from '../rules/odds.js';
 import { HABILIDADES_DE_ALVO, temHabilidadeDeAlvo, descritorDaHabilidade, estadoDoFurtivo } from '../rules/habilidades-alvo.js';
 import { formatModifier } from '../core/dice.js';
@@ -632,7 +634,7 @@ export class Hud {
     const ficha = (c, ativo) => {
       const down = c.dead || hasCondition(c, 'inconsciente');
       const fracao = Math.max(0, c.hp / maxHpEfetivo(c));
-      const retrato = makePortrait(c.look, 32);
+      const retrato = makePortrait(c.look ?? c.defId, 32);
       retrato.className = 'pixel';
       // A condição também aparece aqui: a ordem de turno é onde o olho está
       // quando a vez troca, e "atordoado" muda o plano da rodada inteira.
@@ -747,7 +749,7 @@ export class Hud {
     const down = c.dead || hasCondition(c, 'inconsciente');
     const fracao = Math.max(0, c.hp / maxHpEfetivo(c));
     // 36 e não 44: o retrato mora dentro do slot de madeira de .ficha-retrato.
-    const retrato = makePortrait(c.look, 36);
+    const retrato = makePortrait(c.look ?? c.defId, 36);
     retrato.className = 'pixel';
 
     const dono = c.invocado ? enc.combatants.find((x) => x.id === c.invocado.donoId) : null;
@@ -922,13 +924,16 @@ export class Hud {
     const explorando = Boolean(this.handlers.explorando?.());
     // Exceção: a Cura pelas Mãos entre as lutas é o uso normal do paladino, e
     // ela não cobra ação fora do combate; o azulejo fica também aqui.
-    const fixas = explorando ? this.tilesDeAlvoAliado(enc, c, mode) : [
+    const fixas = explorando ? [...this.tilesDeAlvoAliado(enc, c, mode), this.tileDoOlhar(c)].filter(Boolean) : [
       ...this.tilesAtaques(enc, c, mode, alvo),
       ...this.tilesComuns(enc, c, mode),
       ...this.tilesDeAlvoAliado(enc, c, mode),
       ...this.tilesItens(enc, c, mode),
     ];
-    const magias = c.spellcasting ? this.magiasDe(c, mode) : [];
+    // a varinha na mão de quem não conjura também abre a lista de magias (`itens-que-conjuram.js`)
+    // quem não conjura também tem magia na barra quando um ITEM a dá, ou uma AÇÃO CONCEDIDA (o sopro do Sopro do Dragão no
+    // guerreiro, as ações das raças dos livros): sem `concedidasDe`, o sopro do draconato do Fizban guerreiro nunca aparecia
+    const magias = c.spellcasting || magiasDosItens(c).length || concedidasDe(c).length ? this.magiasDe(c, mode) : [];
     // Sobra o que fazer enquanto houver azulejo habilitado — em qualquer
     // página de magias, não só na que está à vista. Conta também o que custa
     // "Livre", como a Ação Surpreendente.
@@ -1104,6 +1109,29 @@ export class Hud {
       });
     });
     return tiles;
+  }
+
+  /**
+   * DESVIAR OS OLHOS da medusa (Honna, Talhundereth) e do brutamonte umbral (o Vazio): interruptor de graça, só com um
+   * olhar no campo que não seja do grupo. Aparece também EXPLORANDO, com o dono ainda neutro: o primeiro olhar vem no
+   * começo da luta, antes de qualquer turno, e só escapa dele quem desviou os olhos antes de entrar. Sem tecla.
+   */
+  tileDoOlhar(c) {
+    const doOlhar = this.enc?.combatants?.find((o) => !o.dead && o.side !== c.side && (o.traits?.includes('olharPetrificante') || o.aura?.olhar));
+    if (!doOlhar) return null;
+    const ligado = Boolean(c.desviaOlhar);
+    return this.tile(iconeDeAcao('ardilosaEsconder'), {
+      ativo: ligado,
+      classe: 'interruptor',
+      onClick: () => this.handlers.onAction?.({ kind: 'feature', featureId: 'desviarOlhar', modo: ligado ? 'desligar' : 'ligar' }),
+      selo: ligado ? 'LIG' : 'DESL',
+      dica: {
+        nome: 'Desviar os olhos',
+        texto: `Interruptor: ligado, no começo de cada turno você não olha para ${doOlhar.name} e não faz o teste do olhar. Em troca, ataca quem tem o olhar com desvantagem, e ele o ataca com vantagem.`,
+        custo: 'Livre',
+        linhas: [['Estado', ligado ? 'olhos desviados' : 'olhando']],
+      },
+    });
   }
 
   tilesComuns(enc, c, mode) {
@@ -1352,18 +1380,25 @@ export class Hud {
         'Fora da luta', () => c.resources?.arcaneRecovery > 0 && !enc.combatants.some((o) => o.side !== c.side && !o.dead),
         'arcaneRecovery'],
     };
-    // DESVIAR OS OLHOS da medusa (Honna, Talhundereth): interruptor de graça, só com uma no campo.
-    if (this.enc?.combatants?.some((o) => !o.dead && o.side !== c.side && o.traits?.includes('olharPetrificante'))) {
-      const ligado = Boolean(c.desviaOlhar);
-      comum('ardilosaEsconder', 'Desviar os olhos', 'Interruptor: ligado, no começo de cada turno você não olha para a medusa e não faz o teste do olhar dela. Em troca, ataca a medusa com desvantagem e ela o ataca com vantagem.',
-        'Livre', { kind: 'feature', featureId: 'desviarOlhar', modo: ligado ? 'desligar' : 'ligar' }, false, null, null,
-        { ativo: ligado, classe: 'interruptor', selo: ligado ? 'LIG' : 'DESL', linhas: [['Estado', ligado ? 'olhos desviados' : 'olhando']] });
-    }
+    const olhar = this.tileDoOlhar(c);
+    if (olhar) tiles.push(olhar);
     // A BÊNÇÃO DE DUMATHOIN (Cripta dos Talhund): visão verdadeira por um minuto, uma vez por descanso longo.
     if (c.bencaoDeDumathoin) {
       const semCarga = c.actionUsed || !(c.resources?.visaoDeDumathoin > 0);
       comum('magia-visaoNoEscuro', 'Visão de Dumathoin', 'Por um minuto, você tem visão verdadeira a até 36 m: vê o invisível, no escuro (o mágico também) e através de ilusões. Uma vez por descanso longo.',
         'Ação', { kind: 'feature', featureId: 'visaoDeDumathoin' }, semCarga, 'visaoDeDumathoin');
+    }
+    // CRISTAIS MENTAIS (o Obelisco): um interruptor por cristal da mochila, para quem conjura. Armado, vale na próxima
+    // magia de uma ação que ele servir, e então se apaga; um só por vez.
+    if (c.spellcasting) {
+      for (const e of c.bag ?? []) {
+        const dados = itemDeId(e.id)?.dados;
+        if (!dados?.metamagia || !(e.qtd > 0)) continue;
+        const ligado = c.cristalArmado === e.id;
+        comum(`item-${e.id}`, dados.name, `Interruptor. ${dados.desc ?? ''}`, 'Livre',
+          { kind: 'feature', featureId: 'cristalMental', modo: ligado ? 'desligar' : e.id }, false, null, null,
+          { ativo: ligado, classe: 'interruptor', selo: ligado ? 'LIG' : null, linhas: [['Estado', ligado ? 'ARMADO' : 'guardado']] });
+      }
     }
     for (const f of c.features ?? []) {
       // Ação Ardilosa é UMA escolha por ação bônus: dois azulejos, um por modo.
@@ -1862,7 +1897,7 @@ export class Hud {
    */
   nucleo(c) {
     // 46: o diâmetro do vão escuro do medalhão de .nucleo-retrato.
-    const retrato = makePortrait(c.look, 46);
+    const retrato = makePortrait(c.look ?? c.defId, 46);
     retrato.className = 'pixel';
     // `fracao`, e não `pct`: `pct` agora é a formatação de porcentagem que vem
     // de `rules/odds.js`, e um nome local igual ao importado é bug esperando.
@@ -2008,20 +2043,24 @@ export class Hud {
         // Sem espaço do círculo dela, a magia ainda sai num círculo maior.
         // O uso LIVRE (magia da raça, Maestria, Assinatura) não depende de espaço.
         const livre = usoLivreDe(c, s);
-        const semSlot = s.level > 0 && !livre && !c.spellcasting.slots.some((n, i) => i >= s.level && n > 0);
+        const semSlot = s.level > 0 && !livre && !(c.spellcasting?.slots ?? []).some((n, i) => i >= s.level && n > 0);
         const dano = dadosDaMagia(s, { nivel: c.level ?? 1 });
         // Repetir uma magia ativa (Lufada, Convocar) usa a ação do `reuso`, e
         // não a de conjurar, e não gasta espaço.
         const repete = Boolean(s.reuso && c.magiasAtivas?.[sid]);
         const bonus = repete ? s.reuso === 'bonus' : s.castTime === 'bonus';
-        const gasto = bonus ? c.bonusUsed : c.actionUsed;
+        // a AÇÃO DA RAÇA sem custo (a Agilidade Felina) não gasta nada; o SOPRO DO FIZBAN sai no lugar de um golpe guardado
+        const gasto = s.castTime === 'livre' ? false
+          : s.noLugarDeUmAtaque && c.actionUsed && (c.ataquesRestantes ?? 0) > 0 ? false
+            : bonus ? c.bonusUsed : c.actionUsed;
         const explorandoAgora = Boolean(this.handlers.explorando?.());
         const foraDoCombate = Boolean(explorandoAgora && (s.soFora || UTIL_FORA.has(sid)));
         // Explorando, só a magia de utilidade sai: a de combate nem tem em quem pegar.
         const desabilitado = foraDoCombate ? semSlot && s.level > 0
           : explorandoAgora ? true
             : (semSlot && !repete) || gasto || Boolean(s.foraDeCombate || s.soFora)
-              || Boolean(s.recursoRacial && !(c.resources?.[s.recursoRacial] > 0));
+              || Boolean(s.recursoRacial && !(c.resources?.[s.recursoRacial] > 0))
+              || Boolean(s.recursoDe && !(c.resources?.[s.recursoDe] > 0));
         const run = () => this.handlers.onAction?.({ kind: 'spell', spellId: sid });
         return {
           sid,
@@ -2045,8 +2084,10 @@ export class Hud {
               linhas: [
                 s.damage ? ['Dano', `${dano}${s.damageType ? ` ${s.damageType}` : ''}`] : null,
                 s.rangeFt ? ['Alcance', `${s.rangeFt} pés`] : null,
-                s.kind === 'attack' ? ['Ataque de magia', formatModifier(atk)] : null,
-                s.save ? ['Resistência', `${s.save} CD ${dc}`] : null,
+                s.kind === 'attack' ? ['Ataque de magia', formatModifier(livre?.ataque ?? atk ?? 0)] : null,
+                // a CD do SOPRO (o do Fizban, o do Sopro do Dragão) é 8 + CON + proficiência, e não a de conjuração, que o
+                // guerreiro nem tem
+                s.save ? ['Resistência', `${s.save} CD ${livre?.cd ?? s.cdFixa ?? (s.cdDeCon ? 8 + bonusDeProficiencia(c.level ?? 1) + modDoAtributo(c.abilities?.con ?? 10) : dc)}`] : null,
               ],
               texto: s.desc,
               custo: repete ? `${bonus ? 'Ação bônus' : 'Ação'} · repetir, sem espaço` : foraDoCombate ? 'Fora de combate · pelo relógio' : s.foraDeCombate ? '10 minutos' : s.soFora ? 'Utilidade' : bonus ? 'Ação bônus' : 'Ação',

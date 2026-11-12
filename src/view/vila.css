@@ -64,6 +64,16 @@
   background: center / 100% 100% no-repeat;
   box-shadow: 0 0 0 1px rgba(0, 0, 0, .6), 0 0 40px rgba(0, 0, 0, .5) inset;
 }
+/* A VILA TOMADA PELO REINO DISTANTE (`game/vila-reino.js`): um véu por cima da arte, por baixo dos pinos, que pesa a cada
+   capítulo — o cinza do 5, o pardo doente do 6, o carne-arroxeado do 7, o verde do 8. É véu (e não `filter`) para não
+   apagar os pinos junto. */
+.vila-quadro[class*="estagio-"]::before {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+}
+.vila-quadro.estagio-5::before { background: rgba(120, 124, 130, .28); mix-blend-mode: saturation; }
+.vila-quadro.estagio-6::before { background: linear-gradient(rgba(110, 112, 100, .38), rgba(90, 95, 70, .30)); mix-blend-mode: multiply; }
+.vila-quadro.estagio-7::before { background: linear-gradient(rgba(120, 80, 110, .34), rgba(90, 60, 80, .30)); mix-blend-mode: multiply; }
+.vila-quadro.estagio-8::before { background: linear-gradient(rgba(120, 200, 90, .42), rgba(70, 120, 60, .32)); mix-blend-mode: multiply; }
 .vila-pino {
   position: absolute;
   transform: translate(-50%, -100%);

@@ -17,13 +17,27 @@ import { CASA_DA_MORTE, TRAITS as T_CDM } from './monsters/strahd.js';
 import { TALHUNDERETH, TRAITS as T_TAL } from './monsters/talhundereth.js';
 import { CRIPTA, TRAITS as T_CRI } from './monsters/cripta.js';
 import { ENCRUZILHADA, TRAITS as T_ENC } from './monsters/encruzilhada.js';
+import { OBELISCO7, TRAITS as T_OB7 } from './monsters/obelisco7.js';
+import { OBELISCO8, TRAITS as T_OB8 } from './monsters/obelisco8.js';
 import { INVOCACOES_DE_MAGIA } from './monsters/magias.js';
 // Os bestiários IMPORTADOS dos livros (`src/dev/importar-bestiario.mjs`): vêm antes, para o bloco feito à mão vencer.
 import { LIVRO_MM, TRACOS_MM } from './monsters/livro-mm.js';
+// os outros bestiários (2026-11-12): Volo, Mordenkainen, Fizban, Bigby e Acquisitions Inc.; o id repetido entre livros
+// ganha o sufixo do livro que entrou depois, no importador
+import { LIVRO_VGM, TRACOS_VGM } from './monsters/livro-vgm.js';
+import { LIVRO_MTF, TRACOS_MTF } from './monsters/livro-mtf.js';
+import { LIVRO_FTD, TRACOS_FTD } from './monsters/livro-ftd.js';
+import { LIVRO_BGG, TRACOS_BGG } from './monsters/livro-bgg.js';
+import { LIVRO_AI, TRACOS_AI } from './monsters/livro-ai.js';
 import { DANOS_FISICOS } from './tipos-de-dano.js';
 
 export const MONSTERS = {
   ...LIVRO_MM,
+  ...LIVRO_VGM,
+  ...LIVRO_MTF,
+  ...LIVRO_FTD,
+  ...LIVRO_BGG,
+  ...LIVRO_AI,
   ...GOBLINOIDES,
   ...HUMANOIDES,
   ...FERAS,
@@ -33,6 +47,8 @@ export const MONSTERS = {
   ...TALHUNDERETH,
   ...CRIPTA,
   ...ENCRUZILHADA,
+  ...OBELISCO7,
+  ...OBELISCO8,
   // as criaturas que as magias conjuram (o Animar Objetos, a Mão de Bigby, a Espada de Mordenkainen)
   ...INVOCACOES_DE_MAGIA,
 };
@@ -63,6 +79,9 @@ const TRACOS_BASE = {
   comandaMortos: { name: 'Comandar Mortos-Vivos', desc: 'Ele e os mortos-vivos aliados a 18 m têm vantagem contra Expulsar Mortos-Vivos.' },
   coneAntimagia: { name: 'Cone Antimagia', desc: 'O olho central abre um cone de 45 m em que magia não funciona — nem a dos raios dele. No começo do turno, ele escolhe para onde o cone olha.' },
   coneDeEnergiaNegativa: { name: 'Cone de Energia Negativa', desc: 'O olho central abre um cone de 45 m: ninguém recupera PV nele, e o humanoide que morre ali levanta como zumbi dele.' },
+  despertar: { name: 'Despertar', desc: 'A primeira vez que cairia a 0 PV, volta com muitos PV, o sopro recarregado e as resistências lendárias de volta.' },
+  esquivaSobrenatural: { name: 'Esquiva Sobrenatural', desc: 'Reação: o golpe que o acerta, de quem ele vê, sai pela metade.' },
+  masmorraSemiplanar: { name: 'Masmorra Semiplanar', desc: 'Quem ele engole vai para um semiplano de pedra: de lá não o fere, e só sai com magia de viagem entre planos. Morto ele, quem está lá dentro volta para perto do corpo.' },
   corroiArma: { name: 'Corroer', desc: 'Arma comum de metal que o acerta perde 1 no dano, de vez e somando; a −5 se desfaz.' },
   corroeMadeira: { name: 'Corroer Madeira', desc: 'A corrosão come madeira também.' },
   liberdadeDeMovimento: { name: 'Liberdade de Movimento', desc: 'Ignora terreno difícil, a magia não lhe tira deslocamento, e sai de agarrão gastando 1,5 m.' },
@@ -96,8 +115,15 @@ const TRACOS_BASE = {
   aura: { name: 'Aura', desc: 'Afeta quem fica perto dele: dano no começo do turno dele, ou um teste no começo do turno de quem está ao lado.' },
   explosaoAoMorrer: { name: 'Explosão ao Morrer', desc: 'Quando morre, explode: quem está perto faz um teste ou sofre o efeito.' },
   presencaAterradora: { name: 'Presença Aterradora', desc: 'Junto com os golpes: quem está perto e ainda não resistiu faz Sabedoria ou fica amedrontado por 1 minuto, repetindo o teste no fim de cada turno. Quem passa, ou se livra, não teme mais esta criatura.' },
+  sempreInvisivel: { name: 'Invisível', desc: 'É invisível o tempo todo: atacar não o revela.' },
   acoesLendarias: { name: 'Ações Lendárias', desc: 'Depois do turno de outra criatura, faz uma ação a mais — um golpe, ou a área em volta dela. Voltam todas no começo do turno dela.' },
   nimbleEscape: { name: 'Escapada Ágil', desc: 'Desengajar ou Esconder-se como ação bônus.' },
+  // a SEGUNDA FILA DOS BESTIÁRIOS (`livro-motor.js`)
+  aversaoAoFogo: { name: 'Aversão ao Fogo', desc: 'Ferido por fogo, tem desvantagem nos ataques e nos testes até o fim do próximo turno dele.' },
+  indomavelMonstro: { name: 'Indomável', desc: 'Rola de novo a resistência que falhou; poucas vezes por dia.' },
+  protecaoArcana: { name: 'Proteção Arcana', desc: 'Um escudo mágico de pontos de vida leva o dano antes dele; o que sobra passa.' },
+  peleVenenosa: { name: 'Pele Venenosa', desc: 'Quem o agarra ou o toca com a mão nua faz Constituição ou fica envenenado por 1 minuto.' },
+  despertarDoRebento: { name: 'Despertar do Rebento', desc: 'Quando o berço cai a 0 PV, o rebento do gigante desperta no lugar dele, na mesma vez da iniciativa.' },
   packTactics: { name: 'Táticas de Matilha', desc: 'Vantagem no ataque se um aliado estiver a até 1,5 m do alvo.' },
   redirectAttack: { name: 'Redirecionar Ataque', desc: 'Reação: troca de lugar com um goblin adjacente e o ataque passa a mirá-lo.' },
   martialAdvantage: { name: 'Vantagem Marcial', desc: 'Uma vez por turno, +2d6 de dano se um aliado não incapacitado estiver a até 1,5 m do alvo.' },
@@ -122,7 +148,7 @@ const TRACOS_BASE = {
   escudoDoGuardiao: { name: 'Escudo', desc: 'Reação: +2 de CA no mestre, se está colado nele.' },
 };
 
-export const TRAIT_INFO = { ...TRACOS_MM, ...TRACOS_BASE, ...T_GOB, ...T_HUM, ...T_FER, ...T_MOR, ...T_ABE, ...T_CDM, ...T_TAL, ...T_CRI, ...T_ENC };
+export const TRAIT_INFO = { ...TRACOS_MM, ...TRACOS_VGM, ...TRACOS_MTF, ...TRACOS_FTD, ...TRACOS_BGG, ...TRACOS_AI, ...TRACOS_BASE, ...T_GOB, ...T_HUM, ...T_FER, ...T_MOR, ...T_ABE, ...T_CDM, ...T_TAL, ...T_CRI, ...T_ENC, ...T_OB7, ...T_OB8 };
 
 let serial = 0;
 
@@ -169,7 +195,9 @@ export function makeMonster(id, pos, { rng = null, nameSuffix = '', tatica = nul
     tatica: tatica ?? def.tatica ?? null,
     // A arma que o goblin tem na mão: troca-la e a interacao gratuita do turno.
     ...(def.trocaDeArma ? { trocaDeArma: true, armaNaMao: comArma ?? def.attacks[0].name } : {}),
-    conditions: [],
+    // SEMPRE INVISÍVEL (o perseguidor invisível, o poltergeist): nasce invisível, e atacar não o revela (`persistente`)
+    conditions: def.traits?.includes('sempreInvisivel')
+      ? [{ id: 'invisivel', rounds: Infinity, source: def.id, data: { persistente: true }, lado: null, quando: 'fim', magia: null }] : [],
     // A pegada viaja DENTRO da posição: assim `distanceFt` e `isAdjacent`
     // medem contra a caixa da criatura sem que nenhum chamador saiba disso.
     pos: { ...pos, f: footprintOf(def.size) },
@@ -244,6 +272,24 @@ export function makeMonster(id, pos, { rng = null, nameSuffix = '', tatica = nul
     // os RAIOS OCULARES do observador e do tirano da morte (`livro-motor.js raiosOculares`)
     ...(def.raiosOculares ? { raiosOculares: { ...def.raiosOculares, raios: def.raiosOculares.raios.map((r) => ({ ...r })) } } : {}),
     ...(def.aura ? { aura: { ...def.aura } } : {}),
+    // o capítulo 7 do Obelisco: a Repreensão Obsessiva da ocular, o Negar Magia do Oshundo, o gnawble que não é a luta
+    ...(def.repreensao ? { repreensao: { ...def.repreensao } } : {}),
+    ...(def.negarMagia ? { negarMagia: { ...def.negarMagia } } : {}),
+    ...(def.naoSeguraALuta ? { naoSeguraALuta: true } : {}),
+    // as reações dos outros bestiários: a CA a mais com o bônus deles, e o revide com golpe
+    ...(def.apararBonus ? { apararBonus: def.apararBonus } : {}),
+    ...(def.apararTudo ? { apararTudo: true } : {}),
+    ...(def.revide ? { revide: { ...def.revide } } : {}),
+    ...(def.despertar ? { despertar: { ...def.despertar } } : {}),
+    // a SEGUNDA FILA DOS BESTIÁRIOS (`livro-motor.js`): a Proteção Arcana, a Pele Venenosa, os usos do Indomável e o nome do
+    // livro, que diz ao berço do Bigby qual rebento desperta
+    ...(def.protecaoArcana ? { protecaoArcana: def.protecaoArcana } : {}),
+    ...(def.peleVenenosa ? { peleVenenosa: { ...def.peleVenenosa } } : {}),
+    ...(def.usosIndomavel ? { usosIndomavel: def.usosIndomavel } : {}),
+    ...(def.nomeOriginal ? { nomeOriginal: def.nomeOriginal } : {}),
+    // o obelisco da Ânima (o capítulo 8): o dano nele volta sobre os fanáticos, e a arte dele é a do mapa
+    ...(def.contragolpe ? { contragolpe: { ...def.contragolpe } } : {}),
+    ...(def.pintadoNoMapa ? { pintadoNoMapa: true } : {}),
     ...(def.sopros ? { sopros: def.sopros.map((b) => ({ ...b })) } : {}),
     ...(def.acoesEspeciais ? { acoesEspeciais: def.acoesEspeciais.map((a) => ({ ...a })), usosEspeciais: Object.fromEntries(def.acoesEspeciais.filter((a) => a.porDia).map((a) => [a.nome, a.porDia])) } : {}),
     ...(def.luzPropria ? { luzPropria: { ...def.luzPropria } } : {}),
@@ -254,7 +300,11 @@ export function makeMonster(id, pos, { rng = null, nameSuffix = '', tatica = nul
     // as cabeças da hidra (`combat.js cabecasDaHidra`)
     ...(def.cabecas ? { cabecas: def.cabecas, cabecasMortas: 0 } : {}),
     // Os recursos do bloco: o Lamento da banshee (1/dia), a Resistência Lendária (`recursos` no bloco).
-    ...((def.traits?.includes('lamento') || def.recursos) ? { resources: { ...(def.traits?.includes('lamento') ? { lamento: 1 } : {}), ...(def.recursos ?? {}) } } : {}),
+    // SOMA aos usos por dia das magias do bloco (`usosDoBloco`), que vêm antes: sem isto o devorador clarividente, que tem
+    // Resistência Lendária E Dissipar Magia três vezes por dia, ficava sem o Dissipar.
+    ...((def.traits?.includes('lamento') || def.recursos) ? { resources: {
+      ...(def.spellcasting?.noMotor ? usosDoBloco(def.spellcasting).resources ?? {} : {}),
+      ...(def.traits?.includes('lamento') ? { lamento: 1 } : {}), ...(def.recursos ?? {}) } } : {}),
   };
 }
 

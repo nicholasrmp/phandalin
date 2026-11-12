@@ -22,11 +22,16 @@ import { SPELLS, magiasProntas, dadosDaMagia } from './spells.js';
 import { spellMod } from './party.js';
 import { rolarCura, minimoDoDuravel } from './talentos.js';
 import { resilienciaCelestial } from './subclasses-livros.js';
+import { recarregarItens } from './itens-que-conjuram.js';
+import { avancarDoencas, pesteAtiva } from './doencas.js';
+import { RACAS } from './racas.js';
 
 /** Recursos que voltam no descanso curto. Os outros só no longo. */
 const VOLTAM_NO_CURTO = new Set(['secondWind', 'superiorityDice', 'actionSurge', 'channelDivinity', 'ki', 'wildShape', 'breathWeapon', 'strokeOfLuck', 'darkOnesOwnLuck', 'illusorySelf', 'feyPresence', 'mistyEscapes', 'darkDelirium', 'entropicWard',
   // as subclasses dos livros dizem quais dos seus recursos voltam no curto (`voltamNoCurto`)
-  ...Object.values(CLASSES).flatMap((def) => Object.values(def.subclasse?.opcoes ?? {}).flatMap((s) => s.voltamNoCurto ?? []))]);
+  ...Object.values(CLASSES).flatMap((def) => Object.values(def.subclasse?.opcoes ?? {}).flatMap((s) => s.voltamNoCurto ?? [])),
+  // as raças dos livros dizem quais dos seus recursos voltam no curto (`racas-livros.js`, `recursos[].curto`)
+  ...Object.values(RACAS).flatMap((r) => (r.recursos ?? []).filter((x) => x.curto).map((x) => x.id))]);
 
 export const dadoDeVida = (c) => CLASSES[c.classe]?.dadoDeVida ?? 8;
 export const dadosDeVida = (c) => (c.dadosDeVidaRestantes ??= c.level ?? 1);
@@ -52,12 +57,16 @@ export function dadoDaCancaoDeDescanso(grupo) {
 export function gastarDadoDeVida(rng, c, { cancao = 0 } = {}) {
   if (c.dead || c.hp >= maxHpEfetivo(c) || dadosDeVida(c) <= 0) return null;
   const lados = dadoDeVida(c);
-  const rolagem = rng.die(lados);
+  let rolagem = rng.die(lados);
+  // CURA DO SANGUE NEGRO (o verdan): o 1 ou o 2 no dado de vida rola de novo, e vale o novo
+  if (rolagem <= 2 && c.features?.includes('blackBloodHealing')) rolagem = rng.die(lados);
   const con = abilityMod(c.abilities.con);
   // CANÇÃO DE DESCANSO: quem gasta um dado de vida ouvindo a canção cura um dado extra.
   const extra = cancao ? rng.die(cancao) : 0;
   // DURÁVEL (talento): o dado gasto cura no mínimo o dobro do modificador de Constituição, e 2 pelo menos.
-  const cura = minimoDoDuravel(c, Math.max(0, rolagem + con)) + extra;
+  // a peste do esgoto: o dado de vida cura a metade
+  const cheia = minimoDoDuravel(c, Math.max(0, rolagem + con)) + extra;
+  const cura = pesteAtiva(c) ? Math.floor(cheia / 2) : cheia;
   c.dadosDeVidaRestantes -= 1;
   const antes = Math.max(0, c.hp);
   c.hp = Math.max(antes, Math.min(maxHpEfetivo(c), antes + cura));
@@ -122,7 +131,7 @@ export function recuperarNoCurto(c) {
     // As Magias de Assinatura do mago (20º) voltam no descanso curto; as outras magias raciais, só no longo.
     // FONTE DE INSPIRAÇÃO (bardo, 5º): a Inspiração Bárdica volta também no descanso curto.
     const fonte = id === 'bardicInspiration' && c.features?.includes('fontOfInspiration');
-    if ((VOLTAM_NO_CURTO.has(id) || id.startsWith('assinatura_') || fonte) && (c.resources[id] ?? 0) < max) {
+    if ((VOLTAM_NO_CURTO.has(id) || id.startsWith('assinatura_') || id.startsWith('racialCurto_') || fonte) && (c.resources[id] ?? 0) < max) {
       c.resources[id] = max;
       frases.push(id);
     }
@@ -241,6 +250,8 @@ export function bomFrutoNoDescanso(conjurador, alvos, { circulo = 1 } = {}) {
  */
 export function descansoLongo(c, { alimentado = true } = {}) {
   if (c.dead) return;
+  // as cargas dos itens que conjuram voltam ao amanhecer
+  recarregarItens(c);
   // a loucura do Contatar Outro Plano acaba com o descanso longo
   removeCondition(c, 'enlouquecido');
   delete c.curadoPeloKit;
@@ -272,6 +283,10 @@ export function descansoLongo(c, { alimentado = true } = {}) {
       if (c.maxHp <= 0) { c.dead = true; c.hp = 0; }
     }
   }
+  // AS DOENÇAS DO LIVRO DO MESTRE (`doencas.js`): o dia passa, e cada uma incuba, piora ou cede
+  const daPeste = pesteAtiva(c);
+  c.diarioDasDoencas = avancarDoencas(c);
+  if (c.dead) return;
   // A PODRIDÃO DA MÚMIA (SRD): a cada 24 horas, 3d6 de PV máximo a menos; a zero, morre e vira pó. Não cura no descanso.
   const podre = getCondition(c, 'podridaoDaMumia');
   if (podre) {
@@ -309,7 +324,8 @@ export function descansoLongo(c, { alimentado = true } = {}) {
   if (c.maxHpPerdido) { c.maxHp += c.maxHpPerdido; delete c.maxHpPerdido; }
   restaurarForca(c);
   // quem a necromancia impede de curar (a podridão) acorda com os PV que tinha, cortados pelo máximo novo
-  c.hp = podre ? Math.min(c.hp, maxHpEfetivo(c)) : maxHpEfetivo(c);
+  // a peste do esgoto (doente desde antes de dormir) não deixa o descanso curar
+  c.hp = podre || daPeste ? Math.min(c.hp, maxHpEfetivo(c)) : maxHpEfetivo(c);
   c.tempHp = 0;
   const nivel = c.level ?? 1;
   // Poção de vitalidade: no descanso seguinte, os dados de vida voltam TODOS.

@@ -145,7 +145,7 @@ export const ACHADO_DO_CASULO = {
   chave: 'casuloElfo',
   rotulo: 'Cortar o casulo e revistar',
   // O Obelisco: o elfo morto veste uma armadura de couro +1 e traz uma espada curta na bainha.
-  itens: [['pocaoDeCura', 1], ['moedaDeOuro', 23], ['moedaDePrata', 35], ['armaduraMais1', 1]],
+  itens: [['pocaoDeCura', 1], ['moedaDeOuro', 23], ['moedaDePrata', 35], ['couroMais1', 1]],
   armas: ['espadaCurta'],
   texto: 'A seda cede ao corte como corda velha. O elfo era um viajante; o gibão de couro dele tem um brilho que couro velho não tem, e na bainha da cintura ainda há uma espada curta. No cinto, uma poção de cura; nas costas, uma bolsa pesada: vinte e três peças de ouro e trinta e cinco de prata. A teia estava seca, mas o corpo não: as aranhas o guardavam para depois.',
 };

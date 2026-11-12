@@ -924,5 +924,103 @@ await teste('as sequências alternativas: a mantícora morde e arranha de perto,
   assert.deepEqual(xorn.enc.golpesDoAtaque(xorn.foes[0], 'Mordida'), ['Garra', 'Garra', 'Garra', 'Mordida']);
 });
 
+// ------------------------------------------------------------------- as lendárias dos outros bestiários ----
+const { magiaLendaria } = await import(P + 'rules/ai.js');
+const { MONSTERS } = await import(P + 'rules/monsters.js');
+const lendaria = (enc, m, nome) => Livro.escolherLendaria(enc, m, m.lendarias.opcoes.filter((o) => o.nome === nome), {
+  magia: (q, soTruque, maxCirculo, magias) => magiaLendaria(enc, q, soTruque, maxCirculo, magias), casaLonge: () => null, tinta: () => false });
+
+await teste('Lendárias dos outros bestiários: o custo escrito de três jeitos, o golpe que só existe como lendária, a magia pelo nome', () => {
+  assert.equal(MONSTERS.bael.lendarias.opcoes.find((o) => o.tipo === 'golpe').custo, 2, '"Cost 2 Actions" virou 1');
+  const cauda = MONSTERS.demogorgon.lendarias.opcoes.find((o) => o.ataque);
+  assert.ok(cauda && cauda.ataque.reachFt === 15, 'a cauda do Demogorgon não veio dentro da opção');
+  assert.ok(!MONSTERS.demogorgon.lendarias.opcoes.some((o) => /\(Custa/i.test(o.nome)), 'o custo ficou no nome');
+  assert.deepEqual(MONSTERS.juiblex.lendarias.opcoes.find((o) => o.tipo === 'magia').magias, ['respingoAcido']);
+  assert.deepEqual(MONSTERS.matriarcaDrow.lendarias.opcoes.filter((o) => o.tipo === 'magia').map((o) => [o.custo, o.maxCirculo]), [[1, 1], [2, 2], [3, 3]]);
+  // a cauda: o golpe entra no bloco só durante a ação lendária
+  const d = montar({ foes: [['demogorgon', { x: 7, y: 5 }]], pos: [{ x: 6, y: 5 }, { x: 1, y: 1 }, { x: 1, y: 3 }, { x: 1, y: 12 }], nivel: 18 });
+  const dem = d.foes[0];
+  const golpes = dem.attacks.length;
+  assert.ok(lendaria(d.enc, dem, cauda.nome), 'a cauda não golpeou');
+  assert.match(d.texto(), new RegExp(cauda.nome));
+  assert.equal(dem.attacks.length, golpes, 'a cauda ficou no bloco');
+  // o respingo ácido do Juiblex
+  const j = montar({ foes: [['juiblex', { x: 8, y: 5 }]], nivel: 18 });
+  const jb = j.foes[0];
+  const antes = JSON.stringify(jb.spellcasting);
+  assert.ok(lendaria(j.enc, jb, 'Respingo Ácido'), 'o Juiblex não conjurou');
+  assert.match(j.texto(), /Respingo Ácido/);
+  assert.equal(JSON.stringify(jb.spellcasting), antes, 'a lista de magias não voltou');
+});
+
+await teste('Lendárias dos outros bestiários: a linha pega quem está nela, e as lanças acertam sem teste', () => {
+  // dois heróis na mesma fileira do grande wyrm
+  const l = montar({ foes: [['grandeWyrmDeAmetista', { x: 1, y: 5 }]], pos: [{ x: 7, y: 6 }, { x: 9, y: 6 }, { x: 13, y: 0 }, { x: 13, y: 13 }], nivel: 20 });
+  const wyrm = l.foes[0];
+  const [a, b] = l.party;
+  const [va, vb] = [a.hp, b.hp];
+  assert.ok(lendaria(l.enc, wyrm, 'Raio Psíquico'), 'a linha não saiu');
+  assert.ok(a.hp < va && b.hp < vb, 'a linha não pegou os dois da fileira');
+  const n = montar({ foes: [['grandeSerpeNegra', { x: 1, y: 5 }]], nivel: 20 });
+  const serpe = n.foes[0];
+  const vida = n.party.reduce((s, c) => s + c.hp, 0);
+  assert.ok(lendaria(n.enc, serpe, 'Lança Arcana'), 'as lanças não saíram');
+  assert.equal((n.texto().match(/Uma lança acerta/g) ?? []).length, 4, 'não foram quatro lanças');
+  assert.ok(n.party.reduce((s, c) => s + c.hp, 0) < vida);
+});
+
+await teste('Os outros bestiários: o grande wyrm DESPERTA uma vez em vez de cair, com o sopro e as resistências de volta', () => {
+  const s = montar({ foes: [['grandeSerpeNegra', { x: 8, y: 5 }]], nivel: 20 });
+  const w = s.foes[0];
+  assert.equal(w.despertar?.pv, 425);
+  w.recarregando = { Sopro: true };
+  if (w.resources) w.resources.resistenciaLendaria = 0;
+  s.enc.applyDamage(w, w.hp + 10, 'cortante', s.party[0]);
+  assert.ok(!w.dead && w.hp === 425, `não despertou: ${w.hp}`);
+  assert.deepEqual(w.recarregando, {}, 'o sopro não recarregou');
+  assert.match(s.texto(), /Despertar/);
+  s.enc.applyDamage(w, w.hp + 10, 'cortante', s.party[0]);
+  assert.ok(w.dead || w.hp <= 0, 'despertou duas vezes');
+});
+
+await teste('Os outros bestiários: a aura lida pela frase (o olhar atordoante do gauth), e as reações de revide e de CA a mais', () => {
+  // o gauth: quem começa o turno a 9 m e o vê, Sabedoria 14 ou atordoado
+  const g = montar({ lado: 'foes', foes: [['gauth', { x: 7, y: 5 }]], pos: [{ x: 6, y: 5 }, { x: 1, y: 1 }, { x: 1, y: 3 }, { x: 13, y: 13 }], nivel: 6 });
+  assert.equal(g.foes[0].aura?.olhar, true);
+  g.enc.beginSide('party');
+  assert.match(g.texto(), /aura de Gauth|aguenta a aura/i, 'o olhar não pediu teste');
+  // o tanarukk revida quem o fere, com vantagem
+  const t = montar({ foes: [['tanarukk', { x: 6, y: 5 }]], pos: [{ x: 5, y: 5 }, { x: 1, y: 1 }, { x: 1, y: 3 }, { x: 13, y: 13 }] });
+  const tk = t.foes[0];
+  t.enc.applyDamage(tk, 3, 'cortante', t.party[0]);
+  t.enc.reacaoAoDano(tk, t.party[0]);
+  assert.ok(tk.reactionUsed, 'o tanarukk não revidou');
+  assert.match(t.texto(), /revida/);
+  // o draconiano mentor: +5 de CA contra um ataque que ia acertar
+  const d = montar({ foes: [['draconianoMentor', { x: 6, y: 5 }]], pos: [{ x: 5, y: 5 }, { x: 1, y: 1 }, { x: 1, y: 3 }, { x: 13, y: 13 }] });
+  assert.equal(d.foes[0].apararBonus, 5);
+  assert.equal(d.foes[0].apararTudo, true);
+  // o berço da nuvem: o trovão pega todos a 9 m quando ele é ferido
+  const b = montar({ foes: [['bercoDoRebentoDasNuvens', { x: 6, y: 5 }]], pos: [{ x: 5, y: 5 }, { x: 6, y: 7 }, { x: 1, y: 3 }, { x: 13, y: 13 }], nivel: 15 });
+  const berco = b.foes[0];
+  const [v0, v1] = [b.party[0].hp, b.party[1].hp];
+  b.enc.repreensaoObsessiva(berco, b.party[0]);
+  assert.ok(b.party[0].hp <= v0 && b.party[1].hp <= v1 && /Trovoada/.test(b.texto()), 'o trovão não pegou a área');
+});
+
+await teste('Os outros bestiários: as ações escritas de outros jeitos (a linha, "cada inimigo", "um ou dois", o tipo escolhido)', () => {
+  const lanca = MONSTERS.armanita.sopros?.[0] ?? MONSTERS.armanita.breath;
+  assert.equal(lanca.shape, 'linha');
+  assert.deepEqual([lanca.areaFt, lanca.larguraFt], [60, 10], 'a linha de 18 m por 3 m da armanita');
+  const aspecto = MONSTERS.cavaleiroNegro.acoesEspeciais.find((a) => a.condition === 'amedrontado');
+  assert.ok(aspecto && aspecto.shape === 'raio' && aspecto.areaFt === 30, '"cada inimigo a até 9 m" não virou área');
+  const mente = MONSTERS.amnizu.acoesEspeciais.find((a) => a.damageType === 'necrótico');
+  assert.equal(mente.alvos, 2, '"um ou dois" não virou dois alvos');
+  const grito = MONSTERS.rebentoDasProfundezas.acoesEspeciais.find((a) => a.condition === 'atordoado');
+  assert.equal(grito.rounds, 1, '"até o fim do próximo turno do rebento das profundezas" durou mais de uma rodada');
+  const mordida = MONSTERS.dracohidra.attacks.find((a) => a.reachFt === 10);
+  assert.ok(mordida && mordida.damage === '1d10+5', 'a mordida de tipo escolhido da draco-hidra não virou golpe');
+});
+
 console.log(`\n${total - falhas}/${total} testes passaram.`);
 if (falhas) process.exit(1);

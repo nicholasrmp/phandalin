@@ -30,7 +30,7 @@ import { d20, roll } from '../core/dice.js';
 import { skillBonus, rolarPericia, SKILLS, SKILL_NAME, saveBonus, spellSaveDc, abilityMod } from './abilities.js';
 import { distanceFt } from '../core/grid.js';
 import { itemDeId } from './equipment.js';
-import { oracaoDeCura, bomFrutoNoDescanso } from './descanso.js';
+import { oracaoDeCura, bomFrutoNoDescanso, recuperarNoCurto, dadosSugeridos, gastarDadoDeVida } from './descanso.js';
 import { APRIMORAR } from './spells.js';
 import { encherAgua, guardarMagico } from './mantimentos.js';
 import { garantirInventario } from './equipment.js';
@@ -668,6 +668,23 @@ export function conjurarFora(estado, c, spellId, { herois, rng, circulo = null, 
       }
       alvosIds = resultado.banquete.map((x) => x.h.id);
     }
+    // COCHILO: até três dormem dez minutos e acordam com o descanso curto — os recursos do curto e os dados de vida que
+    // o descanso sugere (`descanso.js dadosSugeridos`), sem a hora inteira
+    if (u.efeito === 'cochilo') {
+      resultado.cochilo = [];
+      const cansados = grupo.filter((h) => !h.dead && h.hp > 0).sort((a, b) => a.hp / a.maxHp - b.hp / b.maxHp).slice(0, 3);
+      for (const h of cansados) {
+        const voltou = recuperarNoCurto(h);
+        let curou = 0;
+        for (let i = dadosSugeridos(h); i > 0; i -= 1) {
+          const g = gastarDadoDeVida(rng, h);
+          if (!g) break;
+          curou += g.cura;
+        }
+        resultado.cochilo.push({ h, curou, voltou });
+      }
+      alvosIds = resultado.cochilo.map((x) => x.h.id);
+    }
     if (u.efeito === 'labia' || u.efeito === 'viagem') resultado.servico = u.efeito;
     if (u.banquete) {
       // a Mansão Magnífica: o banquete de cem que serve o grupo entra na despensa da noite
@@ -928,6 +945,8 @@ export function modificadores(estado, herois, quem, pericia, { npc = null } = {}
   if (pericia === 'enganacao' && meu('ilusaoMenor')) vant('Ilusão Menor (distração)');
   if (pericia === 'lidarComAnimais' && meu('falarComAnimais')) vant('Falar com Animais');
   if (npc && (pericia === 'persuasao' || pericia === 'enganacao') && estado.npcs[key]?.sondado) vant('mente sondada');
+  // A TRANSFORMAÇÃO do Obelisco (`game/transformacao.js`, estágio 3, resultado 1): a aberração vê o herói como um dos seus
+  if (npc && hab === 'cha' && quem.transformacao?.aceita && quem.transformacao.efeitos?.[3] === 1 && /aberra/i.test(npc.tipo ?? npc.type ?? '')) vant('a aberração o vê como um dos seus');
   if (npc && eSocial(pericia) && ativaDe(estado, herois, 'sugestao', { npc })) { out.auto = true; out.fontes.push('Sugestão'); }
   if (npc && eSocial(pericia) && ativaDe(estado, herois, 'missao', { npc })) { out.auto = true; out.fontes.push('Missão'); }
   // LÁBIA: no teste de Carisma, o d20 que vier abaixo de 15 conta como 15 (`rolarTeste`)
@@ -996,9 +1015,11 @@ export function rolarTeste(estado, herois, rng, quem, pericia, cd, { npc = null,
   for (const cond of [...(quem.conditions ?? [])]) {
     const dados = CONDITIONS[cond.id]?.testeBonusDice;
     if (!dados) continue;
+    // o dado que só vale em algumas habilidades (a Mente Solipsista: Inteligência e Sabedoria)
+    if (CONDITIONS[cond.id].habsDoBonus && !CONDITIONS[cond.id].habsDoBonus.includes(SKILLS[pericia])) continue;
     const d = roll(rng, dados);
     total += d.total;
-    extras.push(`+${d.total} (Orientação)`);
+    extras.push(`+${d.total} (${CONDITIONS[cond.id].habsDoBonus ? CONDITIONS[cond.id].name : 'Orientação'})`);
     if (CONDITIONS[cond.id].consumidaNoTeste) {
       removeCondition(quem, cond.id);
       const a = estado.ativas.find((x) => x.spellId === 'orientacao' && x.alvos.includes(quem.id));

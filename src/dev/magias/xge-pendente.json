@@ -14,23 +14,9 @@
   "rascunho": "save"
  },
  {
-  "magia": "cochilo",
-  "en": "Catnap",
-  "circulo": 3,
-  "motivo": "o motor ainda não faz o que ela faz",
-  "rascunho": null
- },
- {
   "magia": "cerimonia",
   "en": "Ceremony",
   "circulo": 1,
-  "motivo": "o motor ainda não faz o que ela faz",
-  "rascunho": null
- },
- {
-  "magia": "controlarChamas",
-  "en": "Control Flames",
-  "circulo": 0,
   "motivo": "o motor ainda não faz o que ela faz",
   "rascunho": null
  },
@@ -96,13 +82,6 @@
   "circulo": 0,
   "motivo": "o motor ainda não faz o que ela faz",
   "rascunho": null
- },
- {
-  "magia": "pirotecnia",
-  "en": "Pyrotechnics",
-  "circulo": 2,
-  "motivo": "o motor ainda não faz o que ela faz",
-  "rascunho": "save"
  },
  {
   "magia": "dispersar",

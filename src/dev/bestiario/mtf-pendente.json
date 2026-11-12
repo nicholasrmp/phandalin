@@ -1,0 +1,556 @@
+[
+ {
+  "criatura": "mirmidaoElementalDoAr",
+  "acao": "Lightning Strike"
+ },
+ {
+  "criatura": "alkilith",
+  "traco": "Foment Madness"
+ },
+ {
+  "criatura": "amnizu",
+  "reacao": "Instinctive Charm"
+ },
+ {
+  "criatura": "eladrinDoOutono",
+  "reacao": "Foster Peace"
+ },
+ {
+  "criatura": "bael",
+  "acao": "Infernal Command"
+ },
+ {
+  "criatura": "bael",
+  "traco": "Dreadful"
+ },
+ {
+  "criatura": "bael",
+  "magias": [
+   "symbol"
+  ]
+ },
+ {
+  "criatura": "balhannoth",
+  "lendarias": [
+   "Vanish"
+  ]
+ },
+ {
+  "criatura": "berbalang",
+  "traco": "Spectral Duplicate"
+ },
+ {
+  "criatura": "abishaiNegro",
+  "acao": "Creeping Darkness"
+ },
+ {
+  "criatura": "garraDeOsso",
+  "reacao": "Deadly Reach"
+ },
+ {
+  "criatura": "bulezau",
+  "traco": "Rotting Presence"
+ },
+ {
+  "criatura": "coletorDeCadaveres",
+  "traco": "Summon Specters"
+ },
+ {
+  "criatura": "canoloth",
+  "traco": "Dimensional Lock"
+ },
+ {
+  "criatura": "estrangulador",
+  "traco": "Aberrant Quickness"
+ },
+ {
+  "criatura": "florCadaver",
+  "acao": "Harvest the Dead"
+ },
+ {
+  "criatura": "demogorgon",
+  "magias": [
+   "project image"
+  ]
+ },
+ {
+  "criatura": "consorteFavoritoDrow",
+  "traco": "War Magic"
+ },
+ {
+  "criatura": "capitaoDeCasaDrow",
+  "traco": "Battle Command"
+ },
+ {
+  "criatura": "matriarcaDrow",
+  "acao": "Summon Servant"
+ },
+ {
+  "criatura": "matriarcaDrow",
+  "traco": "Lolth's Fickle Favor"
+ },
+ {
+  "criatura": "matriarcaDrow",
+  "lendarias": [
+   "Compel Demon"
+  ]
+ },
+ {
+  "criatura": "laminaSombriaDrow",
+  "traco": "Shadow Step"
+ },
+ {
+  "criatura": "despotaDuergar",
+  "traco": "Psychic Engine"
+ },
+ {
+  "criatura": "marteladorDuergar",
+  "traco": "Engine of Pain"
+ },
+ {
+  "criatura": "duergarKavalrachni",
+  "acao": "Shared Invisibility"
+ },
+ {
+  "criatura": "duergarKavalrachni",
+  "traco": "Cavalry Training"
+ },
+ {
+  "criatura": "mestreMentalDuergar",
+  "acao": "Reduce"
+ },
+ {
+  "criatura": "gritadorDuergar",
+  "traco": "Engine of Pain"
+ },
+ {
+  "criatura": "laminaDaAlmaDuergar",
+  "traco": "Create Soulblade"
+ },
+ {
+  "criatura": "guardaDePedraDuergar",
+  "traco": "Phalanx Formation"
+ },
+ {
+  "criatura": "senhorDaGuerraDuergar",
+  "acao": "Call to Attack"
+ },
+ {
+  "criatura": "senhorDaGuerraDuergar",
+  "reacao": "Scouring Instruction"
+ },
+ {
+  "criatura": "dybbuk",
+  "acao": "Possess Corpse"
+ },
+ {
+  "criatura": "mirmidaoElementalDaTerra",
+  "acao": "Thunderous Strike"
+ },
+ {
+  "criatura": "eidolon",
+  "traco": "Sacred Animation"
+ },
+ {
+  "criatura": "oblexAnciao",
+  "magias": [
+   "hallucinatory terrain"
+  ]
+ },
+ {
+  "criatura": "tempestadeAncia",
+  "acao": "Lightning Storm"
+ },
+ {
+  "criatura": "tempestadeAncia",
+  "lendarias": [
+   "Screaming Gale"
+  ]
+ },
+ {
+  "criatura": "steederFemea",
+  "acao": "Sticky Leg"
+ },
+ {
+  "criatura": "mirmidaoElementalDoFogo",
+  "acao": "Fiery Strikes"
+ },
+ {
+  "criatura": "frazUrbLuu",
+  "magias": [
+   "dream",
+   "programmed illusion",
+   "mirage arcane",
+   "project image"
+  ]
+ },
+ {
+  "criatura": "salamandraGlacial",
+  "traco": "Burning Fury"
+ },
+ {
+  "criatura": "geryon",
+  "magias": [
+   "symbol"
+  ]
+ },
+ {
+  "criatura": "giff",
+  "traco": "Headfirst Charge"
+ },
+ {
+  "criatura": "gishGithyanki",
+  "traco": "War Magic"
+ },
+ {
+  "criatura": "kithRakGithyanki",
+  "traco": "Rally the Troops"
+ },
+ {
+  "criatura": "comandanteSupremoGithyanki",
+  "lendarias": [
+   "Command Ally",
+   "Teleport"
+  ]
+ },
+ {
+  "criatura": "anarcaGithzerai",
+  "lendarias": [
+   "Teleport"
+  ]
+ },
+ {
+  "criatura": "anarcaGithzerai",
+  "magias": [
+   "teleportation circle"
+  ]
+ },
+ {
+  "criatura": "tecelaoSombrio",
+  "traco": "Burden of Time"
+ },
+ {
+  "criatura": "tecelaoSombrio",
+  "magias": [
+   "arcane gate"
+  ]
+ },
+ {
+  "criatura": "dilaceradorCinzento",
+  "reacao": "Bloody Rampage"
+ },
+ {
+  "criatura": "grazZt",
+  "lendarias": [
+   "Dance, My Puppet"
+  ]
+ },
+ {
+  "criatura": "hutijin",
+  "traco": "Infernal Despair"
+ },
+ {
+  "criatura": "hutijin",
+  "reacao": "Fearful Voice"
+ },
+ {
+  "criatura": "hutijin",
+  "magias": [
+   "symbol"
+  ]
+ },
+ {
+  "criatura": "hidroloth",
+  "traco": "Watery Advantage"
+ },
+ {
+  "criatura": "hidroloth",
+  "magias": [
+   "control water"
+  ]
+ },
+ {
+  "criatura": "leviata",
+  "acao": "Tidal Wave"
+ },
+ {
+  "criatura": "leviata",
+  "traco": "Partial Freeze"
+ },
+ {
+  "criatura": "steederMacho",
+  "acao": "Sticky Leg"
+ },
+ {
+  "criatura": "maurezhi",
+  "acao": "Raise Ghoul"
+ },
+ {
+  "criatura": "merregon",
+  "reacao": "Loyal Bodyguard"
+ },
+ {
+  "criatura": "merrenoloth",
+  "magias": [
+   "control weather",
+   "control water"
+  ]
+ },
+ {
+  "criatura": "moloch",
+  "magias": [
+   "symbol"
+  ]
+ },
+ {
+  "criatura": "molydeus",
+  "lendarias": [
+   "Move",
+   "Cast a Spell"
+  ]
+ },
+ {
+  "criatura": "molydeus",
+  "magias": [
+   "imprisonment"
+  ]
+ },
+ {
+  "criatura": "nabassu",
+  "acao": "Soul-Stealing Gaze"
+ },
+ {
+  "criatura": "nabassu",
+  "traco": "Demonic Shadows"
+ },
+ {
+  "criatura": "nagpa",
+  "magias": [
+   "hallucinatory terrain",
+   "dream",
+   "etherealness"
+  ]
+ },
+ {
+  "criatura": "narzugon",
+  "acao": "Infernal Command"
+ },
+ {
+  "criatura": "narzugon",
+  "acao": "Healing"
+ },
+ {
+  "criatura": "andarilhoNoturno",
+  "traco": "Life Eater"
+ },
+ {
+  "criatura": "besteiroDeCarvalho",
+  "acao": "Explosive Bolt"
+ },
+ {
+  "criatura": "ogroAriete",
+  "acao": "Block the Path"
+ },
+ {
+  "criatura": "oinoloth",
+  "acao": "Corrupted Healing"
+ },
+ {
+  "criatura": "oinoloth",
+  "traco": "Bringer of Plagues"
+ },
+ {
+  "criatura": "orcus",
+  "lendarias": [
+   "Creeping Death"
+  ]
+ },
+ {
+  "criatura": "orcus",
+  "magias": [
+   "create undead"
+  ]
+ },
+ {
+  "criatura": "orthon",
+  "traco": "Invisibility Field"
+ },
+ {
+  "criatura": "orthon",
+  "reacao": "Explosive Retribution"
+ },
+ {
+  "criatura": "abishaiVermelho",
+  "acao": "Incite Fanaticism"
+ },
+ {
+  "criatura": "abishaiVermelho",
+  "acao": "Power of the Dragon Queen"
+ },
+ {
+  "criatura": "trollApodrecido",
+  "traco": "Rancid Degeneration"
+ },
+ {
+  "criatura": "sibriex",
+  "traco": "Contamination"
+ },
+ {
+  "criatura": "espreitador",
+  "traco": "Fallible Invisibility"
+ },
+ {
+  "criatura": "senhorDasCaveiras",
+  "traco": "Master of the Grave"
+ },
+ {
+  "criatura": "senhorDasCaveiras",
+  "lendarias": [
+   "Summon Undead"
+  ]
+ },
+ {
+  "criatura": "mercadorDeAlmas",
+  "traco": "Soul Thirst"
+ },
+ {
+  "criatura": "mercadorDeAlmas",
+  "traco": "Weight of Ages"
+ },
+ {
+  "criatura": "eladrinDaPrimavera",
+  "magias": [
+   "hallucinatory terrain"
+  ]
+ },
+ {
+  "criatura": "grueCriaEstelar",
+  "traco": "Aura of Madness"
+ },
+ {
+  "criatura": "brutamontesCriaEstelar",
+  "traco": "Psychic Mirror"
+ },
+ {
+  "criatura": "magoLarvaCriaEstelar",
+  "traco": "Return to Worms"
+ },
+ {
+  "criatura": "magoLarvaCriaEstelar",
+  "reacao": "Feed on Weakness"
+ },
+ {
+  "criatura": "magoLarvaCriaEstelar",
+  "lendarias": [
+   "Cantrip",
+   "Feed"
+  ]
+ },
+ {
+  "criatura": "mutiladorCriaEstelar",
+  "acao": "Flurry of Claws"
+ },
+ {
+  "criatura": "videnteCriaEstelar",
+  "reacao": "Bend Space"
+ },
+ {
+  "criatura": "amaldicoadoDePedra",
+  "traco": "Cunning Opportunist"
+ },
+ {
+  "criatura": "defensorDePedra",
+  "reacao": "Intercept Attack"
+ },
+ {
+  "criatura": "comandanteEspectroDaEspada",
+  "acao": "Call to Honor"
+ },
+ {
+  "criatura": "comandanteEspectroDaEspada",
+  "traco": "Turning Defiance"
+ },
+ {
+  "criatura": "oRaivoso",
+  "traco": "Rising Anger"
+ },
+ {
+  "criatura": "oFaminto",
+  "traco": "Life Hunger"
+ },
+ {
+  "criatura": "oSolitario",
+  "traco": "Thrives on Company"
+ },
+ {
+  "criatura": "oPerdido",
+  "reacao": "Tightening Embrace"
+ },
+ {
+  "criatura": "titivilus",
+  "magias": [
+   "symbol"
+  ]
+ },
+ {
+  "criatura": "trollVenenoso",
+  "traco": "Poison Splash"
+ },
+ {
+  "criatura": "wastrilith",
+  "traco": "Undertow"
+ },
+ {
+  "criatura": "mirmidaoElementalDaAgua",
+  "acao": "Freezing Strikes"
+ },
+ {
+  "criatura": "yagnoloth",
+  "acao": "Life Leech"
+ },
+ {
+  "criatura": "yagnoloth",
+  "acao": "Battlefield Cunning"
+ },
+ {
+  "criatura": "yeenoghu",
+  "lendarias": [
+   "Charge"
+  ]
+ },
+ {
+  "criatura": "zaratan",
+  "traco": "Earth-Shaking Movement"
+ },
+ {
+  "criatura": "zaratan",
+  "lendarias": [
+   "Retract",
+   "Revitalize"
+  ]
+ },
+ {
+  "criatura": "zuggtmoy",
+  "acao": "Infestation Spores"
+ },
+ {
+  "criatura": "zuggtmoy",
+  "acao": "Mind Control Spores"
+ },
+ {
+  "criatura": "zuggtmoy",
+  "reacao": "Protective Thrall"
+ },
+ {
+  "criatura": "zuggtmoy",
+  "lendarias": [
+   "Exert Will"
+  ]
+ },
+ {
+  "criatura": "zuggtmoy",
+  "magias": [
+   "etherealness"
+  ]
+ }
+]

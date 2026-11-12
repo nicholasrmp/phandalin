@@ -32,6 +32,7 @@ import { rolarTeste } from '../rules/utilidade.js';
 import { ctxDe } from './magias-fora.js';
 import { criarBuscas } from './buscas.js';
 import { armadilhasDaCena } from './armadilhas.js';
+import { loreDaCriatura, fatosAte } from '../rules/lore.js';
 
 export const PERICIAS_DE_INVESTIGAR = ['investigacao'];
 export const CD_PADRAO = 10;
@@ -368,7 +369,8 @@ export function opcaoDeLembrarCriatura(app, c, m, { fora } = {}) {
     onde: m.pos, tipo: `lembrar:${m.defId ?? m.name}`, fora, semAcao: true,
     rotulo: 'Lembrar o que se sabe', titulo: m.name, alcance: 120,
     pericias: [pericia], cd,
-    achado: () => saberDaCriatura(m),
+    // o bloco, e o que os livros contam do POVO dela (os goblinoides, os illithids, os dragões verdes), até o total tirado
+    achado: (_c, t) => [...saberDaCriatura(m), ...fatosAte(loreDaCriatura(m), t?.total ?? cd, { ate: 4 }).map((f) => f.texto)],
     falha: `${c.name} já ouviu falar de algo assim, mas não lembra de nada que sirva agora.`,
     efeito: () => marcarConhecida(app, m),
   });

@@ -231,7 +231,7 @@ await teste('a forja: barricada (Atletismo CD 12), os três ferais, e a pilha qu
   forte.abilities.int = 30;
   const revirar = s.cena.interacoes({ x: 15, y: 15 }, 'laje', forte).find((o) => /peças/.test(o.rotulo));
   await revirar.fazer();
-  assert.ok(garantirInventario(forte).bag.some((i) => i.id === 'azagaiaDoRaio'));
+  assert.ok(garantirInventario(forte).weapons.includes('azagaiaDoRaio'), 'a azagaia achada não foi para as armas');
 });
 
 // --------------------------------------------------------------------- a suíte e o cofre ----
@@ -280,7 +280,7 @@ await teste('o jarro: com a passiva 15 se ouve; aberto, o Hjoldak vira guia e mo
   const cama = s.cena.interacoes(PT.cama, 'camaRei', c).find((o) => /cama/.test(o.rotulo));
   assert.match(cama.detalhe, /Hjoldak/);
   await cama.fazer();
-  assert.ok(garantirInventario(c).bag.some((i) => i.id === 'adagaDeVeneno') && garantirInventario(c).bag.some((i) => i.id === 'gemaElemental'));
+  assert.ok(garantirInventario(c).weapons.includes('adagaDeVeneno') && garantirInventario(c).bag.some((i) => i.id === 'gemaElemental'));
 });
 
 await teste('as latrinas: a passiva 13 acha a secreta para a fonte, e a fonte cura 1d6 a cada dez minutos', async () => {
@@ -459,7 +459,7 @@ await teste('a fossa: Furtividade CD 12 passa; quem falha acorda o otyugh; com a
   await s.cena.fimDoCombate('vitoria');
   c.pos = { x: o.pos.x - 1, y: o.pos.y };
   await s.cena.interacoes(o.pos, 'riacho', c).find((x) => /picareta/.test(x.rotulo)).fazer();
-  assert.ok(garantirInventario(c).bag.some((i) => i.id === 'picaretaLuminosa'));
+  assert.ok(garantirInventario(c).weapons.includes('picaretaLuminosa'));
 });
 
 await teste('as passagens: o elevador consertado desce às minas e sobe ao dormitório; a esteira consertada liga a forja ao depósito', async () => {

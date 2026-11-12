@@ -282,6 +282,52 @@ await teste('Grito Psíquico: pega o escolhido e os outros perto dele, e quem fa
   assert.ok(foes.some((f) => hasCondition(f, 'atordoado')));
 });
 
+// ---- a fila: as magias que pegam na chama do mapa e o Cochilo (2026-11-12, `rules/chamas.js`)
+const comChama = (enc, x, y) => { enc.field.luzes = [...(enc.field.luzes ?? []), { pos: { x, y }, tipo: 'fogo', nome: 'o braseiro', claro: 20, penumbra: 20 }]; return enc.field.luzes.at(-1); };
+
+await teste('Controlar Chamas apaga, dobra ou corta a chama do mapa; sem chama na casa, não sai', () => {
+  const { enc, mago } = montar({ prepara: [] });
+  mago.spellcasting.cantrips.push('controlarChamas');
+  const luz = comChama(enc, 12, 9);
+  assert.ok(!enc.canCast(mago, 'controlarChamas', { point: { x: 12, y: 12 } }).ok, 'saiu sem chama na casa');
+  assert.ok(enc.castSpell(mago, 'controlarChamas', { point: { x: 12, y: 9 }, opcao: 'dobrar' }).ok);
+  assert.equal(luz.claro, 40);
+  novoTurno(mago);
+  assert.ok(enc.castSpell(mago, 'controlarChamas', { point: { x: 12, y: 9 }, opcao: 'apagar' }).ok);
+  assert.ok(luz.apagada);
+});
+
+await teste('Pirotecnia: a chama vira fogos (CON ou cego, a 3 m) ou uma fumaça de 6 m que tapa a vista', () => {
+  const { enc, mago, foes, texto } = montar({ prepara: ['pirotecnia'], foes: [['goblin', { x: 13, y: 9 }]] });
+  const luz = comChama(enc, 12, 9);
+  const orig = enc.rng.die; enc.rng.die = (l) => (l === 20 ? 1 : orig(l));
+  assert.ok(enc.castSpell(mago, 'pirotecnia', { point: { x: 12, y: 9 }, opcao: 'fogos' }).ok, texto());
+  enc.rng.die = orig;
+  assert.ok(luz.apagada);
+  assert.ok(hasCondition(foes[0], 'cego'));
+  novoTurno(mago);
+  const outra = comChama(enc, 4, 4);
+  assert.ok(enc.castSpell(mago, 'pirotecnia', { point: { x: 4, y: 4 }, opcao: 'fumaca' }).ok);
+  assert.ok(outra.apagada);
+  assert.ok(enc.zonas.some((z) => z.obscuro === 'pesada' && z.casas.has('4,4')), 'sem fumaça');
+});
+
+await teste('Cochilo: até três dormem dez minutos e acordam com o descanso curto', async () => {
+  const { conjurarFora, estadoDe } = await import(P + 'rules/utilidade.js');
+  const { makeRng: rng } = await import(P + 'core/rng.js');
+  const party = makeParty({ nivel: 5 });
+  const bardo = party.find((c) => c.classe === 'bardo') ?? party.find((c) => c.spellcasting);
+  bardo.spellcasting.prepared.push('cochilo');
+  bardo.spellcasting.slots[3] = Math.max(1, bardo.spellcasting.slots[3] ?? 0);
+  for (const h of party) h.hp = Math.max(1, Math.floor(h.maxHp / 3));
+  const guerreira = party.find((c) => c.classe === 'guerreiro');
+  if (guerreira) guerreira.resources.secondWind = 0;
+  const r = conjurarFora(estadoDe({}), bardo, 'cochilo', { herois: party, rng: rng(5), circulo: 3 });
+  assert.ok(r.ok, r.why ?? JSON.stringify(r));
+  assert.equal(r.resultado.cochilo.length, 3);
+  assert.ok(r.resultado.cochilo.some((x) => x.curou > 0), 'ninguém gastou dado de vida');
+});
+
 await teste('nenhuma condição tem o nome repetido (a Arma Sagrada da magia já apagou a do paladino da Devoção)', async () => {
   const fs = await import('node:fs');
   const fonte = fs.readFileSync(new URL('../rules/conditions.js', import.meta.url), 'utf8');

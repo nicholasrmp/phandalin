@@ -288,7 +288,7 @@ export const LIVRO_MM = {
    }
   ],
   "traits": [
-   "t_medoDeFogo",
+   "aversaoAoFogo",
    "keenSmell",
    "t_camuflagemNaNeve"
   ],
@@ -414,7 +414,7 @@ export const LIVRO_MM = {
      "arma": "Cauda"
     },
     {
-     "nome": "Ataque de Asas (Custa 2 Ações)",
+     "nome": "Ataque de Asas",
      "custo": 2,
      "tipo": "area",
      "raioFt": 10,
@@ -1334,7 +1334,7 @@ export const LIVRO_MM = {
      "arma": "Cauda"
     },
     {
-     "nome": "Ataque de Asas (Custa 2 Ações)",
+     "nome": "Ataque de Asas",
      "custo": 2,
      "tipo": "area",
      "raioFt": 10,
@@ -3607,7 +3607,7 @@ export const LIVRO_MM = {
      "arma": "Cauda"
     },
     {
-     "nome": "Ataque de Asas (Custa 2 Ações)",
+     "nome": "Ataque de Asas",
      "custo": 2,
      "tipo": "area",
      "raioFt": 15,
@@ -12070,7 +12070,7 @@ export const LIVRO_MM = {
   },
   "traits": [
    "furorDoGolem",
-   "t_aversaoAoFogo",
+   "aversaoAoFogo",
    "formaImutavel",
    "absorcaoDeRaios",
    "resistenciaAMagia",
@@ -17571,7 +17571,7 @@ export const LIVRO_MM = {
    ]
   },
   "traits": [
-   "invisivelAVontade",
+   "sempreInvisivel",
    "t_rastreadorInfalivel"
   ],
   "blurb": "Um caçador de ar que nunca pode ser visto e golpeia duas vezes por turno, sempre com vantagem contra quem não o enxerga. Resiste a armas comuns e ignora agarrões, contenções e quedas.",
@@ -18081,13 +18081,13 @@ export const LIVRO_MM = {
      "arma": "Tentáculo"
     },
     {
-     "nome": "Tempestade de Raios (custa 2 ações)",
+     "nome": "Tempestade de Raios",
      "custo": 2,
      "tipo": "especial",
      "acao": "Tempestade de Raios"
     },
     {
-     "nome": "Nuvem de Tinta (custa 3 ações)",
+     "nome": "Nuvem de Tinta",
      "custo": 3,
      "tipo": "tinta",
      "raioFt": 60,
@@ -18825,13 +18825,13 @@ export const LIVRO_MM = {
      "soTruque": true
     },
     {
-     "nome": "Toque Paralisante (custa 2 ações)",
+     "nome": "Toque Paralisante",
      "custo": 2,
      "tipo": "golpe",
      "arma": "Toque Paralisante"
     },
     {
-     "nome": "Olhar Aterrorizante (custa 2 ações)",
+     "nome": "Olhar Aterrorizante",
      "custo": 2,
      "tipo": "alvo",
      "alcanceFt": 10,
@@ -18842,7 +18842,7 @@ export const LIVRO_MM = {
      "repete": true
     },
     {
-     "nome": "Romper a Vida (custa 3 ações)",
+     "nome": "Romper a Vida",
      "custo": 3,
      "tipo": "area",
      "raioFt": 20,
@@ -23108,7 +23108,7 @@ export const LIVRO_MM = {
   "traits": [
    "incorporealMovement",
    "sunlightSensitivity",
-   "invisivelAVontade"
+   "sempreInvisivel"
   ],
   "blurb": "Espírito invisível que atravessa paredes e golpeia com força pura, além de arremessar criaturas e objetos pelo ar com telecinesia. Difícil de enxergar e de ferir com armas comuns.",
   "lore": "O poltergeist é a alma perturbada de alguém que morreu sem entender como. Preso entre a confusão e a fúria, ele permanece invisível nos lugares onde viveu, seja em cidades ou nas profundezas do Subterrâneo. Sua mente despedaçada se manifesta como força telecinética, que ele usa para atirar móveis, pedras e pessoas. Evita a luz do sol, que o deixa desorientado."
@@ -28107,7 +28107,8 @@ export const LIVRO_MM = {
    "dc": 15,
    "condition": "desnorteado",
    "imunizaAoPassar": false,
-   "rounds": 1
+   "rounds": 1,
+   "olhar": true
   },
   "traits": [
    "aura",
@@ -28825,7 +28826,7 @@ export const LIVRO_MM = {
      "arma": "Golpe Desarmado (Só Forma Vampírica)"
     },
     {
-     "nome": "Mordida (Custa 2 Ações)",
+     "nome": "Mordida",
      "custo": 2,
      "tipo": "golpe",
      "arma": "Mordida (Só Forma de Morcego ou Vampírica)"
@@ -30277,7 +30278,7 @@ export const LIVRO_MM = {
    }
   ],
   "traits": [
-   "t_medoDeFogo",
+   "aversaoAoFogo",
    "keenSmell",
    "t_camuflagemNaNeve"
   ],
@@ -32119,10 +32120,6 @@ export const TRACOS_MM = {
   "name": "Telepatia Invasiva",
   "desc": "Se uma criatura que ele vê falar com ele por telepatia, o aboleth descobre os maiores desejos dela."
  },
- "t_medoDeFogo": {
-  "name": "Medo de Fogo",
-  "desc": "Ao sofrer dano de fogo, tem desvantagem em jogadas de ataque e testes de habilidade até o fim do seu próximo turno."
- },
  "t_camuflagemNaNeve": {
   "name": "Camuflagem na Neve",
   "desc": "Vantagem em testes de Destreza (Furtividade) para se esconder em terreno nevado."
@@ -32218,10 +32215,6 @@ export const TRACOS_MM = {
  "t_telepatiaLimitada": {
   "name": "Telepatia Limitada",
   "desc": "Transmite ideias, emoções e imagens simples a qualquer criatura a até 30 m que entenda algum idioma."
- },
- "t_aversaoAoFogo": {
-  "name": "Aversão ao Fogo",
-  "desc": "Ao sofrer dano de fogo, tem desvantagem em jogadas de ataque e testes de habilidade até o fim do seu próximo turno."
  },
  "t_telepatiaAvancada": {
   "name": "Telepatia Avançada",

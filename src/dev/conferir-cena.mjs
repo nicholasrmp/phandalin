@@ -25,7 +25,7 @@ const K = (x, y) => `${x},${y}`;
 
 const TODAS = CENAS ?? ['emboscada', 'ermo', 'ermoNoite', 'rua', 'esconderijo', 'mansao', 'mansaoTunel',
   'poco', 'cume', 'castelo', 'arvoreTrovao', 'ondaEco',
-  'covilAgatha', 'cavernaDoPoco', 'acampamentoSawplee', 'telhadoGigante', 'giganteTerreo', 'zorzulaPosto', 'zorzulaMinas', 'santuarioIndigo', 'casaMarthungrim', 'minaHardyhammer', 'largoDaVaca', 'talhundereth', 'criptaTalhund',
+  'covilAgatha', 'cavernaDoPoco', 'acampamentoSawplee', 'telhadoGigante', 'giganteTerreo', 'zorzulaPosto', 'zorzulaMinas', 'santuarioIndigo', 'casaMarthungrim', 'minaHardyhammer', 'largoDaVaca', 'santuarioInfectado', 'tunelGrells', 'tunelBehir', 'tunelGruta', 'illithinoch', 'fendaTrincheiras', 'fendaOco', 'fendaLabirinto', 'labirintoSalgado', 'covilLowarnizel', 'pocaSalgada', 'vazioCupula', 'vazioPonte', 'vazioCharco', 'vazioNematodeo', 'vazioMiasma', 'vazioEstatua', 'vazioCampo', 'vazioAnima', 'talhundereth', 'criptaTalhund',
   'casaDaMorte1', 'casaDaMorte2', 'casaDaMorte3', 'casaDaMorte4', 'casaDaMortePorao1', 'casaDaMortePorao2'];
 
 // A CHAMA MORA DENTRO DO QUE A SEGURA, e isso não é defeito: braseiro, fogueira e lareira barram o passo e

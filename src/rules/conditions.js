@@ -92,11 +92,12 @@ export const CONDITIONS = {
     attackedAdvantage: true,
     saveDisadvantage: ['dex'],
   },
-  // De olhos desviados da medusa (o jogador decide, `useFeature('desviarOlhar')`): não faz o teste do olhar, mas não a
-  // vê. Ataca a medusa com desvantagem, e ela o ataca com vantagem (`attackModifiers`). Vale até o começo do próximo turno.
+  // De olhos desviados da medusa ou do brutamonte umbral (o jogador decide, `useFeature('desviarOlhar')`): não faz o teste
+  // do olhar, mas não vê quem o tem. Ataca-o com desvantagem, e ele o ataca com vantagem (`attackModifiers`). Vale até o
+  // começo do próximo turno.
   olhosDesviados: {
     name: 'Olhos desviados',
-    desc: 'Não olha para a medusa: escapa do olhar, mas ataca a medusa com desvantagem e ela o ataca com vantagem.',
+    desc: 'Não olha para quem tem o olhar: escapa dele, mas o ataca com desvantagem e ele o ataca com vantagem.',
     expiresAtTurnStart: true,
   },
   // A PODRIDÃO DA MÚMIA (Cripta dos Talhund): não recupera PV até tirarem a maldição.
@@ -148,6 +149,17 @@ export const CONDITIONS = {
     desc: 'As ordens de um líder: soma 1d4 às jogadas de ataque e aos testes de resistência por 1 minuto.',
     attackBonusDice: '1d4',
     saveBonusDice: '1d4',
+  },
+  // A BÊNÇÃO DA MENTE SOLIPSISTA (o Jomlus, Labirinto Salgado B10): por uma hora, 1d8 a mais nos testes e nas
+  // resistências de Inteligência e Sabedoria, e nenhuma reação — a cabeça fica fechada no que ela mesma pensa.
+  // `habsDoBonus` restringe o dado às duas: `conditionEffects` o põe em `saveBonusDiceHab`, e o teste o confere.
+  menteSolipsista: {
+    name: 'Mente Solipsista',
+    desc: 'Por uma hora: soma 1d8 aos testes e às resistências de Inteligência e de Sabedoria, e não pode usar reações.',
+    saveBonusDice: '1d8',
+    testeBonusDice: '1d8',
+    habsDoBonus: ['int', 'wis'],
+    semReacao: true,
   },
   abencoado: {
     name: 'Abençoado',
@@ -357,6 +369,22 @@ export const CONDITIONS = {
     name: 'Doente',
     desc: 'A mordida do otyugh: desvantagem em ataques e testes. A cada descanso longo, Constituição CD 15 cura; falha tira 1d10 do PV máximo até a cura.',
     attackDisadvantage: true,
+  },
+  // AS DOENÇAS DO LIVRO DO MESTRE (`doencas.js`): o estado mora na `data`; o descanso longo faz o dia passar
+  febreDoRiso: {
+    name: 'Febre do Riso',
+    desc: 'Febre e um degrau de exaustão que não sai sem a cura. Quem sofre dano faz Constituição CD 13 ou cai de rir por um minuto. A cada descanso longo, Constituição contra a CD da febre: passando, ela cai 1d6, e a zero a febre se vai.',
+    porNivel: true,
+  },
+  pesteDoEsgoto: {
+    name: 'Peste do Esgoto',
+    desc: 'Exaustão que cresce: o descanso longo não cura PV e o dado de vida cura a metade. A cada descanso longo, Constituição CD 11: passa, um degrau a menos (a zero, curou); falha, um a mais.',
+    porNivel: true,
+  },
+  podridaoDaVista: {
+    name: 'Podridão da Vista',
+    desc: 'A vista turva: −1 nos ataques, e −1 a mais a cada descanso longo; em −5, cego. Cura com Restauração Menor.',
+    ataqueMenosDaData: true,
   },
   // A GÊMULA GRUDADA (o Obelisco): 3d4 perfurante no começo de cada turno (`combat.js inicioDoTurnoDoBloco`). Sai com a
   // ação de escapar (a CD 15 de Força do livro) ou quando a gêmula morre ou cai (`soltarAgarroesDe`, pela `escape`).
@@ -791,6 +819,78 @@ export const CONDITIONS = {
   fantasmas: {
     name: 'Fantasmas',
     desc: 'Três cópias ilusórias dele o acompanham: quem o mira sorteia entre ele e as cópias. Cada cópia acertada some; somem todas na luz plena.',
+  },
+  // As Duplicatas Fantasmagóricas do cloaker mutante (o Obelisco): até o fim do próximo turno dele.
+  duplicatas: {
+    name: 'Duplicatas',
+    desc: 'Quatro cópias ilusórias giram em volta dele: ataques contra ele têm desvantagem.',
+    attackedDisadvantage: true,
+  },
+  // O aperto do tentáculo do cérebro ancião (o Obelisco): fere no começo de cada turno do preso, enquanto o agarrão dura
+  // (nasce com `comOAgarrao`, e cai junto com ele).
+  apertoPsiquico: {
+    name: 'Aperto Psíquico',
+    desc: 'O tentáculo do cérebro ancião aperta a mente: dano psíquico no começo de cada turno, enquanto estiver agarrado.',
+    danoNoInicio: 'psíquico',
+  },
+  // O muco da estátua de Illithinoch (o Obelisco): resistência a psíquico por dez minutos.
+  mucoDaEstatua: {
+    name: 'Muco da estátua',
+    desc: 'Resistência a dano psíquico, por dez minutos.',
+    resiste: ['psíquico'],
+  },
+  // O VÍNCULO PSÍQUICO do cérebro ancião (o Obelisco): ele percebe tudo o que o vinculado percebe. Não muda a luta; rompê-lo
+  // custa uma ação, Carisma CD 17, e 3d6 psíquicos (`illithinoch.js`). Acaba com o cérebro morto ou fora da fortaleza.
+  vinculoPsiquico: {
+    name: 'Vínculo psíquico',
+    desc: 'O cérebro ancião enxerga pelos seus olhos e ouve pelos seus ouvidos.',
+  },
+  // O Choro da ocular (o Obelisco): o desespero prende os pés até o fim do próximo turno dela.
+  // A QUEBRA-MENTE da Refração de Ilvaash (o Obelisco, capítulo 8): desvantagem em ataque e em toda resistência até o
+  // fim do próximo turno de quem a leva. O livro põe também os testes de atributo; na luta, eles quase não aparecem.
+  quebraMente: {
+    name: 'Mente quebrada',
+    desc: 'Os pensamentos não se juntam: desvantagem nas jogadas de ataque e em toda resistência, até o fim do próximo turno.',
+    attackDisadvantage: true,
+    saveDisadvantage: ['str', 'dex', 'con', 'int', 'wis', 'cha'],
+  },
+  // A DESESPERANÇA do Símbolo da Ponte Vazia (o Obelisco, capítulo 8): por um minuto, não ataca nem mira ninguém com o que
+  // fere (o jogo usa o mesmo travão da Forma Gasosa: nem ataque, nem magia).
+  desesperanca: {
+    name: 'Desesperança',
+    desc: 'Um desânimo tão fundo que levantar a arma parece sem sentido: não ataca nem conjura.',
+    semAtaqueNemMagia: true,
+  },
+  // O VERME DA POÇA SALGADA que já vai embora (`poca-salgada.js`): nada para longe e não ataca mais ninguém; quem está
+  // dentro dele continua dentro.
+  vermeEmFuga: {
+    name: 'Indo embora',
+    desc: 'Nada para longe, no escuro do líquido, e não ataca mais.',
+    semAtaqueNemMagia: true,
+  },
+  // O LABIRINTO SALGADO (o Obelisco, capítulo 8). O LOBO PARIETAL: ninguém fica caído sem querer (a cena põe e tira a
+  // condição conforme a casa, `labirinto-salgado.js aplicarLobos`).
+  loboParietal: {
+    name: 'Lobo parietal',
+    desc: 'Nesta parte do labirinto ninguém cai sem querer.',
+    imuneA: ['caido'],
+  },
+  // O LOBO FRONTAL (B14 a B22): a ação Ajudar vira ação bônus (`subclasses-livros.js ajudaDoLobo`, no menu do alvo).
+  loboFrontal: {
+    name: 'Lobo frontal',
+    desc: 'Nesta parte do labirinto, ajudar um aliado contra um inimigo ao seu lado custa só a ação bônus.',
+  },
+  // O ASSOBIO DISSONANTE de B15: desvantagem nas resistências de Inteligência e de Sabedoria (os testes, a cena rola).
+  assobioDissonante: {
+    name: 'Assobio dissonante',
+    desc: 'Um assobio fino de arame que dá dor de cabeça: desvantagem em Inteligência e Sabedoria.',
+    saveDisadvantage: ['int', 'wis'],
+    desvantagemTeste: ['int', 'wis'],
+  },
+  desalento: {
+    name: 'Desalento',
+    desc: 'O desespero prende os pés: deslocamento 0.',
+    speed: 0,
   },
   confuso: {
     name: 'Confuso',
@@ -1374,6 +1474,86 @@ export const CONDITIONS = {
     desc: 'Anda pela metade até o fim do próximo turno.',
     speedHalfMagico: true,
   },
+  // A POÇÃO DE RESISTÊNCIA (Livro do Mestre): resistência ao tipo da poção (`data.tipo`) por uma hora
+  resistenciaDaPocao: {
+    name: 'Poção de Resistência',
+    desc: 'Resiste ao tipo de dano da poção que bebeu, por uma hora.',
+    resisteTipoDado: true,
+  },
+  // BLACKRAZOR (`combat.js devorarAlma`): enquanto duram os PV temporários da alma devorada
+  almaDevorada: {
+    name: 'Alma devorada', desc: 'A Blackrazor está saciada: vantagem nos ataques, nos testes e nas resistências enquanto durarem os PV temporários que ela deu.',
+    saveAdvantage: ['str', 'dex', 'con', 'int', 'wis', 'cha'], vantagemTeste: ['str', 'dex', 'con', 'int', 'wis', 'cha'],
+  },
+  // A CAPA DE AUMENTO (o Labirinto Salgado): o dano a mais é a proficiência de quem a veste (`data.dadosNoAcerto`)
+  aumentadoPelaCapa: {
+    name: 'Aumentado pela capa', desc: 'Cresceu pela capa: vantagem nos testes e resistências de Força, e a proficiência a mais no dano de arma. Dez minutos.',
+    vantagemTeste: ['str'], saveAdvantage: ['str'], danoNoAcerto: { dados: '+2' },
+  },
+  // A SEGUNDA FILA DOS BESTIÁRIOS (`livro-motor.js`)
+  aversaoAoFogo: {
+    name: 'Aversão ao fogo', desc: 'O fogo o fez recuar: desvantagem nos ataques e nos testes até o fim do próximo turno.',
+    attackDisadvantage: true, desvantagemTeste: ['str', 'dex', 'con', 'int', 'wis', 'cha'],
+  },
+  naConcha: {
+    name: 'Na carapaça', desc: 'Recolhido: +4 na CA, vantagem nas resistências de FOR e CON, desvantagem nas de DES, sem deslocamento, sem reação e sem ação; sai com uma ação bônus.',
+    acBonus: 4, speed: 0, saveAdvantage: ['str', 'con'], saveDisadvantage: ['dex'], semAtaqueNemMagia: true, semReacao: true,
+  },
+  exposto: {
+    name: 'Exposto', desc: 'Golpeou com tudo e se abriu: quem o ataca tem vantagem até o começo do próximo turno dele.', attackedAdvantage: true,
+  },
+  // (não é o `provocado` do Ataque Provocador, que só pesa contra quem não provocou: os dois com o mesmo nome se apagavam)
+  escarnecido: {
+    name: 'Escarnecido', desc: 'A provocação o abalou: desvantagem nos ataques, nos testes e nas resistências até o começo do próximo turno de quem provocou.',
+    attackDisadvantage: true, saveDisadvantage: ['str', 'dex', 'con', 'int', 'wis', 'cha'], desvantagemTeste: ['str', 'dex', 'con', 'int', 'wis', 'cha'],
+  },
+  // AS RAÇAS DOS LIVROS (`racas-motor.js`)
+  almaRadiante: {
+    name: 'Alma Radiante', desc: 'Asas de luz: 9 m de voo, e uma vez por turno o acerto de ataque soma radiante igual ao nível. Um minuto.',
+    vooFt: 30,
+  },
+  consumoRadiante: {
+    name: 'Consumo Radiante', desc: 'Luz que queima: no fim de cada turno, radiante em si e em quem está a 3 m; uma vez por turno o acerto soma radiante igual ao nível. Um minuto.',
+  },
+  mortalhaNecrotica: {
+    name: 'Mortalha Necrótica', desc: 'Asas de sombra: uma vez por turno o acerto de ataque soma necrótico igual ao nível. Um minuto.',
+  },
+  rastejando: {
+    name: 'Rastejando e implorando', desc: 'Os aliados têm vantagem nos ataques contra inimigos a até 3 m dele, até o fim do próximo turno.',
+  },
+  protecaoCromatica: {
+    name: 'Proteção Cromática', desc: 'Imune ao tipo de dano da ancestralidade dracônica. Um minuto.', imuneTipoDado: true,
+  },
+  vooDeGema: {
+    name: 'Voo de Gema', desc: 'Asas espectrais: voo de 9 m. Um minuto.', vooFt: 30,
+  },
+  protecaoDoCorvo: {
+    name: 'Bênção da Rainha Corvo', desc: 'Resistência a todo dano até o começo do próximo turno.', resisteTudo: true,
+  },
+  incapacitadoPeloSopro: {
+    name: 'Enervado', desc: 'O sopro do dragão metálico tirou as forças: incapacitado até o começo do próximo turno de quem soprou.', incapacitated: true,
+  },
+  // O VENENO NA LÂMINA (`combat.js`, consumível `untar`): o próximo acerto de corte ou ponta o leva, dentro de um minuto
+  armaUntada: {
+    name: 'Arma untada',
+    desc: 'O veneno está na lâmina: o próximo acerto de corte ou ponta o leva. Seca em um minuto.',
+  },
+  // A ANTITOXINA: vantagem nas resistências contra veneno por uma hora (`passivas.js`)
+  antitoxina: {
+    name: 'Antitoxina',
+    desc: 'Vantagem nas resistências contra veneno, por uma hora.',
+  },
+  // O VENENO QUE DERRUBA (o drow, a essência de éter): inconsciente enquanto envenenado; o dano acorda
+  desmaiadoDeVeneno: {
+    name: 'Desmaiado',
+    desc: 'O veneno derrubou: incapacitado e caído. Sofrer dano acorda.',
+    incapacitated: true,
+    speed: 0,
+    attackedAdvantage: true,
+    autoFailSaves: ['str', 'dex'],
+    critWithinReach: true,
+    acordaComDano: true,
+  },
   elementosAbsorvidos: {
     name: 'Elementos Absorvidos',
     desc: 'Resiste ao tipo de dano que absorveu até o próximo turno.',
@@ -1833,6 +2013,8 @@ export function removeCondition(actor, id) {
   // agarrão leva `data.comOAgarrao` = quem agarra, e cai junto com ele por qualquer caminho: escapar, quem agarra cair,
   // morrer ou soltar.
   if (saiu?.id === 'agarrado') actor.conditions = actor.conditions.filter((c) => !(c.data?.comOAgarrao && c.data.comOAgarrao === saiu.source));
+  // O QUE DURA ENQUANTO OUTRA CONDIÇÃO DURA (o sem cura do Golpe de Cadáver, preso ao envenenado do mesmo golpe)
+  if (saiu) actor.conditions = actor.conditions.filter((c) => !(c.data?.comCondicao === saiu.id && c.source === saiu.source));
 }
 
 /** Agrega os efeitos de todas as condições ativas. */
@@ -1878,6 +2060,8 @@ export function conditionEffects(actor) {
     resisteNaoMagicoTudo: false,
     attackBonusDice: [],
     saveBonusDice: [],
+    // o dado que só vale em algumas resistências (`habsDoBonus`): { dados, habs }
+    saveBonusDiceHab: [],
     attackPenaltyDice: [],
     savePenaltyDice: [],
     acBonus: 0,
@@ -1909,6 +2093,10 @@ export function conditionEffects(actor) {
   for (const c of actor.conditions ?? []) {
     const def = CONDITIONS[c.id];
     if (!def) continue;
+    // a doença que ainda incuba não faz nada (`doencas.js`)
+    if (c.data?.incubando > 0) continue;
+    // a podridão da vista: −N nos ataques
+    if (def.ataqueMenosDaData && c.data?.penalidade) out.ataqueFixo -= c.data.penalidade;
     if (def.incapacitated) out.incapacitated = true;
     if (def.attackDisadvantage) out.attackDisadvantage = true;
     if (def.attackedAdvantage) out.attackedAdvantage = true;
@@ -1922,7 +2110,8 @@ export function conditionEffects(actor) {
     if (def.saveDisadvantage) out.saveDisadvantage.push(...def.saveDisadvantage);
     if (def.attackBonusDice) out.attackBonusDice.push(def.attackBonusDice);
     if (def.bonusDeAtaqueNaData && c.data?.bonus) out.attackBonusDice.push(`+${c.data.bonus}`);
-    if (def.saveBonusDice) out.saveBonusDice.push(def.saveBonusDice);
+    if (def.saveBonusDice && def.habsDoBonus) out.saveBonusDiceHab.push({ dados: def.saveBonusDice, habs: def.habsDoBonus });
+    else if (def.saveBonusDice) out.saveBonusDice.push(def.saveBonusDice);
     // Dado guardado na instância (Inspiração Bárdica): vale nos três.
     if (def.dadoNaData && c.data?.dado) {
       out.attackBonusDice.push(c.data.dado);
@@ -1998,6 +2187,15 @@ export function conditionEffects(actor) {
     out.acBonus += 2;
     for (const hab of HABILIDADES) out.saveFixo[hab] = (out.saveFixo[hab] ?? 0) + 2;
   }
+  // O ITEM QUE O HERÓI USA (`itens-passivos.js`): +N em toda resistência (o anel e o manto de proteção), e a liberdade
+  // de movimento do anel de ação livre
+  const di = actor.doItem;
+  if (di?.salvas) for (const hab of HABILIDADES) out.saveFixo[hab] = (out.saveFixo[hab] ?? 0) + di.salvas;
+  if (di?.liberdade) {
+    out.semTerrenoDificil = true;
+    out.semReducaoDeDeslocamento = true;
+    out.soltaDoAgarrao = true;
+  }
   if (actor.traits?.includes('liberdadeDeMovimento')) {
     out.semTerrenoDificil = true;
     out.semReducaoDeDeslocamento = true;
@@ -2021,7 +2219,7 @@ export function caEfetiva(c) {
  * null (nada), 'semAr' (o ar acabou agora), 'cai' (caiu a 0 PV) — quem chama narra e derruba.
  */
 export function gastarFolego(c) {
-  if (c.respiraNaAgua || c.speeds?.swimFt || c.tipo === 'morto-vivo' || c.tipo === 'constructo') return null;
+  if (c.respiraNaAgua || c.doItem?.respiraNaAgua || c.speeds?.swimFt || c.tipo === 'morto-vivo' || c.tipo === 'constructo') return null;
   const con = Math.floor(((c.abilities?.con ?? 10) - 10) / 2);
   c.folego ??= Math.max(5, (1 + con) * 10);
   if (c.folego > 0) {

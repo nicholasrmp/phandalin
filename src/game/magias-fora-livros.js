@@ -24,7 +24,7 @@ export function contarDosLivros(x, c, r, { alvo = null } = {}) {
   const id = r.spell.id;
   const u = UTIL[id];
   const res = r.resultado;
-  if (!u || r.spell.fonte !== 'phb') return null;
+  if (!u || !['phb', 'xge'].includes(r.spell.fonte)) return null;
   const nome = alvo?.name ?? 'o alvo';
   const t = [];
   if (u.efeito === 'comunhao') {
@@ -92,6 +92,9 @@ export function contarDosLivros(x, c, r, { alvo = null } = {}) {
       return t;
     case 'regenerar':
       t.push(`O corpo de ${res.regenerou?.name ?? nome} se refaz em uma hora: a carne fecha, o osso solda e toda a vida volta.`);
+      return t;
+    case 'cochilo':
+      t.push(`${c.name} canta baixo e ${(res.cochilo ?? []).map((x) => x.h.name).join(', ') || 'ninguém'} dorme${(res.cochilo ?? []).length > 1 ? 'm' : ''} dez minutos. Acorda${(res.cochilo ?? []).length > 1 ? 'm' : ''} como de uma hora de descanso${(res.cochilo ?? []).some((x) => x.curou) ? `: ${(res.cochilo ?? []).filter((x) => x.curou).map((x) => `${x.h.name} +${x.curou} PV`).join(', ')}` : ''}.`);
       return t;
     case 'banqueteDosHerois':
       t.push(`Dez minutos de banquete servido do nada. Por um dia inteiro, quem comeu não sente medo nem veneno, resiste melhor com a cabeça (vantagem em Sabedoria) e aguenta mais: ${(res.banquete ?? []).map((b) => `${b.h.name} +${b.pv} PV`).join(', ')}.`);

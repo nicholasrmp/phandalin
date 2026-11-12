@@ -54,7 +54,9 @@ export const circuloValido = (c) => c === undefined || c === null || (Number.isI
 export const magiaNaHora = (spell, ativa) => spell.kind === 'tempHp' || spell.kind === 'aura' || spell.kind === 'disparada'
   || spell.kind === 'reacao' || spell.kind === 'frutos' || spell.kind === 'rastro' || spell.kind === 'invocar'
   || (spell.kind === 'buff' && spell.rangeFt === 0)
-  || (['lamina', 'curaReuso'].includes(spell.kind) && !ativa);
+  || (['lamina', 'curaReuso'].includes(spell.kind) && !ativa)
+  // a AÇÃO DA RAÇA que é só em si (a Agilidade Felina, o Passo Oculto, as transformações do aasimar): não tem o que mirar
+  || Boolean(spell.racial && spell.kind === 'livro' && !spell.rangeFt && !spell.shape);
 
 /** A magia de vários alvos (Bênção, Míssil Mágico) escolhe um por clique. */
 export const escolheVarios = (spell) => ['buff', 'debuff', 'auto', 'raios', 'healGrupo'].includes(spell.kind) || (spell.kind === 'save' && !!spell.alvos);

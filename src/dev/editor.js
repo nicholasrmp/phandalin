@@ -13,6 +13,7 @@ import { mapaDo } from '../game/encounter.js';
 import { montarCampo } from '../game/campo.js';
 import * as M from '../game/mapa-editor.js';
 import { CONDITIONS } from '../rules/conditions.js';
+import { MODELOS_DO_LIVRO, regioesDoModelo } from '../rules/armadilhas-livro.js';
 import * as T from '../view/vista-topo.js';
 // O atlas ainda é desenhado: os mapas sem pintura trazem móveis em `objetos`, e vê-los ajuda a decalcar. O que
 // saiu foi PÔR e TIRAR sprite pelo editor — isso é do mundo isométrico, e o cenário agora vem pintado.
@@ -640,10 +641,10 @@ const ROTULO_DO_QUANDO = { entrar: 'entra', sair: 'sai', comecaTurno: 'começa o
 const ROTULO_DO_EFEITO = {
   texto: 'Texto', dano: 'Dano', condicao: 'Condição', parar: 'Parar o passo', terrenoDificil: 'Terreno difícil',
   sobreposicao: 'Acender/apagar arte', alternar: 'Ligar/desligar região', teleporte: 'Teleporte',
-  voltar: 'Voltar para a casa de onde veio',
+  voltar: 'Voltar para a casa de onde veio', dardos: 'Dardos (o do livro: ataques sorteados)',
 };
 const ATRIBUTOS = [['', 'sem teste'], ['str', 'FOR'], ['dex', 'DES'], ['con', 'CON'], ['int', 'INT'], ['wis', 'SAB'], ['cha', 'CAR']];
-const TIPOS_DE_DANO = ['', 'contundente', 'cortante', 'perfurante', 'fogo', 'frio', 'elétrico', 'ácido', 'veneno', 'necrótico', 'radiante', 'trovejante', 'psíquico', 'energético'];
+const TIPOS_DE_DANO = ['', 'concussão', 'cortante', 'perfurante', 'fogo', 'frio', 'elétrico', 'ácido', 'veneno', 'necrótico', 'radiante', 'trovejante', 'psíquico', 'energético'];
 const CONDICOES = ['caido', 'contido', 'agarrado', 'envenenado', 'amedrontado', 'cego', 'atordoado', 'paralisado', 'inconsciente'];
 const LIGA = [['', 'inverter'], ['1', 'ligar'], ['0', 'desligar']];
 
@@ -733,6 +734,7 @@ function regiaoNoPainel() {
       <label>id (o nome que o roteiro e as outras regiões chamam)<input id="rId" type="text" value="${escapar(r.id)}" /></label>
       <label>nome (o que o registro diz)<input id="rNome" type="text" value="${escapar(r.nome)}" /></label>
     </div>
+    <label class="linha">modelo do livro <select id="rModelo"><option value="">— aplicar uma armadilha ou um perigo do Livro do Mestre —</option>${Object.entries(MODELOS_DO_LIVRO).map(([k, m]) => `<option value="${k}">${m.nome}</option>`).join('')}</select></label>
     <p class="dica" style="margin:6px 0 2px">dispara quando alguém…</p>
     ${Object.entries(ROTULO_DO_QUANDO).map(([q, n]) => `<label class="linha"><input type="checkbox" data-quando="${q}" ${quando.includes(q) ? 'checked' : ''} /> ${n}</label>`).join('')}
     <label class="linha">vale para <select id="rQuem">${opcoes([['todos', 'todos'], ['grupo', 'só o grupo'], ['inimigos', 'só os inimigos']], r.quem ?? 'todos')}</select></label>
@@ -759,6 +761,19 @@ function regiaoNoPainel() {
     monstro não sabe dela.</p>`;
   $('rId').addEventListener('change', (ev) => mexerNaRegiao((q) => { q.id = ev.target.value.trim(); }));
   $('rNome').addEventListener('change', (ev) => mexerNaRegiao((q) => { q.nome = ev.target.value.trim(); }));
+  // O MODELO DO LIVRO (`rules/armadilhas-livro.js`): troca a região escolhida pela armadilha do livro, nas mesmas casas
+  // (o teto que desaba traz junto a região do entulho, desligada)
+  $('rModelo').addEventListener('change', (ev) => {
+    if (!ev.target.value) return;
+    const atual = (mapa.regioes ?? []).find((q) => q.id === regiaoSel);
+    if (!atual) return;
+    ponto();
+    M.tirarRegiao(mapa, atual.id);
+    let mudou = true;
+    for (const nova of regioesDoModelo(ev.target.value, atual.id, atual.casas)) mudou = M.porRegiao(mapa, nova) && mudou;
+    if (!aplicar(mudou)) { desfazer.pop(); botoes(); }
+    regiaoNoPainel();
+  });
   form.querySelectorAll('[data-quando]').forEach((c) => c.addEventListener('change', () => mexerNaRegiao((q) => {
     q.quando = [...form.querySelectorAll('[data-quando]')].filter((x) => x.checked).map((x) => x.dataset.quando);
   })));

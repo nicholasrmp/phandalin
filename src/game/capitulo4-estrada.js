@@ -29,6 +29,8 @@ import { makeMonster } from '../rules/monsters.js';
 import { continuarViagem } from './regiao.js';
 import { prepararLevas } from './levas.js';
 import { guardar } from './comercio.js';
+import { tesouroDoBando } from '../rules/tesouro.js';
+import { nomeDeId } from '../rules/equipment.js';
 
 
 
@@ -142,6 +144,14 @@ export function criarEstrada(app, config) {
       if (!vila.pistas.some((p) => p.startsWith('Hobgoblins caçam'))) {
         (vila.pistas ??= []).push('Hobgoblins caçam o grupo na estrada: o Aranha Negra pôs 25 peças de ouro na cabeça de um de vocês.');
       }
+    }
+    // O BOLSO DE QUEM A AVENTURA NÃO DÁ BOLSA (os hobgoblins, os bugbears, o ogro): o tesouro individual do Livro do
+    // Mestre, cada caído pelo ND dele (`rules/tesouro.js`). O chefe goblin segue com a bolsa do Obelisco, acima; fera e
+    // morto-vivo não levam nada. Decisão nossa (2026-11-12): o Obelisco não diz o que eles carregam.
+    if (['hobgoblin', 'bugbear', 'ogro'].includes(e.id) && quem) {
+      const bolso = tesouroDoBando(enc.rng, inimigos.filter((f) => f.dead || f.hp <= 0 || f.capturado));
+      for (const { id, qtd } of bolso) guardar(quem, id, qtd);
+      if (bolso.length) texto.push(`Nos bolsos dos caídos: ${bolso.map(({ id, qtd }) => `${qtd} ${nomeDeId(id).toLowerCase()}`).join(', ')}. ${quem.name} guarda.`);
     }
     if (texto.length) await narrar(root, { formato: 'painel', paginas: [{ texto }] });
     const xp = inimigos.filter((f) => f.dead || f.hp <= 0 || f.capturado).reduce((s, f) => s + (f.xp ?? 0), 0);

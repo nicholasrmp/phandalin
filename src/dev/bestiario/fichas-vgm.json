@@ -1,0 +1,546 @@
+{
+ "abjurador": [
+  "VGM",
+  "Abjurer.webp"
+ ],
+ "alhoon": [
+  "VGM",
+  "Alhoon.webp"
+ ],
+ "bruxaAnnis": [
+  "VGM",
+  "Annis Hag.webp"
+ ],
+ "aprendizDeMago": [
+  "VGM",
+  "Apprentice Wizard.webp"
+ ],
+ "arquidruida": [
+  "VGM",
+  "Archdruid.webp"
+ ],
+ "arqueiro": [
+  "VGM",
+  "Archer.webp"
+ ],
+ "auroque": [
+  "VGM",
+  "Aurochs.webp"
+ ],
+ "babau": [
+  "VGM",
+  "Babau.webp"
+ ],
+ "banderhobb": [
+  "VGM",
+  "Banderhobb.webp"
+ ],
+ "bardo": [
+  "VGM",
+  "Bard.webp"
+ ],
+ "barghest": [
+  "VGM",
+  "Barghest.webp"
+ ],
+ "bruxaBheur": [
+  "VGM",
+  "Bheur Hag.webp"
+ ],
+ "dracoDeGuardaNegro": [
+  "VGM",
+  "Black Guard Drake.webp"
+ ],
+ "cavaleiroNegro": [
+  "VGM",
+  "Blackguard.webp"
+ ],
+ "dracoGuardiaoAzul": [
+  "VGM",
+  "Blue Guard Drake.webp"
+ ],
+ "bodak": [
+  "VGM",
+  "Bodak.webp"
+ ],
+ "boggle": [
+  "VGM",
+  "Boggle.webp"
+ ],
+ "brontossauro": [
+  "VGM",
+  "Brontosaurus.webp"
+ ],
+ "catoblepas": [
+  "VGM",
+  "Catoblepas.webp"
+ ],
+ "pescadorDasCavernas": [
+  "VGM",
+  "Cave Fisher.webp"
+ ],
+ "campeao": [
+  "VGM",
+  "Champion.webp"
+ ],
+ "quitine": [
+  "VGM",
+  "Chitine.webp"
+ ],
+ "choldrith": [
+  "VGM",
+  "Choldrith.webp"
+ ],
+ "giganteDasNuvensSorridente": [
+  "VGM",
+  "Cloud Giant Smiling One.webp"
+ ],
+ "conjurador": [
+  "VGM",
+  "Conjurer.webp"
+ ],
+ "vacaVgm": [
+  "VGM",
+  "Cow.webp"
+ ],
+ "ratoCraniano": [
+  "VGM",
+  "Cranium Rat.webp"
+ ],
+ "sombrio": [
+  "VGM",
+  "Darkling.webp"
+ ],
+ "anciaoSombrio": [
+  "VGM",
+  "Darkling Elder.webp"
+ ],
+ "beijoDaMorte": [
+  "VGM",
+  "Death Kiss.webp"
+ ],
+ "rotheDasProfundezas": [
+  "VGM",
+  "Deep Rothe.webp"
+ ],
+ "rebentoDasProfundezas": [
+  "VGM",
+  "Deep Scion.webp"
+ ],
+ "deinonico": [
+  "VGM",
+  "Deinonychus.webp"
+ ],
+ "devorador": [
+  "VGM",
+  "Devourer.webp"
+ ],
+ "dimetrodonte": [
+  "VGM",
+  "Dimetrodon.webp"
+ ],
+ "adivinho": [
+  "VGM",
+  "Diviner.webp"
+ ],
+ "golfinho": [
+  "VGM",
+  "Dolphin.webp"
+ ],
+ "draegloth": [
+  "VGM",
+  "Draegloth.webp"
+ ],
+ "cerebroAnciao": [
+  "VGM",
+  "Elder Brain.webp"
+ ],
+ "encantador": [
+  "VGM",
+  "Enchanter.webp"
+ ],
+ "evocador": [
+  "VGM",
+  "Evoker.webp"
+ ],
+ "couracadoGiganteDoFogo": [
+  "VGM",
+  "Fire Giant Dreadnought.webp"
+ ],
+ "bruxoDeImixSalamandraDeFogo": [
+  "VGM",
+  "Firenewt Warlock of Imix.webp"
+ ],
+ "guerreiroSalamandraDeFogo": [
+  "VGM",
+  "Firenewt Warrior.webp"
+ ],
+ "caracolMangual": [
+  "VGM",
+  "Flail Snail.webp"
+ ],
+ "flind": [
+  "VGM",
+  "Flind.webp"
+ ],
+ "sapomoth": [
+  "VGM",
+  "Froghemoth.webp"
+ ],
+ "giganteDoGeloEterno": [
+  "VGM",
+  "Frost Giant Everlasting One.webp"
+ ],
+ "gauth": [
+  "VGM",
+  "Gauth.webp"
+ ],
+ "observadorMenor": [
+  "VGM",
+  "Gazer.webp"
+ ],
+ "passolargoGigante": [
+  "VGM",
+  "Giant Strider.webp"
+ ],
+ "girallon": [
+  "VGM",
+  "Girallon.webp"
+ ],
+ "gnollRoedorDeCarne": [
+  "VGM",
+  "Gnoll Flesh Gnawer.webp"
+ ],
+ "gnollCacador": [
+  "VGM",
+  "Gnoll Hunter.webp"
+ ],
+ "gnollDefinhado": [
+  "VGM",
+  "Gnoll Witherling.webp"
+ ],
+ "dracoGuardiaoVerde": [
+  "VGM",
+  "Green Guard Drake.webp"
+ ],
+ "grung": [
+  "VGM",
+  "Grung.webp"
+ ],
+ "guerreiroDeEliteGrung": [
+  "VGM",
+  "Grung Elite Warrior.webp"
+ ],
+ "grungSelvagem": [
+  "VGM",
+  "Grung Wildling.webp"
+ ],
+ "hadrossauro": [
+  "VGM",
+  "Hadrosaurus.webp"
+ ],
+ "devastadorHobgoblin": [
+  "VGM",
+  "Hobgoblin Devastator.webp"
+ ],
+ "sombraDeFerroHobgoblin": [
+  "VGM",
+  "Hobgoblin Iron Shadow.webp"
+ ],
+ "illitilich": [
+  "VGM",
+  "Illithilich.webp"
+ ],
+ "ilusionista": [
+  "VGM",
+  "Illusionist.webp"
+ ],
+ "kiRin": [
+  "VGM",
+  "Ki-rin.webp"
+ ],
+ "koboldEscudoDraconico": [
+  "VGM",
+  "Kobold Dragonshield.webp"
+ ],
+ "koboldInventor": [
+  "VGM",
+  "Kobold Inventor.webp"
+ ],
+ "feiticeiroEscamadoKobold": [
+  "VGM",
+  "Kobold Scale Sorcerer.webp"
+ ],
+ "korred": [
+  "VGM",
+  "Korred.webp"
+ ],
+ "sacerdoteDoKraken": [
+  "VGM",
+  "Kraken Priest.webp"
+ ],
+ "leucrota": [
+  "VGM",
+  "Leucrotta.webp"
+ ],
+ "adeptoDeArtesMarciais": [
+  "VGM",
+  "Martial Arts Adept.webp"
+ ],
+ "mestreLadrao": [
+  "VGM",
+  "Master Thief.webp"
+ ],
+ "demonioBocarra": [
+  "VGM",
+  "Maw Demon.webp"
+ ],
+ "meenlock": [
+  "VGM",
+  "Meenlock.webp"
+ ],
+ "devoradorDeMentesPsionico": [
+  "VGM",
+  "Mind Flayer Psion.webp"
+ ],
+ "testemunhaMental": [
+  "VGM",
+  "Mindwitness.webp"
+ ],
+ "morkoth": [
+  "VGM",
+  "Morkoth.webp"
+ ],
+ "bocaDeGrolantor": [
+  "VGM",
+  "Mouth of Grolantor.webp"
+ ],
+ "necromante": [
+  "VGM",
+  "Necromancer.webp"
+ ],
+ "neogi": [
+  "VGM",
+  "Neogi.webp"
+ ],
+ "filhoteDeNeogi": [
+  "VGM",
+  "Neogi Hatchling.webp"
+ ],
+ "mestreNeogi": [
+  "VGM",
+  "Neogi Master.webp"
+ ],
+ "neotelideo": [
+  "VGM",
+  "Neothelid.webp"
+ ],
+ "nilbog": [
+  "VGM",
+  "Nilbog.webp"
+ ],
+ "laminaDeIlnevalOrc": [
+  "VGM",
+  "Orc Blade of Ilneval.webp"
+ ],
+ "garraDeLuthicOrc": [
+  "VGM",
+  "Orc Claw of Luthic.webp"
+ ],
+ "orcMaoDeYurtrus": [
+  "VGM",
+  "Orc Hand of Yurtrus.webp"
+ ],
+ "orcNutridoDeYurtrus": [
+  "VGM",
+  "Orc Nurtured One of Yurtrus.webp"
+ ],
+ "orcPresaVermelhaDeShargaas": [
+  "VGM",
+  "Orc Red Fang of Shargaas.webp"
+ ],
+ "boi": [
+  "VGM",
+  "Ox.webp"
+ ],
+ "quetzalcoatlus": [
+  "VGM",
+  "Quetzalcoatlus.webp"
+ ],
+ "velocino": [
+  "VGM",
+  "Quickling.webp"
+ ],
+ "dracoGuardiaoVermelho": [
+  "VGM",
+  "Red Guard Drake.webp"
+ ],
+ "barreteVermelho": [
+  "VGM",
+  "Redcap.webp"
+ ],
+ "rothe": [
+  "VGM",
+  "Rothe.webp"
+ ],
+ "criaDoMar": [
+  "VGM",
+  "Sea Spawn.webp"
+ ],
+ "mastimDasSombras": [
+  "VGM",
+  "Shadow Mastiff.webp"
+ ],
+ "shoosuva": [
+  "VGM",
+  "Shoosuva.webp"
+ ],
+ "rastejadorRastreador": [
+  "VGM",
+  "Slithering Tracker.webp"
+ ],
+ "criaDeKyuss": [
+  "VGM",
+  "Spawn of Kyuss.webp"
+ ],
+ "estegossauro": [
+  "VGM",
+  "Stegosaurus.webp"
+ ],
+ "vacaFedorenta": [
+  "VGM",
+  "Stench Kow.webp"
+ ],
+ "giganteDasPedrasAndarilhoDosSonhos": [
+  "VGM",
+  "Stone Giant Dreamwalker.webp"
+ ],
+ "quintessenteGiganteDasTempestades": [
+  "VGM",
+  "Storm Giant Quintessent.webp"
+ ],
+ "enxameDeRatosCranianos": [
+  "VGM",
+  "Swarm of Cranium Rats.webp"
+ ],
+ "enxameDeLarvasPutrefatas": [
+  "VGM",
+  "Swarm of Rot Grubs.webp"
+ ],
+ "espadachim": [
+  "VGM",
+  "Swashbuckler.webp"
+ ],
+ "tanarukk": [
+  "VGM",
+  "Tanarukk.webp"
+ ],
+ "espinhento": [
+  "VGM",
+  "Thorny.webp"
+ ],
+ "tlincalli": [
+  "VGM",
+  "Tlincalli.webp"
+ ],
+ "transmutador": [
+  "VGM",
+  "Transmuter.webp"
+ ],
+ "armadilheiro": [
+  "VGM",
+  "Trapper.webp"
+ ],
+ "ulitharid": [
+  "VGM",
+  "Ulitharid.webp"
+ ],
+ "vargouille": [
+  "VGM",
+  "Vargouille.webp"
+ ],
+ "vegepigmeu": [
+  "VGM",
+  "Vegepygmy.webp"
+ ],
+ "chefeVegepigmeu": [
+  "VGM",
+  "Vegepygmy Chief.webp"
+ ],
+ "velocirraptor": [
+  "VGM",
+  "Velociraptor.webp"
+ ],
+ "sacerdoteDeGuerra": [
+  "VGM",
+  "War Priest.webp"
+ ],
+ "bruxoDaArquifada": [
+  "VGM",
+  "Warlock of the Archfey.webp"
+ ],
+ "bruxoDoCorruptor": [
+  "VGM",
+  "Warlock of the Fiend.webp"
+ ],
+ "bruxoDoGrandeAntigo": [
+  "VGM",
+  "Warlock of the Great Old One.webp"
+ ],
+ "senhorDaGuerra": [
+  "VGM",
+  "Warlord.webp"
+ ],
+ "dracoGuardiaoBranco": [
+  "VGM",
+  "White Guard Drake.webp"
+ ],
+ "guardiaoDaFlorestaWoodWoad": [
+  "VGM",
+  "Wood Woad.webp"
+ ],
+ "xvart": [
+  "VGM",
+  "Xvart.webp"
+ ],
+ "xvartOrador": [
+  "VGM",
+  "Xvart Speaker.webp"
+ ],
+ "bruxoXvartDeRaxivort": [
+  "VGM",
+  "Xvart Warlock of Raxivort.webp"
+ ],
+ "caoYeth": [
+  "VGM",
+  "Yeth Hound.webp"
+ ],
+ "anatemaYuanTi": [
+  "VGM",
+  "Yuan-ti Anathema.webp"
+ ],
+ "guardaDeNinhadaYuanTi": [
+  "VGM",
+  "Yuan-ti Broodguard.webp"
+ ],
+ "yuanTiMalditoTipo4": [
+  "VGM",
+  "Yuan-ti Malison (Type 4).webp"
+ ],
+ "yuanTiMalditoTipo5": [
+  "VGM",
+  "Yuan-ti Malison (Type 5).webp"
+ ],
+ "yuanTiSussurradorDaMente": [
+  "VGM",
+  "Yuan-ti Mind Whisperer.webp"
+ ],
+ "yuanTiOradoraDePesadelos": [
+  "VGM",
+  "Yuan-ti Nightmare Speaker.webp"
+ ],
+ "mestreDoFossoYuanTi": [
+  "VGM",
+  "Yuan-ti Pit Master.webp"
+ ]
+}

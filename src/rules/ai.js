@@ -41,8 +41,25 @@ export function contornaZonas(monster) {
  * com ele, para na casa fria à mesma distância. Cercado, a escolha antiga volta inteira.
  */
 function pararQueima(enc, monster, spot) {
+  if (pararPertoDoObelisco(enc, monster, spot)) return true;
   if (!enc.zonas?.length || !contornaZonas(monster)) return false;
   return enc.zonasNoCalor({ x: spot.x, y: spot.y, f: monster.pos.f ?? 1 }).length > 0;
+}
+
+/**
+ * O CONTRAGOLPE DO OBELISCO (a Ânima de Ilvaash): o dano no obelisco vai para o fanático mais perto dele. Os fanáticos não
+ * sabem disso até o primeiro contragolpe (`temeOObelisco`, que `combat.js contragolpeDoObelisco` marca); depois, parar numa
+ * casa que o deixa MAIS PERTO do obelisco que todos os outros fanáticos vivos pesa como parar no fogo. O último que sobra
+ * não tem de quem fugir.
+ */
+function pararPertoDoObelisco(enc, monster, spot) {
+  if (!monster.temeOObelisco) return false;
+  const ob = enc.combatants.find((o) => o.id === monster.temeOObelisco && !o.dead && o.pos);
+  if (!ob) return false;
+  const outros = enc.combatants.filter((o) => o !== monster && !o.dead && o.pos && o.ligadoAoObelisco === ob.id);
+  if (!outros.length) return false;
+  const d = distanceFt(spot, ob.pos);
+  return outros.every((o) => distanceFt(o.pos, ob.pos) > d);
 }
 
 /** O peso de parar no fogo: mais que qualquer caminho, menos que trocar de alvo. */
@@ -104,6 +121,14 @@ export function takeMonsterTurn(enc, monster) {
   if (monster.dead || hasCondition(monster, 'inconsciente') || conditionEffects(monster).incapacitated) {
     enc.endTurn(monster);
     return;
+  }
+
+  // A CARAPAÇA (o tortle): fica recolhido enquanto o perigo que o fez entrar continua (pouca vida e dois inimigos colados);
+  // quando o cerco abre, sai com a ação bônus e luta de novo
+  if (hasCondition(monster, 'naConcha')) {
+    const colados = enc.enemiesOf(monster).filter((e) => !e.dead && e.hp > 0 && enc.field.vizinhos(e.pos, monster.pos)).length;
+    if (monster.hp <= monster.maxHp / 3 && colados >= 2) { enc.endTurn(monster); return; }
+    Livro.sairDaConcha(enc, monster);
   }
 
   // Stirge grudado: no começo do turno drena o sangue em vez de atacar.
@@ -1041,6 +1066,7 @@ function conjuracaoGeral(enc, m, enemies) {
 function turnoEspecial(enc, m, enemies) {
   const vivos = enemies.filter((e) => !e.dead && e.hp > 0);
   const ve = (e) => enc.field.hasLineOfSight(m.pos, e.pos);
+  if (m.acoesEspeciais?.some((a) => a.bonus)) bonusEspecialNoTurno(enc, m, vivos);
   // COROA PSIÔNICA: junto do multiataque, no inimigo à vista que ainda não está coroado (o mais perto).
   if (m.traits?.includes('coroaPsionica') && !m.recarregando?.['Coroa Psiônica']) {
     const alvo = vivos.filter((e) => distanceFt(m.pos, e.pos) <= 60 && ve(e) && !hasCondition(e, 'coroaPsionica'))
@@ -1153,16 +1179,20 @@ export const casaLongeDe = (enc, m, inimigos, pes) => casaLonge(enc, m, inimigos
  * A MAGIA DA AÇÃO LENDÁRIA (as esfinges: uma magia; o lich: um truque). É a conjuração geral da IA, fora do turno dele:
  * a ação fica de pé, e o truque só olha os truques.
  */
-export function magiaLendaria(enc, m, soTruque) {
+export function magiaLendaria(enc, m, soTruque, maxCirculo = null, magias = null) {
   const sc = m.spellcasting;
   if (!sc) return false;
   const guarda = { acao: m.actionUsed, sc };
   m.actionUsed = false;
   if (soTruque) m.spellcasting = { ...sc, prepared: [] };
+  // o teto de círculo (o "custa uma ação lendária por círculo" da matriarca drow e do illitilich)
+  else if (maxCirculo != null) m.spellcasting = { ...sc, prepared: (sc.prepared ?? []).filter((id) => (SPELLS[id]?.level ?? 99) <= maxCirculo) };
+  // a magia COM NOME da opção ("casts acid splash"): só ela, que o bloco conhece pela ação lendária
+  else if (magias?.length) m.spellcasting = { ...sc, cantrips: magias.filter((id) => SPELLS[id]?.level === 0), prepared: magias.filter((id) => SPELLS[id]?.level > 0) };
   try {
     return conjuracaoGeral(enc, m, enc.enemiesOf(m));
   } finally {
-    if (soTruque) { sc.slots = m.spellcasting.slots; m.spellcasting = sc; }
+    if (soTruque || maxCirculo != null || magias?.length) { sc.slots = m.spellcasting.slots; m.spellcasting = sc; }
     m.actionUsed = guarda.acao;
   }
 }
@@ -1181,6 +1211,22 @@ function casaLonge(enc, m, inimigos, pes) {
     }
   }
   return melhor && melhor.d > 5 ? { x: melhor.x, y: melhor.y } : null;
+}
+
+/** A casa livre e à vista, ao lado de `alvo`, mais perto de `m`, dentro de `pes` (o teleporte que aproxima). */
+function casaAoLado(enc, m, alvo, pes) {
+  let melhor = null;
+  for (let dy = -1; dy <= (alvo.pos.f ?? 1); dy++) {
+    for (let dx = -1; dx <= (alvo.pos.f ?? 1); dx++) {
+      const x = alvo.pos.x + dx;
+      const y = alvo.pos.y + dy;
+      if (!enc.field.inside(x, y) || enc.field.blocksMove(x, y) || enc.occupied(x, y, m)) continue;
+      if (!enc.field.vizinhos({ x, y, f: m.pos.f ?? 1 }, alvo.pos) || distanceFt(m.pos, { x, y }) > pes || !enc.field.hasLineOfSight(m.pos, { x, y })) continue;
+      const d = distanceFt(m.pos, { x, y });
+      if (!melhor || d < melhor.d) melhor = { d, x, y };
+    }
+  }
+  return melhor ? { x: melhor.x, y: melhor.y } : null;
 }
 
 /**
@@ -1216,9 +1262,16 @@ function acaoEspecialNoTurno(enc, m, enemies) {
   const vivos = enemies.filter((e) => !e.dead && e.hp > 0);
   const semGolpe = !pickReachableTarget(enc, m, vivos) && !planApproach(enc, m, vivos, { meleeOnly: true });
   for (const a of m.acoesEspeciais) {
-    if (!enc.acaoEspecialPronta(m, a)) continue;
+    // as de ação bônus saem antes, em `bonusEspecialNoTurno`, e não gastam a ação do turno
+    if (a.bonus || !enc.acaoEspecialPronta(m, a)) continue;
     if (especialDoLivro(enc, m, a, vivos, semGolpe)) return true;
-    if (['etereo', 'nevoa', 'engolir', 'engolfar', 'puxarAgarrados', 'arremessar', 'aumentar', 'escuridao', 'gritoDeGuerra', 'telecinese', 'corroerArmadura', 'invocar', 'estagios'].includes(a.tipo) || a.soDepoisDeSaltar) continue;
+    // a CARAPAÇA do tortle: com um terço da vida ou menos e dois inimigos colados, ele se recolhe
+    if (a.tipo === 'concha') {
+      const colados = vivos.filter((e) => enc.field.vizinhos(e.pos, m.pos)).length;
+      if (m.hp <= m.maxHp / 3 && colados >= 2 && enc.usarAcaoEspecial(m, a, null)) return true;
+      continue;
+    }
+    if (['etereo', 'nevoa', 'engolir', 'engolfar', 'puxarAgarrados', 'arremessar', 'aumentar', 'escuridao', 'gritoDeGuerra', 'telecinese', 'corroerArmadura', 'invocar', 'estagios', 'golpeBonus'].includes(a.tipo) || a.soDepoisDeSaltar) continue;
     if (a.tipo === 'teleporte') {
       const colados = vivos.filter((e) => enc.field.vizinhos(e.pos, m.pos));
       if (!colados.length || m.hp > m.maxHp / 2) continue;
@@ -1240,18 +1293,98 @@ function acaoEspecialNoTurno(enc, m, enemies) {
       continue;
     }
     let melhor = null;
-    const candidatos = a.shape === 'raio' ? [m] : vivos;
+    // `alcanceFt` na área que nasce num ponto (o Desatar o Vazio do clarividente, a 18 m dele): só mira quem está ao alcance
+    const candidatos = a.shape === 'raio' ? [m] : vivos.filter((e) => !a.alcanceFt || (distanceFt(m.pos, e.pos) <= a.alcanceFt && enc.field.hasLineOfSight(m.pos, e.pos)));
     for (const e of candidatos) {
       const pegos = enc.pegosDaAcaoEspecial(m, a, e);
       // o NEUTRO conta como aliado: a Rajada Mental do Qunbraxel matava a guarda dele que esperava a vez de entrar
       const inimigos = pegos.filter((c) => c.side !== m.side && c.side !== 'neutro').length;
       const aliados = pegos.filter((c) => c.side === m.side || c.side === 'neutro').length;
-      const nota = inimigos - 2 * aliados;
+      // o fanático que já sentiu o contragolpe não põe o obelisco na própria área (ele volta sobre um deles)
+      const nota = inimigos - 2 * aliados - (pegos.some((c) => c.contragolpe && c.id === m.temeOObelisco) ? 100 : 0);
       if (!melhor || nota > melhor.nota) melhor = { alvo: e, nota, inimigos };
     }
     if (melhor && melhor.nota > 0 && (melhor.inimigos >= 2 || semGolpe) && enc.usarAcaoEspecial(m, a, melhor.alvo)) return true;
   }
   return false;
+}
+
+/**
+ * AS AÇÕES ESPECIAIS DE AÇÃO BÔNUS (`bonus: true`, os blocos do Obelisco): saem ANTES dos golpes e não gastam a ação.
+ *   - `propria` (as Duplicatas do cloaker mutante): com um inimigo a 18 m;
+ *   - `vazio` (a Distorção do Vazio do zelote): com um inimigo a até o raio do vazio, para a casa livre que encosta (a
+ *     até 4,5 m, o alcance dos golpes dele) no inimigo mais longe do vazio — quem fica perto do vazio é arrastado, e ele
+ *     reaparece em cima de quem estava a salvo;
+ *   - `engolir` (a fusão de carne): em quem ela já segura. O livro a quer DEPOIS da mordida que agarra; aqui ela sai no
+ *     começo do turno seguinte, porque a IA não volta ao bloco depois dos golpes;
+ *   - a área (o Gemido do cloaker mutante): a mesma conta das de ação, e um inimigo já basta, porque ela é de graça.
+ */
+function bonusEspecialNoTurno(enc, m, vivos) {
+  for (const a of m.acoesEspeciais) {
+    if (!a.bonus || !enc.acaoEspecialPronta(m, a)) continue;
+    // O TELEPORTE de ação bônus (o Passo Feérico do eladrin, o Passo das Sombras): ferido e cercado, para longe; sem ninguém
+    // colado, para a casa livre ao lado do inimigo mais perto que ele alcança
+    if (a.tipo === 'teleporte') {
+      const colados = vivos.filter((e) => enc.field.vizinhos(e.pos, m.pos));
+      let destino = null;
+      if (colados.length && m.hp <= m.maxHp / 2) destino = casaLonge(enc, m, vivos, a.alcanceFt);
+      else if (!colados.length && m.attacks?.some((g) => !g.ranged)) {
+        const alvo = vivos.filter((e) => enc.field.hasLineOfSight(m.pos, e.pos)).sort((x, y) => distanceFt(m.pos, x.pos) - distanceFt(m.pos, y.pos))[0];
+        if (alvo && distanceFt(m.pos, alvo.pos) > (m.movementLeftFt ?? m.speedFt ?? 30)) destino = casaAoLado(enc, m, alvo, a.alcanceFt);
+      }
+      if (destino && enc.usarAcaoEspecial(m, a, destino)) return;
+      continue;
+    }
+    // o SEGUNDO FÔLEGO: com metade da vida ou menos
+    if (a.tipo === 'cura' && a.soEmSi) {
+      if (m.hp <= m.maxHp / 2 && enc.usarAcaoEspecial(m, a, m)) return;
+      continue;
+    }
+    // a FÚRIA MARCIAL: o golpe a mais no inimigo colado mais ferido
+    if (a.tipo === 'golpeBonus') {
+      const alvo = vivos.filter((e) => enc.field.vizinhos(e.pos, m.pos)).sort((x, y) => x.hp - y.hp)[0];
+      if (alvo && enc.usarAcaoEspecial(m, a, alvo)) return;
+      continue;
+    }
+    if (a.tipo === 'propria') {
+      if (vivos.some((e) => distanceFt(m.pos, e.pos) <= 60) && enc.usarAcaoEspecial(m, a, null)) return;
+      continue;
+    }
+    if (a.tipo === 'engolir') {
+      const alvo = vivos.find((e) => Livro.presoPor(e, m) && Livro.cabeNoTamanho(e, a.tamanhoMax) && distanceFt(m.pos, e.pos) <= 5);
+      if (alvo && !Livro.engolidosDe(enc, m).length && enc.usarAcaoEspecial(m, a, alvo)) return;
+      continue;
+    }
+    if (a.tipo === 'vazio') {
+      const pegos = vivos.filter((e) => distanceFt(m.pos, e.pos) <= a.raioFt);
+      if (!pegos.length) continue;
+      const longe = vivos.filter((e) => distanceFt(m.pos, e.pos) > a.raioFt && distanceFt(m.pos, e.pos) <= a.alcanceFt + 15)
+        .sort((x, y) => distanceFt(m.pos, y.pos) - distanceFt(m.pos, x.pos))[0];
+      const mira = longe ?? null;
+      let destino = null;
+      if (mira) {
+        for (let dy = -3; dy <= 3; dy++) for (let dx = -3; dx <= 3; dx++) {
+          const q = { x: mira.pos.x + dx, y: mira.pos.y + dy };
+          if (!enc.field.inside(q.x, q.y) || enc.field.blocksMove(q.x, q.y) || enc.occupied(q.x, q.y, m)) continue;
+          if (distanceFt(q, mira.pos) > 15 || distanceFt(m.pos, q) > a.alcanceFt || !enc.field.hasLineOfSight(m.pos, q)) continue;
+          if (distanceFt(q, m.pos) <= a.raioFt) continue;
+          if (!destino || distanceFt(q, mira.pos) < distanceFt(destino, mira.pos)) destino = q;
+        }
+      }
+      if (destino && enc.usarAcaoEspecial(m, a, destino)) return;
+      continue;
+    }
+    let melhor = null;
+    for (const e of a.shape === 'raio' ? [m] : vivos) {
+      const pegos = enc.pegosDaAcaoEspecial(m, a, e);
+      const inimigos = pegos.filter((c) => c.side !== m.side && c.side !== 'neutro').length;
+      const aliados = pegos.filter((c) => c.side === m.side || c.side === 'neutro').length;
+      // o fanático que já sentiu o contragolpe não põe o obelisco na própria área (ele volta sobre um deles)
+      const nota = inimigos - 2 * aliados - (pegos.some((c) => c.contragolpe && c.id === m.temeOObelisco) ? 100 : 0);
+      if (!melhor || nota > melhor.nota) melhor = { alvo: e, nota };
+    }
+    if (melhor && melhor.nota > 0 && enc.usarAcaoEspecial(m, a, melhor.alvo)) return;
+  }
 }
 
 /**

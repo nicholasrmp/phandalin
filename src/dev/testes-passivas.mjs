@@ -103,7 +103,7 @@ function teste(nome, fn) {
 // ============================================================================================================
 
 teste('as 15 raças e sub-raças do livro estão na tabela, e cada traço tem texto', () => {
-  assert.equal(Object.keys(RACAS).length, 15);
+  assert.equal(Object.values(RACAS).filter((r) => r.livro === 'PHB').length, 15);
   for (const [id, r] of Object.entries(RACAS)) {
     assert.ok(r.tracos.length, `${id} sem traços`);
     for (const t of r.tracos) {

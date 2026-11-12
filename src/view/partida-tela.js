@@ -625,7 +625,7 @@ export function criarPartidaTela({ aoSair, enviar = () => false, hud = null }) {
       const turno = emLuta && enc.side === 'party' ? (c.acted ? 'turno encerrado' : `ação ${c.actionUsed ? 'usada' : 'livre'} · ${Math.max(0, c.movementLeftFt ?? 0)} ft`) : '';
       // Desenhado a cada vez, como no HUD: a arte nova (a folha do PixelLab) chega depois, e um retrato guardado cedo ficaria o antigo.
       let retrato = null;
-      try { retrato = makePortrait(c.look, 28); retrato.className = 'pixel'; } catch { retrato = null; }
+      try { retrato = makePortrait(c.look ?? c.defId, 28); retrato.className = 'pixel'; } catch { retrato = null; }
       const frac = Math.max(0, Math.min(1, c.hp / (c.maxHp || 1)));
       return el('li', {
         class: `partida-heroi${meu ? ' meu' : ''}${meu && c === selecionado ? ' selecionado' : ''}${c.hp <= 0 ? ' caido' : ''}`,

@@ -9,6 +9,8 @@
 //                 CD dele, e sobe com o círculo)
 //   `cargaDe`     cada uso gasta uma carga da condição; sem carga, a ação some (os meteoros, as estrelas)
 //   `tom`         a nota do som, escolhida à mão entre as que só as magias dos livros usam (`core/audio.js`)
+import { ACOES_RACIAIS, acoesDaRaca } from './racas-motor.js';
+
 export const MAGIAS_CONCEDIDAS = {
   // ---- as que as SUBCLASSES dão (`classes/subclasses-xge.js`)
   comandoDaMajestade: {
@@ -193,6 +195,8 @@ export const CONCEDIDAS_POR_CARACTERISTICA = {
   breathOfTheDragon: ['soproDoMongeCone', 'soproDoMongeLinha'],
   ascendantAspect: ['soproDoMongeConeMaior', 'soproDoMongeLinhaMaior'],
   drakesBreath: ['soproDoDraco'],
+  // a bênção do Jomlus (o Labirinto Salgado), que não é de classe, mas vem pelo mesmo caminho
+  bencaoSolipsista: ['menteSolipsista'],
 };
 
 /** As concedidas que o combatente tem agora. */
@@ -201,5 +205,7 @@ export function concedidasDe(actor) {
   for (const c of actor?.conditions ?? []) out.push(...(CONCEDIDAS_POR_CONDICAO[c.id] ?? []));
   out.push(...(CONCEDIDAS_POR_CONCENTRACAO[actor?.concentrating?.spellId] ?? []));
   for (const f of actor?.features ?? []) out.push(...(CONCEDIDAS_POR_CARACTERISTICA[f] ?? []));
+  // AS AÇÕES DAS RAÇAS DOS LIVROS (`racas-motor.js`)
+  out.push(...acoesDaRaca(actor));
   return out;
 }

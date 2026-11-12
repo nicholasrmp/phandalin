@@ -32,6 +32,9 @@ import { PAR_DA_BIBLIOTECA } from '../game/capitulo-casadamorte.js';
 import { PONTOS_ZORZULA } from '../game/zorzula-mapas.js';
 import { PONTOS_TALHUNDERETH } from '../game/talhundereth-mapa.js';
 import { PONTOS_CRIPTA } from '../game/cripta-mapa.js';
+import { PONTOS_FENDAS } from '../game/fendas-mapas.js';
+import { PONTOS_LABIRINTO } from '../game/labirinto-salgado-mapa.js';
+import { PONTOS_VAZIO } from '../game/vazio-mapas.js';
 
 // O QUE O ROTEIRO ABRE, e o mapa guarda fechado. Sem isto a conferência acusa metade das masmorras de
 // inalcançável — e não é: é SEGREDO, que é outra coisa. Vem das constantes de verdade, importadas, e não de
@@ -51,6 +54,14 @@ const SEGREDOS = {
     // a cripta: as três secretas para as antessalas do santuário; o anel e a parede que desliza só abrem com o giro
     criptaTalhund: [...Object.values(PONTOS_CRIPTA.secretas), { a: { x: 21, y: 24 }, b: { x: 21, y: 25 } },
       ...[...PONTOS_CRIPTA.arestasDoGiro, ...PONTOS_CRIPTA.arestasDaParede].map(([a, b]) => ({ a, b }))],
+    // o Labirinto dos Olhos: a esfera nasce na primeira configuração, e girá-la abre as arestas dela
+    fendaLabirinto: PONTOS_FENDAS.LABIRINTO_DOS_OLHOS.config1.map(({ x, y, l }) =>
+      ({ a: l === 'n' ? { x, y: y - 1 } : { x: x - 1, y }, b: { x, y } })),
+    // o Labirinto Salgado: as três portas mentais (os bastões) e a passagem secreta de B11
+    labirintoSalgado: [...Object.values(PONTOS_LABIRINTO.portas).flat(), PONTOS_LABIRINTO.secreta],
+    // o Vazio: a boca e a tenda do Nematódeo (a boca a cena abre na chegada; a tenda, a armadilha) e a base da Estátua (a língua)
+    vazioNematodeo: [...PONTOS_VAZIO.NEMATODEO.arestasDaBoca, ...PONTOS_VAZIO.NEMATODEO.arestasDaTenda],
+    vazioEstatua: PONTOS_VAZIO.ESTATUA.porta,
   },
   casas: {
     casaDaMortePorao1: [...SEGREDO_SANTUARIO, ...Object.values(CRIPTAS).flatMap((c) => c.laje ?? [])],
@@ -78,7 +89,7 @@ function casasDeEscada(cena) {
 const CENAS = [
   'emboscada', 'ermo', 'ermoNoite', 'rua', 'esconderijo', 'mansao', 'mansaoTunel',
   'poco', 'cume', 'castelo', 'arvoreTrovao', 'ondaEco',
-  'covilAgatha', 'cavernaDoPoco', 'acampamentoSawplee', 'telhadoGigante', 'giganteTerreo', 'zorzulaPosto', 'zorzulaMinas', 'santuarioIndigo', 'casaMarthungrim', 'minaHardyhammer', 'largoDaVaca', 'talhundereth', 'criptaTalhund',
+  'covilAgatha', 'cavernaDoPoco', 'acampamentoSawplee', 'telhadoGigante', 'giganteTerreo', 'zorzulaPosto', 'zorzulaMinas', 'santuarioIndigo', 'casaMarthungrim', 'minaHardyhammer', 'largoDaVaca', 'santuarioInfectado', 'tunelGrells', 'tunelBehir', 'tunelGruta', 'illithinoch', 'fendaTrincheiras', 'fendaOco', 'fendaLabirinto', 'labirintoSalgado', 'covilLowarnizel', 'pocaSalgada', 'vazioCupula', 'vazioPonte', 'vazioCharco', 'vazioNematodeo', 'vazioMiasma', 'vazioEstatua', 'vazioCampo', 'vazioAnima', 'talhundereth', 'criptaTalhund',
   'casaDaMorte1', 'casaDaMorte2', 'casaDaMorte3', 'casaDaMorte4', 'casaDaMortePorao1', 'casaDaMortePorao2',
 ];
 const BARRA = new Set([ARESTA.parede, ARESTA.porta, ARESTA.seteira]);

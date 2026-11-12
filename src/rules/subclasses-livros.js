@@ -852,6 +852,18 @@ export function ajudaDoMentor(enc, actor, alvo) {
   enc.say('recurso', `${actor.name} aponta a brecha de ${alvo.name}: o próximo aliado que o atacar tem vantagem (Mestre da Tática).`);
   return true;
 }
+/**
+ * O AJUDAR DO LOBO FRONTAL (o Labirinto Salgado, B14 a B22): a ação Ajudar do livro, como ação bônus, contra um inimigo a
+ * 1,5 m de quem ajuda. É a mesma marca do Mestre da Tática (`ajudaDoMentor`), com o alcance do Ajudar comum.
+ */
+export function ajudaDoLobo(enc, actor, alvo) {
+  if (!getCondition(actor, 'loboFrontal')) return false;
+  if (actor.bonusUsed || !alvo || alvo.dead || alvo.side === actor.side || distanceFt(actor.pos, alvo.pos) > 5) return false;
+  actor.bonusUsed = true;
+  addCondition(alvo, 'ajudaDoMentor', { rounds: 1, quando: 'inicio', lado: actor.side, source: actor.id });
+  enc.say('recurso', `${actor.name} distrai ${alvo.name}: o próximo aliado que o atacar tem vantagem (o lobo frontal faz do Ajudar uma ação bônus).`);
+  return true;
+}
 /** O aliado do mentor ataca quem ele apontou: vantagem. */
 export function vantagemDaAjuda(enc, atacante, alvo) {
   const m = getCondition(alvo, 'ajudaDoMentor');

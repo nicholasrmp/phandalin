@@ -32,6 +32,7 @@ import { CARACTERISTICAS, estadoDaCaracteristica } from '../rules/classes/caract
 import { maxHpEfetivo } from '../rules/conditions.js';
 import { XP_POR_NIVEL, NIVEL_MAXIMO } from '../rules/progressao.js';
 import { heroiPorId } from '../game/herois.js';
+import { mudancasDoHeroi } from '../game/transformacao.js';
 
 import { makeFigure, makePortrait } from '../art/sheet.js';
 import { LOOKS } from '../art/looks.js';
@@ -54,6 +55,7 @@ import { TALENTOS_DE_ORIGEM } from '../game/criacao.js';
 import { spellMod, limiteDePreparacao, fontesDePreparacao } from '../rules/party.js';
 import { chanceD20, pct } from '../rules/odds.js';
 import { formatModifier } from '../core/dice.js';
+import { sintonizar, dessintonizar, MAX_SINTONIA } from '../rules/itens-que-conjuram.js';
 
 /**
  * O mesmo construtor de nó do HUD, repetido aqui de propósito: a ficha não
@@ -641,9 +643,14 @@ export function criarFicha(root, handlers = {}) {
         el('section', { class: 'bloco historia' },
           el('h3', { class: 'bloco-tit' }, h?.antecedente ? `História · ${h.antecedente}` : 'História'),
           h?.origem ? el('p', { class: 'historia-origem' }, h.origem) : null,
+          (h?.divindade ?? personagem.divindade) ? el('p', { class: 'historia-origem' }, `Divindade: ${h?.divindade ?? personagem.divindade}.`) : null,
           ...(h?.historia ?? []).map((t) => el('p', {}, t)),
           h?.motivo ? el('p', { class: 'historia-motivo' }, el('strong', {}, 'Por que está na estrada. '), h.motivo) : null,
-          !h ? el('p', { class: 'ficha-vazio' }, 'Este herói não tem história escrita.') : null)),
+          !h ? el('p', { class: 'ficha-vazio' }, 'Este herói não tem história escrita.') : null),
+        // o que o Reino Distante mudou nele (`transformacao.js`), para quem aceitou a regra
+        mudancasDoHeroi(personagem).length ? el('section', { class: 'bloco historia' },
+          el('h3', { class: 'bloco-tit' }, 'O Reino Distante'),
+          ...mudancasDoHeroi(personagem).map((t) => el('p', {}, t))) : null),
       el('div', { class: 'ficha-coluna' },
         tracos.length ? el('section', { class: 'bloco' },
           el('h3', { class: 'bloco-tit' }, 'Personalidade'),
@@ -843,30 +850,49 @@ export function criarFicha(root, handlers = {}) {
     const celulas = conteudo.map((e) => {
       const slot = encaixeNatural(e.id);
       const usavel = Boolean(itemDeId(e.id)?.dados.consumivel);
+      // A SINTONIA (`itens-que-conjuram.js`): o item mágico que a pede só funciona sintonizado, até três por herói
+      const pedeSintonia = !slot && !usavel && Boolean(itemDeId(e.id)?.dados.sintonia);
+      // o equipável que pede sintonia (a espada solar guardada): o botão direito sintoniza ou desfaz
+      const sintoniaPeloDireito = Boolean(slot && itemDeId(e.id)?.dados.sintonia);
+      const sintonizado = (personagem.sintonizados ?? []).includes(e.id);
       const node = el('button', {
-        class: `celula${slot ? ' equipavel' : ''}${usavel ? ' usavel' : ''}`,
+        class: `celula${slot ? ' equipavel' : ''}${usavel ? ' usavel' : ''}${sintonizado ? ' sintonizado' : ''}`,
         onclick: () => {
           if (slot) { trocar(slot, e.id); return; }
           // Clicar numa poção tem de BEBÊ-LA. A resposta antiga era "é item
           // de mochila", o que é verdade e não serve para nada.
           if (usavel) { usar(e.id); return; }
+          if (pedeSintonia) {
+            if (sintonizado) { dessintonizar(personagem, e.id); aviso = `${personagem.name} desfaz a sintonia com ${nomeDeId(e.id)}.`; }
+            else { const nao = sintonizar(personagem, e.id); aviso = nao ? `Não dá para sintonizar: ${nao}.` : `${personagem.name} se sintoniza com ${nomeDeId(e.id)}.`; }
+            render();
+            return;
+          }
           aviso = `${nomeDeId(e.id)} não vai em encaixe nenhum e não é item de usar.`;
           render();
         },
+        oncontextmenu: sintoniaPeloDireito ? (ev) => {
+          ev.preventDefault();
+          if (sintonizado) { dessintonizar(personagem, e.id); aviso = `${personagem.name} desfaz a sintonia com ${nomeDeId(e.id)}.`; }
+          else { const nao = sintonizar(personagem, e.id); aviso = nao ? `Não dá para sintonizar: ${nao}.` : `${personagem.name} se sintoniza com ${nomeDeId(e.id)}.`; }
+          render();
+        } : undefined,
       },
         iconeDeItem(e.id),
         el('span', { class: 'celula-nome' }, nomeDeId(e.id)),
         // O peso da PILHA, não o da unidade: na hora de largar coisa, o que
         // importa é quanto sai da mochila, e três cordas são trinta libras.
         pesoDaPilha(e) > 0 ? el('span', { class: 'celula-peso' }, `${pesoDaPilha(e)} lb`) : null,
-        e.qtd > 1 ? el('span', { class: 'celula-qtd' }, e.qtd) : null);
+        e.qtd > 1 ? el('span', { class: 'celula-qtd' }, e.qtd) : null,
+        sintonizado ? el('span', { class: 'celula-sintonia', title: 'Sintonizado' }, '✦') : null);
       tornarArrastavel(node, e.id);
       const dados = dicaDeItem(e.id);
       return comDica(node, {
         ...dados,
         aviso: slot
-          ? 'Clique ou arraste até o encaixe'
-          : usavel ? 'Clique para usar' : null,
+          ? `Clique ou arraste até o encaixe${sintoniaPeloDireito ? ` · botão direito ${sintonizado ? 'desfaz a sintonia' : 'sintoniza'} (${(personagem.sintonizados ?? []).length} de ${MAX_SINTONIA})` : ''}`
+          : usavel ? 'Clique para usar'
+            : pedeSintonia ? (sintonizado ? `Sintonizado (${(personagem.sintonizados ?? []).length} de ${MAX_SINTONIA}). Clique para desfazer` : `Clique para sintonizar (${(personagem.sintonizados ?? []).length} de ${MAX_SINTONIA})`) : null,
       });
     });
 
@@ -991,6 +1017,12 @@ export function criarFicha(root, handlers = {}) {
     // A ordem importa: a aparência sai do equipamento JÁ trocado.
     aplicarAparencia(personagem);
     aviso = avisoDeArmadura(personagem, personagem.armor);
+    // A ARMA, A ARMADURA E O ESCUDO MÁGICOS que pedem sintonia sintonizam ao equipar, se houver vaga (o livro pede um
+    // descanso curto; aqui é o gesto de pôr a mão nele). A recusa (três já sintonizados) vai no aviso.
+    if (id && itemDeId(id)?.dados.sintonia && !(personagem.sintonizados ?? []).includes(id)) {
+      const nao = sintonizar(personagem, id);
+      aviso = [aviso, nao ? `${nomeDeId(id)} sem sintonia: ${nao}.` : `${personagem.name} se sintoniza com ${nomeDeId(id)}.`].filter(Boolean).join(' ');
+    }
     encaixeAberto = null;
     render();
     handlers.onEquipar?.(personagem, r);

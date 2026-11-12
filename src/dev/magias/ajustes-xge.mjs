@@ -14,6 +14,11 @@ const ELEMENTOS = [
 ];
 
 export const AJUSTES_XGE = {
+  'Pyrotechnics': {
+    kind: 'livro', efeito: 'pirotecnia', mira: 'casa', exigeChama: true, save: 'con',
+    opcoes: [{ id: 'fogos', rotulo: 'Fogos de artifício', detalhe: 'CON ou cego, a 3 m' }, { id: 'fumaca', rotulo: 'Fumaça', detalhe: '6 m de raio, 1 minuto' }],
+    nota: 'Vale para a chama do mapa (a tocha, o braseiro, a fogueira), que se apaga. A fumaça não se espalha com o vento.',
+  },
   // ---------------------------------------------------------------- truques
   'Toll the Dead': { kind: 'save', save: 'wis', damage: '1d8', danoSeFerido: '1d12', damageType: 'necrótico', halfOnSave: false },
   'Word of Radiance': { kind: 'save', save: 'con', shape: 'sphere', areaFt: 5, centradoEmSi: true, soInimigos: true, damage: '1d6', damageType: 'radiante', halfOnSave: false },
@@ -25,6 +30,12 @@ export const AJUSTES_XGE = {
   },
   'Primal Savagery': { kind: 'attack', melee: true, rangeFt: 5, damage: '1d10', damageType: 'ácido' },
   Gust: { kind: 'save', save: 'str', pushFt: 5, nota: 'É sempre o empurrão de 1,5 m; mover um objeto e soprar não existem no jogo.' },
+  // A CHAMA DO MAPA (`rules/chamas.js`): a tocha, o braseiro, a fogueira que o menu de fogo já apaga e acende
+  'Control Flames': {
+    kind: 'livro', efeito: 'controlarChamas', mira: 'casa', exigeChama: true, familiaSonora: 'utilidade',
+    opcoes: [{ id: 'apagar', rotulo: 'Apagar', detalhe: 'a chama some' }, { id: 'dobrar', rotulo: 'Dobrar a luz', detalhe: 'o claro e a penumbra' }, { id: 'metade', rotulo: 'Cortar a luz pela metade', detalhe: 'o claro e a penumbra' }],
+    nota: 'Vale para a chama do mapa (a tocha, o braseiro, a fogueira). Espalhar o fogo e dar forma às chamas não existem no jogo, e a luz mudada fica até o fim da cena.',
+  },
   'Create Bonfire': {
     kind: 'save', save: 'dex', shape: 'square', areaFt: 5, damage: '1d8', damageType: 'fogo', halfOnSave: false,
     zona: { rodadas: 10, quando: 'fim', aoEntrar: true, dificil: false, semTeste: true, dano: { dados: '1d8', tipo: 'fogo', save: 'dex', metade: false } },

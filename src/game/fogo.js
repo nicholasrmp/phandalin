@@ -14,6 +14,8 @@
 // Fora da luta é de graça; na luta custa a ação, como usar um objeto. Puro: roda em Node.
 import { distanceFt } from '../core/grid.js';
 import { garantirInventario } from '../rules/equipment.js';
+import { EFEITOS_DAS_CHAMAS, chamaNaCasa } from '../rules/chamas.js';
+import { magiasProntas } from '../rules/spells.js';
 
 const NOMES = { fogueira: 'a fogueira', tocha: 'a tocha', braseiro: 'o braseiro', vela: 'a vela', lanterna: 'a lanterna' };
 
@@ -66,4 +68,34 @@ export function opcaoDeFogo(enc, c, tile, { fora, nome = null, depois = () => {}
       depois({ luz, acesa: !acesa });
     },
   };
+}
+
+/**
+ * CONTROLAR CHAMAS pelo menu da chama (o truque do Xanathar, `rules/chamas.js`): quem o conhece apaga, dobra ou corta a
+ * luz de uma chama a até 18 m que vê, sem encostar e sem tocha. Fora da luta sai de graça, pelo efeito; na luta, é a magia
+ * de verdade (`castSpell`), que gasta a ação. Devolve as opções (vazio se não serve).
+ */
+export function opcoesDeControlarChamas(enc, c, tile, { fora, depois = () => {} } = {}) {
+  const luz = chamaNaCasa(enc.field, tile);
+  if (!luz || !c || !magiasProntas(c).includes('controlarChamas')) return [];
+  const longe = distanceFt(c.pos, tile) > 60 ? `longe demais — a magia alcança 18 m (está a ${distanceFt(c.pos, tile)} pés)` : null;
+  const semVista = !longe && !enc.field.hasLineOfSight(c.pos, tile) ? 'não se vê a chama daqui' : null;
+  const semAcao = !fora && c.actionUsed ? 'a ação deste turno já foi usada' : null;
+  const qual = luz.nome ?? NOMES[luz.tipo] ?? 'a chama';
+  // "a luz DA fogueira", "a luz DO braseiro": a preposição contrai com o artigo do nome
+  const daQual = qual.replace(/^a /, 'da ').replace(/^o /, 'do ').replace(/^(?!d[ao] )/, 'de ');
+  const fazer = (opcao) => () => {
+    if (fora) EFEITOS_DAS_CHAMAS.controlarChamas(enc, c, { name: 'Controlar Chamas' }, { point: { x: tile.x, y: tile.y }, opcao });
+    else {
+      const r = enc.castSpell(c, 'controlarChamas', { point: { x: tile.x, y: tile.y }, opcao });
+      if (!r.ok) { enc.say('aviso', r.why ?? 'a magia não saiu'); return; }
+    }
+    depois({ luz, opcao });
+  };
+  const comum = { icone: 'magia-controlarChamas', detalhe: fora ? 'Controlar Chamas, de graça' : 'Controlar Chamas, gasta a ação', motivo: longe ?? semVista ?? semAcao };
+  return [
+    { ...comum, rotulo: `Apagar ${qual} de longe`, fazer: fazer('apagar') },
+    { ...comum, rotulo: `Dobrar a luz ${daQual}`, fazer: fazer('dobrar') },
+    { ...comum, rotulo: `Cortar a luz ${daQual} pela metade`, fazer: fazer('metade') },
+  ];
 }

@@ -21,11 +21,14 @@ import {
   novoRascunho, trocarClasse, problemasDoRascunho, definicaoDoRascunho, rascunhoDaDefinicao, atributosFinais, custoDosPontos,
   periciasDaClasse, periciasFixas, sugerirPericias, padraoDaClasse, nomeDaRaca, nomeDaClasse, novoId,
   ATRIBUTOS, CONJUNTO_PADRAO, CUSTO_DO_PONTO, PONTOS, ANTECEDENTES, RACAS_DO_CRIADOR, CORES_DO_DRACONATO, MAX_NOME, MAX_HISTORIA,
-  SKILL_NAME, ABILITY_NAME, LIVRES_DA_RACA, talentosDoVariante,
+  SKILL_NAME, ABILITY_NAME, LIVRES_DA_RACA, talentosDoVariante, livresDe, tracoDoRascunho, coresDaRaca, danoDaCor, periciasDoAntecedente,
 } from '../game/criador.js';
+import { LIVROS_DAS_RACAS } from '../rules/racas-livros.js';
+import { LIVROS_DOS_ANTECEDENTES } from '../game/antecedentes-livros.js';
 import { infoDoTalentoPhb, TALENTOS_PHB, NOME_DO_ATRIBUTO } from '../rules/talentos-phb.js';
 import { CLASSES } from '../rules/classes/index.js';
-import { RACAS, ANCESTRALIDADES_DRACONICAS } from '../rules/racas.js';
+import { RACAS, ANCESTRALIDADES_DRACONICAS, TRACOS_RACIAIS } from '../rules/racas.js';
+import { LORE, deusesPara } from '../rules/lore.js';
 import { abilityMod } from '../rules/abilities.js';
 import { formatModifier as formatarMod } from '../core/dice.js';
 import { lerImagem, desenharRecorte, reduzirArte } from './arte-upload.js';
@@ -251,17 +254,35 @@ export function criarTelasDeHerois({ botao, voltarBtn, cabecalho, ir, iniciar, r
       onclick: () => { audio.play('click'); aoClicar(); redesenhar(); },
     }, rotulo);
 
+    // o LIVRO aberto na escolha da raça e do antecedente: só da tela, não vai para o rascunho
+    let livroDaRaca = RACAS[r.raca]?.livro ?? 'PHB';
+    let livroDoAntecedente = ANTECEDENTES[r.antecedente]?.livro ?? 'PHB';
+
     function secaoRaca() {
       const raca = RACAS[r.raca];
-      const bonus = Object.entries(raca.atributos ?? {}).map(([a, v]) => `${ABILITY_NAME[a]} +${v}`).join(', ');
+      const bonus = Object.entries(raca.atributos ?? {}).map(([a, v]) => `${ABILITY_NAME[a]} ${v > 0 ? '+' : ''}${v}`).join(', ');
+      const cores = coresDaRaca(r.raca);
+      const opcoes = raca.escolhaDeTraco;
+      const escolhido = tracoDoRascunho(r);
+      // os traços da raça, com o que o motor não faz marcado
+      const tracos = [...raca.tracos, ...(escolhido ? [escolhido] : [])].map((t) => TRACOS_RACIAIS[t]).filter(Boolean);
       return secao('Raça', nomeDaRaca(r.raca, r.sexo, r.cor),
-        el('div', { class: 'menu-chips' }, ...RACAS_DO_CRIADOR.map((id) => chip(nomeDaRaca(id, r.sexo, r.cor).replace(/ (vermelh[oa]|negr[oa]|branc[oa]|azul|verde|de \w+)$/, ''), r.raca === id, () => {
-          r.raca = id;
-          r.periciasEscolhidas = sugerirPericias(r);
-        }))),
-        r.raca === 'draconato' && el('div', { class: 'menu-chips' }, ...CORES_DO_DRACONATO.map((cor) => chip(
-          `${ANCESTRALIDADES_DRACONICAS[cor].dragao} (${ANCESTRALIDADES_DRACONICAS[cor].dano})`, r.cor === cor, () => { r.cor = cor; }))),
-        el('p', { class: 'menu-dica' }, `${bonus || 'Sem bônus fixo'} · deslocamento ${raca.deslocamento} pés${raca.visao ? ` · visão no escuro ${raca.visao / 3.28 | 0} m` : ''}.`));
+        el('div', { class: 'menu-chips' }, ...LIVROS_DAS_RACAS.map(([sigla, nome]) => chip(nome, livroDaRaca === sigla, () => { livroDaRaca = sigla; }))),
+        el('div', { class: 'menu-chips' }, ...RACAS_DO_CRIADOR.filter((id) => (RACAS[id].livro ?? 'PHB') === livroDaRaca).map((id) => chip(
+          // o chip mostra a raça sem a cor do dragão (que tem chip próprio); só a raça com cor perde o fim do nome
+          coresDaRaca(id).length ? nomeDaRaca(id, r.sexo, coresDaRaca(id)[0]).replace(/ (vermelh[oa]|negr[oa]|branc[oa]|azul|verde|de [\wáéíóúãõâêô]+)$/, '') : nomeDaRaca(id, r.sexo), r.raca === id, () => {
+            r.raca = id;
+            if (coresDaRaca(id).length && !coresDaRaca(id).includes(r.cor)) r.cor = coresDaRaca(id)[0];
+            r.tracoDaRaca = RACAS[id].escolhaDeTraco?.[0] ?? null;
+            r.livres = []; r.livreMais2 = null; r.periciasLivres = [];
+            r.periciasEscolhidas = sugerirPericias(r);
+          }))),
+        cores.length > 0 && el('div', { class: 'menu-chips' }, ...cores.map((cor) => chip(
+          `${r.raca === 'draconato' ? ANCESTRALIDADES_DRACONICAS[cor].dragao : nomeDaRaca(r.raca, 'M', cor).split(' ').slice(2).join(' ')} (${danoDaCor(r.raca, cor)})`,
+          r.cor === cor, () => { r.cor = cor; }))),
+        opcoes && el('div', { class: 'menu-chips' }, ...opcoes.map((t) => chip(TRACOS_RACIAIS[t]?.nome ?? t, escolhido === t, () => { r.tracoDaRaca = t; r.periciasLivres = []; }))),
+        el('p', { class: 'menu-dica' }, `${bonus || 'Sem bônus fixo'} · deslocamento ${raca.deslocamento} pés${raca.visao ? ` · visão no escuro ${raca.visao / 3.28 | 0} m` : ''}${raca.porte === 'pequeno' ? ' · Pequeno' : ''}.`),
+        el('p', { class: 'menu-dica' }, tracos.map((t) => `${t.nome}${t.semEfeito ? ' (só de mesa)' : ''}`).join(' · ')));
     }
 
     function secaoClasse() {
@@ -270,11 +291,41 @@ export function criarTelasDeHerois({ botao, voltarBtn, cabecalho, ir, iniciar, r
     }
 
     function secaoAntecedente() {
-      return secao('Antecedente', 'do SRD 5.2',
-        el('div', { class: 'menu-opcoes-cartao' }, ...Object.entries(ANTECEDENTES).map(([id, a]) => el('button', {
+      const a = ANTECEDENTES[r.antecedente];
+      const escolhe = a?.escolhe;
+      const doAntecedente = periciasDoAntecedente(r);
+      return secao('Antecedente', r.sexo === 'F' ? a?.nomeF : a?.nome,
+        el('div', { class: 'menu-chips' }, ...LIVROS_DOS_ANTECEDENTES.map(([sigla, nome]) => chip(nome, livroDoAntecedente === sigla, () => { livroDoAntecedente = sigla; }))),
+        el('div', { class: 'menu-opcoes-cartao' }, ...Object.entries(ANTECEDENTES).filter(([, x]) => x.livro === livroDoAntecedente).map(([id, x]) => el('button', {
           class: `menu-opcao-cartao${r.antecedente === id ? ' marcada' : ''}`,
-          onclick: () => { audio.play('click'); r.antecedente = id; r.periciasEscolhidas = sugerirPericias(r); redesenhar(); },
-        }, el('strong', {}, r.sexo === 'F' ? a.nomeF : a.nome), el('span', {}, `${a.resumo} ${a.pericias.map((s) => SKILL_NAME[s]).join(' e ')}.`)))));
+          onclick: () => { audio.play('click'); r.antecedente = id; r.periciasDoAntecedente = []; r.periciasEscolhidas = sugerirPericias(r); redesenhar(); },
+        }, el('strong', {}, r.sexo === 'F' ? x.nomeF : x.nome),
+        el('span', {}, `${x.resumo} ${[...x.pericias.map((s) => SKILL_NAME[s]), ...(x.escolhe ? [`${x.escolhe.quantas === 1 ? 'uma' : 'duas'} à escolha`] : [])].join(' e ')}.`)))),
+        escolhe && el('p', { class: 'menu-dica' }, `${a.nome}: ${escolhe.quantas === 1 ? 'uma perícia' : 'duas perícias'} entre ${escolhe.de.map((s) => SKILL_NAME[s]).join(', ')}.`),
+        escolhe && el('div', { class: 'menu-chips' }, ...escolhe.de.filter((s) => !(a.pericias ?? []).includes(s)).map((s) => chip(SKILL_NAME[s], doAntecedente.includes(s), () => {
+          const atual = periciasDoAntecedente(r);
+          r.periciasDoAntecedente = atual.includes(s) ? atual.filter((x) => x !== s) : [...atual.slice(-(escolhe.quantas - 1) || atual.length), s].slice(-escolhe.quantas);
+          r.periciasEscolhidas = sugerirPericias(r);
+        }))));
+    }
+
+    /**
+     * A DIVINDADE (opcional): o panteão de Faerûn e o do povo do herói (`rules/lore.js deusesPara`). Embaixo, o que se
+     * diz do deus escolhido. Trocar de raça para um povo de outro panteão desfaz a escolha que não cabe mais.
+     */
+    function secaoDivindade() {
+      const lista = deusesPara(RACAS[r.raca]?.grupo, { drow: ['drow', 'meioElfoDrow'].includes(r.raca) });
+      if (r.divindade && !lista.some((d) => d.chave === r.divindade)) r.divindade = null;
+      const PANTEAO = { faerunian: 'Faerûn', dwarven: 'Deuses anões', elven: 'Deuses élficos', halfling: 'Deuses halflings', gnomish: 'Deuses gnomos', orc: 'Deuses orcs', drow: 'Deuses do Subterrâneo', yuanTi: 'Deuses-serpente' };
+      const grupos = [...new Set(lista.map((d) => d.grupo))];
+      const sel = el('select', { class: 'menu-campo' },
+        el('option', { value: '', selected: r.divindade ? null : true }, 'Nenhuma em especial'),
+        ...grupos.map((g) => el('optgroup', { label: PANTEAO[g] ?? g },
+          ...lista.filter((d) => d.grupo === g).map((d) => el('option', { value: d.chave, selected: r.divindade === d.chave ? true : null }, d.nome)))));
+      sel.addEventListener('change', () => { r.divindade = sel.value || null; redesenhar(); });
+      const escolhida = r.divindade ? LORE[r.divindade] : null;
+      return secao('Divindade', r.classe === 'clerigo' || r.classe === 'paladino' ? 'a quem serve' : 'opcional', sel,
+        el('p', { class: 'menu-dica' }, escolhida ? escolhida.resumo : 'Quem não segue um deus em especial reza ao que a hora pedir.'));
     }
 
     function secaoAtributos() {
@@ -300,10 +351,11 @@ export function criarTelasDeHerois({ botao, voltarBtn, cabecalho, ir, iniciar, r
             el('b', {}, String(r.base[a])),
             el('button', { class: 'menu-chip', onclick: () => muda(1), disabled: r.base[a] >= 15 || custoDosPontos({ ...r.base, [a]: r.base[a] + 1 }) > PONTOS ? true : null }, '+'));
         }
-        const extra = (bonus[a] ?? 0) + (LIVRES_DA_RACA[r.raca] && r.livres.includes(a) ? 1 : 0);
+        const l = livresDe(r);
+        const extra = (bonus[a] ?? 0) + (l?.atributos && r.livres.includes(a) ? 1 : 0) + (l?.mais2 && r.livreMais2 === a ? 2 : 0);
         return el('div', { class: 'menu-criar-atributo' },
           el('span', {}, ABILITY_NAME[a]), controle,
-          el('small', {}, extra ? `+${extra}` : ''),
+          el('small', {}, extra ? `${extra > 0 ? '+' : ''}${extra}` : ''),
           el('strong', {}, `${finais[a]} (${formatarMod(abilityMod(finais[a]))})`));
       });
       return secao('Atributos', r.metodo === 'pontos' ? `${custoDosPontos(r.base)} de ${PONTOS} pontos` : 'conjunto padrão',
@@ -311,11 +363,30 @@ export function criarTelasDeHerois({ botao, voltarBtn, cabecalho, ir, iniciar, r
           chip('Conjunto padrão', r.metodo === 'padrao', () => { r.metodo = 'padrao'; r.base = padraoDaClasse(r.classe); }),
           chip('Compra de pontos', r.metodo === 'pontos', () => { r.metodo = 'pontos'; r.base = Object.fromEntries(ATRIBUTOS.map((a) => [a, 8])); })),
         ...linhas,
-        LIVRES_DA_RACA[r.raca] && el('p', { class: 'menu-dica' }, `${r.raca === 'meioElfo' ? 'Meio-elfo' : 'Humano variante'}: +1 em dois atributos à escolha (${r.livres.length} de 2).`),
-        LIVRES_DA_RACA[r.raca] && el('div', { class: 'menu-chips' }, ...ATRIBUTOS.filter((a) => !(LIVRES_DA_RACA[r.raca].semCarisma && a === 'cha')).map((a) => chip(ABILITY_NAME[a], r.livres.includes(a), () => {
-          if (r.livres.includes(a)) r.livres = r.livres.filter((x) => x !== a);
-          else if (r.livres.length < 2) r.livres = [...r.livres, a];
+        ...linhasDosLivres());
+    }
+
+    /** O +2 livre e os +1 livres que a raça dá (o meio-elfo, o humano variante, o draconato do Fizban, a linhagem). */
+    function linhasDosLivres() {
+      const l = livresDe(r);
+      if (!l) return [];
+      const quem = RACAS[r.raca].nome;
+      const out = [];
+      if (l.mais2) {
+        out.push(el('p', { class: 'menu-dica' }, `${quem}: +2 num atributo à escolha.`));
+        out.push(el('div', { class: 'menu-chips' }, ...ATRIBUTOS.map((a) => chip(`+2 ${ABILITY_NAME[a]}`, r.livreMais2 === a, () => {
+          r.livreMais2 = a; r.livres = (r.livres ?? []).filter((x) => x !== a);
         }))));
+      }
+      const n = l.atributos ?? 0;
+      if (n) {
+        out.push(el('p', { class: 'menu-dica' }, `${quem}: +1 em ${n === 1 ? 'um atributo' : `${n} atributos`} à escolha (${r.livres.length} de ${n}).`));
+        out.push(el('div', { class: 'menu-chips' }, ...ATRIBUTOS.filter((a) => !(l.semCarisma && a === 'cha') && a !== r.livreMais2).map((a) => chip(`+1 ${ABILITY_NAME[a]}`, r.livres.includes(a), () => {
+          if (r.livres.includes(a)) r.livres = r.livres.filter((x) => x !== a);
+          else r.livres = [...r.livres, a].slice(-n);
+        }))));
+      }
+      return out;
     }
 
     function secaoPericias() {
@@ -326,21 +397,19 @@ export function criarTelasDeHerois({ botao, voltarBtn, cabecalho, ir, iniciar, r
         fixas.length > 0 && el('p', { class: 'menu-dica' }, `Já vêm: ${fixas.map((s) => SKILL_NAME[s]).join(', ')} (antecedente e raça).`),
         el('div', { class: 'menu-chips' }, ...de.filter((s) => !fixas.includes(s)).map((s) => chip(SKILL_NAME[s], r.periciasEscolhidas.includes(s),
           () => { r.periciasEscolhidas = marcar(r.periciasEscolhidas, s, quantas); }))),
-        LIVRES_DA_RACA[r.raca] && el('p', { class: 'menu-dica' }, r.raca === 'meioElfo'
-          ? `Meio-elfo: duas perícias quaisquer (${r.periciasLivres.length} de 2).`
-          : `Humano variante: uma perícia qualquer (${r.periciasLivres.length} de 1).`),
-        LIVRES_DA_RACA[r.raca] && el('div', { class: 'menu-chips' }, ...Object.keys(SKILL_NAME)
+        livresDe(r)?.pericias > 0 && el('p', { class: 'menu-dica' }, `${RACAS[r.raca].nome}: ${livresDe(r).pericias === 1 ? 'uma perícia' : `${livresDe(r).pericias} perícias`}${livresDe(r).de ? ' da lista da raça' : ' quaisquer'} (${r.periciasLivres.length} de ${livresDe(r).pericias}).`),
+        livresDe(r)?.pericias > 0 && el('div', { class: 'menu-chips' }, ...(livresDe(r).de ?? Object.keys(SKILL_NAME))
           .filter((s) => !fixas.includes(s) && !r.periciasEscolhidas.includes(s))
-          .map((s) => chip(SKILL_NAME[s], r.periciasLivres.includes(s), () => { r.periciasLivres = marcar(r.periciasLivres, s, LIVRES_DA_RACA[r.raca].pericias); }))));
+          .map((s) => chip(SKILL_NAME[s], r.periciasLivres.includes(s), () => { r.periciasLivres = marcar(r.periciasLivres, s, livresDe(r).pericias); }))));
     }
 
     /** O talento do HUMANO VARIANTE: um do Livro do Jogador, já no 1º nível. O que o herói não pode tomar fica apagado, com o motivo. */
     function secaoTalentoVariante() {
-      if (r.raca !== 'humanoVariante') return null;
+      if (r.raca !== 'humanoVariante' && !RACAS[r.raca]?.talentoDaRaca) return null;
       const lista = talentosDoVariante(r);
       const escolhido = r.talentoVariante?.id ? infoDoTalentoPhb(r.talentoVariante.id) : null;
       const atributos = TALENTOS_PHB[r.talentoVariante?.id]?.atributo;
-      return secao('Talento do humano variante', escolhido ? escolhido.nome : 'escolha um',
+      return secao(`Talento ${r.raca === 'humanoVariante' ? 'do humano variante' : 'da linhagem'}`, escolhido ? escolhido.nome : 'escolha um',
         el('p', { class: 'menu-dica' }, 'Um talento do Livro do Jogador no 1º nível, além do talento de origem que vem na tela de preparo.'),
         el('div', { class: 'menu-opcoes-cartao' }, ...lista.map(({ id, motivo }) => {
           const info = infoDoTalentoPhb(id);
@@ -388,7 +457,7 @@ export function criarTelasDeHerois({ botao, voltarBtn, cabecalho, ir, iniciar, r
       corpo.replaceChildren(
         secao('Nome', null, campoNome,
           el('div', { class: 'menu-chips' }, chip('Ela', r.sexo === 'F', () => { r.sexo = 'F'; }), chip('Ele', r.sexo === 'M', () => { r.sexo = 'M'; }))),
-        secaoRaca(), secaoClasse(), secaoAntecedente(), secaoAtributos(), secaoPericias(), secaoTalentoVariante(),
+        secaoRaca(), secaoClasse(), secaoAntecedente(), secaoDivindade(), secaoAtributos(), secaoPericias(), secaoTalentoVariante(),
         secao('História', 'opcional', campoHistoria),
       );
       atualizarResumo();

@@ -86,6 +86,13 @@ import { criarZorzulaPosto } from "./game/zorzula-posto.js";
 import { criarZorzulaSantuario } from "./game/zorzula-santuario.js";
 import { criarZorzulaMinas } from "./game/zorzula-minas.js";
 import { criarLugarDoCap6 } from "./game/obelisco6-lugares.js";
+import { criarLugarDoCap7 } from "./game/obelisco7-lugares.js";
+import { criarTunel7 } from "./game/tunel-cap7.js";
+import { criarIllithinoch } from "./game/illithinoch.js";
+import { criarFenda } from "./game/fendas.js";
+import { criarLabirintoSalgado, criarCovilLowarnizel } from "./game/labirinto-salgado.js";
+import { criarPocaSalgada } from "./game/poca-salgada.js";
+import { criarIlhaDoVazio } from "./game/vazio.js";
 import { criarTalhundereth } from "./game/talhundereth.js";
 import { criarEncruzilhada } from "./game/encruzilhada.js";
 import { criarCriptaTalhund } from "./game/cripta-talhund.js";
@@ -677,6 +684,22 @@ class App {
                       ? criarZorzulaMinas
                     : mapa.cena === "cap6lugar"
                       ? criarLugarDoCap6
+                    : mapa.cena === "cap7lugar"
+                      ? criarLugarDoCap7
+                    : mapa.cena === "tunel7"
+                      ? criarTunel7
+                    : mapa.cena === "illithinoch"
+                      ? criarIllithinoch
+                    : mapa.cena === "fenda"
+                      ? criarFenda
+                    : mapa.cena === "labirintoSalgado"
+                      ? criarLabirintoSalgado
+                    : mapa.cena === "covilLowarnizel"
+                      ? criarCovilLowarnizel
+                    : mapa.cena === "pocaSalgada"
+                      ? criarPocaSalgada
+                    : mapa.cena === "vazio"
+                      ? criarIlhaDoVazio
                     : mapa.cena === "talhundereth"
                       ? criarTalhundereth
                     : mapa.cena === "encruzilhada"
@@ -806,7 +829,22 @@ class App {
     if (capitulo) {
       this.capitulo = cena(this, config);
       this.refresh();
-      this.capitulo.iniciar();
+      const inicio = this.capitulo.iniciar();
+      // A CENA PODE PÔR O GRUPO EM OUTRO LUGAR (quem sobe da Poça Salgada sai na beira dela, quem volta do covil sai
+      // pelo buraco): a câmera abre onde o grupo está, e não no ponto de nascer do mapa. A parte síncrona do `iniciar`
+      // já moveu o grupo, e o enquadramento acima lê o foco no próximo quadro; o que a cena mover depois de um painel
+      // leva a câmera junto quando ele fecha.
+      const ondeEsta = () => this.enc.combatants.find((x) => x.side === "party" && !x.dead && (!this.donoDaVisao || this.donoDaVisao(x)))?.pos;
+      const agora = ondeEsta();
+      if (agora && this.board) this.board.focoInicial = { ...agora };
+      Promise.resolve(inicio).then(() => {
+        const depois = ondeEsta();
+        const foco = this.board?.focoInicial;
+        if (depois && foco && (depois.x !== foco.x || depois.y !== foco.y)) {
+          this.board.focoInicial = { ...depois };
+          this.board.enquadrarGrande(this.board.focoInicial);
+        }
+      });
       return;
     }
 

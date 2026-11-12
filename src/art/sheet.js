@@ -31,6 +31,45 @@ function retratoDaFicha(id, lado) {
   return canvas;
 }
 
+/**
+ * OS RETRATOS DESENHADOS EM CÓDIGO: o que é objeto e não criatura, sem folha nem ficha (o obelisco da Ânima, cuja arte é a
+ * do mapa da FA, que não entra no repositório). Pintam num quadrado de `t` px.
+ */
+const RETRATOS_DESENHADOS = {
+  obeliscoDaAnima(ctx, t) {
+    ctx.fillStyle = '#15121c';
+    ctx.fillRect(0, 0, t, t);
+    // a pedra negra, afinando para cima, com a ponta quebrada
+    const pedra = [[0.36, 0.95], [0.64, 0.95], [0.6, 0.22], [0.54, 0.1], [0.47, 0.16], [0.4, 0.22]];
+    ctx.beginPath();
+    pedra.forEach(([x, y], i) => (i ? ctx.lineTo(x * t, y * t) : ctx.moveTo(x * t, y * t)));
+    ctx.closePath();
+    ctx.fillStyle = '#2a2633';
+    ctx.fill();
+    ctx.lineWidth = Math.max(1, t * 0.03);
+    ctx.strokeStyle = '#000';
+    ctx.stroke();
+    // as costuras verdes entre os pedaços
+    ctx.strokeStyle = '#7dff5a';
+    ctx.shadowColor = '#5da32e';
+    ctx.shadowBlur = t * 0.08;
+    ctx.lineWidth = Math.max(1, t * 0.025);
+    for (const [[x0, y0], [x1, y1]] of [[[0.4, 0.35], [0.6, 0.42]], [[0.39, 0.58], [0.61, 0.52]], [[0.38, 0.78], [0.62, 0.74]], [[0.5, 0.42], [0.47, 0.58]]]) {
+      ctx.beginPath(); ctx.moveTo(x0 * t, y0 * t); ctx.lineTo(x1 * t, y1 * t); ctx.stroke();
+    }
+  },
+};
+
+function retratoDesenhado(id, lado) {
+  const canvas = document.createElement('canvas');
+  canvas.width = lado * S;
+  canvas.height = lado * S;
+  canvas.style.width = `${lado}px`;
+  canvas.style.height = `${lado}px`;
+  RETRATOS_DESENHADOS[id](canvas.getContext('2d'), canvas.width);
+  return canvas;
+}
+
 const cache = new Map();
 
 // Carregar cedo, e uma vez. Quando um PNG chega, saem do cache TODAS as chaves
@@ -248,6 +287,7 @@ function imagemDa(sheet, anim) {
  * aparecer menor dentro do quadro é informação, não defeito.
  */
 export function makePortrait(lookKey, lado = 40) {
+  if (RETRATOS_DESENHADOS[lookKey]) return retratoDesenhado(lookKey, lado);
   if (SO_FICHA.has(lookKey) && !temLook(lookKey)) return retratoDaFicha(lookKey, lado);
   // O herói criado pelo jogador não tem folha: o retrato sai da imagem que ele mandou (`art/arte-propria.js`).
   if (ehArte(lookKey)) {

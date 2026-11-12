@@ -38,6 +38,20 @@ for (const f of fs.readdirSync(MAPAS).filter((x) => /^mapa-.*\.json$/.test(x)).s
   Object.assign(mapa, lote);
 }
 
+// A ARMA, A ARMADURA E O ESCUDO MÁGICOS sem de-para próprio herdam o desenho da base (a espada longa +1 é uma espada
+// longa; a família de cor, pela raridade, é que os separa). O de-para escrito à mão vale por cima.
+{
+  const { WEAPONS, ARMORS, SHIELDS, ITEMS } = await import('../rules/items/index.js');
+  for (const cat of [WEAPONS, ARMORS, SHIELDS, ITEMS]) {
+    for (const [id, d] of Object.entries(cat)) {
+      const k = `item-${id}`;
+      // a peça de uma família (o anel de resistência a fogo) herda o desenho do genérico dela; a +1, o da base
+      const de = [d.deFamilia, d.deBase].find((x) => x && mapa[`item-${x}`]);
+      if (!mapa[k] && de && chaves.has(k)) mapa[k] = mapa[`item-${de}`];
+    }
+  }
+}
+
 // OS DESENHOS PRÓPRIOS (`src/dev/icones-traco/proprios/gerados.json`, de `src/dev/vetorizar-icones-openart.py`): os
 // ícones gerados no OpenArt para o jogo, já em caminho SVG na caixa de 512. Entram como `proprio:<chave>`; o de-para só
 // aponta para eles quando o dono escolhe na página Escolha dos Ícones (`mapa-zzz-escolhas.json`, o último lido: a escolha

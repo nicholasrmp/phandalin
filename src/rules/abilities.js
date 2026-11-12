@@ -71,7 +71,9 @@ export function skillBonus(actor, skill, { contexto = null, bioma = null } = {})
     // EMISSÁRIO DA PAZ (Redenção): +5 na Persuasão enquanto dura.
     + (skill === 'persuasao' && actor.conditions?.some((c) => c.id === 'emissarioDaPaz') ? 5 : 0)
     // ENCANTO SOBRENATURAL (Andarilho Feérico, Tasha): os testes de Carisma somam a Sabedoria (mínimo +1).
-    + (ability === 'cha' && actor.features?.includes('otherworldlyGlamour') ? Math.max(1, abilityMod(actor.abilities.wis ?? 10)) : 0);
+    + (ability === 'cha' && actor.features?.includes('otherworldlyGlamour') ? Math.max(1, abilityMod(actor.abilities.wis ?? 10)) : 0)
+    // O ITEM (`itens-passivos.js`, a soma pronta em `doItem`): as luvas de ladrão, a pedra da boa sorte
+    + (actor.doItem?.pericias?.[skill] ?? 0) + (actor.doItem?.testes ?? 0);
   const f = actor.features;
   if (skill === 'historia' && f?.length
     && ((contexto === 'pedra' && f.includes('stonecunning')) || (contexto === 'itemMagico' && f.includes('artificersLore')))) {
@@ -136,6 +138,8 @@ export function rolarPericia(rng, actor, skill, opts = {}) {
   // CANÇÃO DA LÂMINA (Acrobacia) e UM COM A PALAVRA (Escribas, Arcanismo)
   if (skill === 'acrobacia' && actor?.conditions?.some((c) => c.id === 'cancaoDaLamina')) d20opts.advantage = true;
   if (skill === 'arcanismo' && actor?.features?.includes('oneWithTheWord')) d20opts.advantage = true;
+  // O ITEM: o manto élfico e as botas élficas (Furtividade), os olhos da águia (Percepção)
+  if (actor?.doItem?.vantagemPericia?.includes(skill)) d20opts.advantage = true;
   const mare = actor?.conditions?.find((c) => c.id === 'maresDoCaos');
   if (mare) {
     d20opts.advantage = true;
@@ -195,7 +199,9 @@ export const passivePerception = (actor) => 10 + skillBonus(actor, 'percepcao')
   + (actor.percepcaoMarcha ?? 0)
   + (actor.conditions?.some((c) => c.id === 'olhoDoCaos') ? 5 : 0)
   // OBSERVADOR (talento): +5 na Percepção passiva (e na Investigação passiva, `investigacaoPassiva`).
-  + ((actor.talentos ?? []).includes('observador') ? 5 : 0);
+  + ((actor.talentos ?? []).includes('observador') ? 5 : 0)
+  // o item que dá vantagem em Percepção (os olhos da águia): +5 na passiva
+  + (actor.doItem?.vantagemPericia?.includes('percepcao') ? 5 : 0);
 
 /** EXPLORADOR DE MASMORRAS (talento): vantagem para achar porta secreta — no teste, vantagem; na passiva, +5. */
 export const achaSecretaComVantagem = (actor) => (actor.talentos ?? []).includes('exploradorDeMasmorras');
@@ -207,11 +213,11 @@ export const investigacaoPassiva = (actor) => 10 + skillBonus(actor, 'investigac
 /** CD de magia = 8 + proficiência + modificador de conjuração. */
 export function spellSaveDc(actor) {
   if (!actor.spellcasting) return null;
-  return 8 + proficiencyBonus(actor.level) + abilityMod(actor.abilities[actor.spellcasting.ability]);
+  return 8 + proficiencyBonus(actor.level) + abilityMod(actor.abilities[actor.spellcasting.ability]) + (actor.doItem?.cdMagia ?? 0);
 }
 
 /** Bônus de ataque mágico. */
 export function spellAttackBonus(actor) {
   if (!actor.spellcasting) return null;
-  return proficiencyBonus(actor.level) + abilityMod(actor.abilities[actor.spellcasting.ability]);
+  return proficiencyBonus(actor.level) + abilityMod(actor.abilities[actor.spellcasting.ability]) + (actor.doItem?.ataqueMagia ?? 0);
 }

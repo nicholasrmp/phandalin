@@ -50,11 +50,18 @@ import { concedidasDe } from './magias-concedidas.js';
 import { escalarEspirito } from './monsters/espiritos-tce.js';
 import { spellMod } from './party.js';
 import { modificadoresDeLuz, sofreComOSol, podeVer, nivelDeLuz, fontesDeLuz, CLARO } from './luz.js';
+import { magiasDosItens, gastarCargaDoItem, cargasDe } from './itens-que-conjuram.js';
+import { atualizarItensPassivos } from './itens-passivos.js';
+import { DOENCAS, curarDoencas } from './doencas.js';
 import { regioesNoPasso, regioesNoTurno } from './regioes.js';
 import { categoriaDeTamanho } from './tamanho.js';
 import * as Livro from './livro-motor.js';
 import * as Sub from './subclasses-livros.js';
+import * as Raca from './racas-motor.js';
+import { chamaNaCasa } from './chamas.js';
 const temEscuridaoDoMapa = (enc) => Boolean(enc.field?.luz);
+/** Quem tem um OLHAR que se evita desviando os olhos: o Olhar Petrificante da medusa e as auras de olhar (o brutamonte umbral). */
+const temOlhar = (m) => Boolean(m?.traits?.includes('olharPetrificante') || m?.aura?.olhar);
 import { casaLongeDe, magiaLendaria } from './ai.js';
 import {
   vantagemPorTraco, contraDaMagia, margemDeCritico, dadosExtraDeCritico, danoPorResistencia, TIPOS_DA_PUREZA, CONDICOES_DE_ENCANTO,
@@ -288,6 +295,20 @@ const ARREMESSO_DE_POCAO_FT = 20;
 // Crescimento de Plantas: o chão que não é natural (pedra, estrada, caverna, água, obra) não vira mato.
 const SEM_PLANTAS = new Set(['estrada', 'caverna', 'ponte', 'leito', 'poco', 'riacho', 'entulho', 'fogueira', 'rocha', 'parede']);
 
+/** A munição +N de maior bônus que o herói leva (`municaoMais3` antes da `municaoMais1`), ou null. */
+function melhorMunicao(actor) {
+  for (const id of ['municaoMais3', 'municaoMais2', 'municaoMais1']) {
+    if ((actor.bag ?? []).some((b) => b.id === id && (b.qtd ?? 1) > 0)) return id;
+  }
+  return null;
+}
+
+/**
+ * Quem tem DESLOCAMENTO DE NADO (o tritão, o povo-lagarto, o elfo do mar, a Armadura do Marinheiro) não paga a água funda
+ * como terreno difícil: é o que o nado do livro quer dizer. Antes o nado só servia para não se afogar.
+ */
+const nadador = (c) => (c?.speeds?.swimFt ?? 0) > 0 || !!c?.doItem?.nado;
+
 export class Encounter {
   constructor({ battlefield, party, foes, rng, onLog = () => {}, onEvent = () => {}, reinforcements = null, emboscada = null }) {
     this.field = battlefield;
@@ -304,6 +325,8 @@ export class Encounter {
     this.reinforcements = reinforcements;
 
     this.combatants = [...party, ...foes];
+    // o que os itens fazem só por estar com o herói (`itens-passivos.js`): a soma pronta, conferida no começo da luta
+    for (const c of party) if (c.bag?.length || c.doItem) atualizarItensPassivos(c);
     // Áreas que ficam no chão depois da magia (Graxa). O terreno difícil delas
     // vai para o campo, que é quem calcula o custo de andar.
     this.zonas = [];
@@ -669,7 +692,8 @@ export class Encounter {
    * consciente dá a vantagem ao lado inteiro: é a leitura mais simples de "o lado age junto", e a declaro aqui.
    */
   instintoSelvagem(side) {
-    return this.allOf(side).some((c) => !c.dead && c.features?.includes('feralInstinct') && !conditionEffects(c).incapacitated);
+    // ... e o item que dá vantagem na iniciativa (o cetro de alerta, a arma de aviso)
+    return this.allOf(side).some((c) => !c.dead && (c.features?.includes('feralInstinct') || c.doItem?.iniciativa) && !conditionEffects(c).incapacitated);
   }
 
   bestDex(side) {
@@ -845,7 +869,7 @@ export class Encounter {
       // `attacks` também. Sem isso, `recargaMinima(undefined)` dava null e o
       // d6 recarregava sempre.
       const sopro = (c.breath?.chaveRecarga ?? c.breath?.name) === nome ? c.breath.recharge
-        : c.acoesEspeciais?.find((a) => a.nome === nome)?.recharge ?? null;
+        : c.acoesEspeciais?.find((a) => (a.recargaDe ?? a.nome) === nome)?.recharge ?? null;
       if (r >= (recargaMinima(atk?.recharge ?? sopro ?? RECARGA_DE_TRACO[nome]) ?? 6)) {
         c.recarregando[nome] = false;
         this.say('recurso', `${c.name}: ${nome} recarregou (d6 = ${r}).`);
@@ -856,7 +880,8 @@ export class Encounter {
   /** Começo do turno: some o que dura "até o começo do seu próximo turno". */
   tickConditions(c) {
     if (!c.conditions?.length) return;
-    c.conditions = c.conditions.filter((cond) => !CONDITIONS[cond.id]?.expiresAtTurnStart);
+    // a que nasceu NESTE começo de turno (os olhos desviados da aura de olhar, `aurasNoComecoDe`, que roda antes) fica
+    c.conditions = c.conditions.filter((cond) => !CONDITIONS[cond.id]?.expiresAtTurnStart || cond.data?.nasceuEm === `${this.round}:${this.side}`);
   }
 
   /**
@@ -871,6 +896,7 @@ export class Encounter {
   fimDoTurnoDoLado(side) {
     regioesNoTurno(this, side, 'terminaTurno');
     Sub.fimDoLado(this, side);
+    Raca.fimDoLado(this, side);
     Sub.fimDoLadoDosLivros(this, side);
     Sub.fimDoLadoTce2(this, side);
     // BRILHO DO CAOS (surto): quem termina o turno a 1,5 m de quem brilha fica cego até o fim do próximo turno dele.
@@ -1181,7 +1207,11 @@ export class Encounter {
     }
     if (this.imuneACondicao(alvo, id, fonte)) return null;
     const cond = addCondition(alvo, id, opcoes);
-    if (CONDITIONS[id]?.incapacitated) this.dropConcentration(alvo);
+    if (CONDITIONS[id]?.incapacitated) {
+      this.dropConcentration(alvo);
+      // a cena sabe quem ficou incapacitado (o VÍNCULO PSÍQUICO do cérebro ancião de Illithinoch)
+      this.onEvent({ type: 'incapacitado', target: alvo, condicao: id });
+    }
     if (id === 'caido') Livro.caiuDeCostas(this, alvo);
     return cond;
   }
@@ -1613,7 +1643,7 @@ export class Encounter {
       const opcoes = m.lendarias.opcoes.filter((o) => o.custo <= m.lendariasRestantes);
       const feita = Livro.escolherLendaria(this, m, opcoes, {
         casaLonge: (q, inimigos, pes) => casaLongeDe(this, q, inimigos, pes),
-        magia: (q, soTruque) => magiaLendaria(this, q, soTruque),
+        magia: (q, soTruque, maxCirculo, magias) => magiaLendaria(this, q, soTruque, maxCirculo, magias),
         tinta: (q, o) => this.tintaLendaria(q, o),
       });
       if (feita) {
@@ -1649,10 +1679,29 @@ export class Encounter {
       if (t.dead || t.hp <= 0) continue;
       for (const m of donos) {
         const a = m.aura;
-        if (distanceFt(m.pos, t.pos) > a.raioFt || t.imuneAAura?.includes(m.id) || this.imuneACondicao(t, a.condition)) continue;
-        const sv = this.resistencia(t, a.save, a.dc, { contra: { condicao: a.condition } });
-        const r = this.explicarResistencia(t, a.save, a.dc, sv, { contra: `a aura de ${m.name}`, seSucesso: 'nada, e não sente mais' });
+        if (distanceFt(m.pos, t.pos) > a.raioFt || t.imuneAAura?.includes(m.id) || (a.condition && this.imuneACondicao(t, a.condition))) continue;
+        if (a.poupaTipo && String(t.tipo ?? '').startsWith(a.poupaTipo)) continue;
+        // O OLHAR (o Olhar Confuso do brutamonte umbral): só pega quem vê os olhos do dono, e quem não foi surpreendido
+        // pode desviá-los (o mesmo interruptor da medusa, `desviarOlhar`): não testa, mas não o vê até o próximo turno.
+        if (a.olhar) {
+          if (hasCondition(t, 'cego') || !this.field.hasLineOfSight(m.pos, t.pos) || !podeVer(this, t, m)) continue;
+          if (t.desviaOlhar && !this.surpresos?.has?.(t.id)) {
+            removeCondition(t, 'olhosDesviados');
+            addCondition(t, 'olhosDesviados', { source: m.id, data: { nasceuEm: `${this.round}:${side}` } });
+            this.say('condicao', `${t.name} desvia os olhos de ${m.name}.`);
+            continue;
+          }
+        }
+        const sv = this.resistencia(t, a.save, a.dc, { contra: { condicao: a.condition ?? null, tipoDano: a.damageType ?? null, magico: !!a.damage } });
+        const r = this.explicarResistencia(t, a.save, a.dc, sv, { contra: `a aura de ${m.name}`, seSucesso: a.imunizaAoPassar ? 'nada, e não sente mais' : 'nada' });
         if (sv.success) { if (a.imunizaAoPassar) (t.imuneAAura ??= []).push(m.id); this.say('condicao', `${t.name} aguenta a aura de ${m.name}.`, r.conta, { rolagem: r }); continue; }
+        // A AURA QUE FERE (a Forma Aberrante do zelote: Sabedoria, ou 2d6 psíquicos)
+        if (a.damage) {
+          const d = damageRoll(this.rng, a.damage);
+          this.say('dano', `A aura de ${m.name} pega ${t.name}: ${d.total} de ${a.damageType}.`, `${r.conta} · ${a.damage}[${d.rolls.join('+')}]`, { rolagem: r });
+          this.applyDamage(t, d.total, a.damageType, m, { magico: true });
+        }
+        if (!a.condition || t.dead || t.hp <= 0) continue;
         // a de um turno vale até o começo do próximo; a de um minuto (a Aparência Horrenda da bruxa do mar) repete o teste
         const longa = (a.rounds ?? 1) > 1;
         this.aplicarCondicao(t, a.condition, longa ? { rounds: a.rounds, source: m.id, data: { save: a.save, dc: a.dc, repete: !!a.repete } }
@@ -1737,7 +1786,8 @@ export class Encounter {
     // A criatura invocada luta ao lado do grupo, mas não o mantém de pé: se os
     // quatro heróis caem, é derrota mesmo com o lobo em pé.
     // Quem virou PEDRA está fora da luta, como quem caiu: o grupo todo petrificado (a medusa, o raio do observador) perdeu.
-    const partyUp = this.living('party').filter((c) => !c.invocado && !hasCondition(c, 'petrificado') && !hasCondition(c, 'banidoDeVez')).length;
+    // ... e quem está na MASMORRA SEMIPLANAR do couraçado astral, de onde só se sai com magia de viagem entre planos
+    const partyUp = this.living('party').filter((c) => !c.invocado && !hasCondition(c, 'petrificado') && !hasCondition(c, 'banidoDeVez') && !Livro.naMasmorra(c)).length;
     // `naoSeguraALuta`: quem luta do lado dos inimigos mas não é a luta — o familiar invisível do mago (o Zeond da
     // Mansão), que sem o mestre some. Sem isto um bicho invisível que ninguém consegue mirar seguraria a luta para
     // sempre. A cena decide o que acontece com ele depois.
@@ -1852,7 +1902,7 @@ export class Encounter {
     this.field.escalando = this.escalaAgora(actor);
     // Andar na Água e Forma Gasosa: as duas mexem em POR ONDE se passa, então
     // viajam no campo como o voo e a escalada.
-    this.field.sobreAgua = conditionEffects(actor).sobreAgua;
+    this.field.sobreAgua = conditionEffects(actor).sobreAgua || nadador(actor);
     this.field.atravessaVao = conditionEffects(actor).atravessaVao || Boolean(actor.traits?.includes('amorfo'));
     this.field.semTerrenoDificil = conditionEffects(actor).semTerrenoDificil || (temTalento(actor, 'movel') && actor.disparouEm === this.turnoKey());
     this.field.passoDaTerra = Boolean(actor.features?.includes('landsStride'));
@@ -1911,7 +1961,7 @@ export class Encounter {
     // PRESO À TERRA: o voo de magia e o de ficha caem; quem estava no ar desce.
     if (hasCondition(actor, 'presoATerra')) return false;
     // ASAS DE OUTRO MUNDO (Alma Divina) e ALMA DO VENTO (Tempestade): o voo do feiticeiro
-    return (hasCondition(actor, 'voando') || hasCondition(actor, 'asasDeOutroMundo') || hasCondition(actor, 'passosDaNoite') || hasCondition(actor, 'saltoPsionico') || Sub.vooDoDragao(actor) || actor.features?.includes('windSoul') || conditionEffects(actor).soVoa || fichaNoAr)
+    return (hasCondition(actor, 'voando') || hasCondition(actor, 'asasDeOutroMundo') || hasCondition(actor, 'passosDaNoite') || hasCondition(actor, 'saltoPsionico') || hasCondition(actor, 'almaRadiante') || hasCondition(actor, 'vooDeGema') || Sub.vooDoDragao(actor) || actor.features?.includes('windSoul') || conditionEffects(actor).soVoa || fichaNoAr)
       && !hasCondition(actor, 'caido') && !conditionEffects(actor).incapacitated;
   }
 
@@ -2091,7 +2141,7 @@ export class Encounter {
       this.field.dificeisExtra = hostil;
       this.field.voando = noAr;
       this.field.escalando = this.escalaAgora(actor);
-      this.field.sobreAgua = conditionEffects(actor).sobreAgua;
+      this.field.sobreAgua = conditionEffects(actor).sobreAgua || nadador(actor);
       this.field.atravessaVao = conditionEffects(actor).atravessaVao || Boolean(actor.traits?.includes('amorfo'));
       this.field.semTerrenoDificil = conditionEffects(actor).semTerrenoDificil || (temTalento(actor, 'movel') && actor.disparouEm === this.turnoKey());
       this.field.passoDaTerra = Boolean(actor.features?.includes('landsStride'));
@@ -2458,21 +2508,164 @@ export class Encounter {
     return true;
   }
 
+  /**
+   * O EFEITO EM SI MESMO (`tipo: 'propria'`): as Duplicatas Fantasmagóricas do cloaker mutante, ação bônus, até o fim do
+   * próximo turno dele.
+   */
+  efeitoProprio(m, a) {
+    if (hasCondition(m, a.condition)) return false;
+    addCondition(m, a.condition, { rounds: this.side === m.side ? 2 : 1, quando: 'fim', lado: m.side, source: m.id });
+    this.say('magia', a.texto ? `${m.name} ${a.texto}` : `${m.name} usa ${a.nome}.`);
+    return true;
+  }
+
+  /**
+   * A DISTORÇÃO DO VAZIO (o zelote aberrante, ação bônus com recarga): some e reaparece numa casa livre que vê a até
+   * `alcanceFt`, deixando um vazio onde estava; quem está a `raioFt` do vazio faz Força: falhou, o dano inteiro e é
+   * puxado para a casa livre mais perto do vazio; passou, metade, e fica onde está.
+   */
+  distorcaoDoVazio(m, a, alvo) {
+    if (!alvo || this.field.blocksMove(alvo.x, alvo.y) || this.occupied(alvo.x, alvo.y, m)
+      || distanceFt(m.pos, alvo) > a.alcanceFt || !this.field.hasLineOfSight(m.pos, alvo)) return false;
+    const vazio = { x: m.pos.x, y: m.pos.y };
+    m.pos = { ...m.pos, x: alvo.x, y: alvo.y };
+    this.say('magia', `${m.name} some num rasgo do ar e reaparece a ${distanceFt(vazio, alvo)} pés; onde ele estava, gira um vazio.`);
+    this.onEvent({ type: 'moved', actor: m, from: { ...vazio }, to: { ...m.pos }, path: [{ ...m.pos }], teleporte: true });
+    const pegos = this.combatants.filter((c) => c !== m && !c.dead && c.hp > 0 && c.pos && distanceFt(vazio, c.pos) <= a.raioFt);
+    // o mais perto primeiro: cada um que cai perto do vazio ocupa a casa que o próximo ia pegar
+    pegos.sort((x, y) => distanceFt(vazio, x.pos) - distanceFt(vazio, y.pos));
+    for (const t of pegos) {
+      const sv = this.resistencia(t, a.save, a.dc, { contra: { tipoDano: a.damageType, magico: true } });
+      const r = this.explicarResistencia(t, a.save, a.dc, sv, { contra: 'o vazio', seSucesso: 'metade, e não é puxado' });
+      const d = damageRoll(this.rng, a.damage);
+      const total = danoPorResistencia(t, a.save, true, sv.success, d.total, conditionEffects(t).incapacitated);
+      this.say('dano', `${t.name} ${sv.success ? 'se segura' : 'é arrastado'} e sofre ${total} de ${a.damageType}.`, `${r.conta} · ${a.damage}[${d.rolls.join('+')}]`, { rolagem: r });
+      if (total) this.applyDamage(t, total, a.damageType, m, { magico: true });
+      if (sv.success || t.dead || t.hp <= 0) continue;
+      let casa = null;
+      for (let rr = 0; rr <= 6 && !casa; rr++) {
+        for (let dy = -rr; dy <= rr; dy++) for (let dx = -rr; dx <= rr; dx++) {
+          const x = vazio.x + dx;
+          const y = vazio.y + dy;
+          if (!this.field.inside(x, y) || this.field.blocksMove(x, y) || (this.occupied(x, y, t))) continue;
+          const dd = distanceFt(vazio, { x, y });
+          if (dd > distanceFt(vazio, t.pos)) continue;
+          if (!casa || dd < casa.d) casa = { x, y, d: dd };
+        }
+      }
+      if (casa && (casa.x !== t.pos.x || casa.y !== t.pos.y)) {
+        const de = { ...t.pos };
+        t.pos = { ...t.pos, x: casa.x, y: casa.y };
+        this.onEvent({ type: 'moved', actor: t, from: de, to: { ...t.pos }, path: [{ ...t.pos }] });
+      }
+    }
+    this.say('magia', 'O vazio se fecha.');
+    return true;
+  }
+
+  /**
+   * A REPREENSÃO OBSESSIVA (a ocular, reação): quem a fere, a até `alcanceFt` e à vista dela, faz o teste; falhou, o dano
+   * inteiro, passou, metade.
+   */
+  repreensaoObsessiva(alvo, fonte) {
+    const rr = alvo.repreensao;
+    if (!rr || !fonte || fonte === alvo || fonte.dead || !fonte.pos || fonte.side === alvo.side || this.reagindo) return;
+    if (alvo.dead || alvo.hp <= 0 || alvo.reactionUsed || conditionEffects(alvo).incapacitated) return;
+    if (distanceFt(alvo.pos, fonte.pos) > rr.alcanceFt || !this.field.hasLineOfSight(alvo.pos, fonte.pos)) return;
+    this.reagindo = true;
+    try {
+      alvo.reactionUsed = true;
+      // `raioFt`: a área em volta de quem revida (a Ferida Nociva, o Trovão), que pega todos os inimigos dela
+      const alvos = rr.raioFt
+        ? this.combatants.filter((c) => c.side !== alvo.side && c.side !== 'neutro' && !c.dead && c.hp > 0 && c.pos && distanceFt(alvo.pos, c.pos) <= rr.raioFt)
+        : [fonte];
+      for (const t of alvos) {
+        const sv = this.resistencia(t, rr.save, rr.dc, { contra: { tipoDano: rr.damageType ?? null, condicao: rr.condition ?? null, magico: true } });
+        const r = this.explicarResistencia(t, rr.save, rr.dc, sv, { contra: rr.nome, seSucesso: rr.damage && rr.metade !== false ? 'metade do dano' : 'nada' });
+        if (rr.damage) {
+          const d = damageRoll(this.rng, rr.damage);
+          const total = danoPorResistencia(t, rr.save, rr.metade !== false, sv.success, d.total, conditionEffects(t).incapacitated);
+          const frase = rr.nome === 'Repreensão Obsessiva' ? `Os olhos de ${alvo.name} se viram todos para ${t.name}` : `${alvo.name} revida em ${t.name}`;
+          this.say('reacao', `${frase} (${rr.nome}, reação): ${total} de ${rr.damageType}.`, `${r.conta} · ${rr.damage}[${d.rolls.join('+')}]`, { rolagem: r });
+          if (total) this.outraFonte(() => this.applyDamage(t, total, rr.damageType, alvo, { magico: true }));
+        } else this.say('reacao', `${alvo.name} revida em ${t.name} (${rr.nome}, reação)${sv.success ? `: ${t.name} aguenta` : ''}.`, r.conta, { rolagem: r });
+        if (sv.success || t.dead) continue;
+        if (rr.condition && !this.imuneACondicao(t, rr.condition)) this.aplicarCondicao(t, rr.condition, { rounds: 1, quando: 'fim', lado: t.side, source: alvo.id });
+        if (rr.empurraFt) this.empurrar(t, alvo.pos, rr.empurraFt);
+      }
+    } finally {
+      this.reagindo = false;
+    }
+  }
+
+  /**
+   * O REVIDE COM GOLPE dos bestiários (a Fúria Desenfreada do tanarukk, a Represália Feroz do abishai branco): ferido, ele
+   * gasta a reação num golpe — em quem o feriu, se alcança, ou (`aoAcaso`) em alguém ao acaso no alcance dele.
+   */
+  revideComGolpe(alvo, fonte) {
+    const rv = alvo.revide;
+    if (!rv || this.reagindo || alvo.dead || alvo.hp <= 0 || alvo.reactionUsed || conditionEffects(alvo).incapacitated) return;
+    if (!fonte || fonte === alvo || fonte.side === alvo.side) return;
+    const opcoes = rv.aoAcaso
+      ? this.combatants.filter((c) => c.side !== alvo.side && c.side !== 'neutro' && !c.dead && c.hp > 0 && c.pos && this.canAttack(alvo, c, rv.arma).ok)
+      : [fonte].filter((c) => !c.dead && c.hp > 0 && c.pos && this.canAttack(alvo, c, rv.arma).ok);
+    if (!opcoes.length) return;
+    const t = opcoes[this.rng.die(opcoes.length) - 1];
+    this.reagindo = true;
+    try {
+      alvo.reactionUsed = true;
+      this.say('reacao', `${alvo.name} revida (${rv.nome}, reação).`);
+      // a vantagem do revide vale só neste golpe: o `alvoCerteiro` que quem revida põe no alvo, e que sai logo depois
+      if (rv.vantagem) addCondition(t, 'alvoCerteiro', { rounds: 1, source: alvo.id });
+      this.resolveAttack(alvo, t, { weaponId: rv.arma });
+      if (rv.vantagem && getCondition(t, 'alvoCerteiro')?.source === alvo.id) removeCondition(t, 'alvoCerteiro');
+    } finally {
+      this.reagindo = false;
+    }
+  }
+
+  /**
+   * NEGAR MAGIA (o alhoon, reação, 3 por dia): a magia de até `circuloMax` que alguém a até `alcanceFt` conjura falha, e
+   * o espaço não se perde. Ele precisa perceber quem conjura (à vista, ou na visão verdadeira dele).
+   */
+  negarMagia(conjurador, spell, slot, gratis) {
+    if (spell.level === 0 || this.reagindo) return false;
+    for (const r of this.combatants) {
+      const n = r.negarMagia;
+      if (!n || r.side === conjurador.side || r.side === 'neutro' || r.dead || r.hp <= 0 || r.reactionUsed) continue;
+      if (conditionEffects(r).incapacitated || !((r.usosEspeciais?.['Negar Magia'] ?? n.usos) > 0)) continue;
+      if (slot > n.circuloMax || distanceFt(r.pos, conjurador.pos) > n.alcanceFt || !this.field.hasLineOfSight(r.pos, conjurador.pos)) continue;
+      r.reactionUsed = true;
+      (r.usosEspeciais ??= {})['Negar Magia'] = (r.usosEspeciais['Negar Magia'] ?? n.usos) - 1;
+      if (!gratis && spell.level > 0 && conjurador.spellcasting?.slots?.[slot] != null) conjurador.spellcasting.slots[slot] += 1;
+      this.say('magia', `${r.name} estende a mão, e ${spell.name} de ${conjurador.name} morre antes de sair (Negar Magia, reação). O espaço de magia não se perde.`);
+      this.onEvent({ type: 'anulada', caster: conjurador, spell });
+      return true;
+    }
+    return false;
+  }
+
   /** A ação especial ainda pode sair? (usos por dia, recarga) */
   acaoEspecialPronta(m, a) {
-    if (m.dead || m.actionUsed || conditionEffects(m).incapacitated) return false;
-    if (a.recharge && m.recarregando?.[a.nome]) return false;
+    // a de AÇÃO BÔNUS (`bonus`: o Gemido Psíquico do cloaker mutante, a Distorção do Vazio do zelote) olha a ação bônus
+    if (m.dead || (a.bonus ? m.bonusUsed : m.actionUsed) || conditionEffects(m).incapacitated) return false;
+    // `recargaDe`: duas opções da MESMA recarga (a Torrente Antipática da ocular: o choro OU o olhar)
+    if (a.recharge && m.recarregando?.[a.recargaDe ?? a.nome]) return false;
     if (a.porDia && !(m.usosEspeciais?.[a.nome] > 0)) return false;
     return true;
   }
 
   /** Quem a ação especial pega, mirando em `alvo` (casa ou criatura). */
   pegosDaAcaoEspecial(m, a, alvo) {
-    if (a.tipo === 'alvo') return alvo && Livro.alvoServe(this, m, a, alvo) ? Livro.maisAlvos(this, m, a, alvo) : [];
-    if (a.shape === 'raio') return this.combatants.filter((c) => c !== m && !c.dead && c.hp > 0 && c.pos && distanceFt(m.pos, c.pos) <= a.areaFt);
+    // `poupaTipo`: quem é do tipo não sente (o Gemido do cloaker mutante não pega aberração); `escolhe`: as criaturas
+    // que ELE escolhe (a Rajada Mental do cérebro ancião), e ele não escolhe os dele
+    const filtro = (lista) => lista.filter((c) => (!a.poupaTipo || !String(c.tipo ?? '').startsWith(a.poupaTipo))
+      && (!a.escolhe || (c.side !== m.side && c.side !== 'neutro')));
+    if (a.tipo === 'alvo') return alvo && Livro.alvoServe(this, m, a, alvo) ? filtro(Livro.maisAlvos(this, m, a, alvo)) : [];
+    if (a.shape === 'raio') return filtro(this.combatants.filter((c) => c !== m && !c.dead && c.hp > 0 && c.pos && distanceFt(m.pos, c.pos) <= a.areaFt));
     const casas = this.areaDaMagia(m, { shape: a.shape, areaFt: a.areaFt, level: 0 }, alvo?.pos ?? alvo) ?? [];
     const dentro = new Set(casas.map((t) => key(t.x, t.y)));
-    return this.combatants.filter((c) => c !== m && !c.dead && this.pegadaEmAlgumaCasa(c, dentro));
+    return filtro(this.combatants.filter((c) => c !== m && !c.dead && this.pegadaEmAlgumaCasa(c, dentro)));
   }
 
   /**
@@ -2495,6 +2688,11 @@ export class Encounter {
       telecinese: () => Livro.impulsoTelecinetico(this, m, alvo, abilityMod, skillBonus),
       corroerArmadura: () => Livro.antenas(this, m, a, alvo, ARMORS, armorClass, WEAPONS),
       invocar: () => Livro.invocarDoLivro(this, m, a),
+      vazio: () => this.distorcaoDoVazio(m, a, alvo),
+      propria: () => this.efeitoProprio(m, a),
+      // a SEGUNDA FILA DOS BESTIÁRIOS: a carapaça do tortle e o golpe de ação bônus da Fúria Marcial
+      concha: () => Livro.entrarNaConcha(this, m, a),
+      golpeBonus: () => Livro.golpeBonus(this, m, a, alvo),
     };
     if (a.soDepoisDeSaltar) {
       if (!Livro.saltoMortal(this, m, a, alvo)) return false;
@@ -2512,6 +2710,8 @@ export class Encounter {
       m.pos = { ...m.pos, x: alvo.x, y: alvo.y };
       this.say('magia', `${m.name} some e reaparece a ${distanceFt(m.posNoInicioDoTurno ?? m.pos, alvo)} pés dali (${a.nome}).`);
     } else if (a.tipo === 'cura') {
+      // o SEGUNDO FÔLEGO (o campeão) só cura quem o tem
+      if (a.soEmSi) alvo = m;
       if (!alvo || alvo.dead || distanceFt(m.pos, alvo.pos) > 5) return false;
       const d = damageRoll(this.rng, a.dados);
       const curou = this.heal(alvo, d.total, m);
@@ -2521,8 +2721,8 @@ export class Encounter {
       if (!pegos.length) return false;
       this.efeitoGeralDoEspecial(m, a, pegos);
     }
-    m.actionUsed = true;
-    if (a.recharge) (m.recarregando ??= {})[a.nome] = true;
+    if (a.bonus) m.bonusUsed = true; else m.actionUsed = true;
+    if (a.recharge) (m.recarregando ??= {})[a.recargaDe ?? a.nome] = true;
     if (a.porDia) m.usosEspeciais[a.nome] -= 1;
     this.onEvent({ type: 'habilidade', actor: m, id: a.nome });
     return true;
@@ -2554,10 +2754,19 @@ export class Encounter {
       } else if (!a.cai0) this.say('condicao', sv.success ? `${t.name} resiste a ${a.nome}.` : `${t.name} não resiste a ${a.nome}.`, r.conta, { rolagem: r });
       drenado += Livro.efeitoDoEspecial(this, m, a, t, sv, entrou);
       if (sv.success) { if (a.imunizaAoPassar) (t.imuneAEspecial ??= []).push(`${m.id}:${a.nome}`); continue; }
+      // O CHORO da ocular: quem falha perde a concentração
+      if (a.quebraConcentracao && t.concentrating) { this.dropConcentration(t); this.say('magia', `${t.name} perde a concentração.`); }
       if (a.condition && !t.dead && t.hp > 0 && !this.imuneACondicao(t, a.condition)) {
-        this.aplicarCondicao(t, a.condition, a.ateFimDoTurnoDele
-          ? { rounds: 1, quando: 'fim', lado: m.side, source: m.id }
-          : { rounds: a.rounds ?? 10, source: m.id, data: { save: a.save, dc: a.dc, repete: !!a.repete } });
+        // "até o fim do PRÓXIMO turno dele": posta no turno do dono, a contagem tem de pular o fim deste (era `rounds: 1`
+        // e a condição acabava no fim do mesmo turno em que nascia; o grupo nunca jogava amedrontado pelo Gemido)
+        // `ateInicioDoTurnoDoDono`: até o começo do próximo turno de quem a usou (o Sopro da Singularidade do Lowarnizel)
+        this.aplicarCondicao(t, a.condition, a.ateInicioDoTurnoDoDono
+          ? { rounds: 1, quando: 'inicio', lado: m.side, source: m.id }
+          : a.ateFimDoTurnoDele
+          ? { rounds: this.side === m.side ? 2 : 1, quando: 'fim', lado: m.side, source: m.id }
+          : a.ateFimDoTurnoDoAlvo
+            ? { rounds: this.side === t.side ? 2 : 1, quando: 'fim', lado: t.side, source: m.id }
+            : { rounds: a.rounds ?? 10, source: m.id, data: { save: a.save, dc: a.dc, repete: !!a.repete } });
       }
     }
     // DRENAR VIDA (o semilich): cura o que tirou de todos
@@ -3133,7 +3342,8 @@ export class Encounter {
    * espaço de 3º círculo ou maior, tenta interrompê-la. Devolve true se a magia
    * foi anulada. O espaço do conjurador já está gasto.
    */
-  tentarContramagia(conjurador, spell, slot) {
+  tentarContramagia(conjurador, spell, slot, gratis = false) {
+    if (this.negarMagia(conjurador, spell, slot, gratis)) return true;
     // NÊMESIS DOS CONJURADORES (Matador de Monstros, 11º): vale até contra truque.
     if (!this.reagindo && Sub.nemesisDosConjuradores(this, conjurador, spell)) return true;
     if (spell.level === 0 || this.reagindo) return false;
@@ -3424,6 +3634,27 @@ export class Encounter {
     return casas.size ? casas : null;
   }
 
+  /**
+   * O CONTRAGOLPE DO OBELISCO (a Ânima de Ilvaash, o Obelisco). O obelisco remendado não tem PV: todo dano que ele levaria
+   * vai para o fanático ligado a ele (`ligadoAoObelisco`) que está MAIS PERTO dele, onde quer que esteja, vezes
+   * `contragolpe.fator` (o dobro se o grupo pegou um fragmento no capítulo 6). A partir do primeiro, os fanáticos sabem
+   * (`temeOObelisco`) e brigam para não ser o mais perto (`ai.js pararPertoDoObelisco`). Empate na distância: o mais
+   * ferido, que é o que o fio da costura puxa primeiro.
+   */
+  contragolpeDoObelisco(ob, amount, type, source) {
+    const ligados = this.combatants.filter((c) => c.ligadoAoObelisco === ob.id && !c.dead && c.pos);
+    if (!ligados.length) { this.say('dano', `O golpe se perde nas costuras de ${ob.name}: não há mais ninguém ligado a ele.`); return; }
+    const d = (c) => distanceFt(c.pos, ob.pos);
+    ligados.sort((a, b) => d(a) - d(b) || a.hp - b.hp);
+    const alvo = ligados[0];
+    const fator = ob.contragolpe.fator ?? 1;
+    const total = amount * fator;
+    this.say('dano', `O golpe some numa costura verde de ${ob.name} e explode em ${alvo.name}, o mais perto: ${total}${fator > 1 ? ' (o dobro)' : ''}.`);
+    for (const c of ligados) c.temeOObelisco = ob.id;
+    this.onEvent({ type: 'contragolpe', obelisco: ob, alvo, dano: total });
+    this.applyDamage(alvo, total, type, source, { transferido: true });
+  }
+
   /** Espíritos Guardiões: teste e dano, uma vez por turno da criatura. */
   golpeDaAura(aura, c, porque) {
     c.aurasNoTurno ??= [];
@@ -3476,7 +3707,9 @@ export class Encounter {
     });
     // Os blocos de monstro escrevem "enfeitiçado" e "imobilizado".
     const APELIDOS = { dominado: 'enfeitiçado', sugerido: 'enfeitiçado', hipnotizado: 'enfeitiçado', enfeiticado: 'enfeitiçado', coroaDaLoucura: 'enfeitiçado', contido: 'imobilizado', presoPorVinhas: 'imobilizado' };
-    return porMagia || lista.includes(id) || lista.includes(APELIDOS[id]);
+    // o item que o herói usa (o amuleto contra veneno: nada de envenenado)
+    const doItem = alvo.doItem?.imuneCondicao ?? [];
+    return porMagia || lista.includes(id) || lista.includes(APELIDOS[id]) || doItem.includes(id) || doItem.includes(APELIDOS[id]);
   }
 
   /**
@@ -3505,8 +3738,8 @@ export class Encounter {
    *   Bênção da Natureza (druida da Terra, 10º)  imune a veneno; e enfeitiçado/amedrontado por elementais e fadas;
    *   Pureza de Espírito (Devoção, 15º)   enfeitiçado/amedrontado pelos seis tipos da Proteção contra o Bem e o Mal;
    *   Aura de Coragem (10º) e Aura de Devoção (7º da Devoção)  o paladino e os aliados do raio, contra medo e encanto.
-   * Doença não existe como condição neste jogo, então a parte "doença" de Saúde Divina, Pureza do Corpo e Bênção da Natureza
-   * não tem o que impedir.
+   * A DOENÇA é outra porta (`doencas.js contrairDoenca`, `imuneADoenca`): é lá que a Saúde Divina, a Pureza do Corpo e a
+   * Bênção da Natureza a barram.
    */
   imunePorCaracteristica(alvo, id, fonte = null) {
     const medo = id === 'amedrontado';
@@ -3577,7 +3810,8 @@ export class Encounter {
   /** Pode atacar com esta arma agora? Os punhos (Brigão de Taverna) estão sempre à mão. */
   empunha(c, weaponId) {
     if (c.attacks || !weaponId) return true;
-    return this.armasNaMao(c).includes(weaponId) || !!WEAPONS[weaponId]?.props?.includes('desarmado');
+    // a ARMA NATURAL (a mordida do povo-lagarto, as garras do tabaxi) também: é o corpo
+    return this.armasNaMao(c).includes(weaponId) || !!WEAPONS[weaponId]?.props?.includes('desarmado') || !!WEAPONS[weaponId]?.natural;
   }
 
   /**
@@ -4077,9 +4311,9 @@ export class Encounter {
     if (getCondition(attacker, 'arrepiado')?.source === target.id) fonte(mods, 'desvantagem', 'toque arrepiante');
     // AS PLACAS DOS TALHUND: os mortos anões da cripta atacam com desvantagem quem as veste.
     if (attacker.mortoDaCripta && target.armor === 'placasDosTalhund') fonte(mods, 'desvantagem', 'as placas funerárias dos Talhund');
-    // OLHOS DESVIADOS da medusa: quem não a olha ataca às cegas, e ela o ataca como a quem não a vê.
-    if (hasCondition(attacker, 'olhosDesviados') && target.traits?.includes('olharPetrificante')) fonte(mods, 'desvantagem', 'olhos desviados da medusa');
-    if (hasCondition(target, 'olhosDesviados') && attacker.traits?.includes('olharPetrificante')) fonte(mods, 'vantagem', 'o alvo não a olha');
+    // OLHOS DESVIADOS da medusa ou do brutamonte: quem não o olha ataca às cegas, e ele o ataca como a quem não o vê.
+    if (hasCondition(attacker, 'olhosDesviados') && temOlhar(target)) fonte(mods, 'desvantagem', `olhos desviados de ${target.name}`);
+    if (hasCondition(target, 'olhosDesviados') && temOlhar(attacker)) fonte(mods, 'vantagem', 'o alvo não o olha');
     if (getCondition(target, 'alvoCerteiro')?.source === attacker.id) fonte(mods, 'vantagem', 'ataque certeiro');
     // ATAQUE FINTADO: a finta dá vantagem no próximo ataque contra quem está a 1,5 m.
     if (attacker.manobraPronta === 'feintingAttack' && distanceFt(attacker.pos, target.pos) <= 5) fonte(mods, 'vantagem', 'ataque fintado');
@@ -4183,6 +4417,14 @@ export class Encounter {
       );
       if (helper) fonte(mods, 'vantagem', 'táticas de matilha');
     }
+    // BLACKRAZOR saciada: vantagem nos ataques com ela na mão
+    if (hasCondition(attacker, 'almaDevorada') && (attacker.tempHp ?? 0) > 0 && WEAPONS[attacker.equippedWeapon]?.poder === 'devoraAlma') fonte(mods, 'vantagem', 'alma devorada');
+    // a ESPADA DA VINGANÇA sintonizada: desvantagem com qualquer outra arma
+    if ((attacker.sintonizados ?? []).some((id) => WEAPONS[id]?.poder === 'vinganca') && WEAPONS[attacker.armaDoGolpeAgora ?? attacker.equippedWeapon]?.poder !== 'vinganca' && !attacker.attacks) {
+      fonte(mods, 'desvantagem', 'a espada da vingança não quer outra arma');
+    }
+    // TÁTICAS DE MATILHA da raça e o RASTEJAR do kobold (`racas-motor.js`)
+    { const v = Raca.vantagemDaRaca(this, attacker, target); if (v) fonte(mods, 'vantagem', v); }
     // Ataque à distância com inimigo colado
     // ESPECIALISTA EM BESTA (talento): inimigo colado não atrapalha o tiro.
     if (ranged && !opportunity && !atiraColado(attacker) && this.enemiesOf(attacker).some(
@@ -4270,6 +4512,13 @@ export class Encounter {
         magico: !!atk.magico,
         // o golpe que só vale contra quem está num estado (o Extrair Cérebro: humanoide atordoado e agarrado por quem extrai)
         exige: atk.exige ?? null,
+        // o golpe que pesa mais contra quem está num estado (o Contato Terrível da ocular, no amedrontado)
+        danoSeCondicao: atk.danoSeCondicao ?? null,
+        // o golpe que cura quem bate (o Toque Gélido do alhoon)
+        curaNoAcerto: atk.curaNoAcerto ?? 0,
+        puxaSeAgarrado: !!atk.puxaSeAgarrado,
+        // o golpe que derruba a concentração de quem acerta (a Garra Dissonante da Refração de Ilvaash)
+        quebraConcentracao: !!atk.quebraConcentracao,
       };
     }
     // o CUTELO ELEMENTAL arremessado (Caminho do Gigante): a arma da mão, à distância
@@ -4298,18 +4547,28 @@ export class Encounter {
     // extra no mesmo formato do dos monstros.
     // Arma Mágica e Arma Elemental: +1 no ataque e no dano, e conta como mágica.
     const porMagia = (actor.conditions ?? []).reduce((t, c) => t + (c.data?.bonusArma ?? CONDITIONS[c.id]?.bonusArma ?? 0), 0);
-    const magia = (w.bonusAtaque ?? 0) + porMagia;
+    // A ARMA QUE PEDE SINTONIA e não está sintonizada é só a arma de base: nem o bônus nem o dano extra (o livro). O
+    // herói sintoniza ao equipar, se houver vaga (`view/ficha.js trocar`).
+    const dormente = Boolean(w.sintonia && actor.side === 'party' && !(actor.sintonizados ?? []).includes(idDaArma));
+    // A MUNIÇÃO +1, +2 E +3 (Livro do Mestre): a arma de munição atira a melhor que o herói leva na mochila, com o bônus
+    // dela no ataque e no dano; a que acerta deixa de ser mágica (some da mochila, `municaoDoGolpe`)
+    const municao = w.ranged && (w.props ?? []).includes('munição') ? melhorMunicao(actor) : null;
+    const daMunicao = municao ? (itemDeId(municao)?.dados.bonusAtaque ?? 0) : 0;
+    const magia = (dormente ? 0 : (w.bonusAtaque ?? 0)) + porMagia + daMunicao;
     // a CORROSÃO (o pudim negro, o monstro da ferrugem): −1 de dano por acerto neles, de vez
-    const noDano = mod + (w.bonusDano ?? 0) + porMagia - (actor.armaCorroida?.[idDaArma] ?? 0);
+    const noDano = mod + (dormente ? 0 : (w.bonusDano ?? 0)) + porMagia + daMunicao - (actor.armaCorroida?.[idDaArma] ?? 0);
     // ESTILO: ARQUEARIA. +2 em toda jogada de ataque com arma à distância.
     const arquearia = w.ranged && actor.features?.includes('archery') ? 2 : 0;
     // DEVASTAÇÃO DO GIGANTE e COLOSSO DEMIÚRGICO: em Fúria, o golpe de perto alcança mais
-    const alcanceMais = w.ranged ? 0 : Sub.alcanceDoGiganteAMais(actor);
+    const alcanceMais = w.ranged ? 0 : Sub.alcanceDoGiganteAMais(actor) + Raca.alcanceDaRaca(this, actor);
     return {
       name: w.name,
       bonus: mod + prof + magia + arquearia,
       damage: `${w.damage}${noDano >= 0 ? '+' : ''}${noDano}`,
-      danoExtra: w.danoExtra ?? null,
+      danoExtra: dormente ? null : (w.danoExtra ?? null),
+      municao,
+      // a munição +N faz do tiro um golpe mágico (vence a resistência a arma comum)
+      ...(municao ? { magico: true } : {}),
       type: w.type,
       ranged: !!w.ranged,
       reachFt: (w.reachFt ?? 5) + alcanceMais,
@@ -4389,6 +4648,7 @@ export class Encounter {
     }
     const dentroDe = Livro.engolidoPor(actor);
     if (dentroDe && dentroDe !== target.id) return { ok: false, why: 'de dentro de outra criatura, só se golpeia ela' };
+    if (dentroDe && Livro.naMasmorra(actor)) return { ok: false, why: 'da masmorra semiplanar não se fere quem engoliu' };
     if (!dentroDe && conditionEffects(actor).inalcancavel) return { ok: false, why: `quem ${conditionEffects(actor).motivoInalcancavel ?? 'está fora de alcance'} não ataca` };
     // a CONCHA ANTIVIDA: quem não é morto-vivo nem constructo não alcança através dela
     if (!['morto-vivo', 'constructo'].includes(actor.tipo) && this.combatants.some((d) => !d.dead && d.side !== actor.side && hasCondition(d, 'conchaAntivida')
@@ -4406,10 +4666,12 @@ export class Encounter {
     if (p.teste && hasCondition(actor, 'cego')) return { ok: false, why: 'cego, não vê o alvo' };
     if (p.recarga && actor.recarregando?.[p.name]) return { ok: false, why: `${p.name} ainda está recarregando` };
     // EXTRAIR CÉREBRO (o livro): só contra um humanoide atordoado E agarrado por quem extrai
-    if (p.exige === 'agarradoAtordoado') {
+    // (o do devorador clarividente quer o alvo INCAPACITADO, que é o que o tentáculo dele deixa)
+    if (p.exige === 'agarradoAtordoado' || p.exige === 'agarradoIncapacitado') {
       const humanoide = target.kind === 'pc' || /humanoide/.test(target.tipo ?? '');
-      if (!humanoide || getCondition(target, 'agarrado')?.source !== actor.id || !hasCondition(target, 'atordoado')) {
-        return { ok: false, why: `${p.name} só vale contra um humanoide atordoado e agarrado por ${actor.name}` };
+      const estado = p.exige === 'agarradoAtordoado' ? hasCondition(target, 'atordoado') : conditionEffects(target).incapacitated;
+      if (!humanoide || getCondition(target, 'agarrado')?.source !== actor.id || !estado) {
+        return { ok: false, why: `${p.name} só vale contra um humanoide ${p.exige === 'agarradoAtordoado' ? 'atordoado' : 'incapacitado'} e agarrado por ${actor.name}` };
       }
     }
     const dist = distanceFt(actor.pos, target.pos);
@@ -5020,6 +5282,11 @@ export class Encounter {
       const f = Sub.favorecidoPelosDeuses(this, attacker, atk.total, ac);
       if (f) atk = { ...atk, total: atk.total + f, hit: atk.total + f >= ac };
     }
+    // SALVAR AS APARÊNCIAS (hobgoblin): os aliados à vista viram o erro em acerto
+    if (!atk.hit && !atk.fumble) {
+      const s = Raca.salvarAsAparencias(this, attacker, ac - atk.total);
+      if (s) atk = { ...atk, total: atk.total + s, hit: true };
+    }
     if (furtivoEspera && atk.hit) this.quebraInvisibilidade(attacker);
     this.guiarAtaque(attacker, atk, ac);
     this.curvarSorte(attacker, target, atk, ac);
@@ -5057,13 +5324,32 @@ export class Encounter {
     }
     // APARAR de monstro (o capitão bandido, o cavaleiro, o drow de elite): reação, +2 de CA contra um golpe corpo a corpo
     // que ia acertar, vendo quem ataca.
-    if (atk.hit && !atk.critical && !p.ranged && target.kind === 'npc' && target.traits?.includes('aparar') && !target.reactionUsed
-      && !conditionEffects(target).incapacitated && atk.total < ac + 2 && this.field.hasLineOfSight(target.pos, attacker.pos)) {
+    // O ESCUDO MÁGICO e a ARMADURA DE GELO dos outros bestiários são o mesmo gesto, com o bônus deles (`apararBonus`) e contra
+    // qualquer ataque (`apararTudo`).
+    const bonusAparar = target.apararBonus ?? 2;
+    if (atk.hit && !atk.critical && (!p.ranged || target.apararTudo) && target.kind === 'npc' && target.traits?.includes('aparar') && !target.reactionUsed
+      && !conditionEffects(target).incapacitated && atk.total < ac + bonusAparar && this.field.hasLineOfSight(target.pos, attacker.pos)) {
       target.reactionUsed = true;
-      ac += 2;
-      caPartes.push({ rotulo: 'Aparar', valor: 2 });
+      ac += bonusAparar;
+      caPartes.push({ rotulo: 'Aparar', valor: bonusAparar });
       atk.hit = false;
-      this.say('reacao', `${target.name} apara o golpe de ${attacker.name} (+2 de CA).`);
+      this.say('reacao', `${target.name} apara o golpe de ${attacker.name} (+${bonusAparar} de CA).`);
+    }
+    // DISTORCER A REALIDADE (o devorador clarividente do Obelisco): acertado por uma jogada de ataque, a reação soma +4 à
+    // CA contra ela, e então ele some e reaparece a até 18 m, numa casa livre que vê. Some acertando ou não.
+    if (atk.hit && target.traits?.includes('distorcerARealidade') && !target.reactionUsed && !conditionEffects(target).incapacitated) {
+      target.reactionUsed = true;
+      ac += 4;
+      caPartes.push({ rotulo: 'Distorcer a Realidade', valor: 4 });
+      if (!atk.critical && atk.total < ac) atk.hit = false;
+      const casa = casaLongeDe(this, target, this.enemiesOf(target).filter((e) => !e.dead && e.hp > 0 && e.pos), 60);
+      this.say('reacao', `${target.name} entorta a realidade em volta de si (+4 de CA)${atk.hit ? '' : ' e o golpe passa por ele'}${casa ? ', e reaparece longe dali' : ''}.`);
+      if (casa) {
+        target.pos = { ...target.pos, x: casa.x, y: casa.y };
+        // longe, os tentáculos soltam quem seguravam
+        this.soltarAgarroesDe(target);
+        this.onEvent({ type: 'voltou', target, to: { ...target.pos } });
+      }
     }
     // DUELISTA DEFENSIVO (talento): a reação soma a proficiência à CA, com arma de acuidade na mão.
     if (atk.hit) {
@@ -5133,6 +5419,8 @@ export class Encounter {
     if (critical && Sub.sentinelaNaPorta(this, target)) critical = false;
     // CORPO FÚNGICO (Esporos, 14º): o crítico vira acerto comum.
     if (critical && Sub.desfazCriticoFungico(target)) critical = false;
+    // A ARMADURA ADAMANTINA: o crítico contra quem a veste vira acerto comum
+    if (critical && target.doItem?.semCritico) critical = false;
     if (atk.hit && target.features?.includes('multiattackDefense')) target.multiataqueDe = { id: attacker.id, turno: turnoAgora };
 
     // Errar por 1 ou 2 é informação tática de verdade: diz que fabricar
@@ -5214,6 +5502,7 @@ export class Encounter {
     // SURTO SELVAGEM do bárbaro: a arma de perto vira energia.
     if (!p.ranged && Sub.efeitoDoSurto(attacker) === 'armaDeForca') p = { ...p, type: 'energético' };
     let damageNotation = p.damage;
+    if (p.danoSeCondicao && hasCondition(target, p.danoSeCondicao.condicao)) damageNotation = p.danoSeCondicao.damage;
     let sneak = null;
     if (this.sneakApplies(attacker, target, p.weapon, mods)) {
       attacker.sneakUsedThisTurn = true;
@@ -5378,12 +5667,40 @@ export class Encounter {
     // RUNA DA NUVEM (Cavaleiro Rúnico): o golpe que derrubaria o aliado passa para outro inimigo, com a mesma rolagem.
     const nuvem = attacker.side !== target.side ? Sub.runaDaNuvem(this, target, attacker, total) : null;
     if (nuvem) target = nuvem;
+    // O GOLPE DE PERTO EM CURSO: o que vem com ele (o Golpe Divino, a Marca do Caçador, o veneno da lâmina) é o MESMO
+    // ataque corpo a corpo, e é por ele que o golpe não letal derruba sem matar.
+    const golpeDePertoAntes = this.golpeDePerto;
+    this.golpeDePerto = p.ranged ? null : attacker;
+    try {
     this.umaFonteDeDano(() => {
       this.applyDamage(target, total, p.type, attacker, { critical, magico, deArma: true, corpoACorpo: !p.ranged });
       this.extrasDoAcerto(attacker, target, { arma: true, ranged: p.ranged, tipo: p.type, critical, hpAntes: hpAntesDoGolpe, atkTotal: atk.total });
       // `contra`: dano extra que só vale num tipo de criatura (o de Hew, em planta).
-      if (p.danoExtra && !target.dead && (!p.danoExtra.contra || target.tipo === p.danoExtra.contra)) {
+      // `contra` é um tipo ou uma lista (a vingadora sagrada: corruptor e morto-vivo)
+      if (p.danoExtra && !target.dead && (!p.danoExtra.contra || [].concat(p.danoExtra.contra).includes(target.tipo))) {
         this.danoExtraDoGolpe(attacker, target, p, critical);
+      }
+      // O PODER DA ARMA MÁGICA (a vorpal, a espada do gume, a ladra de vida...): o 20 natural e o golpe contra um tipo
+      if (p.weapon?.poder && !target.dead) this.poderDaArma(attacker, target, p, atk);
+      // BLACKRAZOR: quem ela derruba tem a alma devorada (o golpe já matou, e o poder de sempre não roda em morto)
+      else if (p.weapon?.poder === 'devoraAlma' && target.dead) this.devorarAlma(attacker, target, p.weapon);
+      // a ARMA UNTADA: o primeiro acerto de corte ou ponta leva o veneno
+      if (!target.dead && ['cortante', 'perfurante'].includes(p.type) && p.weapon) {
+        const untada = getCondition(attacker, 'armaUntada');
+        if (untada) {
+          removeCondition(attacker, 'armaUntada');
+          this.aplicarVeneno(target, untada.data?.veneno, untada.data?.nome ?? 'o veneno', attacker);
+        }
+      }
+      // a munição +N que acerta deixa de ser mágica: sai da mochila
+      if (p.municao && attacker.bag) consumirDaMochila(attacker, p.municao);
+      if (p.quebraConcentracao && target.concentrating && !target.dead) {
+        this.dropConcentration(target);
+        this.say('magia', `${target.name} perde a concentração (${p.name}).`);
+      }
+      if (p.curaNoAcerto && !attacker.dead && attacker.hp > 0) {
+        const curou = this.heal(attacker, p.curaNoAcerto, attacker);
+        if (curou) this.say('cura', `${attacker.name} bebe o calor do golpe: +${curou} PV.`);
       }
       // RAMPAGE (a hiena gigante, o gnoll): derrubou alguém de perto no próprio turno — ação bônus, anda metade e morde
       if (!p.ranged && target.hp <= 0 && attacker.traits?.includes('rampage') && !attacker.bonusUsed && this.side === attacker.side && !attacker.emRampage) {
@@ -5406,6 +5723,7 @@ export class Encounter {
         this.danoExtraDoGolpe(attacker, target, { ...p, danoExtra: { damage: attacker.eminencia.dano, type: 'radiante' } }, critical);
       }
     });
+    } finally { this.golpeDePerto = golpeDePertoAntes; }
     // TASHA (3º lote): os LAMENTOS DO TÚMULO (Fantasma) e o RASGAR A MENTE (Lâmina da Alma), depois do Ataque Furtivo
     if (sneak) {
       Sub.lamentosDoTumulo(this, attacker, target);
@@ -5445,6 +5763,8 @@ export class Encounter {
     if (p.recarga) (attacker.recarregando ??= {})[p.name] = true;
     // BRIGÃO DE TAVERNA (talento de 2014): o soco que acerta no próprio turno deixa agarrar este alvo como ação bônus.
     if (p.weapon?.id === 'punhos' && this.side === attacker.side) attacker.socouEm = { turno: this.turnoKey(), alvo: target.id };
+    // PELE VENENOSA (o grung): a mão nua ou a arma natural que acerta a pele dele
+    if (target.peleVenenosa && !p.ranged && (p.weapon?.props?.includes('desarmado') || p.weapon?.natural)) Livro.peleVenenosa(this, attacker, target);
     // MESTRE EM ARMAS GRANDES: no próprio turno, crítico ou derrubada com arma de perto libera um golpe de ação bônus.
     if (!p.ranged && p.weapon && temTalento(attacker, 'mestreEmArmasGrandes') && this.side === attacker.side && (critical || target.hp <= 0)) {
       attacker.golpeExtraEm = this.turnoKey();
@@ -5469,7 +5789,9 @@ export class Encounter {
     if (p.gruda && !target.dead && !attacker.dead) this.grudar(attacker, target);
     // INVESTIDA (a broca infernal): quem andou 6 m antes de acertar soma dano e pode derrubar.
     if (p.investida && !attacker.dead) this.investida(attacker, target, p.investida);
-    if (p.puxa && !target.dead && !attacker.dead) this.puxar(attacker, target);
+    if (p.puxa && !target.dead && !attacker.dead && (!p.puxaSeAgarrado || getCondition(target, 'agarrado')?.source === attacker.id)) {
+      this.puxar(attacker, target, p.puxa === true ? 5 : p.puxa);
+    }
     // OS BESTIÁRIOS DOS LIVROS: a mordida que engole (o verme púrpura, o kraken), a arma que corrói no pudim e na
     // ferrugem, o tridente que espeta (o rei homem-lagarto)
     if (p.engole && !attacker.dead) Livro.mordidaQueEngole(this, attacker, target, p.engole);
@@ -5502,6 +5824,10 @@ export class Encounter {
       this.say('condicao', `${target.name} não é afetado: ${p.onHit.imunes?.motivo ?? `imune a ${CONDITIONS[p.onHit.condition]?.name.toLowerCase() ?? p.onHit.condition}`}.`);
     } else if (p.onHit?.exigeAgarrado && getCondition(target, 'agarrado')?.source !== attacker.id) {
       // o efeito que só vale em quem o golpe AGARROU (o tentáculo do Qunbraxel só atordoa quem ele segura): sem agarrão, nada
+    } else if (p.onHit?.maxAgarrados && !target.dead
+      && this.combatants.filter((c) => c !== target && !c.dead && getCondition(c, p.onHit.condition)?.source === attacker.id).length >= p.onHit.maxAgarrados) {
+      // o cérebro ancião segura até quatro: com as quatro mãos cheias, o tentáculo só bate
+      this.say('condicao', `${attacker.name} já segura ${p.onHit.maxAgarrados}: não agarra ${target.name}.`);
     } else if (p.onHit && !target.dead && !hasCondition(target, 'inconsciente')) {
       // Alguns efeitos não têm resistência: o acerto já basta (a teia prende).
       this.forcandoTeste = attacker;
@@ -5535,17 +5861,26 @@ export class Encounter {
           this.say('ataque', `${target.name} sofre ${d.total} de ${p.onHit.danoSeFalhar.type}.`, `${p.onHit.danoSeFalhar.damage}[${d.rolls.join('+')}]`);
         }
         if (p.onHit.condition && !target.dead) {
+          // `ateInicioDoTurnoDoDono`: até o começo do próximo turno de quem bate (o Rasgo Psíquico do zelote)
+          const ateODono = p.onHit.ateInicioDoTurnoDoDono ? { rounds: 1, quando: 'inicio', lado: attacker.side } : {};
           this.aplicarCondicao(target, p.onHit.condition, {
             rounds: p.onHit.rounds ?? Infinity,
             source: attacker.id,
+            ...ateODono,
             data: {
               save: p.onHit.save,
               dc: p.onHit.dc,
               repete: !!p.onHit.repete,
               escape: p.onHit.escape ?? null,
               ...(p.onHit.comOAgarrao ? { comOAgarrao: attacker.id } : {}),
+              // o APERTO que fere no começo do turno de quem está preso (o tentáculo do cérebro ancião)
+              ...(p.onHit.danoPorTurno ? { dano: p.onHit.danoPorTurno } : {}),
             },
           });
+          // SEM CURA ENQUANTO DURAR (o Golpe de Cadáver do cloaker mutante: envenenado, e envenenado assim não se cura)
+          if (p.onHit.semCuraJunto && hasCondition(target, p.onHit.condition)) {
+            addCondition(target, 'semCura', { rounds: p.onHit.rounds ?? Infinity, source: attacker.id, data: { comCondicao: p.onHit.condition } });
+          }
           this.say('condicao', `${target.name} ${p.onHit.note} — fica ${nomeCondicao}.`, r.conta, { rolagem: r });
         }
       } else {
@@ -5666,6 +6001,177 @@ export class Encounter {
    * O segundo tipo de dano do mesmo golpe (o veneno da aranha, o ácido da
    * gelatina). Com `save`, o alvo resiste: metade (`half`) ou nada.
    */
+  /**
+   * O PODER DA ARMA MÁGICA do Livro do Mestre, depois do acerto (`weapon.poder`). Só com a arma sintonizada, quando ela
+   * pede sintonia (a mesma regra do bônus, `weaponAttackProfile`). O 20 é o do dado, não o crítico de quem está
+   * paralisado:
+   *   vorpal        no 20, decapita (morte na hora); quem tem ação lendária, ou não tem cabeça, leva 6d8 cortante a mais;
+   *                 imune a cortante, nada
+   *   gume          no 20, +4d6 cortante (o membro decepado não entra)
+   *   roubarVida    no 20, contra quem não é constructo nem morto-vivo: +3d6 necrótico, e o dono ganha o mesmo em PV
+   *                 temporários
+   *   noveVidas     no 20, contra quem tem menos de 100 PV e não é constructo nem morto-vivo: Constituição CD 15 ou
+   *                 morre; gasta uma carga (`recarregavel`, sem recarga)
+   *   golpe         no 20, +2d6 concussão (4d6 contra constructo); o constructo que fica com 25 PV ou menos se desfaz
+   *   derrubaGigante  contra gigante, Força CD 15 ou caído
+   */
+  poderDaArma(attacker, target, p, atk) {
+    const w = p.weapon;
+    if (w.sintonia && attacker.side === 'party' && !(attacker.sintonizados ?? []).includes(w.id)) return;
+    const vinte = atk?.natural === 20;
+    const vivo = !['constructo', 'morto-vivo'].includes(target.tipo);
+    const extra = (dado, tipo, rotulo) => {
+      rotulo = rotulo.charAt(0).toUpperCase() + rotulo.slice(1).toLowerCase();
+      const r = roll(this.rng, dado);
+      const dano = this.danoPorTipo(target, r.total, tipo, true, true);
+      this.say('ataque', `${rotulo}: ${target.name} sofre ${dano} de ${tipo} a mais.`, `${dado}[${r.rolls.join('+')}] = ${r.total}`);
+      this.applyDamage(target, r.total, tipo, attacker, { magico: true, deArma: true });
+      return dano;
+    };
+    switch (w.poder) {
+      case 'vorpal': {
+        if (!vinte || this.danoPorTipo(target, 2, 'cortante', true, true) === 0) return;
+        const semCabeca = ['gosma', 'elemental', 'planta'].includes(target.tipo);
+        if (target.lendarias || semCabeca) { extra('6d8', 'cortante', `${w.name} no 20`); return; }
+        this.say('ataque', `A ${w.name.toLowerCase()} acha o pescoço num 20: a cabeça de ${target.name} sai do corpo.`);
+        this.applyDamage(target, target.hp + (target.tempHp ?? 0), 'cortante', attacker, { magico: true, deArma: true });
+        return;
+      }
+      case 'gume': if (vinte) extra('4d6', 'cortante', `${w.name} no 20`); return;
+      case 'roubarVida': {
+        if (!vinte || !vivo) return;
+        const dano = extra('3d6', 'necrótico', `${w.name} no 20`);
+        if (dano > 0 && !attacker.dead) {
+          attacker.tempHp = Math.max(attacker.tempHp ?? 0, dano);
+          this.say('cura', `${attacker.name} fica com ${dano} PV temporários do que a lâmina bebeu.`);
+        }
+        return;
+      }
+      case 'noveVidas': {
+        if (!vinte || !vivo || target.hp >= 100 || cargasDe(attacker, w.id) < 1) return;
+        gastarCargaDoItem(attacker, w.id);
+        const save = this.resistencia(target, 'con', 15, { contra: { magico: true } });
+        const r = this.explicarResistencia(target, 'con', 15, save, { contra: w.name, seSucesso: 'nada' });
+        if (save.success) { this.say('ataque', `${target.name} resiste à ${w.name.toLowerCase()} (restam ${cargasDe(attacker, w.id)} cargas).`, r.conta); return; }
+        this.say('ataque', `A ${w.name.toLowerCase()} arranca a vida de ${target.name} de uma vez (restam ${cargasDe(attacker, w.id)} cargas).`, r.conta);
+        this.applyDamage(target, target.hp + (target.tempHp ?? 0), null, attacker, { magico: true });
+        return;
+      }
+      case 'golpe': {
+        const constructo = target.tipo === 'constructo';
+        if (vinte) extra(constructo ? '4d6' : '2d6', 'concussão', `${w.name} no 20`);
+        if (constructo && vinte && !target.dead && target.hp <= 25) {
+          this.say('ataque', `${target.name} se desfaz sob a ${w.name.toLowerCase()}.`);
+          this.applyDamage(target, target.hp + (target.tempHp ?? 0), null, attacker, { magico: true });
+        }
+        return;
+      }
+      // A SEGUNDA LEVA DO LIVRO DO MESTRE (2026-11-12)
+      // a ARMA CRUEL: no 20, +7 do tipo dela
+      case 'cruel': if (vinte) { this.say('ataque', `${w.name}: o 20 abre a ferida, +7.`); this.applyDamage(target, 7, p.type, attacker, { magico: true, deArma: true }); } return;
+      // ONDA: no crítico, necrótico igual à metade dos PV máximos do alvo
+      case 'onda': {
+        if (!atk?.critical) return;
+        const n = Math.floor((target.maxHp ?? 0) / 2);
+        if (n > 0) { this.say('ataque', `${w.name} arrasta ${target.name} para o fundo: +${n} de necrótico.`); this.applyDamage(target, n, 'necrótico', attacker, { magico: true }); }
+        return;
+      }
+      // WHELM arremessado: +1d8 de concussão, 2d8 contra gigante
+      case 'whelm': if (distanceFt(attacker.pos, target.pos) > 5) extra(target.tipo === 'gigante' ? '2d8' : '1d8', 'concussão', `${w.name} arremessado`); return;
+      // BLACKRAZOR no morto-vivo: o dono sofre 1d10 necrótico e o morto-vivo se cura 1d10
+      case 'devoraAlma': {
+        if (target.tipo !== 'morto-vivo') return;
+        const r1 = roll(this.rng, '1d10');
+        const r2 = roll(this.rng, '1d10');
+        this.say('ataque', `${w.name} recusa a carne morta: ${attacker.name} sofre ${r1.total} de necrótico e ${target.name} se refaz em ${r2.total}.`);
+        this.applyDamage(attacker, r1.total, 'necrótico', target, { magico: true });
+        this.heal(target, r2.total, target);
+        return;
+      }
+      case 'derrubaGigante': {
+        if (target.tipo !== 'gigante' || hasCondition(target, 'caido')) return;
+        const save = this.resistencia(target, 'str', 15, { contra: { magico: true } });
+        const r = this.explicarResistencia(target, 'str', 15, save, { contra: w.name, seSucesso: 'fica de pé' });
+        if (!save.success) { addCondition(target, 'caido', { rounds: Infinity }); this.say('condicao', `${target.name} vai ao chão (${w.name.toLowerCase()}).`, r.conta); }
+        return;
+      }
+      default:
+    }
+  }
+
+  /**
+   * BLACKRAZOR DEVORA A ALMA de quem ela derruba (fora constructo e morto-vivo): o dono ganha PV temporários iguais aos PV
+   * máximos do morto e, enquanto eles durarem, vantagem nos ataques, testes e resistências (`almaDevorada`).
+   */
+  devorarAlma(attacker, target, w) {
+    if (attacker.dead || ['constructo', 'morto-vivo'].includes(target.tipo)) return;
+    if (w.sintonia && attacker.side === 'party' && !(attacker.sintonizados ?? []).includes(w.id)) return;
+    const pv = target.maxHp ?? 0;
+    attacker.tempHp = Math.max(attacker.tempHp ?? 0, pv);
+    addCondition(attacker, 'almaDevorada', { rounds: Infinity, source: attacker.id });
+    this.say('cura', `${w.name} devora a alma de ${target.name}: ${attacker.name} fica com ${attacker.tempHp} PV temporários e a fome dela.`);
+  }
+
+  /**
+   * As ESPADAS DA RESPOSTA: quem fere o dono a até o alcance dela leva um golpe de reação, com vantagem, que passa por cima de
+   * resistência e imunidade. A ESPADA DA VINGANÇA: quem o fere numa luta pede Sabedoria CD 15, ou o dono fica preso a ele.
+   */
+  armaQueResponde(target, source) {
+    if (!source || source === target || source.dead || target.dead || target.hp <= 0 || source.side === target.side) return;
+    const w = WEAPONS[target.equippedWeapon];
+    if (!w?.poder || (w.sintonia && target.side === 'party' && !(target.sintonizados ?? []).includes(w.id))) return;
+    if (w.poder === 'resposta' && !target.reactionUsed && !conditionEffects(target).incapacitated
+      && distanceFt(target.pos, source.pos) <= (w.reachFt ?? 5) && !this.respondendo) {
+      target.reactionUsed = true;
+      this.respondendo = true;
+      target.respostaAgora = true;
+      try {
+        this.say('recurso', `${w.name} responde ao golpe: ${target.name} revida em ${source.name}.`);
+        this.resolveAttack(target, source, { weaponId: w.id, vantagem: true });
+      } finally { target.respostaAgora = false; this.respondendo = false; }
+    }
+    if (w.poder === 'vinganca' && !this.explorando && !hasCondition(target, 'provocado')) {
+      const s = this.resistencia(target, 'wis', 15, { contra: { magico: true } });
+      if (!s.success) {
+        addCondition(target, 'provocado', { rounds: 10, source: source.id });
+        this.say('condicao', `O espírito da ${w.name.toLowerCase()} toma ${target.name}: só tem olhos para ${source.name}.`);
+      }
+    }
+  }
+
+  /**
+   * O VENENO DO LIVRO em quem o leva: resistência de Constituição contra `cd`. Falhou: o dano inteiro e as condições
+   * (`condicoes: [{ id, rodadas }]`); falhou por `desmaiaPor` ou mais, também desmaiado enquanto envenenado (o drow).
+   * Passou: metade do dano se `metade`, senão nada. Quem é imune a envenenado não pega as condições; quem é imune a
+   * veneno não sofre o dano.
+   */
+  aplicarVeneno(target, v, nome, fonte = null) {
+    if (!v || target.dead) return;
+    const save = this.resistencia(target, 'con', v.cd, { contra: { tipoDano: 'veneno', condicao: 'envenenado' } });
+    const r = this.explicarResistencia(target, 'con', v.cd, save, { contra: nome, seSucesso: v.metade ? 'metade do dano' : 'nada' });
+    if (v.dano) {
+      const d = roll(this.rng, v.dano);
+      const total = save.success ? (v.metade ? Math.floor(d.total / 2) : 0) : d.total;
+      if (total > 0) {
+        this.say('ataque', `${target.name} ${save.success ? 'resiste em parte, e sofre' : 'sofre'} ${this.danoPorTipo(target, total, 'veneno')} de veneno (${nome.toLowerCase()}).`, `${r.conta} · ${v.dano}[${d.rolls.join('+')}] = ${d.total}`);
+        this.applyDamage(target, total, 'veneno', fonte);
+      } else this.say('ataque', `${target.name} resiste (${nome.toLowerCase()}).`, r.conta);
+    } else if (save.success) this.say('ataque', `${target.name} resiste (${nome.toLowerCase()}).`, r.conta);
+    if (save.success || target.dead || !v.condicoes?.length) return;
+    if (this.imuneACondicao(target, 'envenenado', fonte)) { this.say('aviso', `${target.name} não se envenena.`); return; }
+    const pegou = [];
+    for (const c of v.condicoes) {
+      addCondition(target, c.id, { rounds: c.rodadas, source: fonte?.id });
+      pegou.push(CONDITIONS[c.id]?.name?.toLowerCase() ?? c.id);
+    }
+    const falhouPor = v.cd - save.total;
+    if (v.desmaiaPor && falhouPor >= v.desmaiaPor) {
+      addCondition(target, 'desmaiadoDeVeneno', { rounds: v.condicoes[0].rodadas, source: fonte?.id });
+      pegou.push('desmaiado');
+    }
+    this.say('condicao', `${target.name} fica ${pegou.join(' e ')} (${nome}).`, r.conta);
+  }
+
   danoExtraDoGolpe(attacker, target, p, critical) {
     const ex = p.danoExtra;
     const dmg = damageRoll(this.rng, ex.damage, { critical });
@@ -5815,6 +6321,8 @@ export class Encounter {
       let dano = r.critical ? dmg.total + damageRoll(this.rng, p.damage).rolls.reduce((a, b) => a + b, 0) : dmg.total;
       const vuln = zona.objeto.vulneravel && zona.objeto.vulneravel === (p.type ?? '').toLowerCase();
       if (vuln) dano *= 2;
+      // o objeto imune a um tipo (as pás do moinho do Vazio: veneno e psíquico)
+      if (zona.objeto.imune?.includes((p.type ?? '').toLowerCase())) dano = 0;
       total += dano;
       const sobra = Math.max(0, (zona.pvDoTrecho.get(key(casa.x, casa.y)) ?? 0) - dano);
       zona.pvDoTrecho.set(key(casa.x, casa.y), sobra);
@@ -5983,9 +6491,9 @@ export class Encounter {
    */
   danoPorTipo(target, amount, type, magico = false, deArma = false, semResistencia = false) {
     if (!type) return amount;
-    if (target.immune?.includes(type)) return 0;
+    if (target.immune?.includes(type) || target.doItem?.imune?.includes(type)) return 0;
     if (!magico && target.immuneNaoMagico?.includes(type)) return 0;
-    if ((target.conditions ?? []).some((c) => CONDITIONS[c.id]?.imuneADanos?.includes(type))) return 0;
+    if ((target.conditions ?? []).some((c) => CONDITIONS[c.id]?.imuneADanos?.includes(type) || (CONDITIONS[c.id]?.imuneTipoDado && c.data?.tipo === type))) return 0;
     if (Sub.imuneComoSubclasse(target, type) || Sub.imuneDaTempestade(target, type)) return 0;
     // a AURA DE VIDA (necrótico) e a AURA DE PUREZA (veneno): resistência a quem está a 9 m de quem a mantém
     const naAuraResiste = Livro.resisteNaAura(this, target, type);
@@ -6021,8 +6529,8 @@ export class Encounter {
       // as subclasses dos livros: a Alma da Tempestade, a Tempestade Protetora, a Alma e o Santo da Forja
       || Sub.resisteComoSubclasse(this, target, type, magico) || Sub.resisteDaTempestade(target, type) || Sub.resisteRadiante(target, type)
       || Sub.resisteNasEstrelas(target, type) || Sub.resistePsiquico(target, type);
-    if (!semResistencia && (porCondicao || infernal || porCaracteristica || target.resist?.includes(type) || (!magico && target.resistNaoMagico?.includes(type)))) out = Math.floor(out / 2);
-    if (target.vulnerable?.includes(type) || (target.conditions ?? []).some((c) => { const d = CONDITIONS[c.id]; return d?.vulnerabilidadeTotal || d?.vulnerabilidade?.includes?.(type); })) out *= 2;
+    if (!semResistencia && (porCondicao || infernal || porCaracteristica || target.resist?.includes(type) || target.doItem?.resiste?.includes(type) || (!magico && (target.resistNaoMagico?.includes(type) || target.doItem?.resisteNaoMagico?.includes(type))))) out = Math.floor(out / 2);
+    if (target.vulnerable?.includes(type) || target.doItem?.vulneravel?.includes(type) || (target.conditions ?? []).some((c) => { const d = CONDITIONS[c.id]; return d?.vulnerabilidadeTotal || d?.vulnerabilidade?.includes?.(type); })) out *= 2;
     return out;
   }
 
@@ -6185,6 +6693,7 @@ export class Encounter {
       const def = CONDITIONS[cond.id];
       const dados = def?.testeBonusDice ?? (def?.dadoNaData ? cond.data?.dado : null);
       if (!dados) continue;
+      if (def.habsDoBonus && !def.habsDoBonus.includes(hab)) continue;
       const d = roll(this.rng, dados);
       total += d.total;
       extras.push(`${def.name.toLowerCase()} ${dados}[${d.rolls.join('+')}]`);
@@ -6241,6 +6750,8 @@ export class Encounter {
 
   applyDamage(target, amount, type, source = null, { critical = false, magico = false, deArma = false, corpoACorpo = false, deDentro = false, transferido = false, deAtaque = false } = {}) {
     if (amount <= 0 || target.dead) return;
+    // O GOLPE NÃO LETAL que já derrubou: o resto do mesmo golpe (o Golpe Divino que vem depois) não mata o desacordado
+    if (target.capturado && target.hp <= 0 && source?.naoLetal && this.golpeDePerto === source) return;
     // Fora de alcance nada atinge: o Plano Etéreo e quem está dentro da pedra. O engolido é atingido por DENTRO: o ácido
     // de quem o engoliu, e o golpe de quem está dentro junto com ele.
     const dentro = Livro.engolidoPor(target);
@@ -6297,7 +6808,8 @@ export class Encounter {
       // DESTRUIÇÃO INESCAPÁVEL (Domínio da Morte, 6º)
       || Sub.destruicaoInescapavel(source, type, magico);
     const antesDoTipo = amount;
-    amount = this.danoPorTipo(target, amount, type, magico, deArma, semResistencia);
+    // o golpe da ESPADA DA RESPOSTA passa por cima de resistência e de imunidade
+    if (!(source?.respostaAgora && deArma)) amount = this.danoPorTipo(target, amount, type, magico, deArma, semResistencia);
     // PROTETORES ANCESTRAIS: quem o marcado acerta com um ataque (fora o bárbaro) resiste ao dano. Resistência não soma com
     // resistência, e cancela a vulnerabilidade.
     const guardiao = amount > 0 ? Sub.resisteAosMarcados(this, target, source, deArma || deAtaque) : null;
@@ -6350,6 +6862,9 @@ export class Encounter {
     }
     // O VÍNCULO DO GUARDIÃO-ESCUDO: metade do que ficou, depois da resistência (e da mensagem dela).
     amount = this.vinculoDoAmuleto(target, amount);
+    // O OBELISCO DA ÂNIMA: não tem PV nem se destrói; o que ele levaria, depois das imunidades dele, vai para o fanático
+    // mais perto (`contragolpeDoObelisco`).
+    if (target.contragolpe) { if (amount > 0) this.contragolpeDoObelisco(target, amount, type, source); return; }
     // ESQUIVA SOBRENATURAL: o ladino usa a reação e o golpe que ele VÊ chegar
     // sai pela metade. Automática, como a Proteção: é reação que só serve
     // para isto, e perguntar a cada golpe pararia a luta.
@@ -6361,6 +6876,11 @@ export class Encounter {
       amount = Math.floor(amount / 2);
       this.say('recurso', `${target.name} se desvia: o golpe sai pela metade (${amount}).`);
     }
+    // RESISTÊNCIA DA PEDRA (golias): a reação que tira 1d12 + CON do golpe que dói
+    if (amount > 0) amount = Raca.resistenciaDaPedra(this, target, amount);
+    // a PROTEÇÃO ARCANA do abjurador leva o dano antes dele; a AVERSÃO AO FOGO do oblex
+    if (amount > 0) amount = Livro.protecaoArcana(this, target, amount);
+    Livro.aversaoAoFogo(this, target, type, amount);
     // ESCUDO ESPIRITUAL (Guardião Ancestral, 6º): a reação do bárbaro em Fúria corta o dano de um aliado a até 9 m.
     if (amount > 0) amount = Sub.escudoEspiritual(this, target, source, amount, { deAtaque: deArma || deAtaque });
     // CAMPO PROTETOR (Guerreiro Psiônico) e CORPO DO EU ASTRAL (monge, 11º): as reações que tiram dano
@@ -6469,6 +6989,8 @@ export class Encounter {
       const absorbed = Math.min(target.tempHp, left);
       target.tempHp -= absorbed;
       left -= absorbed;
+      // a FOME DA BLACKRAZOR dura enquanto duram os PV temporários da alma devorada
+      if (target.tempHp <= 0) removeCondition(target, 'almaDevorada');
     }
     // RESILIÊNCIA INFERNAL (bruxo Corruptor, 10º): a escolha do descanso é o tipo que mais machucou até agora.
     if (target.features?.includes('fiendishResilience') && type) {
@@ -6501,6 +7023,8 @@ export class Encounter {
       && !['enorme', 'imenso', 'colossal'].includes(String(target.size ?? '').toLowerCase())) this.empurrar(target, source.pos, 10);
     // FUGA NEBULOSA (bruxo da Arquifada, 6º): reação ao sofrer dano; teleporta 18 m e some até o próximo turno.
     if (target.hp > 0 && (!source || source.side !== target.side)) this.fugaNebulosa(target);
+    // a ESPADA DA RESPOSTA revida e a ESPADA DA VINGANÇA prende o dono a quem feriu
+    if (target.hp > 0 && amount > 0) this.armaQueResponde(target, source);
     // PROTEÇÃO CONTRA A MORTE (SRD): a PRIMEIRA vez que o alvo cairia a 0 PV
     // por dano, ele fica de pé com 1 PV e a magia acaba.
     //
@@ -6562,9 +7086,31 @@ export class Encounter {
         removeCondition(target, cond.id);
         this.say('condicao', `${target.name} desperta do ${CONDITIONS[cond.id].name.toLowerCase()} com o golpe.`);
       }
+      // A FEBRE DO RISO: quem apanha faz Constituição CD 13 ou cai de rir por um minuto (repete no fim do turno)
+      const febre = getCondition(target, 'febreDoRiso');
+      if (febre && !(febre.data?.incubando > 0) && !hasCondition(target, 'gargalhando')) {
+        const save = this.resistencia(target, 'con', 13, { contra: { condicao: 'gargalhando' } });
+        const r = this.explicarResistencia(target, 'con', 13, save, { contra: 'a Febre do Riso', seSucesso: 'segura o riso' });
+        if (!save.success) {
+          addCondition(target, 'gargalhando', { rounds: 10, data: { repete: true, save: 'con', dc: 13 } });
+          this.say('condicao', `A febre sobe com a dor: ${target.name} cai numa gargalhada que não para.`, r.conta);
+        }
+      }
       return;
     }
 
+    // O DESPERTAR (os grandes wyrms do Fizban, os aspectos de Tiamat e de Bahamut): a primeira vez que cairia a 0 PV, volta
+    // com os PV do bloco, o sopro recarregado e as resistências lendárias de volta.
+    if (target.kind === 'npc' && target.despertar && !target.despertou) {
+      target.despertou = true;
+      target.hp = Math.min(maxHpEfetivo(target), target.despertar.pv);
+      target.recarregando = {};
+      if (target.resourcesMax?.resistenciaLendaria != null) (target.resources ??= {}).resistenciaLendaria = target.resourcesMax.resistenciaLendaria;
+      else if (target.resources?.resistenciaLendaria != null && target.resistenciaLendariaInicial != null) target.resources.resistenciaLendaria = target.resistenciaLendariaInicial;
+      this.say('recurso', `${target.name} devia cair e desperta: volta com ${target.hp} PV, o sopro pronto de novo (Despertar).`);
+      this.onEvent({ type: 'despertar', target });
+      return;
+    }
     // MORTE INSTANTÂNEA: o que sobra do dano depois de zerar os PV, se chegar
     // ao máximo de PV, mata na hora.
     const sobra = -target.hp;
@@ -6621,7 +7167,8 @@ export class Encounter {
     // GOLPE NÃO LETAL (Livro do Jogador): quem zera a vida de alguém com um
     // ataque corpo a corpo pode deixá-lo desacordado em vez de morto. O herói
     // escolhe isso antes (`naoLetal`, no menu do botão direito).
-    if (target.kind === 'npc' && corpoACorpo && source?.naoLetal) {
+    // o que vem com o golpe de perto (o Golpe Divino, o veneno da lâmina) é o mesmo ataque: derruba sem matar também
+    if (target.kind === 'npc' && (corpoACorpo || (source && this.golpeDePerto === source)) && source?.naoLetal) {
       addCondition(target, 'inconsciente');
       addCondition(target, 'caido');
       target.stable = true;
@@ -6653,7 +7200,10 @@ export class Encounter {
       target.caidoRegenerando = true;
       addCondition(target, 'inconsciente');
       addCondition(target, 'caido');
-      this.say('morte', `${target.name} desaba, mas a carne já começa a se fechar: sem fogo ou ácido, ele levanta.`);
+      // os tipos que a cortam são os do bloco (o troll: fogo e ácido; o vegepigmeu: frio, fogo e necrótico)
+      const corta = target.regeneracao.bloqueia ?? [];
+      const ou = corta.length > 1 ? `${corta.slice(0, -1).join(', ')} ou ${corta.at(-1)}` : corta[0];
+      this.say('morte', `${target.name} desaba, mas a carne já começa a se fechar${ou ? `: sem ${ou}, ele levanta` : ''}.`);
       this.soltarAgarroesDe(target);
       this.onEvent({ type: 'downed', target });
       return;
@@ -6663,6 +7213,8 @@ export class Encounter {
       this.revelarDisfarce(target, 'ao cair');
       target.dead = true;
       target.morreuNaRodada = this.round;
+      // o BERÇO do Bigby que cai solta o rebento do gigante: antes de qualquer conta de fim de luta
+      Livro.despertarORebento(this, target, { MONSTERS, makeMonster });
       removeCondition(target, 'esquivando');
       this.say('morte', `${target.name} cai.`);
       this.explosaoMental(target);
@@ -6711,7 +7263,7 @@ export class Encounter {
       target.acted = true;
       // O GOLPE NÃO LETAL vale também contra herói: o monstro que quer o grupo VIVO (o refeitório do Repouso de
       // Zorzula, no Obelisco) derruba sem matar — desacordado e estável, sem teste contra a morte.
-      if (corpoACorpo && source?.naoLetal) {
+      if ((corpoACorpo || (source && this.golpeDePerto === source)) && source?.naoLetal) {
         target.stable = true;
         this.say('morte', `${target.name} cai desacordado — vivo: ${source.name} bateu para derrubar.`);
         this.soltarAgarroesDe(target);
@@ -6955,11 +7507,39 @@ export class Encounter {
     }
     // A AURA DO DONO (a Aura de Fogo do balor): no começo do turno dele, quem está perto leva o dano.
     if (c.aura?.quando === 'inicioDoDono' && c.aura.damage && c.hp > 0) {
-      for (const t of this.combatants.filter((x) => x !== c && !x.dead && x.hp > 0 && x.pos && distanceFt(c.pos, x.pos) <= c.aura.raioFt)) {
-        const d = damageRoll(this.rng, c.aura.damage);
-        this.say('dano', `A aura de ${c.name} queima ${t.name}: ${d.total} de ${c.aura.damageType}.`, `${c.aura.damage}[${d.rolls.join('+')}]`);
-        this.applyDamage(t, d.total, c.aura.damageType, c, { magico: true });
+      const a = c.aura;
+      for (const t of this.combatants.filter((x) => x !== c && !x.dead && x.hp > 0 && x.pos && distanceFt(c.pos, x.pos) <= a.raioFt
+        && (!a.soInimigos || (x.side !== c.side && x.side !== 'neutro')))) {
+        // COM TESTE (a Aura da Morte da fusão de carne: Constituição, ou o dano e envenenado até o próximo turno dela)
+        if (a.save) {
+          const sv = this.resistencia(t, a.save, a.dc, { contra: { tipoDano: a.damageType, condicao: a.condition ?? null, magico: true } });
+          const r = this.explicarResistencia(t, a.save, a.dc, sv, { contra: `a aura de ${c.name}`, seSucesso: 'nada' });
+          if (sv.success) { this.say('condicao', `${t.name} aguenta a aura de ${c.name}.`, r.conta, { rolagem: r }); continue; }
+          const d = damageRoll(this.rng, a.damage);
+          this.say('dano', `A aura de ${c.name} pega ${t.name}: ${d.total} de ${a.damageType}.`, `${r.conta} · ${a.damage}[${d.rolls.join('+')}]`, { rolagem: r });
+          this.applyDamage(t, d.total, a.damageType, c, { magico: true });
+          if (a.condition && !t.dead && t.hp > 0 && !this.imuneACondicao(t, a.condition)) {
+            this.aplicarCondicao(t, a.condition, { rounds: 1, quando: 'inicio', lado: c.side, source: c.id });
+          }
+          continue;
+        }
+        const d = damageRoll(this.rng, a.damage);
+        this.say('dano', `A aura de ${c.name} queima ${t.name}: ${d.total} de ${a.damageType}.`, `${a.damage}[${d.rolls.join('+')}]`);
+        this.applyDamage(t, d.total, a.damageType, c, { magico: true });
       }
+    }
+    // O TESTE NO COMEÇO DO TURNO (`testeNoInicio`: o cloaker mutante que esquece quem é): falhou, perde o turno
+    if (c.testeNoInicio && !c.dead && c.hp > 0) {
+      const tt = c.testeNoInicio;
+      const sv = this.resistencia(c, tt.save, tt.dc, { vantagem: !!tt.vantagem?.(this, c) });
+      const r = this.explicarResistencia(c, tt.save, tt.dc, sv, { contra: tt.nome ?? 'o próprio pensamento', seSucesso: 'age normalmente' });
+      if (!sv.success) {
+        c.actionUsed = true;
+        c.bonusUsed = true;
+        c.movementLeftFt = 0;
+        this.say('condicao', `${c.name} ${tt.falha ?? 'se perde dentro da própria cabeça e não age neste turno'}.`, r.conta, { rolagem: r });
+        tt.aoFalhar?.(this, c);
+      } else tt.aoPassar?.(this, c);
     }
     if (c.traits?.includes('regeneracaoVingativa')) {
       if (c.regenBloqueada) { c.regenBloqueada = false; this.say('recurso', `${c.name} não se refaz: o fogo e a luz ainda queimam.`); }
@@ -7475,17 +8055,26 @@ export class Encounter {
     h.queimouAsCabecas = false;
   }
 
-  /** PUXAR (a água viva): o acertado vem 1,5 m na direção de quem o acertou, para a casa livre mais perto dele. */
-  puxar(m, alvo) {
-    if (!alvo.pos || !m.pos || distanceFt(m.pos, alvo.pos) <= 5) return;
-    const dx = Math.sign(m.pos.x - alvo.pos.x);
-    const dy = Math.sign(m.pos.y - alvo.pos.y);
-    const nx = alvo.pos.x + dx;
-    const ny = alvo.pos.y + dy;
-    if (!this.field.inside(nx, ny) || this.field.blocksMove(nx, ny) || this.at(nx, ny)) return;
-    alvo.pos = { ...alvo.pos, x: nx, y: ny };
-    this.say('condicao', `${alvo.name} é arrastado 1,5 m na direção de ${m.name}.`);
-    this.onEvent({ type: 'moved', actor: alvo, from: { ...alvo.pos, x: nx - dx, y: ny - dy }, to: { ...alvo.pos }, path: [{ ...alvo.pos }] });
+  /**
+   * PUXAR (a água viva, 1,5 m; a mordida da fusão de carne, 4,5 m): o acertado vem na direção de quem o acertou, casa a
+   * casa, até encostar, bater em parede ou em alguém, ou acabar o puxão.
+   */
+  puxar(m, alvo, pes = 5) {
+    const de = { ...alvo.pos };
+    let andou = 0;
+    for (let i = 0; i < Math.max(1, Math.round(pes / 5)); i++) {
+      if (!alvo.pos || !m.pos || distanceFt(m.pos, alvo.pos) <= 5) break;
+      const dx = Math.sign(m.pos.x - alvo.pos.x);
+      const dy = Math.sign(m.pos.y - alvo.pos.y);
+      const nx = alvo.pos.x + dx;
+      const ny = alvo.pos.y + dy;
+      if (!this.field.inside(nx, ny) || this.field.blocksMove(nx, ny) || this.at(nx, ny)) break;
+      alvo.pos = { ...alvo.pos, x: nx, y: ny };
+      andou += 5;
+    }
+    if (!andou) return;
+    this.say('condicao', `${alvo.name} é arrastado ${String(andou * 0.3).replace('.', ',')} m na direção de ${m.name}.`);
+    this.onEvent({ type: 'moved', actor: alvo, from: de, to: { ...alvo.pos }, path: [{ ...alvo.pos }] });
   }
 
   /**
@@ -8034,7 +8623,7 @@ export class Encounter {
     if (spell.kind === 'estabilizar' && (!hasCondition(alvo, 'inconsciente') || alvo.stable)) return `${alvo.name} não está morrendo`;
     if (spell.kind === 'healGrupo' && ['morto-vivo', 'constructo'].includes(alvo.tipo)) return 'cura não funciona em morto-vivo nem em constructo';
     if (spell.kind === 'restaurar' && !spell.remove.some((id) => hasCondition(alvo, id))) {
-      return spell.todas ? `${alvo.name} não está amaldiçoado` : `${alvo.name} não está cego, envenenado nem paralisado`;
+      return spell.todas ? `${alvo.name} não está amaldiçoado` : `${alvo.name} não está cego, envenenado, paralisado nem doente`;
     }
     // Personagem sem tipo declarado é humanoide (todos os heróis são).
     if (spell.soTipo && (alvo.tipo ?? 'humanoide') !== spell.soTipo) return `só funciona em ${spell.soTipo}`;
@@ -8407,12 +8996,21 @@ export class Encounter {
     const spell = this.comAlcanceDoTalento(actor, getSpell(spellId));
     // A AÇÃO QUE UMA MAGIA CONCEDE (`magias-concedidas.js`) não pede conjuração: o guerreiro tocado pelo Sopro do Dragão sopra.
     const concedida = concedidasDe(actor).includes(spellId);
-    if (!actor.spellcasting && !concedida) return { ok: false, why: 'não conjura magias' };
+    // ... e a magia de um ITEM que conjura (a varinha na mão do guerreiro)
+    const doItem = magiasDosItens(actor).includes(spellId);
+    if (!actor.spellcasting && !concedida && !doItem) return { ok: false, why: 'não conjura magias' };
     if (spell?.cargaDe && !(getCondition(actor, spell.cargaDe)?.data?.cargas > 0)) return { ok: false, why: 'não sobra nenhum' };
     // TRANSFORMAÇÃO DE TENSER: enquanto dura, não se conjura magia (as concedidas não são magia).
     if (hasCondition(actor, 'transformacaoDeTenser') && !concedida) return { ok: false, why: 'na Transformação de Tenser não se conjura' };
     if (conditionEffects(actor).incapacitated) return { ok: false, why: 'incapacitado não conjura' };
     if (spell?.semMotor) return { ok: false, why: `${spell.name} ainda não tem efeito no jogo` };
+    // a magia que pega numa CHAMA do mapa (Controlar Chamas, Pirotecnia): só numa casa com chama acesa
+    if (spell?.exigeChama && point && !chamaNaCasa(this.field, point)) return { ok: false, why: 'não há chama acesa nessa casa' };
+    // a AÇÃO DA RAÇA que é um golpe (as Mandíbulas Famintas): sem alvo ao alcance da arma, não sai
+    if (spell?.exigeGolpe) {
+      const pode = target ? this.canAttack(actor, target, spell.exigeGolpe) : { ok: false, why: 'escolha quem morder' };
+      if (!pode.ok) return pode;
+    }
     if (hasCondition(actor, 'debilitado')) return { ok: false, why: 'com a mente debilitada, não conjura' };
     // O CONE ANTIMÁGICO do observador: dentro dele, magia não sai
     if (Livro.noConeAntimagia(this, actor.pos)) return { ok: false, why: 'dentro do cone antimágico, a magia não sai' };
@@ -8561,7 +9159,8 @@ export class Encounter {
     if (spell.depoisDaAcaoDeAtaque && actor.acaoDeAtaque?.turno !== this.turnoKey()) return { ok: false, why: 'só logo depois da ação de Atacar' };
     // EXPLOSÃO SOLAR ABRASADORA: o ki a mais que se põe nela
     if (spell.kiPorOpcao && Number(opcao ?? 0) > (actor.resources?.ki ?? 0)) return { ok: false, why: `sem ki para ${opcao}` };
-    if (spell.castTime === 'action' && actor.actionUsed) return { ok: false, why: 'a ação deste turno já foi usada' };
+    if (spell.castTime === 'action' && actor.actionUsed && !(spell.noLugarDeUmAtaque && (actor.ataquesRestantes ?? 0) > 0)) return { ok: false, why: 'a ação deste turno já foi usada' };
+    if (spell.nivelMinimo && (actor.level ?? 1) < spell.nivelMinimo) return { ok: false, why: `só a partir do ${spell.nivelMinimo}º nível` };
     if (spell.castTime === 'bonus' && actor.bonusUsed) return { ok: false, why: 'a ação bônus deste turno já foi usada' };
     if (spell.castTime === 'action' && actor.acaoLimitada) return { ok: false, why: 'a ação da Velocidade não conjura magia' };
     // Magia de ação bônus no turno: além dela, só um truque de 1 ação.
@@ -8641,8 +9240,10 @@ export class Encounter {
   castSpell(actor, spellId, opcoes = {}) {
     this.bonusDeMagia = bonusDeDanoPorTraco(actor, SPELLS[spellId]);
     const original = SPELLS[spellId];
-    const metas = this.metamagiasDaConjuracao(actor, original, opcoes);
-    const ids = new Set(metas.map((m) => m.id));
+    // O CRISTAL MENTAL armado (o Obelisco) vale no lugar da metamagia: o livro não deixa os dois na mesma magia.
+    const cristal = this.cristalDaConjuracao(actor, original);
+    const metas = cristal ? [] : this.metamagiasDaConjuracao(actor, original, opcoes);
+    const ids = new Set(cristal ? [cristal.id] : metas.map((m) => m.id));
     // RÁPIDA e À DISTÂNCIA mudam a própria magia por esta conjuração (o tempo e o alcance); `finally` devolve o original.
     // LANÇA MÍSTICA (invocação): a Rajada Mística alcança 90 m.
     if (original?.id === 'rajadaMistica' && actor.features?.includes('eldritchSpear') && !ids.has('distantSpell')) {
@@ -8686,16 +9287,19 @@ export class Encounter {
       SPELLS[spellId] = {
         ...original,
         ...(ids.has('quickenedSpell') || rapidaDoSurto ? { castTime: 'bonus' } : {}),
-        ...(ids.has('distantSpell') ? { rangeFt: original.rangeFt <= 5 ? 30 : original.rangeFt * 2 } : {}),
+        // o cristal SOMA 30 m ao alcance, onde a metamagia o dobra; nos dois, o toque vira 9 m
+        ...(ids.has('distantSpell') ? { rangeFt: original.rangeFt <= 5 ? 30 : cristal ? original.rangeFt + 100 : original.rangeFt * 2 } : {}),
       };
     }
-    const cuidado = Math.max(1, abilityMod(actor.abilities?.cha ?? 10));
+    // a Cuidadosa e a Potencializada do cristal valem para TRÊS (criaturas, dados); as do feiticeiro, para o Carisma dele
+    const cuidado = cristal ? 3 : Math.max(1, abilityMod(actor.abilities?.cha ?? 10));
     // SOBRECANALIZAR (mago, 14º), armado: o dano de uma magia de até 5º círculo sai no máximo.
     const sobre = Boolean(actor.sobrecanalizaPronta && original && original.level >= 1 && original.level <= 5 && (original.damage || original.damage2));
     this.metaAtiva = ids.size || sobre ? {
       maximizar: sobre,
       dono: actor, ids,
-      careful: ids.has('carefulSpell') ? { restantes: cuidado } : null,
+      // o cristal só faz passar no teste (a Bola de Fogo ainda tira metade); a do feiticeiro, aqui, também zera o dano
+      careful: ids.has('carefulSpell') ? { restantes: cuidado, zera: !cristal } : null,
       heightened: ids.has('heightenedSpell'), subtle: ids.has('subtleSpell'),
       empowered: ids.has('empoweredSpell') ? cuidado : 0, empoderou: false,
     } : null;
@@ -8724,6 +9328,7 @@ export class Encounter {
         }
       }
       if (r?.ok && metas.length) this.pagarMetamagia(actor, original, metas, opcoes, r, antesDeAcao);
+      if (r?.ok && cristal) this.gastarCristal(actor, original, cristal);
       // MATADOR DE MAGOS (talento): quem conjura a 1,5 m dele leva um golpe de reação.
       if (r?.ok) this.matadorDeMagosReage(actor);
       // a CARGA da ação concedida (o meteoro, a estrela): acabou, a condição vai junto (e a concentração dela, se for dela)
@@ -8918,18 +9523,7 @@ export class Encounter {
       heightenedSpell: 'Elevada', quickenedSpell: 'Rápida', subtleSpell: 'Sutil', twinnedSpell: 'Gêmea' };
     this.say('recurso', `${actor.name} molda ${spell.name}: ${metas.map((m) => nomes[m.id]).join(' + ')} (${total} ponto${total > 1 ? 's' : ''} de feitiçaria, restam ${actor.resources.sorceryPoints}).`);
     const ids = new Set(metas.map((m) => m.id));
-    // PROLONGADA: a duração dos efeitos de magia que esta conjuração pôs vale o dobro.
-    if (ids.has('extendedSpell')) {
-      for (const c of this.combatants) {
-        for (const k of c.conditions ?? []) {
-          if (k.magia?.id === spell.id && k.source === actor.id && Number.isFinite(k.rounds) && !k.prolongada) { k.rounds = Math.min(k.rounds * 2, 14400); k.prolongada = true; }
-        }
-      }
-    }
-    // PROLONGADA em magia de concentração: o limite de rodadas da concentração também dobra.
-    if (ids.has('extendedSpell') && actor.concentrating?.spellId === spell.id && Number.isFinite(actor.concentrating.rounds)) {
-      actor.concentrating.rounds = Math.min(actor.concentrating.rounds * 2, 14400);
-    }
+    this.prolongarMagia(actor, spell, ids);
     // GÊMEA: a mesma magia, sem custo, no segundo alvo.
     if (ids.has('twinnedSpell')) {
       const segundo = this.alvoGemeo(actor, spell, opcoes.target);
@@ -8941,6 +9535,53 @@ export class Encounter {
         try { this.castSpellBase(actor, spell.id, { ...opcoes, target: segundo }); } finally { actor.geminada = null; }
         actor.actionUsed = depois.acao; actor.bonusUsed = depois.bonus;
       }
+    }
+  }
+
+  /**
+   * O CRISTAL MENTAL que vale nesta conjuração (o Obelisco, capítulo 7): o armado (`actor.cristalArmado`), se ainda está na
+   * mochila, se a magia é de UMA AÇÃO e se o que ele faz serve a ela. Qualquer conjurador o usa — não é metamagia de
+   * feiticeiro. O que não serve fica armado para a próxima. Devolve `{ itemId, id }` (o id da metamagia) ou null.
+   */
+  cristalDaConjuracao(actor, spell) {
+    const itemId = actor.cristalArmado;
+    if (!itemId || !spell || spell.castTime !== 'action' || !quantosNaMochila(actor, itemId)) return null;
+    const id = itemDeId(itemId)?.dados?.metamagia;
+    const serve = {
+      carefulSpell: () => Boolean(spell.save),
+      distantSpell: () => spell.rangeFt >= 5,
+      empoweredSpell: () => Boolean(spell.damage || spell.damage2),
+      extendedSpell: () => Boolean(spell.concentration || spell.condition || spell.duracaoRodadas),
+      heightenedSpell: () => Boolean(spell.save),
+      quickenedSpell: () => !actor.bonusUsed,
+      subtleSpell: () => true,
+    };
+    return serve[id]?.() ? { itemId, id } : null;
+  }
+
+  /** O cristal usado vira uma pedra comum de 50 po, e desarma; a Prolongada faz o que faz depois da conjuração. */
+  gastarCristal(actor, spell, { itemId, id }) {
+    consumirDaMochila(actor, itemId);
+    const bag = garantirInventario(actor).bag;
+    const ja = bag.find((i) => i.id === 'cristalApagado');
+    if (ja) ja.qtd += 1; else bag.push({ id: 'cristalApagado', tipo: 'item', qtd: 1 });
+    actor.cristalArmado = null;
+    this.say('recurso', `${actor.name} molda ${spell.name} com o ${nomeDeId(itemId)}, que se apaga e vira uma pedra comum.`);
+    this.prolongarMagia(actor, spell, new Set([id]));
+  }
+
+  /** PROLONGADA: a duração dos efeitos de magia que esta conjuração pôs vale o dobro, até 24 horas. */
+  prolongarMagia(actor, spell, ids) {
+    if (ids.has('extendedSpell')) {
+      for (const c of this.combatants) {
+        for (const k of c.conditions ?? []) {
+          if (k.magia?.id === spell.id && k.source === actor.id && Number.isFinite(k.rounds) && !k.prolongada) { k.rounds = Math.min(k.rounds * 2, 14400); k.prolongada = true; }
+        }
+      }
+    }
+    // PROLONGADA em magia de concentração: o limite de rodadas da concentração também dobra.
+    if (ids.has('extendedSpell') && actor.concentrating?.spellId === spell.id && Number.isFinite(actor.concentrating.rounds)) {
+      actor.concentrating.rounds = Math.min(actor.concentrating.rounds * 2, 14400);
     }
   }
 
@@ -9011,7 +9652,9 @@ export class Encounter {
       removeCondition(actor, 'santuario');
       this.say('magia', `${actor.name} conjura contra o inimigo e perde o Santuário.`);
     }
-    if (spell.castTime === 'action') actor.actionUsed = true;
+    // O SOPRO DO FIZBAN toma o lugar de UM golpe da ação de Atacar: os outros do Ataque Extra ficam guardados
+    if (spell.castTime === 'action' && spell.noLugarDeUmAtaque) this.gastarGolpeDoAtaque(actor);
+    else if (spell.castTime === 'action') actor.actionUsed = true;
     if (spell.castTime === 'bonus') actor.bonusUsed = true;
     if (check.gratis) gastarUsoGratis(this, actor, check.gratis);
     else if (spell.level > 0) actor.spellcasting.slots[slot] -= 1;
@@ -9026,7 +9669,7 @@ export class Encounter {
       if (extra) actor.resources[campo] -= extra;
     }
     // Contramágica: um inimigo atento pode interromper a magia antes de ela sair.
-    if (this.tentarContramagia(actor, spell, slot)) {
+    if (this.tentarContramagia(actor, spell, slot, !!check.gratis)) {
       this.afterAction(actor);
       this.checkEnd();
       return { ok: true, anulada: true };
@@ -9037,9 +9680,12 @@ export class Encounter {
     // A CD do Sopro do draconato é 8 + proficiência + CON, e não a de conjuração.
     // A CD de uma magia só (`spellcasting.cdPorMagia`, do bloco): a Teia do Cajado da Aranha do Nezznar tem CD 15, e as
     // outras magias dele, a 13 do conjurador.
-    const dc = spell.cdFixa ?? (spell.cdDeCon ? 8 + proficiencyBonus(actor.level ?? 1) + abilityMod(actor.abilities.con)
+    // O ITEM QUE CONJURA traz a CD e o ataque dele (a varinha: CD 15), quando o catálogo os dá
+    const dc = check.gratis?.cd ?? spell.cdFixa ?? (spell.cdDeCon ? 8 + proficiencyBonus(actor.level ?? 1) + abilityMod(actor.abilities.con)
       : (actor.spellcasting?.cdPorMagia?.[spell.id] ?? spellSaveDc(actor)));
-    const atkBonus = spellAttackBonus(actor);
+    const atkBonus = check.gratis?.ataque ?? spellAttackBonus(actor);
+    // para a explicação da rolagem dizer de onde veio a CD (a da varinha, e não 8 + proficiência + atributo)
+    this.cdDoItemEmCurso = check.gratis?.tipo === 'item' ? { quem: actor.id, cd: check.gratis.cd ?? null, ataque: check.gratis.ataque ?? null, nome: nomeDeId(check.gratis.item) } : null;
     const mod = spellMod(actor);
     // Truque cresce com o nível; magia de círculo, com o espaço gasto.
     const dano = dadosDaMagia(spell, { nivel: actor.level ?? 1, circulo: slot });
@@ -9506,6 +10152,8 @@ export class Encounter {
           removeCondition(target, id);
           // a podridão da múmia devolve o PV máximo que comeu
           if (id === 'podridaoDaMumia' && target.pvMaxDaPodridao) { target.maxHp += target.pvMaxDaPodridao; delete target.pvMaxDaPodridao; }
+          // a doença curada leva junto o que ela pôs (a cegueira da podridão da vista, o PV máximo do otyugh)
+          if (DOENCAS.includes(id)) curarDoencas(target);
           this.say('cura', spell.todas ? `${spell.name}: ${target.name} se livra de ${CONDITIONS[id].name.toLowerCase()}.` : `${target.name} não está mais ${CONDITIONS[id].name.toLowerCase()}.`);
           // Quem mantinha a maldição (concentração) a perde se não restar ninguém.
           if (spell.todas) this.soltouDaConcentracao(target, id);
@@ -9516,7 +10164,9 @@ export class Encounter {
       // Passo Nebuloso: some e aparece. Não passa pelas casas do meio, então
       // ninguém tem ataque de oportunidade.
       case 'teleporte': {
+        const origemDoPasso = { ...actor.pos };
         this.teleportarPelaMagia(actor, spell, point, dc, dano);
+        if (spell.depoisDoTeleporte) Raca.depoisDoTeleporte(this, actor, spell, origemDoPasso);
         // PASSO DISTANTE: a ação bônus de cada turno teleporta de novo, enquanto a concentração durar.
         if (spell.reuso) {
           (actor.magiasAtivas ??= {})[spell.id] = { circulo: slot, rodadas: spell.duracaoRodadas };
@@ -9898,7 +10548,7 @@ export class Encounter {
         : null;
       const efeito = spell.onFail ? `não fica ${CONDITIONS[spell.onFail.condition]?.name.toLowerCase()}` : null;
       const r = this.explicarResistencia(t, spell.save, dc, save, {
-        contra: `${spell.name} (CD ${dc} = ${actor.spellcasting?.cdPorMagia?.[spell.id] === dc ? 'a da própria magia, pelo bloco' : '8 + proficiência + atributo de conjuração'})`,
+        contra: `${spell.name} (CD ${dc} = ${this.cdDoItemEmCurso?.quem === actor.id && this.cdDoItemEmCurso.cd === dc ? `a do item (${this.cdDoItemEmCurso.nome})` : actor.spellcasting?.cdPorMagia?.[spell.id] === dc ? 'a da própria magia, pelo bloco' : '8 + proficiência + atributo de conjuração'})`,
         seSucesso: efeito ?? (metade ? 'metade do dano' : 'nenhum dano'),
         automatica: auto,
         motivoAutomatico: culpada ? (CONDITIONS[culpada.id]?.name ?? culpada.id) : null,
@@ -10367,6 +11017,8 @@ export class Encounter {
       if (!sv.success) this.pedregulhosVoltamAPedra(alvo, `${alvo.name} perdeu a concentração`);
     }
     this.vooDefensivo(alvo, fonte);
+    this.repreensaoObsessiva(alvo, fonte);
+    this.revideComGolpe(alvo, fonte);
     if (!fonte || fonte === alvo || fonte.dead || fonte.side === alvo.side || this.reagindo) return;
     const pode = this.podeReagirCom(alvo, 'repreensaoInfernal');
     if (!pode) return;
@@ -10431,6 +11083,8 @@ export class Encounter {
     Sub.iraDoGenio(this, atacante, alvo, extra);
     // OS OUTROS LIVROS: o Toque da Morte do clérigo, a Aura de Ódio, os Golpes Infundidos do draco, o Cutelo Elemental
     Sub.extrasDosLivros2(this, atacante, alvo, extra, { arma, ranged, tipo });
+    // AS RAÇAS DOS LIVROS: as transformações do aasimar, a Fúria dos Pequenos e o Ataque Surpresa (`racas-motor.js`)
+    Raca.extrasDaRaca(this, atacante, alvo, (rotulo, dados, t, magico) => extra(rotulo, dados, t ?? tipo, magico ?? true));
     if (!arma) { Sub.surtoDePoder(this, atacante, alvo); return; }
     const f = atacante.features ?? [];
     // MANOBRA armada (Mestre de Batalha): +dado de superioridade no dano e o efeito dela.
@@ -10798,7 +11452,9 @@ export class Encounter {
   ataqueMagico(actor, target, spell, dano, dc, { bonusDano = 0, slot = spell.level } = {}) {
     if (!this.passaPeloSantuario(actor, target)) return 0;
     this.acordaIndiferentes(target, actor);
-    const atkBonus = spellAttackBonus(actor);
+    // a magia que sai de um ITEM com ataque próprio (o diadema da explosão: +5) usa o dele
+    const doItem = this.cdDoItemEmCurso?.quem === actor.id && this.cdDoItemEmCurso.ataque != null ? this.cdDoItemEmCurso : null;
+    const atkBonus = doItem ? doItem.ataque : (spellAttackBonus(actor) ?? 0);
     // Infligir Ferimentos é de toque: ataque corpo a corpo, sem a
     // desvantagem de "inimigo adjacente" e sem cobertura.
     const mods = this.attackModifiers(actor, target, { ranged: !spell.melee });
@@ -10815,9 +11471,10 @@ export class Encounter {
     // Força. Nomear o atributo é o que torna visível por que o mago acerta
     // melhor que o clérigo com a mesma magia. Bênção e Perdição valem
     // aqui também: ataque de magia é jogada de ataque.
-    const extra = this.dadosDeAtaque(actor, atkBonus, [
+    const extra = this.dadosDeAtaque(actor, atkBonus, doItem || !actor.spellcasting ? [{ rotulo: doItem?.nome ?? 'sem conjuração', valor: atkBonus }] : [
       { rotulo: ABILITY_NAME[actor.spellcasting.ability], valor: abilityMod(actor.abilities[actor.spellcasting.ability]) },
       { rotulo: 'proficiência', valor: proficiencyBonus(actor.level) },
+      ...(actor.doItem?.ataqueMagia ? [{ rotulo: 'itens', valor: actor.doItem.ataqueMagia }] : []),
     ]);
     if (this.imagemDesvia(actor, target, extra.bonus, mods)) return 0;
     // CLARÃO DE AVISO e GOLPE GUIADO valem para qualquer jogada de ataque, a de magia inclusive.
@@ -10839,6 +11496,7 @@ export class Encounter {
     const autoCrit = atk.hit && conditionEffects(target).critWithinReach && distanceFt(actor.pos, target.pos) <= 5;
     let critical = atk.critical || autoCrit;
     if (atk.hit && critical && Sub.sentinelaNaPorta(this, target)) critical = false;
+    if (critical && target.doItem?.semCritico) critical = false;
     const explicacao = explicarModo(mods);
     const faltou = atk.hit || atk.fumble ? null : Math.max(0, ca - atk.total);
     const porPouco = faltou !== null && faltou >= 1 && faltou <= 2;
@@ -11012,7 +11670,7 @@ export class Encounter {
     const meta = this.metaAtiva;
     if (meta?.careful?.restantes > 0 && actor.side === meta.dono.side) {
       meta.careful.restantes -= 1;
-      return { natural: 20, total: 99, rolls: [20], mode: 'normal', dc, success: true, partes: [], vantagemPor: [], cuidadosa: true };
+      return { natural: 20, total: 99, rolls: [20], mode: 'normal', dc, success: true, partes: [], vantagemPor: [], cuidadosa: meta.careful.zera };
     }
     // TRAÇOS que dão vantagem CONTRA algo (Corajoso, Ancestral Feérico, Resiliência Anã, Esperteza Gnômica): só valem
     // quando quem chama diz do que vem o teste (`contra`). Sem contexto, nenhuma vale.
@@ -11113,6 +11771,7 @@ export class Encounter {
           partes.push({ rotulo: CONDITIONS[c.id].name.toLowerCase(), valor: -c.data.penalidade });
         }
       }
+      if (actor.doItem?.salvas) partes.push({ rotulo: 'itens', valor: actor.doItem.salvas });
     }
     // LASCA MENTAL: a próxima resistência perde 1d4, e a lasca sai com ela.
     if (hasCondition(actor, 'lascaMental')) {
@@ -11125,6 +11784,13 @@ export class Encounter {
       const r = roll(this.rng, dice);
       bonus += r.total;
       partes.push({ rotulo: `bênção ${dice}[${r.rolls.join('+')}]`, valor: r.total });
+    }
+    // o dado que só vale em algumas resistências (a Mente Solipsista: Inteligência e Sabedoria)
+    for (const { dados, habs } of fx.saveBonusDiceHab ?? []) {
+      if (!habs.includes(hab)) continue;
+      const r = roll(this.rng, dados);
+      bonus += r.total;
+      partes.push({ rotulo: `mente solipsista ${dados}[${r.rolls.join('+')}]`, valor: r.total });
     }
     for (const dice of fx.savePenaltyDice) {
       const r = roll(this.rng, dice);
@@ -11157,6 +11823,10 @@ export class Encounter {
       if (f) rolado = { ...rolado, total: rolado.total + f, success: rolado.total + f >= dc };
     }
     if (!rolado.success && Sub.deflexaoArcana(this, actor, dc - rolado.total, 4)) rolado = { ...rolado, total: rolado.total + 4, success: true };
+    // INDOMÁVEL (o campeão do Volo): a resistência que falhou se rola de novo
+    if (!rolado.success && Livro.indomavelMonstro(this, actor)) rolado = savingThrow(this.rng, bonus, dc, opts);
+    // SALVAR AS APARÊNCIAS (hobgoblin), na resistência que falhou
+    if (!rolado.success) { const s = Raca.salvarAsAparencias(this, actor, dc - rolado.total); if (s) rolado = { ...rolado, total: rolado.total + s, success: true }; }
     // PRESSÁGIO CÓSMICO (Estrelas) e o DRAGÃO da Forma Estrelada na concentração
     {
       const aj = Sub.pressagioCosmico(this, actor, rolado.success ? rolado.total - dc + 1 : dc - rolado.total, rolado.success);
@@ -11175,6 +11845,15 @@ export class Encounter {
     rolado = Sub.depoisDaResistenciaTce3(this, actor, hab, rolado, { contra, forcador, rerolar: () => savingThrow(this.rng, bonus, dc, opts) });
     rolado = Sub.depoisDaResistenciaDosLivros2(this, actor, hab, rolado, { forcador, rerolar: () => savingThrow(this.rng, bonus, dc, opts) });
     if (inspNaResistencia) Sub.depoisDaInspiracao(this, actor, inspNaResistencia, { sucesso: rolado.success, naResistencia: true });
+    // O ANEL DE EVASÃO: falhou em Destreza, a reação e uma carga do anel passam o teste
+    if (!rolado.success && hab === 'dex' && actor.doItem?.evasao && !actor.reactionUsed && !fx.incapacitated) {
+      const id = actor.doItem.evasao;
+      if (gastarCargaDoItem(actor, id)) {
+        actor.reactionUsed = true;
+        rolado = { ...rolado, success: true, evasaoDoItem: true };
+        this.say('reacao', `${actor.name} falharia, mas o ${nomeDeId(id).toLowerCase()} o tira do caminho (reação e uma carga; restam ${cargasDe(actor, id)}).`);
+      }
+    }
     // RESISTÊNCIA LENDÁRIA (o Ruxithid, 2/dia): o monstro que falha escolhe passar. Ele usa sempre — é para isso que ela
     // existe, e guardar para depois é o erro de mestre que o livro quer evitar.
     if (!rolado.success && actor.side !== 'party' && (actor.resources?.resistenciaLendaria ?? 0) > 0) {
@@ -11237,7 +11916,7 @@ export class Encounter {
 
     this.executarItem(actor, dados, target, { jogando });
 
-    if (gasto.acabou) this.say('recurso', `${actor.name} usou o último ${dados.name.toLowerCase()}.`);
+    if (gasto.acabou) this.say('recurso', `${actor.name} não tem mais ${dados.name.toLowerCase()}.`);
     else if (dados.usos) this.say('recurso', `${dados.name}: restam ${gasto.restam} usos.`);
 
     this.onEvent({ type: 'item', actor, item: dados, target });
@@ -11270,6 +11949,17 @@ export class Encounter {
 
   /** O que impede ESTE item neste alvo. `null` = pode. */
   vetoDeItem(actor, dados, target, { jogando = false } = {}) {
+    // O VENENO: untar é na própria arma; soprar o pó é na cara de quem está encostado
+    if (dados.consumivel === 'untar') {
+      if (target !== actor) return 'o veneno se passa na própria arma';
+      const mao = WEAPONS[actor.equippedWeapon];
+      if (!mao || !['cortante', 'perfurante'].includes(mao.type)) return 'o veneno pega em lâmina ou ponta: a arma da mão não corta nem fura';
+    }
+    if (dados.consumivel === 'soprar') {
+      if (target === actor) return 'soprar o pó em si mesmo, não';
+      if (!this.field.vizinhos(actor.pos, target.pos)) return `${target.name} está longe demais — o pó se sopra de perto`;
+      if ((this.over || this.explorando) && target.side !== actor.side && target.side !== 'neutro') return 'soprar veneno em inimigo é ação de combate';
+    }
     // JOGAR A POÇÃO (regra da casa). O livro não tem arremesso de poção de
     // cura: ele tem DAR a poção a outra criatura, que gasta uma ação e pede
     // alcance de toque. O arremesso é nosso, e cobra o preço de molhar em vez
@@ -11296,7 +11986,7 @@ export class Encounter {
       }
       return null;
     }
-    if (dados.consumivel === 'curar' || dados.consumivel === 'estabilizar') {
+    if (['curar', 'estabilizar', 'condicao', 'limpar'].includes(dados.consumivel)) {
       if (target !== actor && !this.field.vizinhos(actor.pos, target.pos)) {
         return `${target.name} está longe demais — é preciso estar encostado`;
       }
@@ -11386,11 +12076,36 @@ export class Encounter {
         this.say('cura', `${actor.name} ${bebe} um copo de conhaque anão: ${curado} PV, e um calor que desce até os pés.`);
         break;
       }
+      case 'untar': {
+        // O VENENO DE FERIDA na lâmina (o básico, o de serpente, o drow, o de serpe, o do verme púrpura): um minuto, e o
+        // próximo acerto de corte ou ponta o leva (`aplicarVeneno`, depois do golpe)
+        addCondition(actor, 'armaUntada', { rounds: 10, data: { veneno: dados.veneno, nome: dados.name } });
+        this.say('recurso', `${actor.name} passa ${dados.name.toLowerCase()} na lâmina: o próximo acerto o leva (um minuto).`);
+        break;
+      }
+      case 'soprar': {
+        // O VENENO DE INALAR: o pó soprado na cara de quem está encostado (o cubo de 1,5 m do livro é a casa dele)
+        this.say('ataque', `${actor.name} sopra ${dados.name.toLowerCase()} na cara de ${target.name}.`);
+        this.aplicarVeneno(target, dados.veneno, dados.name, actor);
+        break;
+      }
+      case 'limpar': {
+        // A POÇÃO QUE TIRA CONDIÇÕES (o elixir da saúde: cego, surdo, paralisado e envenenado)
+        const tiradas = (dados.remove ?? []).filter((id) => hasCondition(target, id));
+        for (const id of tiradas) removeCondition(target, id);
+        // o elixir da saúde cura também a doença
+        if (dados.curaDoenca) tiradas.push(...curarDoencas(target));
+        const quem = target === actor ? 'bebe' : `dá ${dados.name.toLowerCase()} a ${target.name}:`;
+        this.say('cura', `${actor.name} ${quem} ${dados.name.toLowerCase()}${tiradas.length ? `: sai ${tiradas.map((id) => CONDITIONS[id]?.name.toLowerCase() ?? id).join(', ')}` : ', e nada muda'}.`);
+        break;
+      }
       case 'condicao': {
         // A POÇÃO QUE DÁ UMA CONDIÇÃO (a de invulnerabilidade: resistência a todo dano por 1 minuto).
-        addCondition(target, dados.condicao, { rounds: dados.rodadas ?? 10 });
+        // `dadosDaCondicao` é o que a condição guarda (a poção de resistência: o tipo)
+        addCondition(target, dados.condicao, { rounds: dados.rodadas ?? 10, ...(dados.dadosDaCondicao ? { data: { ...dados.dadosDaCondicao } } : {}) });
         const quem = target === actor ? 'bebe' : `dá ${dados.name.toLowerCase()} a ${target.name}:`;
-        this.say('cura', `${actor.name} ${quem} ${dados.name.toLowerCase()}: ${CONDITIONS[dados.condicao]?.name.toLowerCase() ?? dados.condicao}.`);
+        const efeito = dados.dadosDaCondicao?.tipo ? `resiste a ${dados.dadosDaCondicao.tipo}` : (CONDITIONS[dados.condicao]?.name.toLowerCase() ?? dados.condicao);
+        this.say('cura', `${actor.name} ${quem} ${dados.name.toLowerCase()}: ${efeito}.`);
         break;
       }
       case 'restaurar': {
@@ -11399,6 +12114,8 @@ export class Encounter {
         const degraus = nivelDeExaustao(target);
         mudarExaustao(target, -6);
         removeCondition(target, 'envenenado');
+        // ... e a doença (o livro: cura qualquer doença)
+        curarDoencas(target);
         target.maldaAgua = false;
         target.dadosDeVidaCheios = true;
         const quem = target === actor ? 'bebe' : `dá ${dados.name.toLowerCase()} a ${target.name}:`;
@@ -11428,7 +12145,7 @@ export class Encounter {
         break;
       }
       default:
-        // `beneficio` e `untar` estão no catálogo e ainda não têm efeito. Dizer
+        // o que o catálogo declara e o motor ainda não faz. Dizer
         // isso é melhor que gastar a ação em silêncio e o jogador achar que
         // funcionou.
         this.say('aviso', `${dados.name} ainda não tem efeito implementado.`);
@@ -11587,6 +12304,8 @@ export class Encounter {
     const d = this.disputaDeAtletismo(actor, target);
     if (d.venceu) {
       addCondition(target, 'agarrado', { rounds: Infinity, source: actor.id, data: { escape: 10 + skillBonus(actor, 'atletismo'), disputa: true } });
+      // PELE VENENOSA (o grung): agarrar é tocar a pele
+      if (target.peleVenenosa) Livro.peleVenenosa(this, actor, target);
       this.say('condicao', `${actor.name} agarra ${target.name}.`, d.conta);
       // ARMADURA DO FURIOSO: os espinhos entram em quem foi agarrado
       Sub.espinhosNoAgarrao(this, actor, target);
@@ -11644,6 +12363,13 @@ export class Encounter {
       out.push({ id: 'investidaTalento', rotulo: `Investida${(actor.retaFinal?.turno === k && actor.retaFinal.casas >= 2) ? ' (+5 de dano)' : ''}`,
         motivo: bonus ?? (actor.disparouEm !== k ? 'só depois da Disparada' : null) });
     }
+    // a CIMITARRA DA VELOCIDADE sintonizada e na mão: um golpe com ela como ação bônus em cada turno
+    {
+      const w = WEAPONS[actor.equippedWeapon];
+      if (w?.poder === 'velocidade' && (!w.sintonia || (actor.sintonizados ?? []).includes(w.id))) {
+        out.push({ id: 'golpeDaVelocidade', rotulo: `Golpe da ${w.name.toLowerCase()} (ação bônus)`, motivo: bonus ?? (!perto ? 'precisa estar encostado' : null) });
+      }
+    }
     if (temTalento(actor, 'brigaoPhb')) {
       out.push({ id: 'agarrarDoBrigao', rotulo: 'Agarrar (Brigão de Taverna)',
         motivo: bonus ?? (actor.socouEm?.turno !== k || actor.socouEm.alvo !== target?.id ? 'só depois de acertar este com um soco' : null) });
@@ -11662,7 +12388,20 @@ export class Encounter {
         const liga = modo === 'ligar' ? true : modo === 'desligar' ? false : !actor.desviaOlhar;
         actor.desviaOlhar = liga;
         if (!liga) removeCondition(actor, 'olhosDesviados');
-        this.say('recurso', liga ? `${actor.name} decide não olhar para a medusa.` : `${actor.name} volta a olhar de frente.`);
+        this.say('recurso', liga ? `${actor.name} decide não olhar nos olhos de quem tem o olhar.` : `${actor.name} volta a olhar de frente.`);
+        return true;
+      }
+      case 'cristalMental': {
+        // CRISTAL MENTAL (o Obelisco): interruptor de graça, um cristal por vez (o livro deixa um só por magia). `modo` é o id
+        // do cristal a armar, ou 'desligar'. Armado, vale na próxima magia de uma ação a que ele sirva, e então se apaga.
+        if (modo === 'desligar') {
+          if (actor.cristalArmado) this.say('recurso', `${actor.name} guarda o ${nomeDeId(actor.cristalArmado)}.`);
+          actor.cristalArmado = null;
+          return true;
+        }
+        if (!itemDeId(modo)?.dados?.metamagia || !quantosNaMochila(actor, modo)) return false;
+        actor.cristalArmado = modo;
+        this.say('recurso', `${actor.name} segura o ${nomeDeId(modo)}: a próxima magia de uma ação que ele servir sai moldada.`);
         return true;
       }
       case 'visaoDeDumathoin': {
@@ -11734,11 +12473,18 @@ export class Encounter {
         if (['morto-vivo', 'constructo'].includes(alvo.tipo)) return false;
         if ((alvo.conditions ?? []).some((k) => CONDITIONS[k.id]?.semCura)) return false;
         if (modo === 'veneno') {
-          if (!hasCondition(alvo, 'envenenado') || actor.resources.layOnHands < 5) return false;
+          // 5 PV da reserva tiram um veneno ou uma doença (o livro: cada um custa 5)
+          const doenca = DOENCAS.find((id) => hasCondition(alvo, id));
+          if ((!hasCondition(alvo, 'envenenado') && !doenca) || actor.resources.layOnHands < 5) return false;
           if (!semTurno) actor.actionUsed = true;
           actor.resources.layOnHands -= 5;
-          removeCondition(alvo, 'envenenado');
-          this.say('recurso', `${actor.name} impõe as mãos sobre ${alvo.name} e tira o veneno (5 PV da reserva; restam ${actor.resources.layOnHands}).`);
+          if (hasCondition(alvo, 'envenenado')) {
+            removeCondition(alvo, 'envenenado');
+            this.say('recurso', `${actor.name} impõe as mãos sobre ${alvo.name} e tira o veneno (5 PV da reserva; restam ${actor.resources.layOnHands}).`);
+          } else {
+            curarDoencas(alvo);
+            this.say('recurso', `${actor.name} impõe as mãos sobre ${alvo.name} e tira a doença (5 PV da reserva; restam ${actor.resources.layOnHands}).`);
+          }
           return true;
         }
         const falta = maxHpEfetivo(alvo) - alvo.hp;
@@ -12176,6 +12922,7 @@ export class Encounter {
       case 'suddenStrike': return Sub.golpeSubito(this, actor, target);
       case 'insightfulFighting': return Sub.combatePerspicaz(this, actor, target);
       case 'masterOfTactics': return Sub.ajudaDoMentor(this, actor, target);
+      case 'ajudaDoLobo': return Sub.ajudaDoLobo(this, actor, target);
       case 'arcaneShot': {
         // DISPARO ARCANO: interruptor de graça, como as manobras — qual opção sai no próximo acerto de arco do turno.
         if (!actor.features?.includes(modo) || !Sub.NOMES_DO_DISPARO[modo]) return false;
@@ -12755,7 +13502,7 @@ export class Encounter {
         return true;
       }
       // ---- os golpes de ação bônus dos talentos do Livro do Jogador (`golpesDeTalento` diz quando valem) ----
-      case 'golpeExtraGWM': case 'golpeDaHaste': case 'bestaDeMaoBonus': case 'empurraoDoEscudo': case 'investidaTalento': case 'agarrarDoBrigao': {
+      case 'golpeExtraGWM': case 'golpeDaHaste': case 'bestaDeMaoBonus': case 'empurraoDoEscudo': case 'investidaTalento': case 'agarrarDoBrigao': case 'golpeDaVelocidade': {
         const op = this.golpesDeTalento(actor, target).find((o) => o.id === featureId);
         if (!op || op.motivo || !target || target.dead) return false;
         if (featureId === 'empurraoDoEscudo') return this.empurrarAcao(actor, target, { modo: modo === 'afastar' ? 'afastar' : 'derrubar', bonus: true }).ok;
@@ -12786,7 +13533,8 @@ export class Encounter {
         const reta = featureId === 'investidaTalento' && actor.retaFinal?.turno === this.turnoKey() && actor.retaFinal.casas >= 2;
         this.say('recurso', featureId === 'golpeExtraGWM' ? `${actor.name} emenda outro golpe (Mestre em Armas Grandes).`
           : featureId === 'bestaDeMaoBonus' ? `${actor.name} dispara a besta de mão (Especialista em Besta).`
-            : `${actor.name} chega correndo e golpeia (Investida${reta ? ', +5 de dano' : ''}).`);
+            : featureId === 'golpeDaVelocidade' ? `${actor.name} golpeia de novo, rápido demais para o olho (${WEAPONS[arma]?.name ?? 'a lâmina'}).`
+              : `${actor.name} chega correndo e golpeia (Investida${reta ? ', +5 de dano' : ''}).`);
         this.resolveAttack(actor, target, { weaponId: arma, investidaTalento: reta });
         return true;
       }

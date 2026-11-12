@@ -89,6 +89,7 @@ export const HEROIS = [
     racial: { pvPorNivel: 1, resistencias: ['veneno'] },
     antecedente: 'Acólito',
     origem: 'Anão de um clã mineiro das montanhas, curandeiro do santuário de Berronar.',
+    divindade: 'Berronar Truesilver', divindadeId: 'deus:berronarTruesilver',
     historia: [
       'Brenn passou a juventude na enfermaria do clã, entre ossos quebrados e pulmões cheios de pó de pedra. Aprendeu as orações de cura de Berronar junto com o jeito certo de imobilizar uma perna, e não sabe dizer qual das duas coisas salvou mais gente.',
       'Quando uma galeria desabou, ele tirou onze mineiros dos escombros e chegou tarde para outros três. Os anciões chamaram aquilo de milagre; ele chamou de três nomes. Saiu das montanhas para levar cura a quem não tem um santuário por perto.',

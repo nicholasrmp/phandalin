@@ -1152,3 +1152,119 @@ grupo anda e o console fica limpo. A colagem com o livro é 0.
 **Fora, dito**: a Telecinésia do Qunbraxel (o jogo não tem a magia). As gaiolas de G6 (500 lb cada) ficam onde estão;
 só a gaiola montada de G3 se leva. A Vakketar só sai por um minuto: aqui, a cerca dela é a prisão, o mostruário e o
 corredor. A conversa com ela é só flavor: ela sempre acaba atacando, como no livro.
+
+### Os outros bestiários: Volo, Mordenkainen, Fizban, Bigby e Acquisitions Inc. (2026-11-12)
+
+O mesmo caminho do MM, para os cinco seguintes na ordem do dono. O dado e a lore vieram do espelho
+(`5etools-mirror-3/5etools-2014-src`) para `_referencias/5etools/bestiary/`; o texto em pt-br, pela API de lotes
+(`traduzir-bestiario.mjs <livro> --go`); os números, pelo importador; as fichas, por `baixar-fichas.py --go`.
+
+| Livro | Criaturas | Tradução | Pendente no motor |
+|---|---|---|---|
+| Volo (VGM) | 136 (e 7 cópias de outro bloco, que o importador pula) | US$ 1,98 | 106 traços, 27 ações, 8 reações, 5 com lendárias, 11 com magia que falta |
+| Mordenkainen (MTF) | 140 | US$ 2,18 | 106 traços, 38 ações, 15 reações, 23 com lendárias, 17 com magia que falta |
+| Fizban (FTD) | 85 | US$ 1,46 | 57 traços, 9 ações, 7 reações, 35 com lendárias, 5 com magia que falta |
+| Bigby (BGG) | 72 | US$ 1,06 | 34 traços, 14 ações, 15 reações, 5 com magia que falta |
+| Acquisitions Inc. (AI) | 22 | US$ 0,32 | 18 traços, 2 ações, 5 reações, 2 com magia que falta |
+| **Total** | **455** | **US$ 7,01** (0,0154 por criatura, como no MM) | a fila de cada livro em `bestiario/<livro>-pendente.json` |
+
+O jogo passou de 535 para 990 criaturas, todas com a ficha (821 dos livros em `public/fichas`). A **varredura**
+(`varrer-bestiario.mjs <livro>`, cada criatura uma luta contra o grupo do nível do ND) não achou quebra nenhuma, e oito
+lutas passaram de 30 rodadas. Delas, uma era defeito e uma era frase errada; as outras são impasse do simulador: o
+recuperador é imune a arma comum, e o grupo simulado não tem outra; o Juiblex e o marut são lentos de matar; e o
+Titivilus enfeitiça e amedronta quem poderia atacá-lo.
+
+**O que se consertou para eles entrarem:**
+- **Um livro apagava outro em silêncio.** Os ids "já usados" só contavam os blocos feitos à mão; o mesmo nome em pt-br em
+  dois livros faria o segundo apagar o primeiro no `MONSTERS`. Agora os ids dos outros livros importados contam, e o
+  livro que entra depois ganha o sufixo (só a vaca do Volo caiu nisso: `vacaVgm`, porque o capítulo 6 tem a dele). E a
+  criatura cujo nome no livro já é o `nomeOriginal` de um bloco feito à mão fica de fora (nenhuma, nestes cinco; o MM
+  fica fora da regra, porque o `ja-temos.json` dele foi casado à mão).
+- **O couraçado astral engolia quem não devia, e a luta não acabava.** A mordida dele só engole quem ela derruba a 0 PV ou
+  quem já está incapacitado, e até criatura Enorme; o importador perdeu as duas coisas (`engole.exige`, o tamanho escrito
+  "of Huge size or smaller"). E a MASMORRA SEMIPLANAR (`masmorraSemiplanar`, `livro-motor.js naMasmorra`): quem ele engole
+  não o fere de dentro e só sai com magia de viagem entre planos; o grupo todo lá dentro é derrota (`combat.js checkEnd`).
+- **A regeneração do vegepigmeu dizia "sem fogo ou ácido"**, a frase do troll. O bloqueio já estava certo (frio, fogo e
+  necrótico); a frase agora sai do bloco.
+- **Três fichas não baixavam**: o espelho grava o arquivo sem acento e com o "æ" aberto (o Rothé é `Rothe.webp`, o Mörgæn
+  é `Morgaen.webp`).
+- "Unusual Nature" (não precisa de ar, comida, bebida nem sono), em 22 criaturas, é só descrição: foi para o `SABOR`.
+
+**A fila do motor é a próxima frente**, como a do MM foi: 378 traços, ações e reações diferentes, e 63 criaturas com
+ações lendárias que as catorze formas do motor não cobrem (quase todas os dragões do Fizban e os lordes demônios do
+Mordenkainen). As magias que faltam aos conjuradores destes livros são poucas e de fora da luta (Controlar a Água em 9,
+Símbolo em 6, Controlar o Clima em 5).
+
+### A fila dos outros bestiários, primeira rodada: as ações lendárias (2026-11-12)
+
+As criaturas com ação lendária sem motor caíram de **63 para 18**. Quase tudo era o importador não reconhecendo a
+frase de uma forma que o motor já fazia:
+- **o custo**: "Cost 2 Actions" (o Bael) e "(2 Actions)" (o comandante githyanki) viravam custo 1;
+- **o golpe**: "attacks once with his mace", "makes one Claw or Tail attack" (a primeira das duas que o bloco tem), "makes
+  one attack, either with its demonic weapon", "makes a melee attack with Heartcleaver", "uses Extract Brain" sem o "its",
+  e a ação do bloco achada por parte do nome ("acid lash" é a Lash do Juiblex);
+- **a magia**: "uses Psychic Step or Spellcasting" (os dragões de gema); "expends a spell slot to cast a 1st-, 2nd-, or
+  3rd-level spell, 1 legendary action per level" vira três opções de custo 1 a 3, cada uma até o círculo do custo
+  (`magiaLendaria` ganhou o teto de círculo); e a magia COM NOME ("casts acid splash", "casts crown of madness or
+  dissonant whispers"), só ela, pelas magias que o jogo tem (`magias-en.json`);
+- **o alvo único** escrito "at a creature that it can see", "around a creature", "targets one enemy";
+- **o teleporte** que é uma ação do próprio bloco ("uses his Teleport action"), e o Mover do ki-rin, que o livro escreve
+  "its half its speed".
+
+E três formas novas no motor (`livro-motor.js escolherLendaria`): o **golpe que só existe como ação lendária** (a cauda
+do Demogorgon, o toque do Juiblex), que entra no bloco só enquanto a ação dura; a **linha** com teste (o Raio Psíquico
+do grande wyrm de ametista, 27 m por 3 m), mirada no inimigo que põe mais gente dentro; e as **lanças** que acertam sem
+teste, cada uma num alvo (a Lança Arcana do grande wyrm negro). O nome da opção perdeu o "(Custa 2 Ações)" que a tradução
+deixava (no MM também). **Um tropeço meu, que a prova pegou**: a área de linha do motor se chama `'linha'`, e com `'line'`
+a conta caía no cubo e devolvia 168 casas. As formas novas também precisavam entrar na ordem do `escolherLendaria`.
+Provas em `testes-bestiario.mjs` (59).
+
+**O que sobra** é cauda longa de uma criatura cada: comandar um aliado a atacar (o senhor da guerra, a matriarca
+drow), o elo psíquico do cérebro ancião, a tempestade em que o quintessente se desfaz, o casco do zaratan, os mortos que
+o senhor das caveiras chama, a gravidade virada da anarca githzerai. E a fila de traços, ações e reações, que é a próxima
+rodada: 376 itens diferentes em 439 casos, só 36 em mais de uma criatura.
+
+### A fila dos outros bestiários, segunda rodada: traços e reações (2026-11-12)
+
+A fila de traços caiu de **299 para 134** e a de reações de **50 para 36**, em quatro caminhos:
+- **Só descrição** (o `SABOR`): o que só habilita uma ação que o bloco já tem (as runas dos gigantes do Bigby), o que já
+  está no número ("included in its attacks", a CA que soma Inteligência ou Carisma), e o que é de fora da luta (sentidos a
+  quilômetros, telepatia, rastro, memória, o que se escolhe ao invocar). Uns 90 nomes.
+- **O que o motor já faz, com outro nome**: as camuflagens de planta e de mata, o Desengajar como ação bônus do xvart e
+  do espadachim (a Ação Astuta), a resistência a encanto e a sono do neogi (a Ascendência Feérica), a sensibilidade ao
+  sol do bodak, "não pode ser surpreendido", a carapaça que resiste a magia, a forma líquida e as explosões ao morrer com
+  outros nomes (o Clarão da Morte do sombrio, a Morte Ígnea da fênix, o Portador Corrompido do orc de Yurtrus).
+- **As AURAS lidas pela FRASE** e não pelo nome: "quem começa o turno a até X faz o teste ou sofre/fica" e "no começo do
+  turno dele, cada criatura a até X". Entraram umas trinta: os eladrins, o olhar do bodak e o atordoante do gauth (como
+  `olhar`, que se evita desviando os olhos), o Juiblex, o andarilho noturno, os rutterkins. A primeira versão ficou ANTES
+  das regras com nome e roubou o Olhar Confuso do brutamonte do MM; e lia "se o bodak não estiver incapacitado" e "a menos
+  que seja imune a amedrontado" como efeito. Hoje ela é a última regra, pula o `SABOR`, e tira essas frases antes.
+- **Motor novo**: o **DESPERTAR** dos grandes wyrms do Fizban, dos aspectos de Tiamat e de Bahamut e da tartaruga-dragão
+  anciã (a primeira vez que cairia a 0 PV, volta com 400 a 500 PV, o sopro recarregado e as resistências lendárias de
+  volta); e as **REAÇÕES** de sempre, lidas pela frase (`reacaoLida`): a Esquiva Sobrenatural (a `uncannyDodge` do herói),
+  a CA a mais contra um ataque com o bônus do bloco (o Escudo Mágico, a Armadura de Gelo: o `aparar` ganhou `apararBonus`
+  e `apararTudo`), o revide com teste em quem fere ou em área (a `repreensao` da ocular ganhou condição, empurrão, área e
+  o dano sem metade) e o revide com golpe, em quem fere ou em alguém ao acaso no alcance (`revide`).
+
+Provas em `testes-bestiario.mjs` (61). **O que sobra** (134 traços, 63 ações, 36 reações, 18 lendárias) é quase todo de uma
+criatura só: ação bônus de teleporte e de invisibilidade, ataques extras uma vez por turno, a explosão do oblex, o
+caracol que perde tentáculos, os berços dos rebentos dos gigantes que viram outra criatura ao cair.
+
+### A fila dos outros bestiários, terceira rodada: as ações (2026-11-12)
+
+As ações eram a parte mais variada da fila: quase cada uma é de uma criatura só, e muitas são regra que o jogo não tem
+(chamar servos, possuir corpos, a gravidade virada, o depósito de cérebros). O que se repetia era a FRASE de uma forma que
+o motor já faz, e a leitura das ações especiais (`acaoEspecial`) e do golpe passou a aceitar:
+- a linha escrita "in a line 60 feet long and 10 feet wide" (a Lança de Relâmpago da armanita, o Jato de Chamas do
+  déspota duergar, que viram SOPRO em linha com a largura);
+- "each enemy within 30 feet" (o Aspecto Aterrador do cavaleiro negro, o Uivo Funesto do cão yeth) e "Creatures within
+  30 feet of the deep scion" (o Grito Psíquico);
+- "targets one or two creatures" (o Envenenar Mente do amnizu, dois alvos);
+- "until the end of the deep scion's next turn", com o nome de duas palavras (o grito durava um minuto);
+- o golpe de "damage of a type chosen by the dracohydra", que não dizia o tipo: vira energia.
+
+Um tropeço, que a comparação com o MM pegou: "in its space" (o toque da névoa vampírica) passou a valer como área de
+1,5 m e encolheu uma área do MM que também dizia "within 60 feet"; hoje só vale quando a frase não traz alcance.
+
+A fila ficou em **134 traços, 82 ações** (24 do Volo, 34 do Mordenkainen, 8 do Fizban, 14 do Bigby, 2 do Acquisitions),
+**36 reações e 18 lendárias**, quase tudo de uma criatura só. Provas em `testes-bestiario.mjs` (62).

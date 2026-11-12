@@ -1,0 +1,150 @@
+[
+ {
+  "criatura": "carnicalDasColinas",
+  "reacao": "Noxious Wound"
+ },
+ {
+  "criatura": "giganteDasNuvensApostadorDoDestino",
+  "reacao": "Negate Spell"
+ },
+ {
+  "criatura": "giganteDasNuvensApostadorDoDestino",
+  "magias": [
+   "dream"
+  ]
+ },
+ {
+  "criatura": "colossoDePoeira",
+  "acao": "Stinging Dust"
+ },
+ {
+  "criatura": "fensirDevorador",
+  "traco": "Death Curse"
+ },
+ {
+  "criatura": "fensirEscaramucador",
+  "acao": "Mud to Stone"
+ },
+ {
+  "criatura": "mortalhaIgnea",
+  "traco": "Fire Blood"
+ },
+ {
+  "criatura": "fomorianoRastejadorDasProfundezas",
+  "traco": "Crawling Stance"
+ },
+ {
+  "criatura": "moldadorDeGeloGiganteDoGelo",
+  "acao": "Ice Wolves"
+ },
+ {
+  "criatura": "lamentoGelido",
+  "reacao": "Blizzard Escape"
+ },
+ {
+  "criatura": "gargantua",
+  "reacao": "Spell Mimicry"
+ },
+ {
+  "criatura": "gansoGigante",
+  "acao": "Thunderous Honk"
+ },
+ {
+  "criatura": "carneiroGigante",
+  "reacao": "Absorbent Fleece"
+ },
+ {
+  "criatura": "carrapatoGigante",
+  "acao": "Blood Drain"
+ },
+ {
+  "criatura": "gatoSorridente",
+  "acao": "Fade Away"
+ },
+ {
+  "criatura": "giganteDaColinaAvalanche",
+  "magias": [
+   "stone shape"
+  ]
+ },
+ {
+  "criatura": "colossoRelampago",
+  "traco": "Lightning Form"
+ },
+ {
+  "criatura": "bocarraDeYeenoghu",
+  "acao": "Gorging Charge"
+ },
+ {
+  "criatura": "brutamontesDeLama",
+  "traco": "Sticky Mud"
+ },
+ {
+  "criatura": "colossoDeGeada",
+  "acao": "Trail of Frost"
+ },
+ {
+  "criatura": "colossoRunico",
+  "reacao": "Spell Reflection"
+ },
+ {
+  "criatura": "rebentoDeGrolantor",
+  "reacao": "Feed"
+ },
+ {
+  "criatura": "rebentoDeSkoraeus",
+  "acao": "Entombing Grasp"
+ },
+ {
+  "criatura": "nuvemEspectral",
+  "traco": "Blurred Form"
+ },
+ {
+  "criatura": "perseguidorDeBaphomet",
+  "magias": [
+   "stone shape"
+  ]
+ },
+ {
+  "criatura": "giganteDePedraDaTerraMaligna",
+  "reacao": "Unyielding"
+ },
+ {
+  "criatura": "giganteDePedraFalarrocha",
+  "acao": "Prismatic Rays"
+ },
+ {
+  "criatura": "giganteDePedraFalarrocha",
+  "acao": "1-2: Blazing Red"
+ },
+ {
+  "criatura": "giganteDePedraFalarrocha",
+  "acao": "3-4: Dreadful Blue"
+ },
+ {
+  "criatura": "giganteDePedraFalarrocha",
+  "acao": "5-6: Sapping Green"
+ },
+ {
+  "criatura": "giganteDasTempestadesInvocadorDaTormenta",
+  "acao": "Tempest Call"
+ },
+ {
+  "criatura": "giganteDasTempestadesInvocadorDaTormenta",
+  "magias": [
+   "control water",
+   "control weather"
+  ]
+ },
+ {
+  "criatura": "arautoDaTempestade",
+  "magias": [
+   "control water",
+   "control weather"
+  ]
+ },
+ {
+  "criatura": "trollMutante",
+  "traco": "Psychic Rebuke"
+ }
+]

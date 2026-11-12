@@ -1,0 +1,2938 @@
+{
+ "Firbolg Primeval Warden": {
+  "nome": "Guardião Primordial Firbolg",
+  "acNote": "gibão de peles e escudo",
+  "blurb": "Combate com lança envolta em chamas ou dispara lanças de fogo a longa distância, e pode sumir invisível para se reposicionar. Também prende inimigos com vinhas mágicas.",
+  "lore": "Os guardiões primordiais são druidas firbolg que zelam pelas florestas antigas e seus segredos. Costumam viver isolados em bosques remotos, conversando com plantas e animais para saber o que se passa em seus domínios. Preferem evitar conflitos e se escondem dos forasteiros, mas defendem a natureza com fogo e magia quando ela é ameaçada.",
+  "tracos": [],
+  "acoes": [
+   {
+    "en": "Multiattack",
+    "nome": "Ataques Múltiplos",
+    "desc": "Faz dois ataques, escolhendo entre Lança e Lança de Fogo."
+   },
+   {
+    "en": "Spear",
+    "nome": "Lança",
+    "desc": "Ataque corpo a corpo ou à distância, +5 para acertar, alcance 1,5 m ou distância 6/18 m. Causa 6 (1d6+3) de dano perfurante mais 9 (2d8) de dano de fogo."
+   },
+   {
+    "en": "Fire Lance",
+    "nome": "Lança de Fogo",
+    "desc": "Ataque mágico à distância, +5 para acertar, distância 36 m. Causa 14 (2d10+3) de dano de fogo."
+   },
+   {
+    "en": "Spellcasting",
+    "nome": "Conjuração",
+    "desc": "Usa Sabedoria (CD 13). À vontade: constrição, falar com animais, falar com plantas. 1 vez por dia cada: comunhão com a natureza (como ação), detectar magia, disfarçar-se."
+   }
+  ],
+  "reacoes": [],
+  "lendarias": []
+ },
+ "Storm Crab": {
+  "nome": "Caranguejo da Tempestade",
+  "acNote": "armadura natural",
+  "blurb": "Agarra até quatro alvos com as pinças enquanto o ferrão envenena e paralisa; um jato de água em linha de 45 m derruba e empurra grupos inteiros.",
+  "lore": "Crustáceo gigantesco com quatro pinças enormes e um ferrão venenoso, igualmente à vontade no fundo do mar e na praia. Segundo os gigantes, foi criado por Stronmaus ou por um de seus filhos nos tempos de um antigo império, para enfrentar tartarugas-dragão, dragões de bronze e outras ameaças marinhas. Hoje costuma vigiar as fortalezas submersas dos gigantes das tempestades e também as ruínas que eles deixaram para trás. É feroz com qualquer intruso e entende a língua dos gigantes, embora não consiga falar.",
+  "tracos": [
+   {
+    "en": "Amphibious",
+    "nome": "Anfíbio",
+    "desc": "Respira tanto ar quanto água."
+   }
+  ],
+  "acoes": [
+   {
+    "en": "Multiattack",
+    "nome": "Ataques Múltiplos",
+    "desc": "Faz dois ataques de Pinça e um de Ferrão."
+   }
+  ],
+  "reacoes": [],
+  "lendarias": []
+ },
+ "Bag Jelly": {
+  "nome": "Geleia de Saco",
+  "acNote": "",
+  "blurb": "Lenta e grudenta, ataca duas vezes com pseudópodes ácidos que prendem a vítima, e escapar dela é difícil. Resiste a ácido e a golpes de concussão.",
+  "lore": "Gosma de cor verde-oliva aparentada aos limos que limpam masmorras, ela costuma morar dentro dos sacos que os gigantes carregam. Ali se alimenta de qualquer resto orgânico que encontre. Seu corpo aguenta bem ser esmagado, o que a mantém viva quando o gigante arremessa o saco ou senta em cima dele. Alguns gigantes evitam essas criaturas com limpeza rigorosa, mas outros as deixam ali de propósito como armadilha contra ladrões, que ficam colados e fazem barulho suficiente para acordar o dono.",
+  "tracos": [
+   {
+    "en": "Amorphous",
+    "nome": "Amorfa",
+    "desc": "Consegue passar por frestas de apenas 2,5 cm de largura sem precisar se espremer."
+   }
+  ],
+  "acoes": [
+   {
+    "en": "Multiattack",
+    "nome": "Ataques Múltiplos",
+    "desc": "Faz dois ataques de Pseudópode."
+   }
+  ],
+  "reacoes": [],
+  "lendarias": []
+ },
+ "Runic Colossus": {
+  "nome": "Colosso Rúnico",
+  "acNote": "armadura natural",
+  "blurb": "Um gigante de pedra e metal que esmaga com pancadas de 6 m de alcance, prende vítimas sob o pé e dispara um raio de energia arcana em linha enorme. Ainda pode revidar conjuradores, anulando magias.",
+  "lore": "Lendas gigantes contam que o primeiro colosso rúnico nasceu da união de várias linhagens de gigantes contra um dragão terrível: uns talharam a pedra, outros forjaram juntas e placas de metal, e os gigantes das tempestades gravaram as runas que o animam. Com cerca de 9 m de altura, é um guardião incansável. Vê qualquer criatura que não seja gigante como ameaça e a ataca assim que a avista, salvo ordens contrárias. O segredo de sua criação se perdeu, mas talvez ainda repouse em ruínas de antigos impérios gigantes.",
+  "tracos": [
+   {
+    "en": "Immutable Form",
+    "nome": "Forma Imutável",
+    "desc": "É imune a qualquer magia ou efeito que alteraria sua forma."
+   },
+   {
+    "en": "Magic Resistance",
+    "nome": "Resistência à Magia",
+    "desc": "Tem vantagem em testes de resistência contra magias e outros efeitos mágicos."
+   },
+   {
+    "en": "Siege Monster",
+    "nome": "Monstro de Cerco",
+    "desc": "Causa dano dobrado a objetos e estruturas."
+   }
+  ],
+  "acoes": [
+   {
+    "en": "Multiattack",
+    "nome": "Ataques Múltiplos",
+    "desc": "Faz dois ataques de Pancada e em seguida usa Pisotear."
+   },
+   {
+    "en": "Slam",
+    "nome": "Pancada",
+    "desc": "Ataque corpo a corpo, +14 para acertar, alcance 6 m. Causa 26 (3d12 + 7) de dano de concussão."
+   },
+   {
+    "en": "Stomp",
+    "nome": "Pisotear",
+    "desc": "Ataque corpo a corpo, +14, alcance 6 m: 29 (4d10 + 7) de concussão. Alvo Enorme ou menor faz teste de resistência de Destreza CD 22 ou fica caído e contido até o colosso se mover ou pisotear de novo. Com uma ação, o alvo ou alguém a até 1,5 m dele pode fazer teste de Força CD 22 para libertá-lo, movendo-o para um espaço livre a até 1,5 m do colosso."
+   },
+   {
+    "en": "Arcane Beam",
+    "nome": "Raio Arcano",
+    "desc": "Recarga 5–6. Linha de 45 m por 3 m de largura: cada criatura faz teste de resistência de Destreza CD 22, sofrendo 58 (9d12) de dano energético se falhar, ou metade se passar."
+   }
+  ],
+  "reacoes": [
+   {
+    "en": "Spell Reflection",
+    "nome": "Reflexão de Magia",
+    "desc": "2/dia. Quando uma criatura a até 36 m conjura magia de 5º círculo ou menor, faz ataque mágico à distância (+14): 26 (4d12) de dano energético, e o alvo deve passar em teste de resistência de Inteligência CD 15 ou a magia falha sem efeito."
+   }
+  ],
+  "lendarias": []
+ },
+ "Troll Mutate": {
+  "nome": "Troll Mutante",
+  "acNote": "armadura natural",
+  "blurb": "Rasga com garras que somam dano cortante e energético e libera uma explosão psíquica em área de 9 m. Regenera 10 PV por turno, e só fogo ou ácido interrompem isso; se voltar do zero, ganha uma nova mutação.",
+  "lore": "O troll mutante é fruto de experimentos que fundiram a carne regenerativa dos trolls com poder psiônico e arcano. Cada um nasce com uma deformação diferente, que pode ser um corpo elástico, asas, cicatrizes de magia ou uma mente que reflete dor. Ao contrário dos trolls comuns, é astuto e se comunica por telepatia. Quanto mais perto da morte chega, mais estranho se torna, pois cada regeneração forçada pode lhe dar uma mutação nova.",
+  "tracos": [
+   {
+    "en": "Mutation",
+    "nome": "Mutação",
+    "desc": "Ao ser criado, recebe uma mutação aleatória entre quatro: Corpo Elástico, Espelho Psiônico, Marcado por Magia ou Forma Alada. A mutação define alguns traços da ficha."
+   },
+   {
+    "en": "Amorphous",
+    "nome": "Amorfo (só Corpo Elástico)",
+    "desc": "Passa por espaços de até 2,5 cm de largura sem precisar se espremer."
+   },
+   {
+    "en": "Magic Resistance",
+    "nome": "Resistência à Magia (só Marcado por Magia)",
+    "desc": "Tem vantagem em testes de resistência contra magias e outros efeitos mágicos."
+   },
+   {
+    "en": "Psychic Rebuke",
+    "nome": "Repreensão Psíquica (só Espelho Psiônico)",
+    "desc": "Quando sofre dano psíquico, cada criatura a até 6 m dele sofre o mesmo dano."
+   },
+   {
+    "en": "Regeneration",
+    "nome": "Regeneração",
+    "desc": "Recupera 10 PV no início do turno, exceto no turno seguinte a sofrer dano de ácido ou fogo. Só morre se começar o turno com 0 PV sem regenerar. Se regenerar a partir de 0 PV, ganha uma mutação aleatória que ainda não tem, até o máximo de quatro."
+   }
+  ],
+  "acoes": [
+   {
+    "en": "Multiattack",
+    "nome": "Ataques Múltiplos",
+    "desc": "Faz dois ataques de Dilacerar."
+   },
+   {
+    "en": "Rend",
+    "nome": "Dilacerar",
+    "desc": "Ataque corpo a corpo com +7 para acertar e alcance de 1,5 m (4,5 m com Corpo Elástico). Causa 15 (2d10+4) de dano cortante mais 9 (2d8) de dano energético."
+   },
+   {
+    "en": "Psychic Burst",
+    "nome": "Explosão Psíquica (Recarga 5–6)",
+    "desc": "Cada criatura a até 9 m faz um teste de resistência de Inteligência CD 14. Quem falha sofre 28 (8d6) de dano psíquico, e quem passa sofre metade."
+   }
+  ],
+  "reacoes": [],
+  "lendarias": []
+ },
+ "Echo of Demogorgon": {
+  "nome": "Eco de Demogorgon",
+  "acNote": "armadura natural",
+  "blurb": "Golpeia duas vezes com tentáculos de 3 m de alcance que causam dano necrótico extra, e seus gritos dissonantes podem ferir a mente de um alvo ou forçá-lo a atacar os próprios aliados.",
+  "lore": "Ettins que se dedicam ao Príncipe dos Demônios, vendo nele uma alma gêmea de duas cabeças, às vezes recebem de Demogorgon uma suposta recompensa por seus serviços no Plano Material. Essa dádiva os deforma: os braços viram tentáculos e as cabeças ganham feições animalescas. A mudança os mergulha numa fúria constante, e as duas cabeças vivem berrando e mordendo uma à outra. Esses uivos carregam magia demoníaca, espalhando dor psíquica e caos entre quem está por perto.",
+  "tracos": [
+   {
+    "en": "Magic Resistance",
+    "nome": "Resistência à Magia",
+    "desc": "Tem vantagem em testes de resistência contra magias e outros efeitos mágicos."
+   },
+   {
+    "en": "Wakeful",
+    "nome": "Vigilante",
+    "desc": "Enquanto uma das cabeças dorme, a outra permanece acordada."
+   }
+  ],
+  "acoes": [
+   {
+    "en": "Multiattack",
+    "nome": "Ataques Múltiplos",
+    "desc": "Faz dois ataques de Tentáculo."
+   },
+   {
+    "en": "Tentacle",
+    "nome": "Tentáculo",
+    "desc": "Ataque corpo a corpo, +9 para acertar, alcance 3 m, um alvo. Causa 13 (2d6+6) de dano de concussão mais 9 (2d8) de dano necrótico."
+   }
+  ],
+  "reacoes": [],
+  "lendarias": []
+ },
+ "Regisaur": {
+  "nome": "Regissauro",
+  "acNote": "armadura natural",
+  "blurb": "Um dinossauro colossal que morde com força brutal, prende a vítima entre as mandíbulas e a engole viva, enquanto a cauda atinge alvos a até 6 m. Resiste bem à magia.",
+  "lore": "O regissauro é um predador gigantesco, uma fera de couro grosso que domina os territórios onde caça. Tem pouca inteligência, mas instinto de sobra: avança sobre a presa mais próxima e só para quando ela some em sua garganta. Feitiços parecem escorregar pela sua pele, o que o torna temido até por conjuradores experientes. Onde ele passa, as outras criaturas fogem ou se escondem.",
+  "tracos": [
+   {
+    "en": "Magic Resistance",
+    "nome": "Resistência à Magia",
+    "desc": "Tem vantagem em testes de resistência contra magias e outros efeitos mágicos."
+   }
+  ],
+  "acoes": [
+   {
+    "en": "Multiattack",
+    "nome": "Ataques Múltiplos",
+    "desc": "Faz um ataque de Mordida e um de Cauda, cada um contra uma criatura diferente."
+   },
+   {
+    "en": "Bite",
+    "nome": "Mordida",
+    "desc": "+13 para acertar, alcance 3 m. Causa 47 (6d12 + 8) de dano perfurante e deixa o alvo agarrado (CD 18 para escapar) e contido enquanto durar a pegada; nesse tempo não pode morder outro alvo."
+   },
+   {
+    "en": "Tail",
+    "nome": "Cauda",
+    "desc": "+13 para acertar, alcance 6 m. Causa 26 (4d8 + 8) de dano de concussão."
+   }
+  ],
+  "reacoes": [],
+  "lendarias": []
+ },
+ "Cloud Giant of Evil Air": {
+  "nome": "Gigante das Nuvens do Ar Maligno",
+  "acNote": "armadura natural",
+  "blurb": "Voa sobre o campo de batalha golpeando com a cimitarra e arremessando um bumerangue de tempestade que pode atordoar alvos distantes. Escapa voando sem sofrer ataques de oportunidade.",
+  "lore": "Alguns gigantes das nuvens abandonam os deuses do Ordning e passam a servir Yan-C-Bin, o Príncipe do Ar Maligno. Astutos, carismáticos e poderosos, costumam assumir o comando de cultos do Mal Elemental, que se tornam muito mais perigosos sob sua liderança. Sua fortuna pessoal também enche os cofres do culto e financia planos ambiciosos. Eles vestem um colete mágico com asas de penas de roca, imbuído de ar elemental, que só permite ao próprio dono voar.",
+  "tracos": [
+   {
+    "en": "Flyby",
+    "nome": "Voo Rasante",
+    "desc": "Não provoca ataques de oportunidade ao sair voando do alcance de um inimigo."
+   }
+  ],
+  "acoes": [
+   {
+    "en": "Spellcasting",
+    "nome": "Conjuração",
+    "desc": "Usa Carisma (CD 16), sem componentes materiais. À vontade: detectar magia, névoa obscurecente e luz; 2/dia: telecinesia; 1/dia: forma gasosa."
+   },
+   {
+    "en": "Multiattack",
+    "nome": "Ataques Múltiplos",
+    "desc": "Faz dois ataques de Cimitarra e um de Bumerangue de Tempestade."
+   },
+   {
+    "en": "Scimitar",
+    "nome": "Cimitarra",
+    "desc": "Ataque corpo a corpo, +12 para acertar, alcance 3 m: 18 (3d6 + 8) de dano cortante."
+   },
+   {
+    "en": "Storm Boomerang",
+    "nome": "Bumerangue de Tempestade",
+    "desc": "Ataque à distância, +12 para acertar, alcance 18/72 m: 15 (3d4 + 8) de concussão mais 7 (2d6) trovejante; o alvo faz teste de resistência de Constituição CD 16 ou fica atordoado até o fim do próximo turno dele. A arma volta magicamente à mão do gigante, acertando ou não."
+   }
+  ],
+  "reacoes": [],
+  "lendarias": []
+ },
+ "Mist Hulk": {
+  "nome": "Colosso de Névoa",
+  "acNote": "",
+  "blurb": "Flutua como uma nuvem de tempestade, golpeando com punhos gélidos a 3 m e soltando um lamento que fere a mente e incapacita quem estiver por perto. Ao morrer, desaba numa onda d'água que derruba os vizinhos.",
+  "lore": "Os colossos de névoa são elementais que descendem de antigos gigantes das nuvens, mesclando ar e água em um só corpo. Eras de isolamento em planos elementais ou semiplanos esquecidos apagaram quase toda a forma e a cultura de seus ancestrais. Parecem silhuetas humanoides feitas de nuvens carregadas, sempre soltando fiapos de vapor como se fossem se desfazer. Vivem mergulhados em tristeza e, quando ameaçados, uivam um pranto mágico que faz os ouvintes reviverem arrependimentos.",
+  "tracos": [
+   {
+    "en": "Air Form",
+    "nome": "Forma Aérea",
+    "desc": "Pode entrar e parar no espaço de outra criatura e atravessar frestas de 2,5 cm sem se espremer."
+   },
+   {
+    "en": "Death Burst",
+    "nome": "Explosão Mortal",
+    "desc": "Ao morrer, vira uma onda d'água: criaturas a até 3 m fazem teste de resistência de Destreza CD 16. Na falha sofrem 11 (2d10) de dano de concussão e ficam caídas; no sucesso, metade do dano apenas."
+   }
+  ],
+  "acoes": [
+   {
+    "en": "Multiattack",
+    "nome": "Ataques Múltiplos",
+    "desc": "Faz dois ataques de Pancada."
+   },
+   {
+    "en": "Slam",
+    "nome": "Pancada",
+    "desc": "Ataque corpo a corpo +8, alcance 3 m, um alvo: 16 (2d10 + 5) de dano de frio."
+   },
+   {
+    "en": "Hideous Wailing",
+    "nome": "Lamento Medonho",
+    "desc": "Recarga 5–6. Criaturas a até 9 m fazem teste de resistência de Sabedoria CD 14 (com desvantagem se estiverem no espaço do colosso). Na falha sofrem 14 (4d6) de dano psíquico e ficam incapacitadas por 1 minuto, repetindo o teste ao fim de cada turno para encerrar."
+   }
+  ],
+  "reacoes": [],
+  "lendarias": []
+ },
+ "Storm Herald": {
+  "nome": "Arauto da Tempestade",
+  "acNote": "armadura natural",
+  "blurb": "Gigante corrompido que golpeia com garra, tentáculos e tridente elétrico a 3 m de alcance, prendendo uma vítima e queimando sua mente. Sua Onda Psíquica atordoa até três alvos e pode explodir cabeças.",
+  "lore": "É um gigante das tempestades que se perdeu nas profundezas oceânicas e caiu sob o domínio de alguma entidade antiga, como um kraken, um aboleth ou um Grande Antigo. A corrupção lhe dá barbatanas, tentáculos e poderes psíquicos temíveis, e sua vontade passa a pertencer inteiramente ao mestre. Trabalha para os planos desse senhor, seja recrutando outros gigantes, seja reunindo cultos de criaturas menores. Ao morrer, o corpo volta à antiga forma de gigante.",
+  "tracos": [
+   {
+    "en": "Amphibious",
+    "nome": "Anfíbio",
+    "desc": "Respira tanto no ar quanto debaixo d'água."
+   },
+   {
+    "en": "Magic Resistance",
+    "nome": "Resistência à Magia",
+    "desc": "Tem vantagem em testes de resistência contra magias e outros efeitos mágicos."
+   }
+  ],
+  "acoes": [
+   {
+    "en": "Spellcasting",
+    "nome": "Conjuração (Psiônica)",
+    "desc": "Usa Inteligência, sem componentes (CD 21). À vontade: detectar magia, detectar pensamentos e mãos mágicas (invisível). 1 vez/dia cada: controlar a água, controlar o clima (como ação) e mensagem."
+   },
+   {
+    "en": "Multiattack",
+    "nome": "Ataques Múltiplos",
+    "desc": "Faz um ataque de Garra, um de Tentáculos e um de Tridente."
+   },
+   {
+    "en": "Claw",
+    "nome": "Garra",
+    "desc": "Ataque corpo a corpo +14, alcance 3 m: 18 (3d6+8) de dano cortante."
+   },
+   {
+    "en": "Tentacles",
+    "nome": "Tentáculos",
+    "desc": "Ataque corpo a corpo +14, alcance 3 m: 21 (3d8+8) de concussão. Alvo Grande ou menor fica agarrado (CD 18 para escapar) e contido, sofrendo 16 (3d10) de dano psíquico no início de cada turno dele; só um alvo por vez."
+   },
+   {
+    "en": "Trident",
+    "nome": "Tridente",
+    "desc": "Ataque corpo a corpo +14, alcance 3 m: 18 (3d6+8) perfurante, ou 21 (3d8+8) com as duas mãos, mais 13 (3d8) de dano elétrico."
+   },
+   {
+    "en": "Psychic Wave",
+    "nome": "Onda Psíquica (Recarga 5–6)",
+    "desc": "Até três criaturas visíveis a até 27 m fazem teste de resistência de Inteligência CD 21: falha causa 23 (3d10+7) de dano psíquico e atordoamento por 1 minuto (novo teste ao fim de cada turno); sucesso, metade do dano. Quem chega a 0 PV por esse dano morre com a cabeça explodida."
+   }
+  ],
+  "reacoes": [],
+  "lendarias": []
+ },
+ "Cradle of the Cloud Scion": {
+  "nome": "Berço do Rebento das Nuvens",
+  "acNote": "armadura natural",
+  "blurb": "Uma tempestade viva que voa sem provocar ataques de oportunidade, golpeia de longe com dardos de vento e prende grupos inteiros num vórtice esmagador. Ao ser derrotada, libera o Rebento de Memnor que guardava.",
+  "lore": "O Berço é uma massa colossal de nuvens e vento que serve de casulo para o Rebento de Memnor, herdeiro do deus gigante da astúcia. Paira nas alturas, longe do chão, e responde a qualquer ferimento com estrondos de trovão. Seu temperamento é caótico como uma tormenta, mas protege com ferocidade o ser que carrega. Quando o invólucro se desfaz em fiapos de nuvem, o verdadeiro perigo desperta.",
+  "tracos": [
+   {
+    "en": "Awakening of the Scion",
+    "nome": "Despertar do Rebento",
+    "desc": "Ao chegar a 0 PV, o Berço se dissolve em nuvens e o Rebento de Memnor surge imediatamente no mesmo espaço, agindo na mesma iniciativa."
+   },
+   {
+    "en": "Flyby",
+    "nome": "Voo Rasante",
+    "desc": "Não provoca ataques de oportunidade ao sair voando do alcance de um inimigo."
+   },
+   {
+    "en": "Legendary Resistance",
+    "nome": "Resistência Lendária",
+    "desc": "5 vezes por dia, pode transformar uma falha em teste de resistência em sucesso."
+   },
+   {
+    "en": "Magic Resistance",
+    "nome": "Resistência à Magia",
+    "desc": "Tem vantagem em testes de resistência contra magias e efeitos mágicos."
+   },
+   {
+    "en": "Siege Monster",
+    "nome": "Monstro de Cerco",
+    "desc": "Causa dano dobrado a objetos e estruturas."
+   }
+  ],
+  "acoes": [
+   {
+    "en": "Multiattack",
+    "nome": "Ataques Múltiplos",
+    "desc": "Faz três ataques, combinando Pancada e Dardo de Vento como quiser."
+   },
+   {
+    "en": "Slam",
+    "nome": "Pancada",
+    "desc": "Ataque corpo a corpo, +17, alcance 6 m. Causa 31 (4d10+9) de concussão mais 19 (3d12) trovejante."
+   },
+   {
+    "en": "Wind Javelin",
+    "nome": "Dardo de Vento",
+    "desc": "Ataque à distância, +17, alcance 36 m. Causa 27 (4d8+9) de concussão mais 10 (3d6) trovejante; o alvo fica caído se falhar num teste de resistência de Força CD 25."
+   },
+   {
+    "en": "Vortex",
+    "nome": "Vórtice",
+    "desc": "Recarga 5–6. Cria um cilindro de vento de 9 m de raio e 30 m de altura num ponto a até 27 m; quem estiver nele faz teste de Destreza CD 25: falha causa 71 (11d12) de concussão e deixa contido até o vórtice acabar (então cai caído); sucesso causa metade e empurra para fora. O vórtice dura até o início do próximo turno do Berço; um contido pode usar a ação para escapar com teste de Atletismo ou Acrobacia CD 19, sendo arremessado 3d6×3 m em direção aleatória."
+   }
+  ],
+  "reacoes": [
+   {
+    "en": "Thunderclap",
+    "nome": "Trovoada",
+    "desc": "Logo após sofrer dano, explode num raio de 9 m: as demais criaturas fazem teste de Constituição CD 25 ou sofrem 18 (4d8) trovejante e ficam surdas por 1 minuto."
+   }
+  ],
+  "lendarias": []
+ },
+ "Altisaur": {
+  "nome": "Altissauro",
+  "acNote": "armadura natural",
+  "blurb": "Um dinossauro colossal que esmaga com as patas e varre o campo com a cauda, derrubando e arremessando quem estiver perto. Seus golpes causam dano enorme, e a magia tem dificuldade em detê-lo.",
+  "lore": "O altissauro é um saurópode gigantesco, tão alto que sua cabeça alcança as copas das árvores mais antigas. Vive em planícies e florestas primitivas, onde se alimenta da vegetação e caminha em passos lentos que fazem o chão tremer. Apesar de pouco inteligente, tem sentidos aguçados e percebe ameaças de longe. Quando provocado, defende-se com fúria esmagadora, e poucas criaturas sobrevivem a uma pisada sua.",
+  "tracos": [
+   {
+    "en": "Magic Resistance",
+    "nome": "Resistência à Magia",
+    "desc": "Tem vantagem em testes de resistência contra magias e outros efeitos mágicos."
+   }
+  ],
+  "acoes": [
+   {
+    "en": "Multiattack",
+    "nome": "Ataques Múltiplos",
+    "desc": "Faz um ataque de Pisotear e um de Cauda, cada um contra um alvo diferente."
+   },
+   {
+    "en": "Stomp",
+    "nome": "Pisotear",
+    "desc": "Ataque corpo a corpo: +14 para acertar, alcance 3 m. Causa 33 (7d6 + 9) de dano de concussão; um alvo Enorme ou menor deve passar em um teste de resistência de Força CD 22 ou fica caído."
+   },
+   {
+    "en": "Tail",
+    "nome": "Cauda",
+    "desc": "Ataque corpo a corpo: +14 para acertar, alcance 6 m. Causa 45 (8d8 + 9) de dano de concussão e empurra o alvo até 6 m para longe, na horizontal."
+   }
+  ],
+  "reacoes": [],
+  "lendarias": []
+ },
+ "Maw of Yeenoghu": {
+  "nome": "Bocarra de Yeenoghu",
+  "acNote": "armadura natural",
+  "blurb": "Gigante demoníaco que avança de boca escancarada, abocanhando quem estiver no caminho e prendendo uma vítima entre os dentes. Quando ferido, revida mordendo ao acaso ou cuspindo presas à distância.",
+  "lore": "Um gigante da colina cuja fome chamou a atenção de Yeenoghu, o Senhor Demônio da Carnificina, seja por pacto, por devorar um artefato maligno ou por sonhos sussurrados pelo próprio demônio. Transformado, ganha juba, postura curvada de gnoll e uma mandíbula enorme repleta de fileiras de dentes. Esses dentes não param de crescer, e a criatura morde e mastiga tudo o que alcança. As mais espertas arrancam as presas e as arremessam contra os inimigos. Investe de quatro sobre a presa, rasgando o chão como um arado.",
+  "tracos": [
+   {
+    "en": "Magic Resistance",
+    "nome": "Resistência à Magia",
+    "desc": "Tem vantagem em testes de resistência contra magias e outros efeitos mágicos."
+   }
+  ],
+  "acoes": [
+   {
+    "en": "Multiattack",
+    "nome": "Ataques Múltiplos",
+    "desc": "Faz dois ataques, escolhendo entre Mordida e Arremesso de Presas."
+   },
+   {
+    "en": "Bite",
+    "nome": "Mordida",
+    "desc": "Ataque corpo a corpo +10, alcance 3 m: 19 (2d12 + 6) de dano perfurante."
+   },
+   {
+    "en": "Fang Fling",
+    "nome": "Arremesso de Presas",
+    "desc": "Ataque à distância +10, alcance 9/27 m: 11 (1d10 + 6) de dano perfurante."
+   },
+   {
+    "en": "Gorging Charge",
+    "nome": "Investida Voraz",
+    "desc": "Recarga 5–6. Move-se até seu deslocamento sem provocar ataques de oportunidade, atravessando criaturas Grandes ou menores; cada uma faz teste de resistência de Força CD 18 ou sofre 25 (3d12 + 6) de dano perfurante e fica agarrada (CD 16 para escapar) e contida enquanto durar; quem já estiver agarrado assim fica caído. Só agarra uma criatura por vez."
+   }
+  ],
+  "reacoes": [
+   {
+    "en": "Fanged Rebuke",
+    "nome": "Revide Dentado",
+    "desc": "Ao sofrer dano, morde uma criatura aleatória a até 3 m. Se não houver ninguém ao alcance, pode fazer dois Arremessos de Presas."
+   }
+  ],
+  "lendarias": []
+ },
+ "Giant Tick": {
+  "nome": "Carrapato Gigante",
+  "acNote": "armadura natural",
+  "blurb": "Crava a probóscide na vítima e fica preso a ela, sugando sangue a cada turno e se curando com isso. Contra gigantes, o dreno é ainda mais brutal.",
+  "lore": "Do tamanho de um javali, este carrapato vive há eras como parasita de gigantes, alimentando-se do sangue deles. Para os gigantes ele é só um incômodo dolorido, mas para criaturas menores é uma ameaça mortal. Faminto, ataca qualquer ser vivo que consiga alcançar e não larga mais a presa enquanto houver sangue para beber.",
+  "tracos": [],
+  "acoes": [
+   {
+    "en": "Proboscis",
+    "nome": "Probóscide",
+    "desc": "Ataque corpo a corpo: +5 para acertar, alcance 1,5 m, uma criatura. Causa 10 (2d6 + 3) de dano perfurante e o carrapato se prende ao alvo; preso, não pode usar a Probóscide. Ele se solta gastando 1,5 m de movimento, e uma criatura ao alcance pode usar uma ação para arrancá-lo com um teste de Força CD 13."
+   },
+   {
+    "en": "Blood Drain",
+    "nome": "Drenar Sangue",
+    "desc": "Causa 10 (2d6 + 3) de dano necrótico a uma criatura à qual esteja preso (17, ou 4d6 + 3, se for um gigante), recuperando PV iguais ao dano. Não funciona contra constructos ou mortos-vivos."
+   }
+  ],
+  "reacoes": [],
+  "lendarias": []
+ },
+ "Scion of Grolantor": {
+  "nome": "Rebento de Grolantor",
+  "acNote": "armadura natural",
+  "blurb": "Titã colossal que esmaga com um tronco de árvore, arremessa inimigos para longe e suga criaturas para dentro do estômago com uma inalação devastadora. Cada passo seu faz o chão tremer e quebra a concentração dos conjuradores.",
+  "lore": "Os rebentos de Grolantor são titãs nascidos da essência do deus gigante da fome e da brutalidade. Movidos por um apetite que nunca se sacia, vagam por terras selvagens devorando tudo o que encontram. Desprezam a ordem e as hierarquias dos outros gigantes e preferem a força bruta a qualquer acordo. Onde passam, ficam aldeias arrasadas e florestas arrancadas pela raiz.",
+  "tracos": [
+   {
+    "en": "Legendary Resistance",
+    "nome": "Resistência Lendária",
+    "desc": "Seis vezes por dia, ao falhar em um teste de resistência, pode escolher ter sucesso."
+   },
+   {
+    "en": "Magic Resistance",
+    "nome": "Resistência à Magia",
+    "desc": "Tem vantagem em testes de resistência contra magias e outros efeitos mágicos."
+   },
+   {
+    "en": "Siege Monster",
+    "nome": "Monstro de Cerco",
+    "desc": "Causa o dobro de dano a objetos e estruturas."
+   }
+  ],
+  "acoes": [
+   {
+    "en": "Multiattack",
+    "nome": "Ataques Múltiplos",
+    "desc": "Faz um ataque de Clava de Árvore Gigante e dois de Pancada, ou três ataques de Rochedo."
+   },
+   {
+    "en": "Great Tree Club",
+    "nome": "Clava de Árvore Gigante",
+    "desc": "Corpo a corpo, +15, alcance 9 m: 30 (4d10+8) de dano de concussão. Uma criatura atingida faz teste de resistência de Força CD 23 ou é empurrada até 30 m para longe e fica caída."
+   },
+   {
+    "en": "Slam",
+    "nome": "Pancada",
+    "desc": "Corpo a corpo, +15, alcance 6 m: 26 (4d8+8) de dano energético."
+   },
+   {
+    "en": "Boulder",
+    "nome": "Rochedo",
+    "desc": "À distância, +15, alcance 36/144 m: 27 (3d12+8) de dano de concussão."
+   },
+   {
+    "en": "Inhale",
+    "nome": "Inalar",
+    "desc": "Recarga 5–6. Criaturas Enormes ou menores em uma linha de 36 m por 4,5 m fazem teste de resistência de Força CD 23 ou são puxadas até ele e engolidas (até duas): ficam contidas, com cobertura total, e sofrem 24 (7d6) de dano energético no início de cada turno dele. Se sofrer 60 de dano ou mais em um turno vindo de dentro, faz teste de Constituição CD 17 ou regurgita todas, caídas a até 3 m; se morrer, elas saem usando 4,5 m de movimento."
+   }
+  ],
+  "reacoes": [
+   {
+    "en": "Feed",
+    "nome": "Alimentar-se",
+    "desc": "Logo após sofrer dano, se tiver alguém engolido, causa 10 (3d6) de dano energético a cada criatura engolida e recupera 10 PV."
+   }
+  ],
+  "lendarias": [
+   {
+    "en": "Earth-Shaking Movement",
+    "nome": "Passos que Abalam a Terra",
+    "desc": "Ação bônus: move-se até seu deslocamento e gera uma onda de choque num raio de 18 m. Criaturas no chão que estejam concentradas fazem teste de resistência de Constituição CD 23 ou perdem a concentração."
+   }
+  ]
+ },
+ "Cloud Giant Destiny Gambler": {
+  "nome": "Gigante das Nuvens Apostador do Destino",
+  "acNote": "armadura natural",
+  "blurb": "Arremessa e golpeia com um cajado que volta à mão, causando concussão e trovão, e invoca nuvens trovejantes que derrubam grupos inteiros. Enquanto tiver a máscara rúnica, enxerga através de ilusões e anula magias lançadas perto dele.",
+  "lore": "Entre os gigantes das nuvens, a posição na hierarquia sobe com a riqueza acumulada, e muitos a conquistam em jogos de azar. O apostador do destino é aquele que venceu desafios cada vez mais arriscados contra gigantes, povos menores e até criaturas de outros planos. Usa uma meia-máscara rúnica sobre os olhos que revela invisibilidade, escuridão e truques mágicos. Tão confiante que deixa o rival escolher os termos da aposta, ele costuma punir com magia devastadora quem prefere o combate.",
+  "tracos": [
+   {
+    "en": "Cloud Rune",
+    "nome": "Runa das Nuvens",
+    "desc": "Enquanto segura ou usa a máscara com a runa, tem visão verdadeira de 9 m e pode usar Palmas Trovejantes e Anular Magia. A máscara tem CA 15, 45 PV, imunidade a necrótico, veneno e psíquico, recupera todos os PV ao fim de cada turno e vira pó se chegar a 0 PV ou se o gigante morrer; ele pode refazê-la num descanso curto ou longo."
+   }
+  ],
+  "acoes": [
+   {
+    "en": "Multiattack",
+    "nome": "Ataques Múltiplos",
+    "desc": "Faz três ataques de Cajado Voador."
+   },
+   {
+    "en": "Flying Staff",
+    "nome": "Cajado Voador",
+    "desc": "Ataque corpo a corpo ou à distância com arma: +14, alcance 3 m ou 9/27 m. Causa 18 (3d6+8) de concussão mais 16 (3d10) trovejante, e o cajado volta à mão após ser arremessado."
+   },
+   {
+    "en": "Thunderous Clap",
+    "nome": "Palmas Trovejantes",
+    "desc": "Cria uma nuvem de trovão em esfera de 9 m de raio num ponto visível a até 18 m; cada criatura faz teste de resistência de Constituição CD 20, sofrendo 52 (8d12) trovejante e ficando caída se falhar, ou metade do dano se passar. A área fica densamente obscurecida até o início do próximo turno do gigante ou até um vento forte dispersá-la."
+   },
+   {
+    "en": "Spellcasting",
+    "nome": "Conjuração",
+    "desc": "Usa Carisma (CD 20), sem componentes materiais. À vontade: detectar magia, névoa obscurecente, luz, ilusão menor. 1/dia cada: sonho, forma gasosa, imagem maior."
+   }
+  ],
+  "reacoes": [
+   {
+    "en": "Negate Spell",
+    "nome": "Anular Magia",
+    "desc": "Quando vê uma criatura a até 18 m lançar uma magia, tenta interrompê-la: magias de 3º círculo ou menor falham automaticamente; de 4º círculo ou maior, o conjurador precisa passar num teste de resistência de Inteligência CD 18 ou a magia falha."
+   }
+  ],
+  "lendarias": []
+ },
+ "Troll Amalgam": {
+  "nome": "Amálgama de Trolls",
+  "acNote": "armadura natural",
+  "blurb": "Massa gigantesca de trolls fundidos que dilacera com três golpes de 4,5 m de alcance e arremessa membros vivos que agarram e retalham as vítimas. Regenera 15 PV por turno; só fogo ou ácido conseguem detê-la de vez.",
+  "lore": "Quando muitos trolls se regeneram uns sobre os outros, a carne pode se misturar até formar um único colosso de braços, bocas e olhos. Esse amálgama vaga pelas profundezas e pelas terras selvagens movido por uma fome sem fim. Sua mente confusa mal se mantém coesa, mas seus instintos de caça são afiados. Até pedaços arrancados do corpo continuam vivos e às vezes crescem até virar trolls novos.",
+  "tracos": [
+   {
+    "en": "Legendary Resistance",
+    "nome": "Resistência Lendária",
+    "desc": "Três vezes por dia, ao falhar num teste de resistência, pode escolher ser bem-sucedido."
+   },
+   {
+    "en": "Magic Resistance",
+    "nome": "Resistência à Magia",
+    "desc": "Tem vantagem em testes de resistência contra magias e outros efeitos mágicos."
+   },
+   {
+    "en": "Regeneration",
+    "nome": "Regeneração",
+    "desc": "Recupera 15 PV no início do turno, ou só 5 se tiver sofrido dano de ácido ou fogo. Só morre se sofrer 20 ou mais de dano de ácido ou fogo enquanto estiver com 0 PV."
+   }
+  ],
+  "acoes": [
+   {
+    "en": "Multiattack",
+    "nome": "Ataques Múltiplos",
+    "desc": "Faz três ataques de Dilacerar."
+   },
+   {
+    "en": "Rend",
+    "nome": "Dilacerar",
+    "desc": "Ataque corpo a corpo, +13 para acertar, alcance 4,5 m. Causa 25 (4d8+7) de dano cortante."
+   }
+  ],
+  "reacoes": [],
+  "lendarias": []
+ },
+ "Stalker of Baphomet": {
+  "nome": "Perseguidor de Baphomet",
+  "acNote": "armadura natural",
+  "blurb": "Gigante demoníaco que golpeia com uma glaive de alcance longo e arremessa rochas que derrubam. Faz brotar chifres de pedra do chão que perfuram e lançam os inimigos para o alto.",
+  "lore": "Gigantes de pedra raramente cultuam demônios, mas alguns se encantam com os labirintos que Baphomet, o Rei Chifrudo, ergue como campos de caça. Ao servi-lo, continuam esculpindo labirintos e saciam a sede de sangue caçando dentro deles. Os mais devotos são transformados em perseguidores, ganhando uma coroa de seis chifres. O Príncipe das Feras também lhes concede uma glaive mágica e o poder de arrancar chifres de pedra da terra.",
+  "tracos": [
+   {
+    "en": "Labyrinthine Recall",
+    "nome": "Memória Labiríntica",
+    "desc": "Lembra com perfeição qualquer caminho que já percorreu."
+   },
+   {
+    "en": "Magic Resistance",
+    "nome": "Resistência à Magia",
+    "desc": "Tem vantagem em testes de resistência contra magias e outros efeitos mágicos."
+   }
+  ],
+  "acoes": [
+   {
+    "en": "Multiattack",
+    "nome": "Ataques Múltiplos",
+    "desc": "Faz dois ataques de Glaive ou dois de Rocha."
+   },
+   {
+    "en": "Glaive",
+    "nome": "Glaive",
+    "desc": "Ataque corpo a corpo, +11, alcance 4,5 m. Causa 18 (2d10+7) de dano cortante mais 9 (2d8) de dano energético."
+   },
+   {
+    "en": "Rock",
+    "nome": "Rocha",
+    "desc": "Ataque à distância, +11, alcance 18/72 m: 23 (3d10+7) de dano de concussão; alvo Grande ou menor faz teste de resistência de Força CD 19 ou fica caído. Após arremessar, rola 1d6: com 3 ou menos, acabam as rochas."
+   },
+   {
+    "en": "Erupting Horns",
+    "nome": "Chifres Irrompentes",
+    "desc": "Recarga 5–6. Seis chifres de pedra surgem num cilindro de 9 m de raio e 9 m de altura num ponto visível a até 18 m. Teste de resistência de Destreza CD 15: falha sofre 33 (6d10) de dano perfurante e é lançado até 9 m para cima, caindo em seguida; sucesso sofre metade."
+   },
+   {
+    "en": "Spellcasting",
+    "nome": "Conjuração",
+    "desc": "Usa Sabedoria (CD 15), sem componentes, 1 vez por dia cada: fundir-se às rochas, moldar rochas e muralha de pedra."
+   }
+  ],
+  "reacoes": [],
+  "lendarias": []
+ },
+ "Spectral Cloud": {
+  "nome": "Nuvem Espectral",
+  "acNote": "",
+  "blurb": "Uma massa de névoa morta-viva difícil de acertar à distância, que drena a vitalidade com toques energéticos e necróticos e sopra ventos gélidos capazes de deixar grupos inteiros incapacitados.",
+  "lore": "Quando um gigante das nuvens morre traído ou após uma aposta desastrosa, seu espírito pode voltar como uma nuvem espectral. À primeira vista parece só um banco de neblina espessa, mas quem olha com atenção percebe uma silhueta sombria no interior, que no centro se revela o esqueleto do gigante. Contam também que alguns gigantes buscam esse destino de propósito, recusando o fim de suas longas vidas: num ritual, o coração é implantado numa nuvem, o corpo se desfaz e o espírito passa a animá-la.",
+  "tracos": [
+   {
+    "en": "Blurred Form",
+    "nome": "Forma Borrada",
+    "desc": "Ataques contra a nuvem têm desvantagem, a menos que o atacante esteja a até 4,5 m dela ou que ela esteja incapacitada."
+   },
+   {
+    "en": "Incorporeal Movement",
+    "nome": "Movimento Incorpóreo",
+    "desc": "Atravessa criaturas e objetos como se fossem terreno difícil. Sofre 5 (1d10) de dano energético se terminar o turno dentro de um objeto."
+   }
+  ],
+  "acoes": [
+   {
+    "en": "Multiattack",
+    "nome": "Ataques Múltiplos",
+    "desc": "Faz dois ataques de Toque Espectral."
+   },
+   {
+    "en": "Spectral Touch",
+    "nome": "Toque Espectral",
+    "desc": "Ataque corpo a corpo +12, alcance 3 m: 20 (3d8+7) de dano energético e 10 (3d6) necrótico. Com falha num teste de resistência de Constituição CD 20, o PV máximo do alvo cai no valor do dano necrótico até um descanso longo, morrendo se chegar a 0; humanoides mortos assim se erguem como espectros aliados, mas não controlados."
+   },
+   {
+    "en": "Chilling Winds",
+    "nome": "Ventos Gélidos",
+    "desc": "Recarga 5–6. Linha de 18 m por 3 m de largura; teste de resistência de Constituição CD 20: falha causa 38 (7d10) de dano de frio e deixa incapacitado por 1 minuto (repete o teste no fim de cada turno), sucesso causa metade. Quem passa no teste ou se livra do efeito fica imune a este sopro por 24 horas."
+   }
+  ],
+  "reacoes": [],
+  "lendarias": []
+ },
+ "Cradle of the Hill Scion": {
+  "nome": "Berço do Rebento das Colinas",
+  "acNote": "armadura natural",
+  "blurb": "Uma colina viva que esmaga com pancadas de longo alcance, cospe rochas que derrubam e prende inimigos com raízes que os moem a cada turno. Ao ser destruída, libera o rebento de Grolantor que carrega dentro de si.",
+  "lore": "Este colosso elemental de terra, musgo e raízes serve de casulo para um rebento do deus gigante Grolantor. Ele se ergue de colinas e encostas, movido por fome e fúria caótica. Enquanto avança, protege a criatura que amadurece em seu interior. Derrotá-lo é só a primeira parte da luta, pois o próprio rebento emerge dos restos.",
+  "tracos": [
+   {
+    "en": "Awakening of the Scion",
+    "nome": "Despertar do Rebento",
+    "desc": "Ao chegar a 0 PV, o berço se desfaz em terra e musgo e o rebento de Grolantor surge imediatamente no espaço dele, agindo na mesma iniciativa."
+   },
+   {
+    "en": "Legendary Resistance",
+    "nome": "Resistência Lendária",
+    "desc": "5 vezes por dia, pode transformar um teste de resistência falho em sucesso."
+   },
+   {
+    "en": "Magic Resistance",
+    "nome": "Resistência à Magia",
+    "desc": "Tem vantagem em testes de resistência contra magias e efeitos mágicos."
+   },
+   {
+    "en": "Siege Monster",
+    "nome": "Monstro de Cerco",
+    "desc": "Causa dano dobrado a objetos e estruturas."
+   }
+  ],
+  "acoes": [
+   {
+    "en": "Multiattack",
+    "nome": "Ataques Múltiplos",
+    "desc": "Faz três ataques, combinando Pancada e Cuspir Rocha como quiser, mais um ataque de Raiz Agarradora."
+   },
+   {
+    "en": "Slam",
+    "nome": "Pancada",
+    "desc": "Ataque corpo a corpo, +14, alcance 6 m: 33 (4d12+7) de dano de concussão."
+   },
+   {
+    "en": "Spit Rock",
+    "nome": "Cuspir Rocha",
+    "desc": "Ataque à distância, +14, alcance 36 m: 25 (4d8+7) de dano de concussão; o alvo faz teste de resistência de Força CD 22 ou fica caído."
+   },
+   {
+    "en": "Grasping Root",
+    "nome": "Raiz Agarradora",
+    "desc": "Ataque corpo a corpo, +14, alcance 9 m, contra criatura que ainda não agarrou: o alvo fica agarrado (CD 17 para escapar) e sofre 29 (4d10+7) de concussão no início de cada turno seu. A raiz tem CA 19 e é cortada por 15+ de dano cortante num só ataque, encerrando o agarrão sem ferir o berço."
+   },
+   {
+    "en": "Rolling Hills",
+    "nome": "Colinas Ondulantes",
+    "desc": "Recarga 5–6. Ergue uma onda de terra de até 9 m de lado a até 36 m; quem estiver nela faz teste de Força CD 22: falha causa 58 (9d12) de concussão, deixa caído e soterrado (contido, cobertura total, sem respirar); sucesso, metade do dano. Com uma ação, o soterrado ou alguém a 1,5 m faz teste de Força (Atletismo) CD 17 para libertá-lo."
+   }
+  ],
+  "reacoes": [],
+  "lendarias": []
+ },
+ "Giant Goose": {
+  "nome": "Ganso Gigante",
+  "acNote": "",
+  "blurb": "Ataca com bicadas de longo alcance e asas que derrubam os inimigos, e seu grasnado ensurdecedor causa dano trovejante em todos ao redor. Cuidado ao se aproximar em grupo.",
+  "lore": "Gansos gigantes descendem de linhagens feéricas e são criados por gigantes como animais de fazenda e vigias. Seus sentidos aguçados e sua voz estrondosa alertam os donos sobre qualquer invasor. Sob o comando de quem cuida dele, o ganso pode botar um ovo oco de ouro puro, valioso e às vezes com um pequeno objeto ou item mágico dentro. Depois disso, precisa esperar um ano e um dia para botar outro.",
+  "tracos": [],
+  "acoes": [
+   {
+    "en": "Multiattack",
+    "nome": "Ataques Múltiplos",
+    "desc": "O ganso faz um ataque de Bico e dois ataques de Asa."
+   },
+   {
+    "en": "Beak",
+    "nome": "Bico",
+    "desc": "Ataque corpo a corpo com +4 para acertar, alcance 3 m. Causa 9 (2d6 + 2) de dano de concussão."
+   },
+   {
+    "en": "Wing",
+    "nome": "Asa",
+    "desc": "Ataque corpo a corpo com +4 para acertar, alcance 1,5 m. Causa 7 (1d10 + 2) de dano de concussão, e o alvo fica caído se falhar num teste de resistência de Força CD 12."
+   },
+   {
+    "en": "Thunderous Honk",
+    "nome": "Grasnado Trovejante",
+    "desc": "Recarga 5–6. Todas as outras criaturas a até 9 m fazem teste de resistência de Constituição CD 12: na falha sofrem 16 (3d10) de dano trovejante e ficam surdas até o início do próximo turno do ganso; no sucesso, metade do dano. O som é ouvido a até 90 m."
+   }
+  ],
+  "reacoes": [],
+  "lendarias": []
+ },
+ "Rime Hulk": {
+  "nome": "Colosso de Geada",
+  "acNote": "armadura natural",
+  "blurb": "Golpeia duas vezes com punhos gelados de longo alcance e atravessa as fileiras inimigas deixando um rastro de gelo que fere e retarda. Ao morrer, explode em geada — não fique colado nele.",
+  "lore": "Esses seres são um ramo decaído da linhagem dos gigantes do gelo, herdeiros de antigos gigantes que se isolaram do mundo e acabaram dominados pela própria natureza elemental. A maioria habita o Gelo Eterno, plano congelado na fronteira entre o Ar e a Água elementais, mas alguns se escondem em fendas de geleiras polares. Menores e mais fracos que seus ancestrais, são massas brutas de gelo com forma vagamente gigante, que se desfazem e se recompõem sem parar enquanto soltam nuvens de geada. Por onde passam deixam gelo que prende os inimigos, e em geral são hostis a quem cruza seu caminho.",
+  "tracos": [
+   {
+    "en": "Death Burst",
+    "nome": "Explosão Mortal",
+    "desc": "Ao morrer, explode numa esfera de 3 m de raio. Cada criatura na área faz teste de resistência de Constituição CD 15; se falhar, sofre 10 (3d6) de dano de frio."
+   }
+  ],
+  "acoes": [
+   {
+    "en": "Multiattack",
+    "nome": "Ataques Múltiplos",
+    "desc": "Faz dois ataques de Pancada."
+   },
+   {
+    "en": "Slam",
+    "nome": "Pancada",
+    "desc": "Ataque corpo a corpo com arma: +7 para acertar, alcance 3 m, um alvo. Causa 9 (1d10 + 4) de dano de concussão mais 9 (2d8) de dano de frio."
+   },
+   {
+    "en": "Trail of Frost",
+    "nome": "Rastro de Geada",
+    "desc": "Recarga 5–6. Move-se até seu deslocamento sem provocar ataques de oportunidade, podendo atravessar criaturas Médias ou menores. Cada criatura cujo espaço ele entra pela primeira vez faz teste de resistência de Constituição CD 15: na falha sofre 22 (4d10) de dano de frio e tem o deslocamento reduzido em 3 m até o início do próximo turno dele; no sucesso, sofre metade do dano."
+   }
+  ],
+  "reacoes": [],
+  "lendarias": []
+ },
+ "Aerosaur": {
+  "nome": "Aerossauro",
+  "acNote": "armadura natural",
+  "blurb": "Pterossauro gigantesco que mergulha do céu, prende a presa no bico e a dilacera com as garras. Suas rajadas de asas derrubam e arremessam quem estiver por perto.",
+  "lore": "O aerossauro é um réptil voador colossal, parente dos dinossauros, cujas asas cobrem o céu como uma tempestade. Vive em penhascos altos e picos isolados, de onde vigia vastas planícies em busca de caça. Age por instinto, sem malícia, mas trata qualquer coisa do tamanho de um cavalo, ou até maior, como alimento. Sua resistência natural à magia o torna um alvo difícil para conjuradores que tentam afastá-lo.",
+  "tracos": [
+   {
+    "en": "Magic Resistance",
+    "nome": "Resistência à Magia",
+    "desc": "Tem vantagem em testes de resistência contra magias e outros efeitos mágicos."
+   }
+  ],
+  "acoes": [
+   {
+    "en": "Multiattack",
+    "nome": "Ataques Múltiplos",
+    "desc": "Faz um ataque de Mordida e um de Garras."
+   },
+   {
+    "en": "Bite",
+    "nome": "Mordida",
+    "desc": "+12 para acertar, alcance 3 m: 27 (3d12+8) de dano perfurante. Alvo Enorme ou menor fica agarrado (CD 18 para escapar) e contido enquanto durar; nesse período, não pode morder outro alvo."
+   },
+   {
+    "en": "Talons",
+    "nome": "Garras",
+    "desc": "+12 para acertar, alcance 3 m: 24 (3d10+8) de dano cortante."
+   },
+   {
+    "en": "Wing Gusts",
+    "nome": "Rajadas de Asas",
+    "desc": "Recarga 5–6. Criaturas a até 3 m fazem teste de resistência de Força CD 20: na falha, sofrem 38 (7d10) de dano trovejante, são empurradas até 9 m e ficam caídas; no sucesso, metade do dano e empurrão de até 4,5 m."
+   }
+  ],
+  "reacoes": [],
+  "lendarias": []
+ },
+ "Fensir Skirmisher": {
+  "nome": "Fensir Escaramuçador",
+  "acNote": "camisão de malha",
+  "blurb": "Gigante regenerador que golpeia com machado de batalha três vezes ou arremessa pedras mágicas que derrubam, e lança lama que petrifica grupos inteiros. Fogo, ácido ou luz do sol são as chaves para derrubá-lo.",
+  "lore": "Os fensir são gigantes ligados às trolls e às terras selvagens do norte, vivendo em cavernas e florestas sombrias longe do sol. O escaramuçador patrulha as fronteiras do território do seu clã, emboscando intrusos com táticas rápidas. Teme a luz do dia, que pode transformá-lo em pedra, por isso age principalmente à noite ou sob o céu encoberto. Apesar da brutalidade, é astuto e conhece magias simples de rastreio e sobrevivência.",
+  "tracos": [
+   {
+    "en": "Regeneration",
+    "nome": "Regeneração",
+    "desc": "No início do turno recupera 10 PV, exceto sob luz solar. Dano de ácido ou fogo desativa a regeneração no próximo turno; só morre se começar o turno com 0 PV sem regenerar."
+   },
+   {
+    "en": "Sunlight Hypersensitivity",
+    "nome": "Hipersensibilidade à Luz Solar",
+    "desc": "Se começar o turno sob luz solar, faz teste de resistência de Constituição CD 15; se falhar, fica petrificado enquanto permanecer na luz do sol."
+   }
+  ],
+  "acoes": [
+   {
+    "en": "Multiattack",
+    "nome": "Ataques Múltiplos",
+    "desc": "Faz três ataques de Machado de Batalha ou dois de Pedra Mágica."
+   },
+   {
+    "en": "Battleaxe",
+    "nome": "Machado de Batalha",
+    "desc": "Ataque corpo a corpo +7, alcance 1,5 m: 13 (2d8+4) de dano cortante, ou 15 (2d10+4) usado com as duas mãos."
+   },
+   {
+    "en": "Magic Stone",
+    "nome": "Pedra Mágica",
+    "desc": "Ataque à distância +5, alcance 18 m: 15 (2d12+2) de dano de concussão. Alvo Grande ou menor faz teste de resistência de Força CD 13 ou fica caído."
+   },
+   {
+    "en": "Mud to Stone",
+    "nome": "Lama em Pedra",
+    "desc": "Recarga 5–6. Esfera de 9 m de raio a até 18 m: cada criatura que não seja fensir faz teste de resistência de Destreza CD 13 ou sofre 13 (3d8) de concussão e fica contida. No fim do próximo turno repete o teste: sucesso encerra o efeito, falha deixa petrificada por 24 horas."
+   },
+   {
+    "en": "Spellcasting",
+    "nome": "Conjuração",
+    "desc": "Usa Inteligência para conjurar, 1 vez por dia cada: criar ou destruir água, detectar magia e passos sem pegadas."
+   }
+  ],
+  "reacoes": [],
+  "lendarias": []
+ },
+ "Scion of Thrym": {
+  "nome": "Rebento de Thrym",
+  "acNote": "armadura natural",
+  "blurb": "Titã gélido que esmaga com machado de gelo e socos de alcance enorme, arremessa geleiras à distância e lança grupos inteiros ao ar com erupções de gelo. Ainda quebra a concentração de conjuradores só de se mover.",
+  "lore": "Os rebentos de Thrym são titãs nascidos da essência do deus dos gigantes do gelo, encarnações vivas do inverno que não termina. Vagam por tundras, geleiras e picos congelados, onde o próprio chão parece obedecer à sua vontade. Costumam se impor sobre gigantes do gelo como líderes ou campeões divinos. São orgulhosos, implacáveis e enxergam o mundo como algo a ser soterrado sob o gelo.",
+  "tracos": [
+   {
+    "en": "Legendary Resistance",
+    "nome": "Resistência Lendária",
+    "desc": "Seis vezes por dia, quando falha em um teste de resistência, pode escolher passar."
+   },
+   {
+    "en": "Magic Resistance",
+    "nome": "Resistência à Magia",
+    "desc": "Tem vantagem em testes de resistência contra magias e outros efeitos mágicos."
+   },
+   {
+    "en": "Siege Monster",
+    "nome": "Monstro de Cerco",
+    "desc": "Causa dano dobrado a objetos e estruturas."
+   }
+  ],
+  "acoes": [
+   {
+    "en": "Multiattack",
+    "nome": "Ataques Múltiplos",
+    "desc": "Faz um ataque de Machado de Gelo e dois de Pancada, ou dois de Arremesso de Geleira."
+   },
+   {
+    "en": "Ice Axe",
+    "nome": "Machado de Gelo",
+    "desc": "Ataque corpo a corpo, +17, alcance 9 m. Causa 36 (4d12+10) de dano energético mais 18 (4d8) de frio."
+   },
+   {
+    "en": "Slam",
+    "nome": "Pancada",
+    "desc": "Ataque corpo a corpo, +17, alcance 6 m. Causa 32 (4d10+10) de dano energético."
+   },
+   {
+    "en": "Glacier Throw",
+    "nome": "Arremesso de Geleira",
+    "desc": "Ataque à distância, +17, 36/144 m. Causa 36 (4d12+10) de concussão mais 14 (4d6) de frio, e o alvo fica caído se falhar em um teste de resistência de Força CD 25."
+   },
+   {
+    "en": "Glacial Upheaval",
+    "nome": "Erupção Glacial",
+    "desc": "Recarga 5-6. Escolhe um ponto a até 9 m: criaturas num cilindro de 9 m de raio e 30 m de altura fazem teste de Destreza CD 25; quem falha sofre 36 (8d8) de concussão e 19 (3d12) de frio, é lançado ao topo e cai; quem passa sofre metade e é empurrado para fora. No início do próximo turno, uma massa de gelo cai num cilindro igual a até 18 m do ponto original: Destreza CD 25 ou 18 (4d8) de concussão e 18 (4d8) de frio."
+   }
+  ],
+  "reacoes": [
+   {
+    "en": "Earth-Shaking Movement",
+    "nome": "Passos que Abalam a Terra",
+    "desc": "Ação bônus: move-se até seu deslocamento e emite uma onda de choque em raio de 18 m. Criaturas no chão que estejam concentradas devem passar em teste de Constituição CD 25 ou perdem a concentração."
+   }
+  ],
+  "lendarias": []
+ },
+ "Giant Ram": {
+  "nome": "Carneiro Gigante",
+  "acNote": "armadura natural",
+  "blurb": "Investe em linha reta para derrubar os alvos com cabeçadas carregadas de energia mágica e dispara rajadas energéticas à distância. Resiste bem a magia e devolve com um disparo os feitiços que falham contra ele.",
+  "lore": "Esses carneiros enormes são criados pelos gigantes como um rebanho de grande valor. A lã deles absorve a magia do ambiente e a energia dos feitiços lançados ao redor. Enquanto o animal está vivo e com o velo intacto, usa esse poder acumulado para se defender, lançando rajadas que espantam predadores. Tosquiada com cuidado, a lã serve para tecer mantos de proteção ou forrar armaduras que resistem a frio, fogo ou eletricidade.",
+  "tracos": [
+   {
+    "en": "Magic Resistance",
+    "nome": "Resistência à Magia",
+    "desc": "Tem vantagem em testes de resistência contra magias e outros efeitos mágicos."
+   }
+  ],
+  "acoes": [
+   {
+    "en": "Ram",
+    "nome": "Marrada",
+    "desc": "Ataque corpo a corpo, +6 para acertar, alcance 1,5 m: 9 (2d4 + 4) de dano de concussão mais 3 (1d6) de dano energético. Se tiver avançado ao menos 6 m em linha reta até o alvo logo antes, ele precisa passar num teste de resistência de Força CD 14 ou fica caído."
+   },
+   {
+    "en": "Force Bolt",
+    "nome": "Disparo de Energia",
+    "desc": "Ataque mágico à distância, +4 para acertar, alcance 9 m: 7 (2d6) de dano energético."
+   }
+  ],
+  "reacoes": [
+   {
+    "en": "Absorbent Fleece",
+    "nome": "Velo Absorvente",
+    "desc": "Recarga. Logo após passar num teste de resistência contra uma magia ou ser errado por um ataque de magia, faz um ataque de Disparo de Energia."
+   }
+  ],
+  "lendarias": []
+ },
+ "Fomorian Warlock of the Dark": {
+  "nome": "Fomoriano Bruxo das Trevas",
+  "acNote": "armadura natural",
+  "blurb": "Gigante deformado que esmaga com um grande porrete de longo alcance e lança explosões de energia arcana e trevas que cegam. Com sua runa de sangue, amaldiçoa alvos à distância e envenena quem o fere.",
+  "lore": "Fomorianos são gigantes de corpo retorcido que habitam as profundezas do Subterrâneo, marcados por uma antiga maldição. Alguns buscam pactos com poderes sombrios e se tornam bruxos, trocando a força bruta por magia corruptora. Esse tipo guarda uma runa de sangue gravada em uma efígie, fonte de seus feitiços mais cruéis. Costuma liderar outros seres das trevas com astúcia e crueldade, usando sugestão e telepatia para manipular inimigos.",
+  "tracos": [
+   {
+    "en": "Blood Rune",
+    "nome": "Runa de Sangue",
+    "desc": "Enquanto porta o objeto com a runa, pode usar Maldição Corruptora e Repreensão Venenosa. O objeto tem CA 15, 30 PV, imunidade a dano necrótico, veneno e psíquico, recupera todos os PV ao fim de cada turno e vira pó a 0 PV ou se o fomoriano morrer; ele pode gravar uma nova runa após um descanso curto ou longo."
+   },
+   {
+    "en": "Devil's Sight",
+    "nome": "Visão do Diabo",
+    "desc": "Escuridão mágica não bloqueia sua visão no escuro."
+   },
+   {
+    "en": "Legendary Resistance",
+    "nome": "Resistência Lendária",
+    "desc": "Três vezes por dia, pode transformar um teste de resistência falho em sucesso."
+   }
+  ],
+  "acoes": [
+   {
+    "en": "Multiattack",
+    "nome": "Ataques Múltiplos",
+    "desc": "Faz três ataques de Grande Porrete; com a runa de sangue, pode trocar um deles por Maldição Corruptora."
+   },
+   {
+    "en": "Greatclub",
+    "nome": "Grande Porrete",
+    "desc": "Ataque corpo a corpo, +10 para acertar, alcance 4,5 m: 19 (3d8+6) de dano de concussão mais 7 (2d6) necrótico."
+   },
+   {
+    "en": "Corrupting Hex",
+    "nome": "Maldição Corruptora",
+    "desc": "Um alvo visível a até 18 m faz teste de resistência de Carisma CD 16; se falhar, sofre 27 (6d8) de dano necrótico e fica amaldiçoado por 24 horas, com deslocamento reduzido à metade e precisando de um teste de Inteligência CD 16 para conjurar, ou a magia é perdida."
+   },
+   {
+    "en": "Eldritch Burst",
+    "nome": "Explosão Sobrenatural",
+    "desc": "Esfera de 6 m de raio num ponto a até 36 m; teste de resistência de Destreza CD 16. Na falha, 32 (5d12) de dano energético e fica caído; no sucesso, metade do dano."
+   },
+   {
+    "en": "Spellcasting",
+    "nome": "Conjuração",
+    "desc": "Usa Carisma (CD 16). À vontade: detectar magia, levitação, mãos mágicas, prestidigitação. 1 vez por dia cada: detectar pensamentos, sugestão, telecinésia."
+   }
+  ],
+  "reacoes": [
+   {
+    "en": "Poisoning Rebuke",
+    "nome": "Repreensão Venenosa",
+    "desc": "Quando sofre dano de uma criatura visível a até 18 m, ela faz teste de resistência de Constituição CD 16 ou fica envenenada até o fim do próximo turno dela. Requer a runa de sangue."
+   }
+  ],
+  "lendarias": [
+   {
+    "en": "Creeping Gloom",
+    "nome": "Treva Rastejante",
+    "desc": "Ação bônus (recarga 5–6): esfera de 9 m de raio num ponto a até 36 m; cada criatura faz teste de resistência de Constituição CD 16 ou sofre 11 (2d10) de dano necrótico e fica cega até o fim do próximo turno dela."
+   }
+  ]
+ },
+ "Fire Giant of Evil Fire": {
+  "nome": "Gigante do Fogo do Fogo Maligno",
+  "acNote": "armadura de placas",
+  "blurb": "Esmaga com um cetro em brasa que marca o alvo e impede que ele fique invisível, ou lança rajadas de fogo de longe que amedrontam. Mantenha distância quando ele cair: a armadura explode em estilhaços.",
+  "lore": "Alguns gigantes do fogo, de tanto encarar as chamas, acabam percebendo Imix, o Príncipe do Fogo Maligno, olhando de volta para eles. Corrompidos, uns abandonam seus lares para se unir a cultistas, e outros continuam em suas comunidades, servindo em segredo aos planos destrutivos de Imix. Eles forjam armas e armaduras em chamas abençoadas pelo príncipe, e o metal se funde à carne, tornando impossível retirá-lo. Quando o gigante morre, a armadura detona como uma última dádiva do fogo devorador.",
+  "tracos": [
+   {
+    "en": "Shrapnel Explosion",
+    "nome": "Explosão de Estilhaços",
+    "desc": "Ao chegar a 0 PV, a armadura do gigante explode e destrói o corpo. Criaturas a até 3 m fazem teste de resistência de Destreza CD 18, sofrendo 21 (6d6) de dano perfurante se falharem, ou metade se passarem."
+   }
+  ],
+  "acoes": [
+   {
+    "en": "Multiattack",
+    "nome": "Ataques Múltiplos",
+    "desc": "Faz dois ataques de Cetro Abrasador ou dois de Raio de Imix."
+   },
+   {
+    "en": "Searing Scepter",
+    "nome": "Cetro Abrasador",
+    "desc": "Ataque corpo a corpo com arma, +11, alcance 3 m: 17 (3d6+7) de concussão mais 9 (2d8) de fogo. O alvo fica marcado por 24 horas: não pode ficar invisível, perde a invisibilidade e emite penumbra num raio de 1,5 m; magias que encerram maldições removem a marca."
+   },
+   {
+    "en": "Bolt of Imix",
+    "nome": "Raio de Imix",
+    "desc": "Ataque à distância com magia, +8, alcance 36 m: 20 (3d10+4) de dano de fogo. O alvo faz teste de resistência de Sabedoria CD 16 ou fica amedrontado até o fim do próximo turno dele."
+   }
+  ],
+  "reacoes": [],
+  "lendarias": []
+ },
+ "Titanothere": {
+  "nome": "Titanotério",
+  "acNote": "armadura natural",
+  "blurb": "Um colosso que investe em linha reta e esmaga tudo com as patas, com alcance de 3 m. Se correr 6 m até o alvo antes de golpear, causa dano extra e pode derrubá-lo.",
+  "lore": "Titanotérios são mamíferos gigantescos aparentados com os rinocerontes. A aparência varia muito: alguns não têm chifres e outros exibem vários, e a pele pode ser pedregosa, coberta de placas ou de pelo espesso. Todos são imensos, andam em manadas e têm temperamento irritadiço. Povos de regiões geladas e ermas às vezes os domesticam como montaria e animal de carga.",
+  "tracos": [
+   {
+    "en": "Beast of Burden",
+    "nome": "Besta de Carga",
+    "desc": "Para calcular a capacidade de carga, o titanotério conta como uma categoria de tamanho acima da sua."
+   }
+  ],
+  "acoes": [
+   {
+    "en": "Stomp",
+    "nome": "Pisotear",
+    "desc": "Ataque corpo a corpo com arma: +10 para acertar, alcance 3 m, 20 (3d8 + 7) de dano de concussão. Se tiver se movido ao menos 6 m em linha reta até o alvo logo antes, causa 13 (3d8) de concussão extra e uma criatura atingida precisa passar num teste de resistência de Força CD 18 ou fica caída."
+   }
+  ],
+  "reacoes": [],
+  "lendarias": []
+ },
+ "Fomorian Deep Crawler": {
+  "nome": "Fomoriano Rastejador das Profundezas",
+  "acNote": "armadura natural",
+  "blurb": "Gigante que se arrasta pelas paredes e tetos e esmaga com pancadas de 3 m de alcance. Sua maldição psíquica derruba a vítima e a impede de se levantar por uma hora.",
+  "lore": "Fomorianos são gigantes deformados por antigas maldições, exilados nas cavernas do Subterrâneo. Este ramo da linhagem se adaptou a túneis estreitos, rastejando de bruços com corpo retorcido e membros longos. Espreita no escuro, preso ao teto, e cai sobre quem passa. Ressentido e cruel, gosta de ver as presas rastejarem como ele.",
+  "tracos": [
+   {
+    "en": "Contortionist",
+    "nome": "Contorcionista",
+    "desc": "Ocupa espaços próprios para criaturas Grandes sem precisar se espremer."
+   },
+   {
+    "en": "Crawling Stance",
+    "nome": "Postura Rastejante",
+    "desc": "Enquanto caído, rastejar não custa movimento extra e os ataques contra ele não ganham vantagem por essa condição."
+   },
+   {
+    "en": "Spider Climb",
+    "nome": "Escalada de Aranha",
+    "desc": "Escala superfícies difíceis, inclusive de cabeça para baixo no teto, sem testes."
+   }
+  ],
+  "acoes": [
+   {
+    "en": "Multiattack",
+    "nome": "Ataques Múltiplos",
+    "desc": "Faz dois ataques de Pancada e usa Maldição Rastejante se estiver disponível."
+   },
+   {
+    "en": "Slam",
+    "nome": "Pancada",
+    "desc": "Ataque corpo a corpo +10, alcance 3 m, um alvo. Causa 22 (3d10+6) de dano de concussão."
+   },
+   {
+    "en": "Crawling Hex",
+    "nome": "Maldição Rastejante",
+    "desc": "Recarga 4–6. Uma criatura visível a até 18 m faz teste de resistência de Sabedoria CD 15; se falhar, sofre 31 (7d8) de dano psíquico, fica caída e amaldiçoada por 1 hora, sem poder se levantar por conta própria."
+   }
+  ],
+  "reacoes": [],
+  "lendarias": []
+ },
+ "Death Giant Shrouded One": {
+  "nome": "Gigante da Morte Amortalhado",
+  "acNote": "15 com armadura arcana",
+  "blurb": "Mago gigante que dispara rajadas de almas à distância e, com sua runa da morte, ceifa inimigos com uma foice necrótica que impede cura. Teleporta-se espalhando medo e se envolve em almas que enfraquecem as resistências de quem chega perto.",
+  "lore": "Gigantes da morte amortalhados são estudiosos da magia que se dedicam aos segredos do fim da vida. Carregam um crânio de gigante gravado com uma runa da morte, fonte de seus poderes mais temidos. Falam com os mortos para extrair conhecimento e tratam o medo alheio como alimento. Costumam agir com frieza calculada, mantendo distância e atacando de longe antes de se aproximar para a colheita.",
+  "tracos": [
+   {
+    "en": "Death Rune",
+    "nome": "Runa da Morte",
+    "desc": "Enquanto segura ou usa o crânio com a runa, pode usar Foice Ceifadora e Mortalha de Almas. O crânio tem CA 18, 35 PV, imunidade a necrótico, veneno e psíquico, recupera todos os PV ao fim de cada turno e vira pó se chegar a 0 PV ou se o gigante morrer; ele pode gravar outra runa num crânio após um descanso curto ou longo."
+   }
+  ],
+  "acoes": [
+   {
+    "en": "Spellcasting",
+    "nome": "Conjuração",
+    "desc": "Usa Inteligência. À vontade: detectar magia e armadura arcana. 3/dia cada: falar com os mortos e disco flutuante de Tenser."
+   },
+   {
+    "en": "Multiattack",
+    "nome": "Ataques Múltiplos",
+    "desc": "Faz três ataques de Explosão de Almas ou, se tiver a runa da morte, três de Foice Ceifadora."
+   },
+   {
+    "en": "Soul Burst",
+    "nome": "Explosão de Almas",
+    "desc": "Ataque mágico corpo a corpo ou à distância, +11, alcance 3 m ou 36 m. Causa 28 (4d10+6) de dano necrótico; se o alvo estiver amedrontado, o gigante ganha PV temporários iguais ao dano."
+   },
+   {
+    "en": "Reaping Scythe",
+    "nome": "Foice Ceifadora",
+    "desc": "Exige a runa. Ataque mágico corpo a corpo, +11, alcance 4,5 m: 38 (7d10) de dano necrótico e o alvo não recupera PV até o fim do próximo turno dele. Se cair a 0 PV por este ataque, morre."
+   },
+   {
+    "en": "Frightening Teleport",
+    "nome": "Teleporte Aterrador",
+    "desc": "Ação bônus (recarga 4-6): teleporta-se até 12 m para um espaço visível. Criaturas a até 3 m do ponto de partida fazem teste de resistência de Sabedoria CD 19 ou ficam amedrontadas até o fim do próximo turno delas."
+   },
+   {
+    "en": "Shroud of Souls",
+    "nome": "Mortalha de Almas",
+    "desc": "Ação bônus, exige a runa: por 1 minuto, quem começa o turno a até 1,5 m dele faz teste de resistência de Sabedoria CD 19 ou tem desvantagem em testes de resistência até o fim do próximo turno. Termina se ele morrer, repetir a ação ou perder a runa."
+   }
+  ],
+  "reacoes": [],
+  "lendarias": []
+ },
+ "Giant Lynx": {
+  "nome": "Lince Gigante",
+  "acNote": "",
+  "blurb": "Felino feérico ágil que avança em linha reta para derrubar a presa com as garras e então golpeá-la de novo enquanto está no chão. Enxerga através de ilusões e se esconde muito bem na mata e na neve.",
+  "lore": "O lince gigante parece um gato selvagem comum, mas é uma criatura mágica vinda das florestas nevadas da Agrestia das Fadas. Sua pelagem clareia no inverno, o que o torna quase invisível na paisagem branca. Caça em pequenos bandos, usa um dom mágico para espionar terrenos de caça à distância e costuma desarmar as armadilhas que caçadores de peles deixam em seu território. Gigantes do gelo e das nuvens às vezes fazem amizade com esses felinos, que compartilham sua magia de adivinhação desde que sejam tratados com respeito.",
+  "tracos": [
+   {
+    "en": "Lynx's Sight",
+    "nome": "Visão do Lince",
+    "desc": "Uma vez por dia, conjura clarividência sem componentes, usando Sabedoria como atributo de conjuração."
+   },
+   {
+    "en": "Woodland Camouflage",
+    "nome": "Camuflagem da Floresta",
+    "desc": "Tem vantagem em testes de Destreza (Furtividade) para se esconder em vegetação densa ou terreno nevado."
+   }
+  ],
+  "acoes": [
+   {
+    "en": "Claws",
+    "nome": "Garras",
+    "desc": "Ataque corpo a corpo com arma: +6 para acertar, alcance 1,5 m, 8 (1d8 + 4) de dano cortante. Se avançou ao menos 6 m em linha reta até o alvo antes de acertar, ele faz teste de resistência de Força CD 12 ou fica caído; contra um alvo caído, o lince pode repetir o ataque de Garras como ação bônus."
+   }
+  ],
+  "reacoes": [],
+  "lendarias": []
+ },
+ "Fire Giant Forgecaller": {
+  "nome": "Gigante de Fogo Invocador da Forja",
+  "acNote": "armadura de placas",
+  "blurb": "Esmaga com um martelo que superaquece todo metal ao redor e arremessa rochas incandescentes que derrubam. Com sua runa de fogo, solta ondas de magma que prendem grupos inteiros e se envolve em fumaça para ganhar cobertura.",
+  "lore": "É um gigante de fogo que dominou a antiga magia das runas e consegue comandar o calor dos vulcões, o fogo e o magma. Nas comunidades de sua raça, cuida das forjas e da defesa, muitas vezes em nome de Surtur. Alguns preferem a solidão e buscam o coração dos vulcões ou o Plano Elemental do Fogo para aperfeiçoar seu ofício. Sua armadura parece mal conter o calor e a fumaça que vazam dela, e ele voa impulsionado por jatos de chamas mágicas.",
+  "tracos": [
+   {
+    "en": "Legendary Resistance",
+    "nome": "Resistência Lendária",
+    "desc": "Três vezes por dia, pode transformar um teste de resistência fracassado em sucesso."
+   },
+   {
+    "en": "Fire Rune",
+    "nome": "Runa de Fogo",
+    "desc": "Enquanto porta o objeto com a runa, pode usar Onda de Magma e Armadura de Fornalha. O objeto tem CA 15, 40 PV, imunidade a dano necrótico, veneno e psíquico, recupera todos os PV no fim de cada turno e vira pó se chegar a 0 PV ou se o gigante morrer; ele pode inscrever outra após um descanso curto ou longo."
+   }
+  ],
+  "acoes": [
+   {
+    "en": "Multiattack",
+    "nome": "Ataques Múltiplos",
+    "desc": "Faz três ataques de Martelo da Forja ou dois de Rocha Incandescente."
+   },
+   {
+    "en": "Forge Hammer",
+    "nome": "Martelo da Forja",
+    "desc": "Corpo a corpo, +13, alcance 3 m: 24 (5d6+7) de concussão. Ao acertar, uma vez por turno, aquece o metal numa esfera de 9 m em torno do alvo até seu próximo turno; quem tocar metal aquecido no início do turno faz teste de Constituição CD 19 ou sofre 10 (3d6) de fogo e tem desvantagem em ataques até o próximo turno."
+   },
+   {
+    "en": "Heated Rock",
+    "nome": "Rocha Incandescente",
+    "desc": "À distância, +13, alcance 18/72 m: 23 (3d10+7) de concussão mais 19 (3d12) de fogo; alvo Grande ou menor faz teste de Força CD 21 ou fica caído. Após cada arremesso, role 1d6: com 3 ou menos, acabaram as rochas."
+   },
+   {
+    "en": "Magma Wave",
+    "nome": "Onda de Magma",
+    "desc": "Requer a runa. Cone de 9 m, teste de Destreza CD 19: falha causa 36 (8d8) de fogo e deixa contido; sucesso, metade e sem contenção. Uma criatura usa uma ação e Força (Atletismo) CD 19 para se soltar ou soltar alguém, ou a rocha pode ser destruída (CA 17, 20 PV, imune a fogo, veneno e psíquico)."
+   }
+  ],
+  "reacoes": [],
+  "lendarias": [
+   {
+    "en": "Furnace Armor",
+    "nome": "Armadura de Fornalha",
+    "desc": "Ação bônus, requer a runa. Fumaça e brasas enchem uma esfera de 9 m centrada nele, concedendo meia cobertura por 1 minuto, até ele encerrar com ação bônus, morrer ou perder a runa."
+   }
+  ]
+ },
+ "Barrowghast": {
+  "nome": "Carniçal das Colinas",
+  "acNote": "armadura natural",
+  "blurb": "Gigante morto-vivo que golpeia com alcance de 3 m e drena vida, reduzindo o máximo de PV das vítimas. Seu fedor envenena quem fica perto e cortá-lo espirra icor venenoso.",
+  "lore": "Quando um gigante das colinas morre faminto e consumido pela raiva, a energia do Plano Negativo pode reerguê-lo como esta criatura. Parece só um cadáver ambulante, mas é movido por rancor e cheio de energia necrótica. Seu sangue virou um icor grosso e tóxico que exala um cheiro insuportável. Já não come carne: deseja a força vital dos vivos, caçando primeiro antigos parentes e aliados, mas atacando qualquer um. Humanoides que ele drena até a morte voltam como zumbis.",
+  "tracos": [
+   {
+    "en": "Stench",
+    "nome": "Fedor",
+    "desc": "Criatura que começa o turno a até 3 m faz teste de resistência de Constituição CD 16; se falhar, fica envenenada por 1 minuto e não recupera PV nesse período. Se passar, fica imune ao fedor de todos eles por 24 horas."
+   }
+  ],
+  "acoes": [
+   {
+    "en": "Multiattack",
+    "nome": "Ataques Múltiplos",
+    "desc": "Faz dois ataques de Pancada, podendo trocar um deles por Dreno de Vida."
+   },
+   {
+    "en": "Slam",
+    "nome": "Pancada",
+    "desc": "Ataque corpo a corpo +8, alcance 3 m: 18 (2d12+5) de dano de concussão."
+   },
+   {
+    "en": "Life Drain",
+    "nome": "Dreno de Vida",
+    "desc": "Ataque corpo a corpo +8, alcance 3 m: 9 (1d8+5) de dano necrótico; o alvo faz teste de Constituição CD 16 ou perde PV máximo igual ao dano até um descanso longo, morrendo se chegar a 0. Humanoide morto assim se ergue na hora como zumbi aliado, mas sem controle."
+   }
+  ],
+  "reacoes": [
+   {
+    "en": "Noxious Wound",
+    "nome": "Ferida Nociva",
+    "desc": "Logo após sofrer dano perfurante ou cortante, cada criatura a até 1,5 m faz teste de resistência de Destreza CD 16, sofrendo 10 (3d6) de dano de veneno, ou metade se passar."
+   }
+  ],
+  "lendarias": []
+ },
+ "Fire Hellion": {
+  "nome": "Infernal de Fogo",
+  "acNote": "armadura de placas",
+  "blurb": "Gigante corrompido que esmaga com uma maça-estrela flamejante de longo alcance, impedindo a cura de quem atinge, e lança esferas de fogo infernal à distância. Quem cai diante dele tem a alma arrastada para Avernus.",
+  "lore": "É um gigante de fogo que, obcecado pela Guerra Sangrenta, firmou pacto com um diabo poderoso em troca de táticas e dons mágicos. Com o tempo, o acordo o transformou em um corruptor, com chifres, cascos fendidos e cauda bifurcada. O diabo lhe ensinou a forjar ferro infernal com fogo dos Nove Infernos, criando armas que enviam as almas dos mortos para Avernus. Assim, o mestre recebe almas sem parar, e o gigante promete servi-lo como ferreiro após a morte.",
+  "tracos": [
+   {
+    "en": "Magic Resistance",
+    "nome": "Resistência à Magia",
+    "desc": "Tem vantagem em testes de resistência contra magias e outros efeitos mágicos."
+   },
+   {
+    "en": "Soul Taker",
+    "nome": "Tomador de Almas",
+    "desc": "Gigante ou humanoide reduzido a 0 PV por ele morre, e sua alma vira um lêmure em Avernus em 1d4 horas. Depois disso, só volta com desejo ou matando o lêmure e usando ressurreição verdadeira no corpo."
+   }
+  ],
+  "acoes": [
+   {
+    "en": "Multiattack",
+    "nome": "Ataques Múltiplos",
+    "desc": "Faz dois ataques de Maça-Estrela."
+   },
+   {
+    "en": "Morningstar",
+    "nome": "Maça-Estrela",
+    "desc": "Ataque corpo a corpo, +11, alcance 3 m: 20 (3d8+7) perfurante mais 11 (2d10) de fogo. A criatura atingida não recupera PV até o início do próximo turno dele."
+   },
+   {
+    "en": "Infernal Orb",
+    "nome": "Orbe Infernal",
+    "desc": "Esfera de 6 m de raio, contornando cantos, num ponto visível a até 36 m. Teste de resistência de Destreza CD 17: 18 (4d8) de fogo e 18 (4d8) necrótico, ou metade se passar."
+   }
+  ],
+  "reacoes": [],
+  "lendarias": []
+ },
+ "Frost Giant Ice Shaper": {
+  "nome": "Moldador de Gelo Gigante do Gelo",
+  "acNote": "cota de malha",
+  "blurb": "Combina golpes de machado gélido com raios congelantes que prendem alvos à distância, enquanto lobos de gelo invocados cercam os inimigos. Sua armadura de gelo reativa explode em estilhaços contra quem estiver colado nele.",
+  "lore": "Entre os gigantes do gelo, os que dominam a magia das runas recebem o título de moldadores de gelo e sobem depressa na hierarquia do ordning. Costumam virar jarls ou conselheiros que, na prática, governam por trás do trono. Quase sempre são fiéis a Thrym. Moldam a energia elemental do ar e da água para criar lobos de gelo, vestir couraças congeladas e lançar chuvas de lascas cortantes.",
+  "tracos": [
+   {
+    "en": "Frost Rune",
+    "nome": "Runa do Gelo",
+    "desc": "Enquanto porta o objeto com a runa, pode usar Lobos de Gelo e Armadura de Gelo. O objeto tem CA 16, 40 PV, imunidade a necrótico, veneno e psíquico, recupera todos os PV ao fim de cada turno e vira pó se chegar a 0 PV ou se o gigante morrer; ele pode gravar outra runa após um descanso curto ou longo."
+   },
+   {
+    "en": "Legendary Resistance",
+    "nome": "Resistência Lendária (3/Dia)",
+    "desc": "Se falhar num teste de resistência, pode escolher ter sucesso."
+   }
+  ],
+  "acoes": [
+   {
+    "en": "Multiattack",
+    "nome": "Ataques Múltiplos",
+    "desc": "Faz três ataques, com Machado Grande, Raio Congelante ou qualquer combinação deles."
+   },
+   {
+    "en": "Greataxe",
+    "nome": "Machado Grande",
+    "desc": "Ataque corpo a corpo, +12 para acertar, alcance 3 m. Causa 22 (3d10+6) de dano cortante mais 9 (2d8) de frio."
+   },
+   {
+    "en": "Freezing Ray",
+    "nome": "Raio Congelante",
+    "desc": "Ataque mágico à distância, +10, alcance 36 m: 17 (3d8+4) de dano de frio. O alvo faz teste de resistência de Constituição CD 18; se falhar fica contido até o fim do próximo turno dele, se passar tem o deslocamento reduzido em 3 m pelo mesmo período."
+   },
+   {
+    "en": "Ice Wolves",
+    "nome": "Lobos de Gelo",
+    "desc": "Requer a Runa do Gelo. Invoca 1d4 lobos do inverno elementais a até 9 m, que agem logo após o gigante e obedecem a ele, recebendo +6 em ataque e dano enquanto estiverem a até 9 m dele. Somem após 1 minuto, se o gigante morrer ou se ele usar a ação de novo."
+   }
+  ],
+  "reacoes": [
+   {
+    "en": "Ice Armor",
+    "nome": "Armadura de Gelo",
+    "desc": "Requer a Runa do Gelo. Quando uma criatura visível o ataca, ganha +6 de CA contra esse ataque. Depois o gelo explode: cada criatura a até 1,5 m faz teste de resistência de Destreza CD 18 ou sofre 13 (3d8) de dano de frio."
+   }
+  ],
+  "lendarias": []
+ },
+ "Scion of Skoraeus": {
+  "nome": "Rebento de Skoraeus",
+  "acNote": "armadura natural",
+  "blurb": "Titã colossal que esmaga com clava de cristal e punhos de longo alcance, arremessa pedras rúnicas explosivas e pode petrificar quem agarra. Seus passos abalam o chão e quebram a concentração de conjuradores.",
+  "lore": "Os rebentos de Skoraeus são titãs nascidos da essência do deus gigante da pedra e das profundezas. Habitam cavernas imensas e domínios subterrâneos, onde guardam segredos da terra e cristais antigos. Costumam ser reservados e pacientes, mas reagem com fúria esmagadora a quem profana seus salões. Sua magia rúnica transforma inimigos em estátuas que passam a fazer parte da rocha.",
+  "tracos": [
+   {
+    "en": "Legendary Resistance",
+    "nome": "Resistência Lendária",
+    "desc": "Seis vezes por dia, ao falhar num teste de resistência, pode transformar a falha em sucesso."
+   },
+   {
+    "en": "Magic Resistance",
+    "nome": "Resistência à Magia",
+    "desc": "Tem vantagem em testes de resistência contra magias e efeitos mágicos."
+   },
+   {
+    "en": "Siege Monster",
+    "nome": "Monstro de Cerco",
+    "desc": "Causa dano dobrado a objetos e estruturas."
+   }
+  ],
+  "acoes": [
+   {
+    "en": "Multiattack",
+    "nome": "Ataques Múltiplos",
+    "desc": "Faz um ataque de Clava de Cristal e dois de Pancada e, se disponível, usa Aperto Sepulcral. Ou então faz dois ataques de Pedra Rúnica."
+   },
+   {
+    "en": "Crystal Club",
+    "nome": "Clava de Cristal",
+    "desc": "Corpo a corpo, +16, alcance 9 m: 35 (4d12+9) de concussão. Ao acertar, pode fazer a clava brilhar: o alvo faz teste de Constituição CD 22 ou sofre 18 (4d8) radiante e fica cego até o início do próximo turno do rebento."
+   },
+   {
+    "en": "Slam",
+    "nome": "Pancada",
+    "desc": "Corpo a corpo, +16, alcance 6 m: 31 (4d10+9) de dano energético."
+   },
+   {
+    "en": "Runic Boulder",
+    "nome": "Pedra Rúnica",
+    "desc": "À distância, +16, alcance 36/144 m: 27 (4d8+9) de concussão. Ao acertar, a pedra explode: o alvo e quem estiver a até 9 m dele fazem teste de Destreza CD 22; na falha sofrem 19 (3d12) energético e ficam caídos, no sucesso só metade do dano."
+   },
+   {
+    "en": "Entombing Grasp",
+    "nome": "Aperto Sepulcral",
+    "desc": "Recarga 5–6. Toca uma criatura Enorme ou menor a até 6 m: teste de Destreza CD 24 ou sofre 28 (8d6) energético e fica agarrada (fuga CD 19). Se ainda estiver agarrada no início do próximo turno do rebento, fica petrificada."
+   }
+  ],
+  "reacoes": [],
+  "lendarias": [
+   {
+    "en": "Earth-Shaking Movement",
+    "nome": "Passos que Abalam a Terra",
+    "desc": "Ação bônus: move-se até seu deslocamento e emite uma onda de choque num raio de 18 m. Criaturas no chão que estejam concentradas fazem teste de Constituição CD 24 ou perdem a concentração."
+   }
+  ]
+ },
+ "Scion of Surtur": {
+  "nome": "Rebento de Surtur",
+  "acNote": "armadura natural",
+  "blurb": "Titã de fogo colossal que golpeia com uma lâmina de lava de longo alcance, arremessa bolas de magma e sufoca o campo com fumaça incandescente. Sua onda de lava queima e prende grupos inteiros em rocha endurecida.",
+  "lore": "Este titã é um descendente direto de Surtur, o lorde dos gigantes de fogo, e carrega em si o calor das forjas primordiais. Costuma surgir em regiões vulcânicas, fortalezas de basalto e lugares onde a terra se abre em rios de magma. Arrogante e disciplinado, ele se vê como herdeiro legítimo de uma ordem antiga e trata as raças menores como combustível para suas ambições. Onde caminha, o chão treme e o ar se enche de cinzas.",
+  "tracos": [
+   {
+    "en": "Legendary Resistance",
+    "nome": "Resistência Lendária",
+    "desc": "Seis vezes por dia, ao falhar em um teste de resistência, pode escolher ter sucesso."
+   },
+   {
+    "en": "Magic Resistance",
+    "nome": "Resistência à Magia",
+    "desc": "Tem vantagem em testes de resistência contra magias e outros efeitos mágicos."
+   },
+   {
+    "en": "Siege Monster",
+    "nome": "Monstro de Cerco",
+    "desc": "Causa dano dobrado a objetos e estruturas."
+   }
+  ],
+  "acoes": [
+   {
+    "en": "Multiattack",
+    "nome": "Ataques Múltiplos",
+    "desc": "Faz um ataque de Lâmina de Lava ou Bola de Lava e dois ataques de Pancada."
+   },
+   {
+    "en": "Lava Blade",
+    "nome": "Lâmina de Lava",
+    "desc": "Ataque corpo a corpo, +18, alcance 9 m. Causa 32 (4d10+10) de dano cortante mais 18 (4d8) de fogo."
+   },
+   {
+    "en": "Lava Ball",
+    "nome": "Bola de Lava",
+    "desc": "Ataque à distância, +18, alcance 36/144 m. Causa 29 (3d12+10) de concussão mais 10 (3d6) de fogo; o alvo faz teste de resistência de Força CD 26 ou fica caído."
+   },
+   {
+    "en": "Slam",
+    "nome": "Pancada",
+    "desc": "Ataque corpo a corpo, +18, alcance 6 m. Causa 28 (4d8+10) de dano energético."
+   },
+   {
+    "en": "Lava Wave",
+    "nome": "Onda de Lava",
+    "desc": "Recarga 5–6. Cone de 27 m: teste de resistência de Destreza CD 25; falha causa 60 (11d10) de fogo e deixa contido na rocha, sucesso causa metade. Uma ação com Atletismo CD 25 liberta a si ou alguém ao alcance; a rocha tem CA 17, 40 PV e imunidade a fogo, veneno e psíquico."
+   }
+  ],
+  "reacoes": [],
+  "lendarias": []
+ },
+ "Giant Child": {
+  "nome": "Criança Gigante",
+  "acNote": "",
+  "blurb": "Um jovem gigante ainda pequeno que luta com uma clava, batendo com uma força surpreendente para o tamanho, mas que cai rápido.",
+  "lore": "Filhotes de gigantes ainda têm o porte de um humano adulto, mas já mostram a força de sua linhagem. Costumam ficar perto dos pais ou dos clãs, aprendendo os costumes e a língua dos gigantes. Curiosos e às vezes travessos, podem brigar por brincadeira ou para proteger o próprio território. Encontrar um deles quase sempre significa que adultos estão por perto.",
+  "tracos": [],
+  "acoes": [
+   {
+    "en": "Club",
+    "nome": "Clava",
+    "desc": "Ataque corpo a corpo com arma: +4 para acertar, alcance 1,5 m, um alvo. Acerto: 4 (1d4 + 2) de dano de concussão."
+   }
+  ],
+  "reacoes": [],
+  "lendarias": []
+ },
+ "Firbolg Wanderer": {
+  "nome": "Firbolg Andarilho",
+  "acNote": "peitoral",
+  "blurb": "Combina espada longa e raios psíquicos que enfeitiçam, e usa uma duplicata ilusória para trocar de lugar e confundir os inimigos. Também lança magias como riso histérico e metamorfose.",
+  "lore": "Firbolgs andarilhos são viajantes solitários que percorrem florestas e estradas, guardando a natureza e ajudando quem encontram. Servem como clérigos de divindades ligadas aos bosques. Preferem truques e ilusões à violência direta, disfarçando-se para observar os povos que visitam. Quando provocados, lutam com firmeza e magia que perturba a mente.",
+  "tracos": [],
+  "acoes": [
+   {
+    "en": "Spellcasting",
+    "nome": "Conjuração",
+    "desc": "Usa Sabedoria (CD 14). À vontade: mãos mágicas, ilusão menor, riso histérico de Tasha. 1/dia cada: detectar magia, disfarçar-se, dissipar magia, metamorfose."
+   },
+   {
+    "en": "Multiattack",
+    "nome": "Ataques Múltiplos",
+    "desc": "Faz dois ataques, combinando Espada Longa e Raio Enfeitiçante como quiser."
+   },
+   {
+    "en": "Longsword",
+    "nome": "Espada Longa",
+    "desc": "Ataque corpo a corpo +6, alcance 1,5 m. Causa 7 (1d8+3) de dano cortante, ou 8 (1d10+3) com duas mãos, mais 9 (2d8) de dano psíquico."
+   },
+   {
+    "en": "Bewitching Bolt",
+    "nome": "Raio Enfeitiçante",
+    "desc": "Ataque mágico à distância +6, alcance 18 m. Causa 10 (2d6+3) de dano psíquico; o alvo faz teste de resistência de Carisma CD 14 ou fica enfeitiçado até o início do próximo turno dele."
+   }
+  ],
+  "reacoes": [
+   {
+    "en": "Duplicitous Movement",
+    "nome": "Movimento Enganoso",
+    "desc": "Ação bônus, 1/dia: cria uma cópia ilusória em espaço visível a até 9 m e pode trocar de lugar com ela. Em turnos seguintes, com ação bônus, move a ilusão até 9 m e pode trocar de novo; ela some após 1 minuto, se o firbolg ficar incapacitado ou se ficar a mais de 36 m."
+   }
+  ],
+  "lendarias": []
+ },
+ "Spotted Lion": {
+  "nome": "Leão Malhado",
+  "acNote": "armadura natural",
+  "blurb": "Um felino enorme que avança em disparada para derrubar a presa com suas presas e garras e, com ela no chão, atacá-la de novo. Em bando, fica ainda mais letal, pois ganha vantagem quando um aliado está ao lado do alvo.",
+  "lore": "O leão malhado tem cerca do dobro do tamanho de um leão comum, com pelagem e juba escuras pontilhadas de manchas cor de carvão. Vive e caça em grupos, perseguindo presas gigantescas como alces gigantes e mamutes. Gigantes de pedra e das nuvens costumam criá-lo como bicho de estimação e parceiro de caçada. Quando está de barriga cheia, tende mais a se espreguiçar do que a dar o alarme ao avistar intrusos.",
+  "tracos": [
+   {
+    "en": "Pack Tactics",
+    "nome": "Táticas de Matilha",
+    "desc": "Tem vantagem na jogada de ataque contra uma criatura se houver um aliado dele, não incapacitado, a até 1,5 m do alvo."
+   }
+  ],
+  "acoes": [
+   {
+    "en": "Rend",
+    "nome": "Dilacerar",
+    "desc": "Ataque corpo a corpo com arma: +8 para acertar, alcance 3 m, causa 15 (2d8 + 6) de dano perfurante. Se o leão tiver se movido pelo menos 6 m em linha reta até o alvo logo antes de acertar, o alvo faz um teste de resistência de Força CD 16 e, se falhar, fica caído. Contra um alvo caído, o leão pode repetir este ataque como ação bônus."
+   }
+  ],
+  "reacoes": [],
+  "lendarias": []
+ },
+ "Goliath Giant-Kin": {
+  "nome": "Golias Parente dos Gigantes",
+  "acNote": "meia-armadura e escudo",
+  "blurb": "Guerreiro robusto que golpeia duas vezes com a lança, corpo a corpo ou arremessando. Quando canaliza a magia dos gigantes, cada golpe corpo a corpo ganha dano extra do elemento do seu clã.",
+  "lore": "Golias são humanoides de parentesco distante com os gigantes, fortalecidos pela essência das montanhas onde seus ancestrais viveram. Algumas comunidades convivem tão de perto com os gigantes que estes as aceitam como família, e seus membros servem de ponte entre os clãs gigantes e os povos menores. Mesmo sem passar de uns 2,4 m, enfrentam ogros em disputas de força. Veneram os ancestrais divinos dos gigantes, sobretudo as filhas de Annam, e adotam os valores do clã com que vivem: os vizinhos dos gigantes do gelo exaltam a força, os dos gigantes de pedra prezam a arte.",
+  "tracos": [],
+  "acoes": [
+   {
+    "en": "Multiattack",
+    "nome": "Ataques Múltiplos",
+    "desc": "Faz dois ataques de Lança."
+   },
+   {
+    "en": "Spear",
+    "nome": "Lança",
+    "desc": "Ataque corpo a corpo ou à distância: +6 para acertar, alcance 1,5 m ou distância 6/18 m. Causa 7 (1d6 + 4) de dano perfurante, ou 8 (1d8 + 4) se empunhada com as duas mãos em corpo a corpo."
+   }
+  ],
+  "reacoes": [],
+  "lendarias": [
+   {
+    "en": "Giant's Strikes",
+    "nome": "Golpes do Gigante (Recarga 5–6)",
+    "desc": "Ação bônus. Até o fim do turno, cada ataque corpo a corpo causa 7 (2d6) de dano extra, cujo tipo depende do clã: frio (gelo), fogo (fogo), energético (pedra), elétrico (tempestade), perfurante (colina) ou trovejante (nuvem)."
+   }
+  ]
+ },
+ "Firegaunt": {
+  "nome": "Mortalha Ígnea",
+  "acNote": "placas danificadas",
+  "blurb": "Gigante morto-vivo que esmaga com uma marreta incandescente de longo alcance e dispara raios carmesins num cone que incendeia todos os atingidos. Golpear de perto com lâminas ou pontas faz seu sangue de fogo queimar o atacante.",
+  "lore": "Quando um gigante de fogo morre consumido por um ódio grande demais para deixá-lo partir, ele se levanta como uma mortalha ígnea. Não busca perdão nem descanso: quer apenas destruir o máximo de vidas antes de enfim se apagar. Seu corpo parece um cadáver carbonizado, com chamas vermelhas sobrenaturais correndo pelas veias e escapando pelas feridas e pela boca. Vaga à procura de criaturas vivas para aniquilar.",
+  "tracos": [
+   {
+    "en": "Fire Blood",
+    "nome": "Sangue de Fogo",
+    "desc": "Uma criatura a até 1,5 m que a acerte com ataque corpo a corpo de dano cortante ou perfurante sofre 5 (1d10) de dano de fogo."
+   }
+  ],
+  "acoes": [
+   {
+    "en": "Multiattack",
+    "nome": "Ataques Múltiplos",
+    "desc": "Faz dois ataques de Marreta Incandescente."
+   },
+   {
+    "en": "Heated Maul",
+    "nome": "Marreta Incandescente",
+    "desc": "Ataque corpo a corpo +11, alcance 3 m, 23 (3d10+7) de dano de concussão. Uma vez por turno, pode inflamar a arma: o alvo faz teste de resistência de Destreza CD 18 ou sofre mais 10 (3d6) de fogo e 10 (3d6) necrótico."
+   },
+   {
+    "en": "Crimson Rays",
+    "nome": "Raios Carmesins",
+    "desc": "Recarga 5–6. Cone de 9 m: teste de resistência de Destreza CD 18, 31 (7d8) de dano de fogo na falha ou metade no sucesso. Todos os atingidos pegam fogo, não podem recuperar PV e sofrem 5 (1d10) de fogo no início de cada turno até alguém usar uma ação para apagar."
+   }
+  ],
+  "reacoes": [],
+  "lendarias": []
+ },
+ "Frost Giant of Evil Water": {
+  "nome": "Gigante do Gelo da Água Maligna",
+  "acNote": "brunea",
+  "blurb": "Fisga o alvo com um arpão à distância, puxa-o para perto com a ação bônus e o retalha com um machado de batalha gélido. Quem tenta se soltar do arpão se fere.",
+  "lore": "São gigantes do gelo que abandonaram os deuses do Ordning para cultuar Olhydra, a Princesa da Água Maligna. Para eles, a água é uma força cruel que atinge sua forma mais pura no gelo. Costumam esconder sua fé enquanto empurram suas comunidades para a violência, e quando descobertos e banidos acabam liderando cultos em terras frias. Olhydra lhes concede a capacidade de respirar sob a água, e suas armaduras trazem bestas enormes que disparam arpões farpados para arrastar inimigos para dentro d'água.",
+  "tracos": [
+   {
+    "en": "Amphibious",
+    "nome": "Anfíbio",
+    "desc": "Respira tanto ar quanto água."
+   }
+  ],
+  "acoes": [
+   {
+    "en": "Multiattack",
+    "nome": "Ataques Múltiplos",
+    "desc": "Faz dois ataques de Machado de Batalha e um de Arpão."
+   },
+   {
+    "en": "Battleaxe",
+    "nome": "Machado de Batalha",
+    "desc": "Ataque corpo a corpo +10, alcance 3 m. Causa 19 (3d8+6) de dano cortante, ou 22 (3d10+6) com as duas mãos, mais 7 (2d6) de dano de frio."
+   },
+   {
+    "en": "Harpoon",
+    "nome": "Arpão",
+    "desc": "Ataque à distância +7, alcance 15/60 m, uma criatura. Causa 14 (2d10+3) de dano perfurante e deixa o alvo agarrado (CD 16 para escapar); ele mantém o deslocamento, mas não pode se afastar do gigante. Ao escapar, ou falhar na tentativa, sofre 5 (1d10) de dano cortante; só prende um alvo por vez."
+   }
+  ],
+  "reacoes": [],
+  "lendarias": [
+   {
+    "en": "Reel In",
+    "nome": "Puxar",
+    "desc": "Ação bônus: arrasta até 6 m em sua direção a criatura agarrada pelo Arpão."
+   }
+  ]
+ },
+ "Frostmourn": {
+  "nome": "Lamento Gélido",
+  "acNote": "armadura natural",
+  "blurb": "Gigante morto-vivo que golpeia com machado de gelo e um toque que transforma quem cai em estátua congelada, além de disparar raios polares à distância. Ao ser atingido, vira nevasca, reduz o dano e se teleporta.",
+  "lore": "Surge quando um gigante do gelo é assassinado de forma desonrosa, como envenenado, apunhalado pelas costas ou morto enquanto dormia. Parece um cadáver ressecado pelo frio extremo e ainda exibe a marca de sua morte, seja uma ferida que solta vapor gelado, sejam veias roxas de veneno. Movido pela vingança, caça seus assassinos. Mesmo depois de vingado, o ódio pelos vivos costuma mantê-lo vagando pelas terras selvagens por anos.",
+  "tracos": [],
+  "acoes": [
+   {
+    "en": "Multiattack",
+    "nome": "Ataques Múltiplos",
+    "desc": "Faz um ataque de Toque Congelante e um de Machado de Gelo. Pode trocar um deles por um Raio Polar."
+   },
+   {
+    "en": "Freezing Touch",
+    "nome": "Toque Congelante",
+    "desc": "Ataque corpo a corpo +10, alcance 1,5 m: 18 (4d8) de dano de frio mais 18 (4d8) necrótico. Se o dano levaria o alvo a 0 PV, ele fica com 1 PV e petrificado como estátua de gelo. Dano de concussão na estátua a despedaça e mata a criatura, e dano de fogo a descongela sem causar dano."
+   },
+   {
+    "en": "Icy Axe",
+    "nome": "Machado de Gelo",
+    "desc": "Ataque corpo a corpo +10, alcance 3 m: 19 (3d8+6) de dano cortante mais 7 (2d6) de frio."
+   },
+   {
+    "en": "Polar Ray",
+    "nome": "Raio Polar",
+    "desc": "Ataque mágico à distância +8, alcance 36 m: 31 (5d10+4) de dano de frio. O deslocamento do alvo diminui 3 m até o fim do próximo turno dele."
+   }
+  ],
+  "reacoes": [
+   {
+    "en": "Blizzard Escape",
+    "nome": "Fuga na Nevasca",
+    "desc": "Quando uma criatura que ele vê o acerta com uma jogada de ataque, ele vira nevasca e reduz esse dano à metade. Em seguida, pode se teleportar para um espaço desocupado visível a até 9 m."
+   }
+  ],
+  "lendarias": []
+ },
+ "Fensir Devourer": {
+  "nome": "Fensir Devorador",
+  "acNote": "armadura natural",
+  "blurb": "Gigante brutal que rasga com garras de longo alcance e arremessa rochas capazes de derrubar alvos; regenera a cada turno, a menos que sofra ácido ou fogo. Ao morrer, lança uma maldição que impede descanso e corrói a mente de quem estiver perto.",
+  "lore": "Os fensires devoradores são celestiais decaídos de linhagem trollesca, ligados às terras geladas dos gigantes. Caçam em bandos ou sozinhos, rastreando presas pela noite e pelas florestas escuras. Temem o sol, que transforma sua carne em pedra, por isso se escondem em cavernas durante o dia. Mesmo derrotados, deixam para trás uma praga amarga em quem os matou.",
+  "tracos": [
+   {
+    "en": "Death Curse",
+    "nome": "Maldição da Morte",
+    "desc": "Quando o fensir morre, cada criatura a até 9 m faz teste de resistência de Carisma CD 13 ou fica amaldiçoada por 24 horas. Amaldiçoada, não recupera nada com descansos e, ao fim de cada hora, repete o teste CD 13 ou sofre 11 (2d10) de dano psíquico."
+   },
+   {
+    "en": "Regeneration",
+    "nome": "Regeneração",
+    "desc": "Recupera 10 PV no início do turno se não estiver sob luz solar. Dano de ácido ou fogo anula a regeneração no turno seguinte; só morre se começar o turno com 0 PV sem regenerar."
+   },
+   {
+    "en": "Sunlight Hypersensitivity",
+    "nome": "Hipersensibilidade Solar",
+    "desc": "Ao começar o turno sob luz solar, faz teste de resistência de Constituição CD 15 ou fica petrificado enquanto permanecer no sol."
+   }
+  ],
+  "acoes": [
+   {
+    "en": "Multiattack",
+    "nome": "Ataques Múltiplos",
+    "desc": "Faz dois ataques, combinando Dilacerar e Rocha como quiser."
+   },
+   {
+    "en": "Rend",
+    "nome": "Dilacerar",
+    "desc": "Ataque corpo a corpo, +8 para acertar, alcance 3 m. Causa 21 (3d10+5) de dano cortante."
+   },
+   {
+    "en": "Boulder",
+    "nome": "Rocha",
+    "desc": "Ataque à distância, +8 para acertar, 18/72 m. Causa 18 (2d12+5) de concussão; alvo Grande ou menor faz teste de Força CD 16 ou fica caído. Após arremessar, role 1d6: com 4 ou menos, acabam as rochas."
+   }
+  ],
+  "reacoes": [],
+  "lendarias": []
+ },
+ "Scion of Stronmaus": {
+  "nome": "Rebento de Stronmaus",
+  "acNote": "armadura natural",
+  "blurb": "Titã colossal que voa veloz golpeando com uma espada de relâmpagos a até 9 m e arremessando granizo a longa distância. Sua nuvem de tempestade alterna chuva ácida, gelo que imobiliza e raios que atordoam.",
+  "lore": "Este titã descende de Stronmaus, o deus dos gigantes ligado às tempestades e ao céu. Carrega em si a fúria e a alegria das tormentas, e costuma habitar nuvens altas, picos e mares revoltos. Embora tenda ao bem, é imprevisível como o clima e reage com violência a quem ameaça seus domínios. Sábio e versado em magia e história antiga, raramente se envolve em assuntos mortais sem motivo grandioso.",
+  "tracos": [
+   {
+    "en": "Flyby",
+    "nome": "Voo Rasante",
+    "desc": "Não provoca ataques de oportunidade ao sair voando do alcance de um inimigo."
+   },
+   {
+    "en": "Legendary Resistance",
+    "nome": "Resistência Lendária (6/Dia)",
+    "desc": "Quando falha num teste de resistência, pode escolher ser bem-sucedido."
+   },
+   {
+    "en": "Magic Resistance",
+    "nome": "Resistência à Magia",
+    "desc": "Tem vantagem em testes de resistência contra magias e outros efeitos mágicos."
+   },
+   {
+    "en": "Siege Monster",
+    "nome": "Monstro de Cerco",
+    "desc": "Causa dano dobrado a objetos e estruturas."
+   }
+  ],
+  "acoes": [
+   {
+    "en": "Multiattack",
+    "nome": "Ataques Múltiplos",
+    "desc": "Faz um ataque de Espada de Relâmpago ou de Granizo e dois ataques de Pancada."
+   },
+   {
+    "en": "Lightning Sword",
+    "nome": "Espada de Relâmpago",
+    "desc": "Corpo a corpo, +18, alcance 9 m. Causa 36 (4d12+10) de dano energético mais 22 (4d10) de dano elétrico."
+   },
+   {
+    "en": "Hailstone",
+    "nome": "Granizo",
+    "desc": "À distância, +18, alcance 36/144 m. Causa 32 (4d10+10) de concussão mais 18 (4d8) de frio; o alvo fica caído se falhar num teste de resistência de Força CD 26."
+   },
+   {
+    "en": "Slam",
+    "nome": "Pancada",
+    "desc": "Corpo a corpo, +18, alcance 6 m. Causa 36 (4d12+10) de dano energético."
+   }
+  ],
+  "reacoes": [],
+  "lendarias": []
+ },
+ "Grinning Cat": {
+  "nome": "Gato Sorridente",
+  "acNote": "",
+  "blurb": "Some no ar e reaparece de surpresa: atacando invisível, suas garras podem derrubar o alvo, e ele morde quem estiver no chão. Teletransporta-se como ação bônus e resiste bem à magia.",
+  "lore": "Fadas travessas com aparência de gatos domésticos enormes, garras finas como agulhas e um sorriso largo cheio de dentes. Costumam viver perto de enclaves de gigantes, descansando invisíveis em galhos à espera de presas ou de alguém para conversar. Adoram charadas e provocações, e mostram só o sorriso, a cauda ou a cabeça para confundir ou intimidar. Um bigode do gato, dado como presente ou tirado de um morto, permite conjurar passo nebuloso uma vez antes de virar fumaça.",
+  "tracos": [
+   {
+    "en": "Magic Resistance",
+    "nome": "Resistência à Magia",
+    "desc": "Tem vantagem em testes de resistência contra magias e outros efeitos mágicos."
+   }
+  ],
+  "acoes": [
+   {
+    "en": "Bite",
+    "nome": "Mordida",
+    "desc": "Ataque corpo a corpo +4, alcance 1,5 m, um alvo. Causa 7 (1d10 + 2) de dano perfurante."
+   },
+   {
+    "en": "Claws",
+    "nome": "Garras",
+    "desc": "Ataque corpo a corpo +4, alcance 1,5 m, um alvo; 9 (2d6 + 2) de dano cortante. Se o gato estava invisível antes de atacar, o alvo faz teste de resistência de Força CD 12 ou fica caído; contra alvo caído, o gato pode morder como ação bônus."
+   },
+   {
+    "en": "Fade Away",
+    "nome": "Desvanecer",
+    "desc": "Fica invisível, junto com o equipamento, por 1 hora ou até atacar. Pode manter visível uma parte do corpo, como o sorriso, a cabeça ou a cauda."
+   }
+  ],
+  "reacoes": [],
+  "lendarias": []
+ },
+ "Cradle of the Stone Scion": {
+  "nome": "Berço do Rebento de Pedra",
+  "acNote": "armadura natural",
+  "blurb": "Colosso de rocha e cristal que esmaga a até 6 m, cospe pedras que derrubam e ruge para incapacitar todos ao redor. Ao cair, libera o rebento de Skoraeus que guarda dentro de si.",
+  "lore": "Este gigante elemental é uma casca viva de pedra que abriga o rebento de Skoraeus, um ser nascido do deus gigante das profundezas. Ele vagueia por cavernas e regiões montanhosas, sentindo cada passo pelo tremor do chão. Cristais brilham em sua carapaça e explodem em luz quando ameaçado. Protege o que carrega com fúria implacável, e destruí-lo é só metade da luta.",
+  "tracos": [
+   {
+    "en": "Awakening of the Scion",
+    "nome": "Despertar do Rebento",
+    "desc": "Ao chegar a 0 PV, o berço vira pó e o rebento de Skoraeus surge no mesmo espaço, agindo na iniciativa do berço."
+   },
+   {
+    "en": "Legendary Resistance",
+    "nome": "Resistência Lendária (5/Dia)",
+    "desc": "Se falhar em um teste de resistência, pode escolher ter sucesso."
+   },
+   {
+    "en": "Magic Resistance",
+    "nome": "Resistência à Magia",
+    "desc": "Tem vantagem em testes de resistência contra magias e efeitos mágicos."
+   },
+   {
+    "en": "Siege Monster",
+    "nome": "Monstro de Cerco",
+    "desc": "Causa dano dobrado a objetos e estruturas."
+   }
+  ],
+  "acoes": [
+   {
+    "en": "Multiattack",
+    "nome": "Ataques Múltiplos",
+    "desc": "Faz dois ataques, escolhendo entre Pancada e Cuspir Pedra."
+   },
+   {
+    "en": "Slam",
+    "nome": "Pancada",
+    "desc": "Corpo a corpo, +15 para acertar, alcance 6 m: 30 (4d10+8) de dano de concussão."
+   },
+   {
+    "en": "Spit Rock",
+    "nome": "Cuspir Pedra",
+    "desc": "À distância, +15 para acertar, 36 m: 24 (3d10+8) de concussão; o alvo faz teste de resistência de Força CD 23 ou fica caído."
+   },
+   {
+    "en": "Shattering Roar",
+    "nome": "Rugido Estilhaçante (Recarga 5-6)",
+    "desc": "Criaturas a até 18 m fazem teste de resistência de Constituição CD 23; quem falha sofre 33 (6d10) de dano trovejante e fica incapacitado até o fim do próximo turno."
+   }
+  ],
+  "reacoes": [
+   {
+    "en": "Crystal Flare",
+    "nome": "Clarão de Cristal (Ação Bônus)",
+    "desc": "Criaturas a até 9 m fazem teste de resistência de Constituição CD 22 ou sofrem 21 (6d6) de dano radiante e ficam cegas até o fim do próximo turno do berço."
+   },
+   {
+    "en": "Stone Spikes",
+    "nome": "Espinhos de Pedra (Ação Bônus)",
+    "desc": "Um quadrado de 6 m a até 27 m vira terreno difícil coberto de espinhos até o início do próximo turno; cada 1,5 m percorrido ali causa 10 (3d6) de dano perfurante."
+   }
+  ],
+  "lendarias": []
+ },
+ "Cradle of the Storm Scion": {
+  "nome": "Berço do Rebento da Tempestade",
+  "acNote": "armadura natural",
+  "blurb": "Colosso de tempestade que esmaga de perto, derruba com granizo à distância e fulmina dois alvos com raios atordoantes a até 150 m. Ao ser ferido, salta entre trovões; e ao cair, libera o Rebento de Stronmaus.",
+  "lore": "Este gigantesco elemental é um casulo vivo de nuvens, gelo e relâmpagos que guarda em seu interior o Rebento de Stronmaus, herdeiro do deus gigante das tempestades. Costuma surgir sobre mares revoltos e céus carregados, flutuando como uma tormenta com vontade própria. É caótico e impetuoso, mas não maligno, e reage com fúria a quem ameaça a gestação do rebento. Derrotá-lo não encerra a luta: sua destruição apenas liberta o ser que ele protegia.",
+  "tracos": [
+   {
+    "en": "Awakening of the Scion",
+    "nome": "Despertar do Rebento",
+    "desc": "Quando o berço chega a 0 PV, ele explode em luz e o Rebento de Stronmaus surge imediatamente no seu espaço, agindo na mesma iniciativa."
+   },
+   {
+    "en": "Legendary Resistance",
+    "nome": "Resistência Lendária (5/Dia)",
+    "desc": "Ao falhar em um teste de resistência, pode escolher ter sucesso."
+   },
+   {
+    "en": "Magic Resistance",
+    "nome": "Resistência à Magia",
+    "desc": "Tem vantagem em testes de resistência contra magias e efeitos mágicos."
+   },
+   {
+    "en": "Siege Monster",
+    "nome": "Monstro de Cerco",
+    "desc": "Causa dano dobrado a objetos e estruturas."
+   }
+  ],
+  "acoes": [
+   {
+    "en": "Multiattack",
+    "nome": "Ataques Múltiplos",
+    "desc": "Faz três ataques, combinando Pancada e Cuspir Granizo como quiser."
+   },
+   {
+    "en": "Slam",
+    "nome": "Pancada",
+    "desc": "Ataque corpo a corpo +18, alcance 6 m: 36 (4d12+10) de dano de concussão mais 19 (3d12) elétrico."
+   },
+   {
+    "en": "Spit Hailstone",
+    "nome": "Cuspir Granizo",
+    "desc": "Ataque à distância +18, alcance 36 m: 32 (4d10+10) de concussão mais 14 (4d6) de frio. O alvo faz teste de resistência de Força CD 26 ou fica caído."
+   },
+   {
+    "en": "Lightning Barrage",
+    "nome": "Saraivada de Relâmpagos (Recarga 5–6)",
+    "desc": "Até duas criaturas visíveis a até 150 m fazem teste de resistência de Destreza CD 22. Na falha, sofrem 71 (11d12) de dano elétrico e ficam atordoadas até o fim do próximo turno; no sucesso, só metade do dano."
+   }
+  ],
+  "reacoes": [
+   {
+    "en": "Booming Step",
+    "nome": "Passo Trovejante",
+    "desc": "Logo após sofrer dano, teleporta-se até 18 m para um espaço visível. Criaturas a até 3 m do ponto de partida fazem teste de resistência de Constituição CD 22, sofrendo 14 (4d6) de dano trovejante na falha ou metade no sucesso."
+   }
+  ],
+  "lendarias": []
+ },
+ "Lightning Hulk": {
+  "nome": "Colosso Relâmpago",
+  "acNote": "",
+  "blurb": "Um raio vivo que voa a 27 m, atravessa o espaço dos inimigos eletrocutando-os e dispara arcos elétricos que saltam para um segundo alvo. Tocá-lo ou golpeá-lo de perto também causa choque.",
+  "lore": "Esses seres descendem de gigantes das tempestades que se afastaram do mundo há eras e deixaram que sua essência elemental, alimentada pelos Planos Elementais, consumisse a carne. Hoje são pouco mais que um relâmpago consciente, com um rosto difuso na ponta da descarga. Às vezes assumem por um instante a silhueta de um gigante, e perto de metal ou de terra firme parecem prestes a se dissipar. A mente acompanha o corpo: vagam de um lugar a outro sem propósito claro, longe da reflexão de seus parentes gigantes.",
+  "tracos": [
+   {
+    "en": "Illumination",
+    "nome": "Iluminação",
+    "desc": "Emite luz plena num raio de 6 m e penumbra por mais 6 m."
+   },
+   {
+    "en": "Lightning Form",
+    "nome": "Forma de Relâmpago",
+    "desc": "Pode entrar e parar no espaço de criaturas hostis. A criatura sofre 2d6 (7) de dano elétrico na primeira vez por turno em que ele entra no espaço dela ou se ele começa o turno ali. Passa por frestas de 2,5 cm sem se espremer, e quem o toca ou o acerta com ataque corpo a corpo a até 1,5 m sofre 2d6 (7) de dano elétrico."
+   }
+  ],
+  "acoes": [
+   {
+    "en": "Arc Lightning",
+    "nome": "Arco Elétrico",
+    "desc": "Ataque corpo a corpo ou à distância com +9 para acertar, alcance 3 m ou distância 18 m: 4d8 (18) de dano elétrico, e a criatura atingida fica sem reações até o início do próximo turno dela. O raio salta para outra criatura visível a até 9 m do alvo, que precisa passar num teste de resistência de Destreza CD 18 ou sofre 4d8 (18) de dano elétrico."
+   }
+  ],
+  "reacoes": [],
+  "lendarias": []
+ },
+ "Gargantua": {
+  "nome": "Gargântua",
+  "acNote": "armadura natural",
+  "blurb": "Colosso de 12 metros que esmaga com pancadas de longo alcance e arremessa rochas, enquanto sua aura distorcida fere a mente e amedronta quem estiver perto. Teleporta-se, incapacita alvos com maldições e pode até roubar magias lançadas contra ela.",
+  "lore": "Raramente, por obra das estrelas ou do capricho de algum deus cruel, nasce entre gigantes uma criança que parece comum até chegar à idade adulta. Então a pele fica arroxeada, chifres brotam da cabeça e ela cresce até superar de longe qualquer gigante. Sem lugar entre os seus, a gargântua procura abrigos colossais, como florestas antigas, cânions profundos ou cavernas do Subterrâneo. Algumas só querem paz e isolamento; outras devolvem com fúria o medo que o mundo sente delas. Os gigantes culpam um pacto com o Reino Distante, a vingança de Karontor ou o desgosto do próprio Annam por sua existência.",
+  "tracos": [
+   {
+    "en": "Weird Aura",
+    "nome": "Aura Estranha",
+    "desc": "No início de cada turno dela, criaturas escolhidas a até 9 m fazem teste de resistência de Sabedoria CD 19. Quem falha sofre 17 (5d6) de dano psíquico e fica amedrontado até o início do próprio turno seguinte; quem passa fica imune à aura por 24 horas."
+   }
+  ],
+  "acoes": [
+   {
+    "en": "Multiattack",
+    "nome": "Ataques Múltiplos",
+    "desc": "Faz dois ataques, de Pancada ou de Rocha, em qualquer combinação."
+   },
+   {
+    "en": "Slam",
+    "nome": "Pancada",
+    "desc": "Ataque corpo a corpo com +15 para acertar, alcance de 6 m. Causa 27 (3d12 + 8) de dano de concussão."
+   },
+   {
+    "en": "Rock",
+    "nome": "Rocha",
+    "desc": "Ataque à distância com +15 para acertar, alcance 36/144 m. Causa 24 (3d10 + 8) de dano de concussão."
+   }
+  ],
+  "reacoes": [
+   {
+    "en": "Flick",
+    "nome": "Peteleco",
+    "desc": "Logo após sofrer dano de uma criatura Grande ou menor visível a até 6 m, o alvo faz teste de resistência de Força CD 23. Se falhar, sofre 18 (3d6 + 8) de dano de concussão, é empurrado até 30 m na horizontal e fica caído."
+   },
+   {
+    "en": "Spell Mimicry",
+    "nome": "Imitação de Magia",
+    "desc": "Uma vez por dia, quando uma criatura visível lança magia de 5º nível ou menor, ela faz teste de resistência de Carisma CD 19. Se falhar, a gargântua lança a mesma magia no mesmo nível na hora, sem componentes materiais e escolhendo os alvos (+11 em ataques mágicos, CD 19)."
+   }
+  ],
+  "lendarias": [
+   {
+    "en": "Baleful Hex",
+    "nome": "Maldição Funesta",
+    "desc": "Ação bônus: uma criatura visível a até 36 m faz teste de resistência de Sabedoria CD 19 ou fica incapacitada até o fim do próximo turno dela."
+   },
+   {
+    "en": "Teleport",
+    "nome": "Teletransporte",
+    "desc": "Ação bônus: teleporta-se com o que carrega para um espaço desocupado visível a até 36 m."
+   }
+  ]
+ },
+ "Ceratops": {
+  "nome": "Ceratops",
+  "acNote": "armadura natural",
+  "blurb": "Um colosso de chifres que investe em linha reta para empalar e arremessar quem estiver no caminho, depois pisoteia o que caiu. Cada golpe tira quase 30 PV, e magia tem dificuldade em detê-lo.",
+  "lore": "O ceratops é um dinossauro gigantesco com couraça óssea e chifres enormes, parente monstruoso dos tricerátopos. Vive em planícies selvagens e vales primitivos, pastando em manadas. Apesar de herbívoro, é extremamente territorial e reage a qualquer ameaça com uma carga devastadora. Sua resistência natural à magia faz dele um alvo cobiçado e perigoso para caçadores e domadores.",
+  "tracos": [
+   {
+    "en": "Magic Resistance",
+    "nome": "Resistência à Magia",
+    "desc": "Tem vantagem em testes de resistência contra magias e outros efeitos mágicos."
+   }
+  ],
+  "acoes": [
+   {
+    "en": "Multiattack",
+    "nome": "Ataques Múltiplos",
+    "desc": "Faz um ataque de Chifrada e um de Pisotear."
+   },
+   {
+    "en": "Gore",
+    "nome": "Chifrada",
+    "desc": "Ataque corpo a corpo +11, alcance 3 m: 29 (4d10+7) de dano perfurante. Se avançou ao menos 6 m em linha reta até o alvo, causa 11 (2d10) perfurante extra e a criatura deve passar num teste de resistência de Força CD 19 ou é empurrada até 6 m e fica caída."
+   },
+   {
+    "en": "Stomp",
+    "nome": "Pisotear",
+    "desc": "Ataque corpo a corpo +11, alcance 1,5 m: 29 (4d10+7) de dano de concussão."
+   }
+  ],
+  "reacoes": [],
+  "lendarias": []
+ },
+ "Cradle of the Fire Scion": {
+  "nome": "Berço do Rebento de Fogo",
+  "acNote": "armadura natural",
+  "blurb": "Colosso vulcânico que esmaga com alcance enorme, arremessa lava que incendeia e cospe um cone de fogo venenoso. Ao ser derrotado, liberta o Rebento de Surtur, então a luta ainda não acabou.",
+  "lore": "O berço é uma carapaça elemental de rocha e magma que abriga, em gestação, o rebento de Surtur, o senhor dos gigantes de fogo. Ele surge em lugares de atividade vulcânica ligados ao culto de Surtur e age com a crueldade metódica do seu criador. Fala gigante e primordial, e protege o ser que carrega até que este esteja pronto para despertar. Quando sua casca cai, o verdadeiro horror emerge das cinzas.",
+  "tracos": [
+   {
+    "en": "Awakening of the Scion",
+    "nome": "Despertar do Rebento",
+    "desc": "Ao chegar a 0 PV, o berço vira cinzas e o rebento de Surtur surge imediatamente no espaço dele, agindo na mesma iniciativa."
+   },
+   {
+    "en": "Legendary Resistance",
+    "nome": "Resistência Lendária",
+    "desc": "5 vezes por dia, pode transformar um teste de resistência falho em sucesso."
+   },
+   {
+    "en": "Magic Resistance",
+    "nome": "Resistência à Magia",
+    "desc": "Tem vantagem em testes de resistência contra magias e efeitos mágicos."
+   },
+   {
+    "en": "Siege Monster",
+    "nome": "Monstro de Cerco",
+    "desc": "Causa dano dobrado a objetos e estruturas."
+   }
+  ],
+  "acoes": [
+   {
+    "en": "Multiattack",
+    "nome": "Ataques Múltiplos",
+    "desc": "Faz três ataques, combinando Pancada e Arremessar Lava como quiser."
+   },
+   {
+    "en": "Slam",
+    "nome": "Pancada",
+    "desc": "Ataque corpo a corpo, +17 para acertar, alcance 6 m. Causa 31 (4d10+9) de dano de concussão mais 14 (4d6) de fogo."
+   },
+   {
+    "en": "Hurl Lava",
+    "nome": "Arremessar Lava",
+    "desc": "Ataque à distância, +17, alcance 36 m: 27 (4d8+9) de dano de fogo. O alvo pega fogo e sofre 10 (3d6) de fogo no início de cada turno até alguém a 1,5 m usar uma ação para apagar."
+   },
+   {
+    "en": "Erupting Breath",
+    "nome": "Sopro Eruptivo",
+    "desc": "Recarga 5–6. Cone de 27 m; teste de resistência de Destreza CD 24: falha sofre 55 (10d10) de fogo e fica envenenado por 1 minuto, sucesso sofre metade. O envenenado repete teste de Constituição CD 24 ao fim de cada turno para encerrar."
+   }
+  ],
+  "reacoes": [
+   {
+    "en": "Lava Geyser",
+    "nome": "Gêiser de Lava",
+    "desc": "Ação bônus: lava irrompe num ponto visível a até 36 m, num cilindro de 6 m de raio e 15 m de altura. Quem falhar num teste de resistência de Destreza CD 21 sofre 14 (4d6) de fogo."
+   }
+  ],
+  "lendarias": []
+ },
+ "Fomorian Noble": {
+  "nome": "Fomoriano Nobre",
+  "acNote": "17 com armadura arcana",
+  "blurb": "Gigante conjurador que golpeia com um bastão de alcance longo e lança relâmpagos, fogo e gelo em área. Sua presença sedutora pode enfeitiçar inimigos como ação bônus.",
+  "lore": "Os nobres fomorianos são gigantes deformados que dominam magia arcana e se veem como a aristocracia de sua espécie. Costumam habitar o Subterrâneo ou recantos feéricos sombrios, cercados de servos enfeitiçados. Cruéis e vaidosos, usam o charme para manipular e a magia para punir quem os desafia. Quando a luta vira contra eles, preferem fugir para outro plano a morrer.",
+  "tracos": [],
+  "acoes": [
+   {
+    "en": "Multiattack",
+    "nome": "Ataques Múltiplos",
+    "desc": "Faz três ataques com o Bastão."
+   },
+   {
+    "en": "Rod",
+    "nome": "Bastão",
+    "desc": "Ataque corpo a corpo, +11 para acertar, alcance 3 m. Causa 16 (3d6+6) de dano de concussão mais 11 (2d10) de dano energético."
+   },
+   {
+    "en": "Spellcasting",
+    "nome": "Conjuração",
+    "desc": "Usa Inteligência (CD 17). À vontade: armadura arcana (apenas em si), mãos mágicas, prestidigitação. 1 vez/dia cada: relâmpago em cadeia, cone de frio (6º nível), bola de fogo (6º nível), voo, mudança de plano (apenas em si)."
+   }
+  ],
+  "reacoes": [],
+  "lendarias": []
+ },
+ "Gigant": {
+  "nome": "Gigant",
+  "acNote": "armadura natural",
+  "blurb": "Puxa as vítimas com as garras até as mandíbulas, onde as tritura a cada turno, e espalha uma poeira venenosa que impede a cura. Sua carapaça resiste à magia, e o zumbido das asas deixa incapacitado quem estiver por perto.",
+  "lore": "O gigant é um inseto colossal parecido com um besouro, visto por uns como presságio de ruína, por outros como guardião da natureza ou mensageiro dos deuses. Os gigantes o temem como uma praga, pois ele os prefere como presa acima de qualquer outra comida. Agarra a vítima com as mandíbulas e a leva até o ninho para devorá-la. Mantém as asas recolhidas sob a carapaça, mas voa muito rápido quando as abre. Há gigantes que acreditam que essas criaturas surgem da aura mágica que envolve um gargantua.",
+  "tracos": [
+   {
+    "en": "Spell-Resistant Carapace",
+    "nome": "Carapaça Antimagia",
+    "desc": "Tem vantagem em testes de resistência contra magias. Ataques mágicos feitos contra ele têm desvantagem."
+   }
+  ],
+  "acoes": [
+   {
+    "en": "Multiattack",
+    "nome": "Ataques Múltiplos",
+    "desc": "Faz um ataque de Mandíbulas e dois de Garras."
+   },
+   {
+    "en": "Mandibles",
+    "nome": "Mandíbulas",
+    "desc": "Ataque corpo a corpo, +13 para acertar, alcance 3 m, uma criatura. Causa 21 (4d6+7) de dano cortante e deixa o alvo agarrado (CD 17 para escapar). O alvo agarrado sofre 21 de dano cortante no início de cada turno do gigant, e enquanto o segura ele não pode usar as mandíbulas em outro alvo."
+   },
+   {
+    "en": "Talons",
+    "nome": "Garras",
+    "desc": "Ataque corpo a corpo, +13 para acertar, alcance 6 m. Causa 17 (3d6+7) de dano cortante e puxa o alvo 3 m em linha reta na direção do gigant."
+   },
+   {
+    "en": "Scale Dust",
+    "nome": "Poeira de Escamas",
+    "desc": "Recarga 5–6. Espalha um cubo de 9 m de poeira mágica: cada criatura na área faz teste de resistência de Constituição CD 19 e sofre 45 (10d8) de dano de veneno se falhar, ou metade se passar. Passando ou não, fica envenenada por 1 hora e não pode recuperar PV durante esse tempo."
+   }
+  ],
+  "reacoes": [],
+  "lendarias": []
+ },
+ "Stone Giant Rockspeaker": {
+  "nome": "Gigante de Pedra Falarrocha",
+  "acNote": "armadura natural",
+  "blurb": "Golpeia com um cajado prismático de 3 m de alcance e arremessa geodos que explodem em clarões cegantes. Enquanto mantém sua runa de pedra, dispara um cone de raios coloridos que cegam, amedrontam ou incapacitam.",
+  "lore": "Entre os gigantes de pedra, a magia rúnica é mais comum que em outras linhagens, talvez pelo talento que têm para esculpir rocha. Os falarrochas unem essa magia a uma habilidade artística excepcional e servem às suas comunidades como líderes e oráculos. Costumam costurar cristais nas roupas e incrustá-los na própria pele, transformando-os em obras cintilantes com o poder das runas. Na batalha, fazem esses mesmos cristais lançarem feixes de luz intensa capazes de queimar e paralisar inimigos.",
+  "tracos": [
+   {
+    "en": "Legendary Resistance",
+    "nome": "Resistência Lendária",
+    "desc": "Três vezes por dia, quando falha num teste de resistência, o gigante pode transformar a falha em sucesso."
+   },
+   {
+    "en": "Stone Rune",
+    "nome": "Runa de Pedra",
+    "desc": "Enquanto segura ou veste o objeto mineral com a runa, pode usar Raios Prismáticos. O objeto tem CA 18, 30 PV, imunidade a dano necrótico, veneno e psíquico, recupera todos os PV ao fim de cada turno e vira pó se chegar a 0 PV ou se o gigante morrer; ele pode gravar outra runa após um descanso curto ou longo."
+   }
+  ],
+  "acoes": [
+   {
+    "en": "Multiattack",
+    "nome": "Ataques Múltiplos",
+    "desc": "Faz três ataques com o Cajado Prismático."
+   },
+   {
+    "en": "Prism Staff",
+    "nome": "Cajado Prismático",
+    "desc": "Ataque corpo a corpo, +11 para acertar, alcance 3 m. Causa 16 (3d6+6) de dano de concussão mais 13 (3d8) de dano radiante."
+   },
+   {
+    "en": "Exploding Geode",
+    "nome": "Geodo Explosivo",
+    "desc": "Arremessa um geodo num ponto a até 18 m; criaturas numa esfera de 6 m de raio fazem teste de resistência de Destreza CD 17. Na falha, sofrem 13 (3d8) perfurante mais 13 (3d8) radiante e ficam cegas até o fim do próximo turno; no sucesso, metade do dano. Após o arremesso, role 1d6: com 4 ou menos, os geodos acabam."
+   },
+   {
+    "en": "Prismatic Rays",
+    "nome": "Raios Prismáticos",
+    "desc": "Exige a Runa de Pedra. Cone de 18 m; cada criatura faz teste de resistência de Destreza CD 17 e rola 1d6 para saber qual raio a atinge."
+   },
+   {
+    "en": "1-2: Blazing Red",
+    "nome": "1-2: Vermelho Ardente",
+    "desc": "Na falha, 35 (10d6) de dano radiante e fica cega até o fim do próximo turno do gigante; no sucesso, metade do dano."
+   },
+   {
+    "en": "3-4: Dreadful Blue",
+    "nome": "3-4: Azul Aterrador",
+    "desc": "Na falha, 35 (10d6) de dano necrótico e fica amedrontada até o fim do próximo turno do gigante; no sucesso, metade do dano."
+   },
+   {
+    "en": "5-6: Sapping Green",
+    "nome": "5-6: Verde Drenante",
+    "desc": "Na falha, 35 (10d6) de dano energético e fica incapacitada até o fim do próximo turno do gigante; no sucesso, metade do dano."
+   }
+  ],
+  "reacoes": [],
+  "lendarias": []
+ },
+ "Giant Ox": {
+  "nome": "Boi Gigante",
+  "acNote": "armadura natural",
+  "blurb": "Investe em linha reta contra o alvo e o atinge com os chifres de 3 m de distância; a carga causa dano extra e pode derrubar quem for atingido.",
+  "lore": "Esses bois enormes servem aos gigantes como animais de carga e de tração, arrastando arados e carroças desproporcionais. Têm pelagem grossa e desgrenhada, muitas vezes em cores vivas como azul-celeste ou violeta. São feéricos de temperamento simples, que entendem os idiomas dos gigantes e o silvestre mas não falam. Costumam viver em vales isolados ou semiplanos primordiais, onde a fauna cresce a proporções descomunais.",
+  "tracos": [
+   {
+    "en": "Beast of Burden",
+    "nome": "Animal de Carga",
+    "desc": "Para calcular quanto peso consegue carregar, conta como uma categoria de tamanho acima da sua."
+   }
+  ],
+  "acoes": [
+   {
+    "en": "Gore",
+    "nome": "Chifrada",
+    "desc": "Ataque corpo a corpo com arma: +8 para acertar, alcance 3 m, causa 13 (2d6 + 6) de dano perfurante. Se tiver avançado ao menos 6 m em linha reta até o alvo logo antes, causa mais 7 (2d6) de dano perfurante e o alvo precisa passar num teste de resistência de Força CD 16 ou fica caído."
+   }
+  ],
+  "reacoes": [],
+  "lendarias": []
+ },
+ "Tempest Spirit": {
+  "nome": "Espírito da Tempestade",
+  "acNote": "",
+  "blurb": "Gigante morto-vivo flutuante que golpeia com punhos de raio a 3 m e arremessa granizo de longe. Seu Raio da Morte em linha reduz o máximo de PV das vítimas, e como ação bônus invoca chuvas de granizo que derrubam grupos inteiros.",
+  "lore": "Quando um gigante das tempestades tenta escapar da morte por um ritual que o transforma em tempestade, mas o realiza onde o Pendor das Sombras toca o Plano Material, a energia negativa corrompe o processo. Em vez de se dissolver nos elementos, a alma do gigante suga a energia ao redor e sua metade inferior vira uma nuvem de tempestade. A aparência lembra a de um djinni, e aventureiros às vezes confundem os dois. Alguns desses espíritos se isolam tentando desfazer a transformação; outros se entregam à fúria e devastam tudo, despejando granizo e relâmpagos necróticos sobre quem se aproxima.",
+  "tracos": [
+   {
+    "en": "Incorporeal Movement",
+    "nome": "Movimento Incorpóreo",
+    "desc": "Atravessa criaturas e objetos como se fossem terreno difícil. Se terminar o turno dentro de um objeto, sofre 5 (1d10) de dano energético."
+   },
+   {
+    "en": "Legendary Resistance",
+    "nome": "Resistência Lendária (3/Dia)",
+    "desc": "Três vezes por dia, pode transformar um teste de resistência falho em sucesso."
+   }
+  ],
+  "acoes": [
+   {
+    "en": "Multiattack",
+    "nome": "Ataques Múltiplos",
+    "desc": "Faz dois ataques, combinando Punho Relampejante e Granizo como quiser."
+   },
+   {
+    "en": "Lightning Fist",
+    "nome": "Punho Relampejante",
+    "desc": "Ataque corpo a corpo, +12 para acertar, alcance 3 m. Causa 25 (4d8 + 7) de dano elétrico."
+   },
+   {
+    "en": "Hailstone",
+    "nome": "Granizo",
+    "desc": "Ataque à distância, +12 para acertar, alcance 27/54 m. Causa 17 (3d6 + 7) de concussão mais 7 (2d6) de frio."
+   },
+   {
+    "en": "Death Bolt",
+    "nome": "Raio da Morte (Recarga 5–6)",
+    "desc": "Linha de 36 m por 3 m de largura; teste de resistência de Destreza CD 18. Falha: 27 (6d8) elétrico mais 16 (3d10) necrótico; sucesso: metade. O máximo de PV de cada atingido cai pelo dano necrótico sofrido até um descanso longo, e a criatura morre se ele chegar a 0."
+   }
+  ],
+  "reacoes": [],
+  "lendarias": []
+ },
+ "Hill Giant Avalancher": {
+  "nome": "Gigante da Colina Avalanche",
+  "acNote": "armadura natural",
+  "blurb": "Esmaga com o tacape de longo alcance enquanto arremessa boleadeiras de pedra que prendem e explodem em trovão. Com a runa da colina, faz chover rochas numa grande área e repele quem o fere de perto.",
+  "lore": "Alguns gigantes da colina aprendem a magia das runas e descobrem um laço profundo com a terra e a pedra. Esse poder, somado ao tamanho e à força, costuma colocá-los no comando de seus clãs. Andam cobertos de pedras amarradas em correntes e cordas, que usam para derrubar e golpear os inimigos. Os outros gigantes os chamam de avalanches pela rapidez com que abatem e devoram suas presas, como rochas despencando de uma encosta.",
+  "tracos": [
+   {
+    "en": "Hill Rune",
+    "nome": "Runa da Colina",
+    "desc": "Enquanto segura ou veste o objeto com a runa, pode usar Avalanche de Pedras e Repulsão da Colina. O objeto tem CA 15, 20 PV, imunidade a dano necrótico, veneno e psíquico, recupera todos os PV ao fim de cada turno e vira pó se chegar a 0 PV ou se o gigante morrer; ele pode inscrever uma nova runa após um descanso curto ou longo."
+   },
+   {
+    "en": "Legendary Resistance",
+    "nome": "Resistência Lendária (3/Dia)",
+    "desc": "Quando falha em um teste de resistência, pode escolher ter sucesso."
+   },
+   {
+    "en": "Spellcasting",
+    "nome": "Conjuração",
+    "desc": "Usa Sabedoria (CD 16). À vontade: arte druídica e orientação. 1 vez por dia cada: moldar rochas e muralha de pedra."
+   }
+  ],
+  "acoes": [
+   {
+    "en": "Multiattack",
+    "nome": "Ataque Múltiplo",
+    "desc": "Faz um ataque de Tacape e usa Boleadeiras de Pedra."
+   },
+   {
+    "en": "Greatclub",
+    "nome": "Tacape",
+    "desc": "Ataque corpo a corpo, +9 para acertar, alcance 3 m. Causa 18 (3d8+5) de concussão mais 9 (2d8) trovejante."
+   },
+   {
+    "en": "Stone Bolas",
+    "nome": "Boleadeiras de Pedra",
+    "desc": "Arremessa em uma criatura visível a até 18 m, que faz teste de resistência de Destreza CD 16. Na falha, fica contida até o início do próximo turno do gigante e ela e cada criatura a até 3 m dela sofrem 14 (4d6) de dano trovejante; no sucesso, nada acontece."
+   },
+   {
+    "en": "Stone Avalanche",
+    "nome": "Avalanche de Pedras",
+    "desc": "Requer a runa. Cilindro de 6 m de raio e 12 m de altura em um ponto a até 36 m: teste de resistência de Destreza CD 16; falha causa 28 (8d6) de concussão e deixa caído, sucesso causa metade. A área vira terreno difícil até o início do próximo turno do gigante."
+   }
+  ],
+  "reacoes": [
+   {
+    "en": "Hill Rebuff",
+    "nome": "Repulsão da Colina",
+    "desc": "Requer a runa. Quando sofre dano de uma criatura visível a até 3 m, ela faz teste de resistência de Constituição CD 16 ou sofre 10 (3d6) de dano energético e é empurrada 3 m para longe."
+   }
+  ],
+  "lendarias": []
+ },
+ "Cairnwight": {
+  "nome": "Aparição de Túmulo de Pedra",
+  "acNote": "armadura natural",
+  "blurb": "Gigante morto-vivo que golpeia com alcance de 3 m e arremessa rochas que derrubam. Seu toque petrificante pode transformar um aventureiro em estátua em dois turnos.",
+  "lore": "Quando um gigante das pedras morre obcecado por terminar uma obra inspirada por Skoraeus Ossos-de-Pedra, pode se erguer como esta criatura para concluí-la. Depois que a escultura fica pronta, ele permanece na caverna como guardião eterno dela. Parece um gigante das pedras esquelético, coberto de líquens e crostas minerais que o camuflam nas rochas do seu túmulo. Quem atrapalha o trabalho, danifica a arte ou rouba algo vira pedra, e a estátua resultante é deixada do lado de fora como aviso antes que a caverna seja selada de novo.",
+  "tracos": [],
+  "acoes": [
+   {
+    "en": "Multiattack",
+    "nome": "Ataques Múltiplos",
+    "desc": "Faz dois ataques de Pancada ou dois de Rocha e, se estiver disponível, usa também o Toque Petrificante."
+   },
+   {
+    "en": "Slam",
+    "nome": "Pancada",
+    "desc": "Ataque corpo a corpo: +10 para acertar, alcance 3 m. Causa 22 (3d10 + 6) de dano de concussão."
+   },
+   {
+    "en": "Rock",
+    "nome": "Rocha",
+    "desc": "Ataque à distância: +10 para acertar, alcance 18/72 m. Causa 19 (3d8 + 6) de dano de concussão, e o alvo fica caído se falhar num teste de resistência de Força CD 17."
+   },
+   {
+    "en": "Petrifying Touch",
+    "nome": "Toque Petrificante",
+    "desc": "Recarga 5–6. Uma criatura visível a até 3 m faz teste de resistência de Constituição CD 17; se falhar, sofre 26 (4d12) de dano energético e fica contida. Ela repete o teste no fim do próximo turno: se passar, o efeito termina; se falhar, fica petrificada."
+   }
+  ],
+  "reacoes": [],
+  "lendarias": []
+ },
+ "Cinder Hulk": {
+  "nome": "Colosso de Cinzas",
+  "acNote": "armadura natural",
+  "blurb": "Bruto elemental que esmaga com punhos em brasa e lança ondas de cinza ardente que queimam e cegam. Mesmo morto é perigoso, pois deixa uma nuvem escaldante de fumaça.",
+  "lore": "Esses elementais vêm de antigos gigantes de fogo que se afastaram do mundo e se encharcaram da energia dos Planos Elementais até virarem fumaça e brasa. Têm metade do tamanho dos ancestrais e conservam a silhueta deles, mas o corpo mal se mantém unido em meio a cinzas rodopiantes. Vivem em enclaves isolados em lugares ardentes do Plano Material, nos planos do Ar e do Fogo e sobretudo na Grande Conflagração, a fronteira entre esses dois. Não guardam nada da cultura dos gigantes: só querem queimar tudo o que puderem até que a própria chama se apague.",
+  "tracos": [
+   {
+    "en": "Death Burst",
+    "nome": "Explosão Mortal",
+    "desc": "Ao morrer, deixa uma esfera de 3 m de raio de fumaça e cinzas, com escuridão densa, que dura 1 minuto ou até ser dispersada por vento forte. Quem entra nela pela primeira vez no turno ou começa o turno ali faz teste de resistência de Constituição CD 16 ou sofre 10 (3d6) de dano de fogo."
+   }
+  ],
+  "acoes": [
+   {
+    "en": "Multiattack",
+    "nome": "Ataques Múltiplos",
+    "desc": "Faz dois ataques de Pancada."
+   },
+   {
+    "en": "Slam",
+    "nome": "Pancada",
+    "desc": "Ataque corpo a corpo, +8 para acertar, alcance 1,5 m, um alvo. Causa 16 (2d10 + 5) de dano de concussão mais 10 (3d6) de dano de fogo."
+   },
+   {
+    "en": "Wave of Cinders",
+    "nome": "Onda de Cinzas",
+    "desc": "Recarga 5–6. Cone de 9 m de cinza incandescente; cada criatura faz teste de resistência de Destreza CD 16. Na falha, sofre 31 (7d8) de dano de fogo e fica cega até o fim do próximo turno dela; no sucesso, sofre só metade do dano."
+   }
+  ],
+  "reacoes": [],
+  "lendarias": []
+ },
+ "Storm Giant Tempest Caller": {
+  "nome": "Gigante das Tempestades Invocador da Tormenta",
+  "acNote": "armadura natural",
+  "blurb": "Combate corpo a corpo com uma lâmina de relâmpagos ou arremessa lanças elétricas a centenas de metros, e pode envolver todos ao redor num vórtice elemental devastador. Destruir o cristal rúnico embutido no corpo dele anula seus poderes de runa.",
+  "lore": "Esses gigantes das tempestades se colocam no topo do ordning, e poucos ousam contestar essa posição. Além da magia inata de sua raça, dominam a magia das runas e são tratados com enorme respeito entre os gigantes. Encaixam uma bola de cristal gravada com a runa da tempestade na testa ou na órbita do olho, o que lhes permite enxergar através de ilusões e espionar à distância. Dizem que, se algum gigante for capaz de atrair o olhar de Annam de volta ao mundo, será um deles.",
+  "tracos": [
+   {
+    "en": "Alert",
+    "nome": "Alerta",
+    "desc": "Não pode ser surpreendido e tem vantagem nas jogadas de iniciativa."
+   },
+   {
+    "en": "Amphibious",
+    "nome": "Anfíbio",
+    "desc": "Respira tanto ar quanto água."
+   },
+   {
+    "en": "Legendary Resistance",
+    "nome": "Resistência Lendária (3/Dia)",
+    "desc": "Ao falhar num teste de resistência, pode escolher ser bem-sucedido."
+   },
+   {
+    "en": "Scrying",
+    "nome": "Vidência (Requer Runa da Tempestade)",
+    "desc": "Usa sua bola de cristal para conjurar vidência (CD 17)."
+   },
+   {
+    "en": "Storm Rune",
+    "nome": "Runa da Tempestade",
+    "desc": "Enquanto a bola de cristal rúnica estiver embutida no corpo, pode usar Chamado da Tormenta e Vidência. O cristal tem CA 17, 50 PV, imunidade a necrótico, veneno e psíquico, recupera todos os PV no fim de cada turno e vira pó ao chegar a 0 PV ou com a morte do gigante; ele pode gravar a runa em outro cristal após um descanso."
+   }
+  ],
+  "acoes": [
+   {
+    "en": "Spellcasting",
+    "nome": "Conjuração",
+    "desc": "Usa Carisma (CD 21, +13 para acertar), sem componentes materiais. À vontade: detectar magia, detectar pensamentos. 1/dia cada: controlar a água, controlar o clima (como ação), dissipar magia, mudança de plano, mensagem, parar o tempo."
+   },
+   {
+    "en": "Multiattack",
+    "nome": "Ataques Múltiplos",
+    "desc": "Faz três ataques, com Lâmina de Relâmpago ou Lança de Relâmpago."
+   },
+   {
+    "en": "Lightning Blade",
+    "nome": "Lâmina de Relâmpago",
+    "desc": "Corpo a corpo, +15 para acertar, alcance 3 m: 22 (3d8+9) de dano cortante mais 16 (3d10) elétrico."
+   },
+   {
+    "en": "Lightning Lance",
+    "nome": "Lança de Relâmpago",
+    "desc": "Ataque mágico à distância, +13 para acertar, alcance 150 m: 39 (5d12+7) de dano elétrico."
+   },
+   {
+    "en": "Tempest Call",
+    "nome": "Chamado da Tormenta (Requer Runa da Tempestade)",
+    "desc": "Vórtice numa esfera de 18 m de raio centrada nele: os demais fazem teste de resistência de Destreza CD 21, sofrendo 43 (8d8+7) de dano de frio, elétrico ou trovejante (à escolha dele) na falha, ou metade no sucesso."
+   }
+  ],
+  "reacoes": [],
+  "lendarias": []
+ },
+ "Scion of Memnor": {
+  "nome": "Rebento de Memnor",
+  "acNote": "armadura natural",
+  "blurb": "Titã voador que ataca de longe com dardos de vento e de perto com uma maça-estrela de nuvem, além de puxar grupos inteiros para um vórtice trovejante que atordoa. Sua névoa enganosa faz os heróis atacarem os próprios aliados.",
+  "lore": "Os rebentos de Memnor são titãs nascidos da essência do ardiloso deus dos gigantes das nuvens. Pairam entre as nuvens e manipulam o vento, o trovão e a névoa com uma inteligência fria. Preferem enganar e semear discórdia a lutar de frente, mas quando entram em combate são devastadores. Mortais costumam encontrá-los em fortalezas celestes ou em tempestades que parecem ter vontade própria.",
+  "tracos": [
+   {
+    "en": "Flyby",
+    "nome": "Voo Rasante",
+    "desc": "Não provoca ataques de oportunidade ao sair voando do alcance de um inimigo."
+   },
+   {
+    "en": "Legendary Resistance",
+    "nome": "Resistência Lendária (6/dia)",
+    "desc": "Quando falha num teste de resistência, pode escolher ter sucesso."
+   },
+   {
+    "en": "Magic Resistance",
+    "nome": "Resistência à Magia",
+    "desc": "Tem vantagem em testes de resistência contra magias e efeitos mágicos."
+   },
+   {
+    "en": "Siege Monster",
+    "nome": "Monstro de Cerco",
+    "desc": "Causa dano dobrado a objetos e estruturas."
+   }
+  ],
+  "acoes": [
+   {
+    "en": "Multiattack",
+    "nome": "Ataques Múltiplos",
+    "desc": "Faz um ataque de Maça-Estrela de Nuvem ou Dardo de Vento e dois de Pancada."
+   },
+   {
+    "en": "Cloud Morningstar",
+    "nome": "Maça-Estrela de Nuvem",
+    "desc": "Corpo a corpo, +18, alcance 9 m. Acerto: 32 (4d10+10) de dano energético mais 22 (4d10) trovejante."
+   },
+   {
+    "en": "Wind Javelin",
+    "nome": "Dardo de Vento",
+    "desc": "À distância, +18, 36/144 m. Acerto: 42 (5d12+10) trovejante, e o alvo fica caído se falhar num teste de Força CD 26."
+   },
+   {
+    "en": "Slam",
+    "nome": "Pancada",
+    "desc": "Corpo a corpo, +18, alcance 6 m. Acerto: 28 (4d8+10) de dano energético."
+   },
+   {
+    "en": "Thunderous Vortex",
+    "nome": "Vórtice Trovejante (Recarga 5–6)",
+    "desc": "Esfera de 18 m de raio num ponto a até 36 m: quem falhar em Força CD 24 é puxado ao centro. Depois, todos num raio de 9 m sofrem 52 (8d12) trovejante e ficam atordoados até o fim do próximo turno se falharem em Constituição CD 24."
+   }
+  ],
+  "reacoes": [],
+  "lendarias": [
+   {
+    "en": "Fog of Deception",
+    "nome": "Névoa da Enganação",
+    "desc": "Ação bônus: nuvem de 9 m de raio num ponto a até 27 m. Quem falhar em Sabedoria CD 24 fica enfeitiçado até o fim do próximo turno e usa sua ação para atacar uma criatura escolhida pelo rebento (à distância, arremessando a arma, se ninguém estiver ao alcance). Quem passar fica imune por 24 horas."
+   }
+  ]
+ },
+ "Stone Giant of Evil Earth": {
+  "nome": "Gigante de Pedra da Terra Maligna",
+  "acNote": "armadura de placas",
+  "blurb": "Brutamontes de armadura pesada que golpeia com uma clava de pedra cuja onda trovejante atinge todos ao redor do alvo, ou arremessa rochas que derrubam. Quase impossível de empurrar ou derrubar.",
+  "lore": "Alguns gigantes de pedra, inclinados à crueldade, abandonam os deuses do Ordning e passam a adorar Ogrémoch, o Príncipe da Terra Maligna. Para eles, o mundo da superfície é um pesadelo que precisa ser esmagado até virar entulho. Vestem armaduras pesadas moldadas à imagem de seu patrono e empunham armas que vibram com energia trovejante. Servem como a força bruta dos cultos elementais que tramam a ruína do mundo.",
+  "tracos": [],
+  "acoes": [
+   {
+    "en": "Multiattack",
+    "nome": "Ataques Múltiplos",
+    "desc": "Faz dois ataques, combinando livremente Clava de Pedra Trovejante e Rocha."
+   },
+   {
+    "en": "Thundering Stone Club",
+    "nome": "Clava de Pedra Trovejante",
+    "desc": "Ataque corpo a corpo, +10 para acertar, alcance 4,5 m: 16 (3d6+6) de dano de concussão. Uma vez por turno, pode liberar uma explosão que causa 10 (3d6) de dano trovejante a cada outra criatura a até 9 m do alvo."
+   },
+   {
+    "en": "Boulder",
+    "nome": "Rocha",
+    "desc": "Ataque à distância, +10 para acertar, alcance 18/72 m: 19 (3d8+6) de dano de concussão, e o alvo fica caído se falhar em um teste de resistência de Força CD 18. Após cada arremesso, role 1d6; com 3 ou menos, as rochas acabam."
+   }
+  ],
+  "reacoes": [
+   {
+    "en": "Unyielding",
+    "nome": "Inabalável",
+    "desc": "Quando falha em um teste de resistência para não ser movido ou não ficar caído, considera que obteve sucesso."
+   }
+  ],
+  "lendarias": []
+ },
+ "Flesh Colossus": {
+  "nome": "Colosso de Carne",
+  "acNote": "armadura natural",
+  "blurb": "Um gigante costurado que agarra até duas vítimas com punhos de 6 m de alcance, engole os presos em seu peito e cospe um sopro elemental devastador num cone de 27 m. Destruir o núcleo no peito impede que ele engula, mas o deixa enfurecido.",
+  "lore": "Nos primórdios dos impérios gigantes, magos dessa raça juntaram a carne de gigantes mortos sobre um esqueleto de adamante para que continuassem servindo. No peito do colosso pulsa uma esfera de pedra que abriga espíritos de todos os planos elementais e funciona como seu coração. Muitos desses construtos antigos ainda vigiam ruínas esquecidas, locais sagrados e tesouros perdidos. Talvez algum deles proteja o segredo de como fabricar novos colossos.",
+  "tracos": [
+   {
+    "en": "Berserk",
+    "nome": "Fúria Cega",
+    "desc": "Se o núcleo for destruído, o colosso entra em fúria até ser destruído: a cada turno ataca a criatura visível mais próxima ou, sem alvos alcançáveis, um objeto."
+   },
+   {
+    "en": "Immutable Form",
+    "nome": "Forma Imutável",
+    "desc": "Imune a magias e efeitos que alterariam sua forma."
+   },
+   {
+    "en": "Magic Resistance",
+    "nome": "Resistência à Magia",
+    "desc": "Tem vantagem em testes de resistência contra magias e outros efeitos mágicos."
+   },
+   {
+    "en": "Siege Monster",
+    "nome": "Monstro de Cerco",
+    "desc": "Causa dano dobrado a objetos e estruturas."
+   }
+  ],
+  "acoes": [
+   {
+    "en": "Multiattack",
+    "nome": "Ataques Múltiplos",
+    "desc": "Faz dois ataques de Punho."
+   },
+   {
+    "en": "Fist",
+    "nome": "Punho",
+    "desc": "+13 para acertar (com vantagem se em fúria), alcance 6 m: 17 (3d6+7) de concussão. Alvo Grande ou menor é puxado até 4,5 m e fica agarrado (CD 17 para escapar) e contido enquanto durar; máximo de duas criaturas agarradas."
+   },
+   {
+    "en": "Elemental Breath",
+    "nome": "Sopro Elemental",
+    "desc": "Recarga 5-6. Cone de 27 m, teste de resistência de Destreza CD 21: 40 (9d8) de dano ácido, frio, fogo ou elétrico à escolha, metade se passar. Criaturas engolidas sofrem 40 (9d8) de dano energético ao mesmo tempo."
+   }
+  ],
+  "reacoes": [
+   {
+    "en": "Bite",
+    "nome": "Mordida",
+    "desc": "Ação bônus. +13 para acertar, alcance 1,5 m, contra criatura Grande ou menor que ele esteja agarrando: 20 (3d8+7) de concussão e o alvo é engolido (contido, cobertura total, 10 [3d6] de dano energético no início de cada turno do colosso); cabem duas. O núcleo no peito (CA 16, 140 PV, imune a elétrico, veneno e psíquico) ao ser destruído faz o colosso vomitar todos, caídos a até 3 m, e ele não engole mais; se o colosso morrer, os engolidos saem gastando 3 m de movimento, caídos."
+   }
+  ],
+  "lendarias": []
+ },
+ "Cradle of the Frost Scion": {
+  "nome": "Berço do Herdeiro do Gelo",
+  "acNote": "armadura natural",
+  "blurb": "Colosso de gelo que esmaga com alcance de 6 m, arremessa estalactites que derrubam e congela áreas inteiras com o sopro, que pode transformar vítimas em estátuas. Ao ser destruído, libera o herdeiro de Thrym que guardava dentro de si.",
+  "lore": "Este gigante elemental de gelo é uma casca viva que abriga o herdeiro de Thrym, uma entidade nascida do frio primordial. Ele protege o ser em gestação enquanto caminha e nada pelas regiões geladas do mundo. Quando o berço se despedaça, o herdeiro desperta de imediato para continuar a luta. Fala gigante e primordial, e costuma agir com uma frieza implacável.",
+  "tracos": [
+   {
+    "en": "Awakening of the Scion",
+    "nome": "Despertar do Herdeiro",
+    "desc": "Ao chegar a 0 PV, o berço se parte em lascas de gelo e o herdeiro de Thrym surge no mesmo espaço, agindo na mesma iniciativa."
+   },
+   {
+    "en": "Legendary Resistance",
+    "nome": "Resistência Lendária",
+    "desc": "Cinco vezes por dia, pode transformar um teste de resistência fracassado em sucesso."
+   },
+   {
+    "en": "Magic Resistance",
+    "nome": "Resistência à Magia",
+    "desc": "Tem vantagem em testes de resistência contra magias e efeitos mágicos."
+   },
+   {
+    "en": "Siege Monster",
+    "nome": "Monstro de Cerco",
+    "desc": "Causa dano dobrado a objetos e estruturas."
+   }
+  ],
+  "acoes": [
+   {
+    "en": "Multiattack",
+    "nome": "Ataques Múltiplos",
+    "desc": "Faz dois ataques, escolhendo entre Pancada e Arremessar Estalactite."
+   },
+   {
+    "en": "Slam",
+    "nome": "Pancada",
+    "desc": "Ataque corpo a corpo, +15, alcance 6 m: 30 (4d10+8) de dano de concussão mais 11 (2d10) de frio."
+   },
+   {
+    "en": "Hurl Icicle",
+    "nome": "Arremessar Estalactite",
+    "desc": "Ataque à distância, +15, alcance 36 m: 26 (4d8+8) perfurante mais 9 (2d8) de frio. O alvo fica caído se falhar em um teste de resistência de Força CD 23."
+   },
+   {
+    "en": "Freezing Breath",
+    "nome": "Sopro Congelante",
+    "desc": "Recarga 5–6. Cone de 27 m; teste de resistência de Constituição CD 23: falha sofre 52 (8d12) de frio e fica com deslocamento 0 até o fim do próximo turno; sucesso, metade do dano. Quem cairia a 0 PV fica com 1 PV e petrificado como estátua de gelo, que se estilhaça (matando-o) com dano de concussão ou descongela com dano de fogo."
+   }
+  ],
+  "reacoes": [
+   {
+    "en": "Chilling Mist",
+    "nome": "Névoa Gélida",
+    "desc": "Ação bônus: esfera de 9 m de raio a até 27 m, que contorna esquinas. Teste de resistência de Constituição CD 19 ou sofre 28 (8d6) de frio e fica sem reações até o início do próximo turno. Some no fim do turno do berço."
+   }
+  ],
+  "lendarias": []
+ },
+ "Dust Hulk": {
+  "nome": "Colosso de Poeira",
+  "acNote": "armadura natural",
+  "blurb": "Nuvem de cascalho que flutua sobre os inimigos, desferindo três pancadas de longo alcance e cegando quem estiver dentro dela com poeira abrasiva. Ao morrer, explode numa nuvem que pode cegar todos ao redor.",
+  "lore": "Os colossos de poeira vêm de antigos clãs de gigantes de pedra que viviam isolados em regiões inóspitas, até que a energia do Plano do Ar desgastou seus corpos e os converteu em elementais. Hoje não passam de massas de pó e pedrisco que mal se mantêm unidas. Herdaram o gosto artístico dos ancestrais, mas em vez de esculpir rocha tratam o próprio corpo como obra viva. Deslizam por correntes de vento e túneis subterrâneos como tempestades de areia, dançando com formas que nunca param de mudar.",
+  "tracos": [
+   {
+    "en": "Air Form",
+    "nome": "Forma Aérea",
+    "desc": "Pode entrar e permanecer no espaço de uma criatura hostil, e atravessa frestas de até 2,5 cm sem se espremer."
+   },
+   {
+    "en": "Death Burst",
+    "nome": "Explosão Mortal",
+    "desc": "Ao morrer, explode em poeira numa esfera de 3 m de raio. Quem estiver na área faz teste de resistência de Constituição CD 14 ou fica cego por 1 minuto, repetindo o teste ao fim de cada turno."
+   }
+  ],
+  "acoes": [
+   {
+    "en": "Multiattack",
+    "nome": "Ataques Múltiplos",
+    "desc": "Faz três ataques de Pancada, podendo trocar um deles por Poeira Ardente."
+   },
+   {
+    "en": "Slam",
+    "nome": "Pancada",
+    "desc": "Ataque corpo a corpo +7, alcance 3 m, um alvo. Acerto: 13 (2d8 + 4) de dano de concussão."
+   },
+   {
+    "en": "Stinging Dust",
+    "nome": "Poeira Ardente",
+    "desc": "Uma criatura dentro do seu espaço faz teste de resistência de Constituição CD 14. Se falhar, sofre 10 (3d6) de dano de concussão e fica cega até o fim do próximo turno dela; se passar, sofre só metade do dano."
+   }
+  ],
+  "reacoes": [],
+  "lendarias": []
+ },
+ "Fury of Kostchtchie": {
+  "nome": "Fúria de Kostchtchie",
+  "acNote": "armadura natural",
+  "blurb": "Gigante demoníaco que avança em investida e esmaga com punhos gélidos, causando ainda mais frio em quem já sofreu com sua aura congelante. De longe, arremessa rochas devastadoras.",
+  "lore": "Gigantes do gelo frustrados com sua posição no ordning, ou que renegam Annam, às vezes passam a cultuar o lorde demônio Kostchtchie, que segundo suas lendas foi um gigante do gelo capaz de matar um lorde demônio e tomar seu domínio no Abismo. Quando ele atende a essas preces, o devoto ganha força sobrenatural, braços que ultrapassam os joelhos e um frio cortante ao seu redor. O preço é a própria alma, consumida aos poucos para alimentar o poder. A queimação no peito cresce até virar frenesi, e só a batalha consegue aliviá-la.",
+  "tracos": [
+   {
+    "en": "Chilling Aura",
+    "nome": "Aura Congelante",
+    "desc": "Criaturas que começam o turno a até 3 m da fúria fazem teste de resistência de Constituição CD 20; se falharem, sofrem 11 (2d10) de dano de frio."
+   },
+   {
+    "en": "Magic Resistance",
+    "nome": "Resistência à Magia",
+    "desc": "Tem vantagem em testes de resistência contra magias e outros efeitos mágicos."
+   }
+  ],
+  "acoes": [
+   {
+    "en": "Multiattack",
+    "nome": "Ataques Múltiplos",
+    "desc": "Faz dois ataques, de Punho ou de Rocha."
+   },
+   {
+    "en": "Fist",
+    "nome": "Punho",
+    "desc": "Corpo a corpo, +13, alcance 3 m: 17 (2d8+8) de concussão mais 10 (3d6) de frio. O frio sobe para 17 (5d6) se o alvo sofreu dano da Aura Congelante desde o fim do último turno da fúria."
+   },
+   {
+    "en": "Rock",
+    "nome": "Rocha",
+    "desc": "Ataque à distância, +13, alcance 18/72 m: 30 (4d10+8) de dano de concussão."
+   }
+  ],
+  "reacoes": [],
+  "lendarias": []
+ },
+ "Mud Hulk": {
+  "nome": "Brutamontes de Lama",
+  "acNote": "armadura natural",
+  "blurb": "Avança por um chão de lama pegajosa, golpeia com alcance de 3 m e engole vítimas que sufocam e se dissolvem em ácido dentro dele. À distância, arremessa lama que causa dano e prende os inimigos no lugar.",
+  "lore": "Descendem de gigantes das colinas isolados que, depois de devorar tudo ao redor, passaram a comer a própria terra até que sua natureza elemental os converteu em lama viva. Ainda lembram vagamente a forma gigante, mas o corpo escorre sem parar e deixa poças grossas por onde passam. A fome ancestral continua: envolvem qualquer coisa que pareça comestível e a absorvem diretamente. Quando ameaçados, atiram lama para imobilizar as presas antes de consumi-las.",
+  "tracos": [
+   {
+    "en": "Amorphous",
+    "nome": "Amorfo",
+    "desc": "Passa por frestas de até 2,5 cm sem precisar se espremer."
+   },
+   {
+    "en": "Sticky Mud",
+    "nome": "Lama Pegajosa",
+    "desc": "O chão num raio de 4,5 m ao redor dele é terreno difícil para as outras criaturas."
+   }
+  ],
+  "acoes": [
+   {
+    "en": "Enveloping Slam",
+    "nome": "Pancada Envolvente",
+    "desc": "Ataque corpo a corpo +5, alcance 3 m: 9 (1d12+3) de concussão. Alvo Grande ou menor faz teste de resistência de Força CD 13 ou é puxado e engolfado: não respira, fica contido, sofre 6 (1d12) de ácido no início de cada turno e se move junto com ele; repete o teste ao fim de cada turno para escapar. Só engolfa um alvo por vez e, enquanto isso, perde o traço Amorfo."
+   },
+   {
+    "en": "Mud Splash",
+    "nome": "Jato de Lama",
+    "desc": "Lança lama numa esfera de 3 m de raio a até 9 m: teste de resistência de Destreza CD 13, sofrendo 10 (2d6+3) de concussão na falha ou metade no sucesso. A área vira terreno difícil até o início do próximo turno dele."
+   }
+  ],
+  "reacoes": [],
+  "lendarias": []
+ },
+ "Ettin Ceremorph": {
+  "nome": "Ceremorfo Ettin",
+  "acNote": "armadura natural",
+  "blurb": "Gigante psiônico que esmaga e agarra com tentáculos capazes de atordoar, disparando raios mentais à distância. Quem fica preso e incapacitado corre o risco de ter o cérebro arrancado.",
+  "lore": "É o resultado de experiências dos devoradores de mentes com ettins: as duas cabeças do gigante alimentam dois girinos illithid, que juntos conseguem transformar o corpo inteiro. Uma das cabeças afunda no tronco e passa a cuidar apenas do controle físico, enquanto a outra se dedica ao raciocínio e aos poderes psiônicos, mais fracos que os de um illithid comum. Essas criaturas servem às colônias de devoradores de mentes como guardiões dos cérebros anciões e de seus tesouros. Não guardam qualquer lembrança da vida que tinham como ettins.",
+  "tracos": [
+   {
+    "en": "Magic Resistance",
+    "nome": "Resistência à Magia",
+    "desc": "Tem vantagem em testes de resistência contra magias e outros efeitos mágicos."
+   }
+  ],
+  "acoes": [
+   {
+    "en": "Multiattack",
+    "nome": "Ataques Múltiplos",
+    "desc": "Faz um ataque de Pancada e um de Tentáculos; pode trocar um deles por Raio Mental, se ainda tiver usos."
+   },
+   {
+    "en": "Slam",
+    "nome": "Pancada",
+    "desc": "Ataque corpo a corpo +7, alcance 3 m: 22 (4d8+4) de dano de concussão."
+   },
+   {
+    "en": "Tentacles",
+    "nome": "Tentáculos",
+    "desc": "Ataque corpo a corpo +7, alcance 3 m: 15 (2d10+4) de dano psíquico. Alvo Grande ou menor fica agarrado (CD 14 para escapar) e deve passar num teste de resistência de Inteligência CD 15 ou fica atordoado enquanto estiver agarrado."
+   },
+   {
+    "en": "Extract Brain",
+    "nome": "Extrair Cérebro",
+    "desc": "Ataque corpo a corpo +7, alcance 1,5 m, contra um humanoide incapacitado que esteja agarrando: 55 (10d10) de dano perfurante. Se o alvo cair a 0 PV, morre com o cérebro devorado."
+   },
+   {
+    "en": "Mind Bolt",
+    "nome": "Raio Mental (3/Dia)",
+    "desc": "Ataque mágico à distância +7, alcance 36 m: 17 (2d12+4) de dano psíquico, e o alvo deve passar num teste de resistência de Inteligência CD 15 ou fica atordoado até o fim do próximo turno dele."
+   }
+  ],
+  "reacoes": [],
+  "lendarias": []
+ },
+ "Death Giant Reaper": {
+  "nome": "Gigante da Morte Ceifador",
+  "acNote": "armadura de placas",
+  "blurb": "Ceifa inimigos a 4,5 m com uma foice que soma dano necrótico, ou dispara raios de alma à distância que o curam quando o alvo está amedrontado. Teleporta-se espalhando terror por onde passa.",
+  "lore": "Gigantes da morte são gigantes que trocaram a vida comum por um pacto com as forças do fim e da sombra. Os ceifadores são os guerreiros dessa linhagem, encarregados de colher almas e caçar quem foge do destino. Vestem armadura pesada e empunham foices enormes, surgindo e sumindo em meio ao medo que provocam. São astutos, estudiosos de magia e de história antiga, e não conhecem o pavor.",
+  "tracos": [],
+  "acoes": [
+   {
+    "en": "Multiattack",
+    "nome": "Ataques Múltiplos",
+    "desc": "Faz dois ataques, escolhendo entre Foice e Raio de Alma."
+   },
+   {
+    "en": "Scythe",
+    "nome": "Foice",
+    "desc": "Ataque corpo a corpo, +12 para acertar, alcance 4,5 m. Causa 21 (3d8+8) de dano cortante e mais 11 (2d10) de dano necrótico."
+   },
+   {
+    "en": "Soul Bolt",
+    "nome": "Raio de Alma",
+    "desc": "Ataque mágico à distância, +8 para acertar, alcance 36 m, causa 26 (4d10+4) de dano necrótico. Se o alvo estiver amedrontado, o gigante ganha PV temporários iguais ao dano."
+   }
+  ],
+  "reacoes": [],
+  "lendarias": []
+ }
+}

@@ -199,5 +199,61 @@
   "qunbraxel": [
     "PaBTSO",
     "Qunbraxel.webp"
+  ],
+  "moradorInfectado": [
+    "PaBTSO",
+    "Infected Townsperson.webp"
+  ],
+  "grellPsiquico": [
+    "PaBTSO",
+    "Grell Psychic.webp"
+  ],
+  "fusaoDeCarne": [
+    "PaBTSO",
+    "Flesh Meld.webp"
+  ],
+  "capaNegraMutante": [
+    "PaBTSO",
+    "Cloaker Mutate.webp"
+  ],
+  "oshundo": [
+    "PaBTSO",
+    "Oshundo the Alhoon.webp"
+  ],
+  "nothicDevoradorDeMentes": [
+    "PaBTSO",
+    "Mind Flayer Nothic.webp"
+  ],
+  "zeloteAberrante": [
+    "PaBTSO",
+    "Aberrant Zealot.webp"
+  ],
+  "profetaDevoradorDeMentes": [
+    "PaBTSO",
+    "Mind Flayer Prophet.webp"
+  ],
+  "cerebroAnciaoInfectado": [
+    "PaBTSO",
+    "Infected Elder Brain.webp"
+  ],
+  "ocular": [
+    "PaBTSO",
+    "Oculorb.webp"
+  ],
+  "devoradorClarividente": [
+    "PaBTSO",
+    "Mind Flayer Clairvoyant.webp"
+  ],
+  "lowarnizel": [
+    "PaBTSO",
+    "Lowarnizel.webp"
+  ],
+  "refracaoDeIlvaash": [
+    "PaBTSO",
+    "Refraction of Ilvaash.webp"
+  ],
+  "cranioFlamejante": [
+    "MM",
+    "Flameskull.webp"
   ]
 }

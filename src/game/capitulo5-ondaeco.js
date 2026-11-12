@@ -30,6 +30,7 @@ import { guardar } from './comercio.js';
 import { grupoTem } from './saque.js';
 import { paginasDoEpilogo } from './epilogo.js';
 import { TEXTOS, EXAMES, arvoreDeMormesk, arvoreDoEspectador, arvoreDeNezznar, arvoreDeNundro } from './ondaeco-dados.js';
+import { LORE, fatosAte } from '../rules/lore.js';
 
 const MOVIMENTO = 60;
 const AREA_DE = new Map();
@@ -1048,7 +1049,8 @@ export function criarOndaEco(app) {
     }
     if (v === 'estatuaDumathoin') {
       lin('Reconhecer a estátua', 'religiao', 10, 'estatuaReligiao', async (r) => {
-        await painel(r.passou ? TEXTOS.estatuaReconhece : TEXTOS.estatuaNada, { teste: r });
+        // o que a lore conta de Dumathoin (`rules/lore.js`), até o total tirado: quem passa folgado lembra mais
+        await painel(r.passou ? [TEXTOS.estatuaReconhece, ...fatosAte(LORE['deus:dumathoin'], r.total, { ate: 3 }).map((f) => f.texto)] : TEXTOS.estatuaNada, { teste: r });
       });
       lin('Examinar os olhos de perto', 'investigacao', 12, 'estatuaOlhos', async (r) => {
         await painel(r.passou ? TEXTOS.estatuaVidro : TEXTOS.estatuaNada, { teste: r });

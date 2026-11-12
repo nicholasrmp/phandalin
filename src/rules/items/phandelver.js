@@ -43,7 +43,8 @@ export const PHANDELVER_ITEMS = {
 
   cajadoAranha: nomeado('cajadoAranha', 'Cajado Aranha', 'raro',
     'Bordão de adamante negro com uma aranha esculpida na ponta. Bate com mais 1d6 de veneno. Dez cargas gastam Patas de Aranha (1) e Teia (2, CD 15); recupera 1d6 + 4 ao anoitecer, e se a última carga acaba, um 1 no d20 o desfaz em pó.',
-    { tipo: 'cajado', art: 'cajado', peso: 5, sintonia: true, base: 'bordao', danoExtra: '1d6', tipoExtra: 'veneno', cargas: 10 }),
+    { tipo: 'cajado', art: 'cajado', peso: 5, sintonia: true, base: 'bordao', danoExtra: '1d6', tipoExtra: 'veneno', cargas: 10,
+      conjura: { cargas: 10, recarga: '1d6+4', cd: 15, magias: { patasDeAranha: { custo: 1 }, teia: { custo: 2 } } } }),
 
   // O CAJADO QUE DÁ O NOME AO CAJAVIDRO, e por um tempo o nome não batia com a peça: o item era um "bordão de
   // ponta recurvada" de SEIS cargas, enquanto o bloco do Cajavidro (`monsters/humanoides.js`) já falava de
@@ -51,7 +52,8 @@ export const PHANDELVER_ITEMS = {
   // Arcana por uma e Escudo Arcano por duas. Quem acha a peça na Mansão lê a descrição dela, não o bloco.
   cajadoDeDefesa: nomeado('cajadoDeDefesa', 'Cajado de Defesa', 'incomum',
     'Cajado de vidro fosco, fino, pouco mais de um metro, que não parece aguentar uma pancada e aguenta. Dez cargas: uma para Armadura Arcana, duas para Escudo Arcano. Recupera 1d6 + 4 cargas ao amanhecer.',
-    { tipo: 'cajado', art: 'cajado', peso: 4, sintonia: true, base: 'bordao', cargas: 10 }),
+    { tipo: 'cajado', art: 'cajado', peso: 4, sintonia: true, base: 'bordao', cargas: 10,
+      conjura: { cargas: 10, recarga: '1d6+4', magias: { armaduraArcana: { custo: 1 }, escudoArcano: { custo: 2 } } } }),
 
   // ------------------------------------------------ tesouro com nome próprio ----
   penteDeAgatha: nomeado('penteDeAgatha', 'Pente de prata de Agatha', 'incomum',
@@ -315,6 +317,145 @@ export const PHANDELVER_ITEMS = {
   cascalhoPetrificado: nomeado('cascalhoPetrificado', 'Cascalho de estátua', 'comum',
     'Um punhado de cascalho dos rostos quebrados das estátuas do salão dos Triestoroth. Era gente, antes do basilisco.',
     { tipo: 'tesouro', peso: 1, valor: 0, missao: true }),
+  // o túnel do capítulo 7 (o Obelisco)
+  diarioDeThorgran: nomeado('diarioDeThorgran', 'Diário de Thorgran Ironquill', 'comum',
+    'O que restou do diário de um historiador anão: poucas páginas inchadas de água, numa capa com um ex-libris de prata. '
+    + 'Fala de devoradores de mentes debaixo das Montanhas da Espada, de espionar Illithinoch e de avisar os anões de '
+    + 'Talhundereth. A placa sozinha vale 450 po; com as páginas, um colecionador paga o dobro.',
+    { tipo: 'tesouro', art: 'item-livroDosEnroladores', peso: 2, valor: 450 }),
+  penaDeOuro: nomeado('penaDeOuro', 'Pena de ouro', 'comum',
+    'Uma pena de escrever toda de ouro, tirada de algum viajante que o behir comeu.',
+    { tipo: 'tesouro', peso: 0, valor: 100, pilha: true }),
+  pomadaDeKeoghtom: nomeado('pomadaDeKeoghtom', 'Pomada de Keoghtom (dose)', 'incomum',
+    'Uma dose de pomada grossa, com cheiro de aloé. Uma ação para passá-la: recupera 2d8+2 pontos de vida.',
+    { tipo: 'poção', art: 'cura', peso: 0, valor: 120, pilha: true, consumivel: 'curar', cura: '2d8+2', acao: 'acao' }),
+  cristalMentalCuidadoso: nomeado('cristalMentalCuidadoso', 'Cristal mental (cuidadoso)', 'incomum',
+    'Um cristal claro, morno ao toque, em que os devoradores de mentes guardaram um pedaço de magia. Quem o segura ao conjurar uma magia de uma ação pode moldá-la, uma vez: '
+    + 'até três criaturas escolhidas passam sozinhas no teste de resistência contra ela. Não se soma à metamagia do feiticeiro, e depois de usado vira uma pedra comum de 50 po. Arma-se na barra de ações.',
+    { tipo: 'maravilhoso', art: 'item-gemaElemental', peso: 0, valor: 300, metamagia: 'carefulSpell' }),
+  cristalMentalSutil: nomeado('cristalMentalSutil', 'Cristal mental (sutil)', 'comum',
+    'Um cristal claro, morno ao toque, em que os devoradores de mentes guardaram um pedaço de magia. Quem o segura ao conjurar uma magia de uma ação pode moldá-la, uma vez: '
+    + 'ela sai sem gesto e sem palavra, e ninguém a vê ser conjurada para contrariá-la. Não se soma à metamagia do feiticeiro, e depois de usado vira uma pedra comum de 50 po. Arma-se na barra de ações.',
+    { tipo: 'maravilhoso', art: 'item-gemaElemental', peso: 0, valor: 100, metamagia: 'subtleSpell' }),
+  cristalMentalElevado: nomeado('cristalMentalElevado', 'Cristal mental (elevado)', 'raro',
+    'Um cristal claro, morno ao toque, em que os devoradores de mentes guardaram um pedaço de magia. Quem o segura ao conjurar uma magia de uma ação pode moldá-la, uma vez: '
+    + 'uma criatura tem desvantagem no primeiro teste de resistência contra ela. Não se soma à metamagia do feiticeiro, e depois de usado vira uma pedra comum de 50 po. Arma-se na barra de ações.',
+    { tipo: 'maravilhoso', art: 'item-gemaElemental', peso: 0, valor: 1500, metamagia: 'heightenedSpell' }),
+  cristalMentalPotencializado: nomeado('cristalMentalPotencializado', 'Cristal mental (potencializado)', 'incomum',
+    'Um cristal claro, morno ao toque, em que os devoradores de mentes guardaram um pedaço de magia. Quem o segura ao conjurar uma magia de uma ação pode moldá-la, uma vez: '
+    + 'até três dados de dano dela, dos que saíram baixos, rolam de novo. Não se soma à metamagia do feiticeiro, e depois de usado vira uma pedra comum de 50 po. Arma-se na barra de ações.',
+    { tipo: 'maravilhoso', art: 'item-gemaElemental', peso: 0, valor: 300, metamagia: 'empoweredSpell' }),
+  cristalMentalDistante: nomeado('cristalMentalDistante', 'Cristal mental (distante)', 'incomum',
+    'Um cristal claro, morno ao toque, em que os devoradores de mentes guardaram um pedaço de magia. Quem o segura ao conjurar uma magia de uma ação pode moldá-la, uma vez: '
+    + 'o alcance dela cresce 30 metros, e a de toque passa a alcançar 9 metros. Não se soma à metamagia do feiticeiro, e depois de usado vira uma pedra comum de 50 po. Arma-se na barra de ações.',
+    { tipo: 'maravilhoso', art: 'item-gemaElemental', peso: 0, valor: 300, metamagia: 'distantSpell' }),
+  cristalMentalAcelerado: nomeado('cristalMentalAcelerado', 'Cristal mental (acelerado)', 'raro',
+    'Um cristal claro, morno ao toque, em que os devoradores de mentes guardaram um pedaço de magia. Quem o segura ao conjurar uma magia de uma ação pode moldá-la, uma vez: '
+    + 'ela sai como ação bônus. Não se soma à metamagia do feiticeiro, e depois de usado vira uma pedra comum de 50 po. Arma-se na barra de ações.',
+    { tipo: 'maravilhoso', art: 'item-gemaElemental', peso: 0, valor: 1500, metamagia: 'quickenedSpell' }),
+  cristalMentalProlongado: nomeado('cristalMentalProlongado', 'Cristal mental (prolongado)', 'incomum',
+    'Um cristal claro, morno ao toque, em que os devoradores de mentes guardaram um pedaço de magia. Quem o segura ao conjurar uma magia de uma ação pode moldá-la, uma vez: '
+    + 'a duração dela dobra, até 24 horas. Não se soma à metamagia do feiticeiro, e depois de usado vira uma pedra comum de 50 po. Arma-se na barra de ações.',
+    { tipo: 'maravilhoso', art: 'item-gemaElemental', peso: 0, valor: 300, metamagia: 'extendedSpell' }),
+  cristalApagado: nomeado('cristalApagado', 'Cristal mental apagado', 'comum',
+    'Um cristal mental já usado: frio, opaco, sem magia nenhuma. Ainda vale como pedra.',
+    { tipo: 'tesouro', art: 'item-gemaElemental', peso: 0, valor: 50, pilha: true }),
+  // Illithinoch (o Obelisco, capítulo 7)
+  frascoDeMuco: nomeado('frascoDeMuco', 'Frasco de muco da estátua', 'comum',
+    'Um frasco do muco verde que pinga das mãos da estátua de Illithinoch. Bebido, dá resistência a dano psíquico por dez '
+    + 'minutos.', { tipo: 'poção', art: 'cura', peso: 0.5, valor: 0, pilha: true, consumivel: 'condicao', condicao: 'mucoDaEstatua', rodadas: 100 }),
+  perfumeRaro: nomeado('perfumeRaro', 'Frasco de perfume raro', 'comum',
+    'Um frasco de cristal lapidado com um perfume que muda de cheiro conforme o frasco gira: flor, chuva, cobre.',
+    { tipo: 'tesouro', peso: 0.5, valor: 500, pilha: true }),
+  jarraDeCristal: nomeado('jarraDeCristal', 'Jarra de cristal', 'comum', 'Uma jarra fina de cristal, frágil como casca de ovo.',
+    { tipo: 'tesouro', peso: 1, valor: 25, pilha: true }),
+  mapasDoSubterraneo: nomeado('mapasDoSubterraneo', 'Mapas antigos do Subterrâneo', 'comum',
+    'Mapas desenhados pelo Oshundo de memória, de um Subterrâneo de séculos atrás: túneis, cidades e nomes que ninguém mais '
+    + 'usa. Um historiador pagaria uma fortuna.', { tipo: 'tesouro', peso: 2, valor: 4000 }),
+  tinteiroDeAmbar: nomeado('tinteiroDeAmbar', 'Tinteiro de âmbar', 'comum', 'Um tinteiro esculpido num bloco de âmbar, com um inseto preso dentro.',
+    { tipo: 'tesouro', peso: 1, valor: 280 }),
+  livroDeGulguush: nomeado('livroDeGulguush', 'Prostrado diante da Psique Dissonante', 'comum',
+    'O livro inacabado do Gulguush, em Subcomum: de onde veio Ilvaash, onde ele toma corpo (no Vazio Sem Fim, debaixo de uma '
+    + 'piscina de salmoura no coração do Labirinto Salobro) e o que flutua em volta dele.', { tipo: 'tesouro', peso: 3, valor: 0, missao: true }),
+  gnawbleTrincheiras: nomeado('gnawbleTrincheiras', 'Gnawble (das Trincheiras)', 'comum',
+    'Uma bola de pelo cinzento do tamanho de um punho, com uma boca cheia de dentes, colhida da runa de uma fenda. Morde quem a '
+    + 'segura, ou se aninha no colo dele. Não come, não bebe, não dorme.', { tipo: 'tesouro', peso: 1, valor: 0, missao: true }),
+  gnawbleOco: nomeado('gnawbleOco', 'Gnawble (do Oco da Desova)', 'comum',
+    'Uma bola de pelo rosado do tamanho de um punho, com uma boca cheia de dentes, colhida da runa de uma fenda. Morde quem a '
+    + 'segura, ou se aninha no colo dele. Não come, não bebe, não dorme.', { tipo: 'tesouro', peso: 1, valor: 0, missao: true }),
+  gnawbleLabirinto: nomeado('gnawbleLabirinto', 'Gnawble (do Labirinto dos Olhos)', 'comum',
+    'Uma bola de pelo roxo do tamanho de um punho, com uma boca cheia de dentes, colhida da runa de uma fenda. Morde quem a '
+    + 'segura, ou se aninha no colo dele. Não come, não bebe, não dorme.', { tipo: 'tesouro', peso: 1, valor: 0, missao: true }),
+  // as fendas de Illithinoch
+  tiaraDePrata: nomeado('tiaraDePrata', 'Tiara de prata', 'comum', 'Uma tiara de prata fina, com uma pedra leitosa no meio. Paga a um grell por alguma coisa.',
+    { tipo: 'tesouro', peso: 0.5, valor: 1200 }),
+  adagaDeCristal: nomeado('adagaDeCristal', 'Adaga ornamental de cristal', 'comum', 'Uma adaga de cristal lapidado, linda e inútil numa luta.',
+    { tipo: 'tesouro', peso: 1, valor: 600, pilha: true }),
+  rubiOlho: nomeado('rubiOlho', 'Rubi talhado como olho', 'comum', 'Um rubi talhado com pupila e íris, como um olho de sangue.',
+    { tipo: 'tesouro', art: 'item-gemaElemental', peso: 0, valor: 300, pilha: true }),
+  // O Labirinto Salgado (o Obelisco, capítulo 8)
+  espadaDePrataDaVarakkta: nomeado('espadaDePrataDaVarakkta', 'Espada de prata githyanki', 'lendário',
+    'Uma espada grande de lâmina prateada e serrilhada, das que os cavaleiros githyanki passam de mão em mão por séculos. '
+    + 'Só quem tem o dom psiônico a sintoniza. Uma cavaleira githyanki do labirinto quer esta de volta.',
+    { tipo: 'tesouro', peso: 6, valor: 0 }),
+  capaDeAumento: nomeado('capaDeAumento', 'Capa de aumento', 'muito raro',
+    'Uma capa cinza-arroxeada com runas de prata na barra, manchada de sangue velho. Tem três cargas: com uma ação bônus, '
+    + 'quem a veste cresce por dez minutos, com vantagem em Força e o bônus de proficiência somado ao dano de arma. Volta '
+    + '1d3 cargas a cada amanhecer. No jogo: sintonizada, a ação aparece na barra; as cargas voltam no descanso longo, e a '
+    + 'pegada não cresce.',
+    { tipo: 'maravilhoso', peso: 1, valor: 0, sintonia: true, conjura: { cargas: 3, recarga: '1d3', magias: { aumentoDaCapa: { custo: 1 } } } }),
+  esmeraldaDosGithyanki: nomeado('esmeraldaDosGithyanki', 'Esmeralda grande', 'comum', 'Uma esmeralda do tamanho de um polegar, sem lapidar.',
+    { tipo: 'tesouro', art: 'item-gemaElemental', peso: 0, valor: 900, pilha: true }),
+  caixaDeMusicaDePlatina: nomeado('caixaDeMusicaDePlatina', 'Caixa de música de platina', 'comum',
+    'Uma caixinha de platina que toca uma melodia triste ao abrir. Um anão não ouve som nenhum dela.', { tipo: 'tesouro', peso: 1, valor: 1500 }),
+  garfosDePrata: nomeado('garfosDePrata', 'Caixa de garfos de prata', 'comum', 'Doze garfos de prata de seis dentes, numa caixa forrada.',
+    { tipo: 'tesouro', peso: 3, valor: 1800 }),
+  rolhaDeOuro: nomeado('rolhaDeOuro', 'Rolha de ouro', 'comum', 'A rolha de um barrilete de cerveja fraca, toda de ouro.',
+    { tipo: 'tesouro', peso: 0, valor: 850 }),
+  flautaDePaDeMarfim: nomeado('flautaDePaDeMarfim', 'Flauta de pã de marfim', 'comum', 'Uma flauta de pã de marfim entalhado, com o tom limpo.',
+    { tipo: 'tesouro', peso: 1, valor: 3600 }),
+  oculosDoKlaudel: nomeado('oculosDoKlaudel', 'Óculos de aro de ouro', 'comum', 'Os óculos de um sábio que o labirinto engoliu.',
+    { tipo: 'tesouro', peso: 0, valor: 100 }),
+  pergaminhoDeCompreenderIdiomas: nomeado('pergaminhoDeCompreenderIdiomas', 'Pergaminho de Compreender Idiomas', 'comum',
+    'Compreender Idiomas, escrito para uma leitura só. Por ora, vale o que um mago pagar.',
+    { tipo: 'pergaminho', art: 'arcano', pilha: true, peso: 0, valor: 25, magia: 'compreenderIdiomas' }),
+  pergaminhoDeLinguas: nomeado('pergaminhoDeLinguas', 'Pergaminho de Línguas', 'incomum',
+    'Línguas, escrito para uma leitura só. Por ora, vale o que um mago pagar.',
+    { tipo: 'pergaminho', art: 'arcano', pilha: true, peso: 0, valor: 150, magia: 'linguas' }),
+  tomoDaMenteVoltadaParaDentro: nomeado('tomoDaMenteVoltadaParaDentro', 'Verdades da Mente Voltada para Dentro', 'comum',
+    'Um tomo enorme, de letras que parecem se mexer e que ninguém consegue pronunciar. Um colecionador pagaria bem.',
+    { tipo: 'tesouro', peso: 5, valor: 2000 }),
+  boneDaExplosaoMental: nomeado('boneDaExplosaoMental', 'Boné da explosão mental', 'muito raro',
+    'Um boné macio, violeta, costurado no desenho das dobras de um cérebro. Uma vez por dia, com uma ação bônus, solta um cone '
+    + 'de 18 m que fere a mente: Inteligência CD 15, 5d8 psíquicos e atordoado (metade e sem atordoar para quem passa). No '
+    + 'jogo: sintonizado, a ação aparece na barra, e volta no descanso longo.',
+    { tipo: 'maravilhoso', peso: 0, valor: 0, sintonia: true, conjura: { cargas: 1, recarga: null, cd: 15, magias: { explosaoDoBone: { custo: 1 } } } }),
+  // O Vazio Sem Fim (o Obelisco, capítulo 8)
+  linguaDeMetal: nomeado('linguaDeMetal', 'Língua de metal', 'comum',
+    'Uma fita de metal de um palmo, áspera de um lado e quebrada na ponta. Tem cheiro de magia de proteção. Encaixa em alguma coisa.',
+    { tipo: 'tesouro', peso: 1, valor: 0 }),
+  amuletoContraDeteccao: nomeado('amuletoContraDeteccao', 'Amuleto contra detecção e localização', 'incomum',
+    'Esconde quem o usa da magia de adivinhação. O dono dele jurava que o tornava invisível a Ilvaash; a cabeça dele discordou.',
+    { tipo: 'maravilhoso', peso: 0, valor: 0, sintonia: true }),
+  globoDeNeve: nomeado('globoDeNeve', 'Globo de neve com uma feira', 'comum', 'Um globo de vidro com uma feira em miniatura dentro, que neva quando se sacode.',
+    { tipo: 'tesouro', peso: 1, valor: 1500 }),
+  estatuetaDeBasilisco: nomeado('estatuetaDeBasilisco', 'Estatueta de basilisco de platina', 'comum', 'Um basilisco de platina do tamanho de um gato, de olhos de vidro.',
+    { tipo: 'tesouro', peso: 3, valor: 4000 }),
+  aliancaDeOuro: nomeado('aliancaDeOuro', 'Aliança de ouro', 'comum', 'Uma aliança de ouro lisa, sem nome gravado.',
+    { tipo: 'tesouro', art: 'item-anelDeSinete', peso: 0, valor: 100, pilha: true }),
+  diamanteDaEstatua: nomeado('diamanteDaEstatua', 'Diamante grande', 'raro', 'Um diamante do tamanho de uma noz, arrancado da estátua de um cérebro.',
+    { tipo: 'tesouro', art: 'item-gemaElemental', peso: 0, valor: 5000, pilha: true }),
+  opalaDoCharco: nomeado('opalaDoCharco', 'Opala', 'comum', 'Uma opala leitosa do tamanho de um ovo de pomba, tirada de um arbusto esculpido.',
+    { tipo: 'tesouro', art: 'item-gemaElemental', peso: 0, valor: 1000, pilha: true }),
+  pergaminhoDeConeDeFrio: nomeado('pergaminhoDeConeDeFrio', 'Pergaminho de Cone de Frio', 'raro',
+    'Cone de Frio, escrito para uma leitura só, salvo seco entre as páginas de um livro encharcado. Por ora, vale o que um mago pagar.',
+    { tipo: 'pergaminho', art: 'arcano', pilha: true, peso: 0, valor: 500, magia: 'coneDeFrio' }),
+  matadorDeDevoradores: nomeado('matadorDeDevoradores', 'Matador de Devoradores', 'raro',
+    'Machado grande +1 com devoradores de mentes decapitados entalhados na lâmina. Contra aberração, 1d12 cortante a mais.',
+    { tipo: 'arma mágica', art: 'machado', peso: 7, bonusAtaque: 1, bonusDano: 1, base: 'machadoGrande', danoExtra: '1d12', tipoExtra: 'cortante', contra: 'aberração', sintonia: true }),
+  estatuetaDeObservador: nomeado('estatuetaDeObservador', 'Estatueta de observador', 'comum',
+    'Um observador de ouro do tamanho de uma mão, com esmeraldas nas pontas dos pedúnculos e um diamante enorme no olho do meio.',
+    { tipo: 'tesouro', peso: 2, valor: 5500 }),
   livroDeGranito: nomeado('livroDeGranito', 'O Livro de Granito', 'comum',
     'Páginas de metal entre capas de granito fino. Os segredos do templo, a lista dos que dormem na cripta e, em anão, '
     + 'como abrir a porta dela: girar o disco do entalhe menos lapidado ao mais lapidado e pôr uma gema no centro.',

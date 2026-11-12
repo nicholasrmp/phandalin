@@ -1,0 +1,116 @@
+[
+ {
+  "criatura": "dragaoDeAmetistaAdulto",
+  "magias": [
+   "control water"
+  ]
+ },
+ {
+  "criatura": "dragaoDeTopazioAdulto",
+  "magias": [
+   "control water"
+  ]
+ },
+ {
+  "criatura": "dragaoDeAmetistaAnciao",
+  "magias": [
+   "control water"
+  ]
+ },
+ {
+  "criatura": "tartarugaDragaoAncia",
+  "lendarias": [
+   "Boiling Aura"
+  ]
+ },
+ {
+  "criatura": "dragaoDeEsmeraldaAnciao",
+  "magias": [
+   "etherealness"
+  ]
+ },
+ {
+  "criatura": "dragaoDeTopazioAnciao",
+  "magias": [
+   "control water"
+  ]
+ },
+ {
+  "criatura": "aspectoDeTiamat",
+  "acao": "Chromatic Flames"
+ },
+ {
+  "criatura": "dracohidra",
+  "acao": "Prismatic Breath"
+ },
+ {
+  "criatura": "dracohidra",
+  "traco": "Multiple Heads"
+ },
+ {
+  "criatura": "dracohidra",
+  "traco": "Reactive Heads"
+ },
+ {
+  "criatura": "draconianoCouracado",
+  "reacao": "Shape Theft"
+ },
+ {
+  "criatura": "fragmentoDraconico",
+  "acao": "Inhabit Object"
+ },
+ {
+  "criatura": "espiritoDraconico",
+  "acao": "Rend"
+ },
+ {
+  "criatura": "espiritoDraconico",
+  "acao": "Breath Weapon"
+ },
+ {
+  "criatura": "espiritoDraconico",
+  "semGolpe": true
+ },
+ {
+  "criatura": "oradorDraconico",
+  "reacao": "Disarming Words"
+ },
+ {
+  "criatura": "draconatoDeBahamut",
+  "acao": "Healing Touch"
+ },
+ {
+  "criatura": "dracoCompanheiro",
+  "acao": "Bite"
+ },
+ {
+  "criatura": "dracoCompanheiro",
+  "reacao": "Infused Strikes"
+ },
+ {
+  "criatura": "dracoCompanheiro",
+  "semGolpe": true
+ },
+ {
+  "criatura": "cacadorDeOvosAdulto",
+  "reacao": "Rapid Adaptation"
+ },
+ {
+  "criatura": "dragaoCerebroAnciao",
+  "lendarias": [
+   "Shatter Concentration"
+  ]
+ },
+ {
+  "criatura": "espreitadorDeGemas",
+  "reacao": "Protective Link"
+ },
+ {
+  "criatura": "dragaoOco",
+  "acao": "Sapping Presence"
+ },
+ {
+  "criatura": "dragaoOco",
+  "traco": "Reconstruction"
+ }
+]

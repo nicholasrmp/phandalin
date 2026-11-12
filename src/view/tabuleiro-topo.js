@@ -108,6 +108,8 @@ export const COR_DA_ZONA = {
   // Detectar Magia: o chão onde há aura brilha em violeta.
   auraMagica: { fill: 'rgba(170,120,255,.34)', stroke: 'rgba(222,196,255,.95)' },
   graxa: { fill: 'rgba(24,20,16,.42)', stroke: 'rgba(120,104,72,.55)' },
+  // as pás do moinho do Vazio: só o contorno, que a arte da FA já desenha o moinho
+  paDoMoinho: { fill: 'rgba(0,0,0,0)', stroke: 'rgba(212,190,140,.7)' },
   teia: { fill: 'rgba(244,240,228,.46)', stroke: 'rgba(255,255,255,.95)' },
   aura: { fill: 'rgba(232,195,90,.06)', stroke: 'rgba(255,224,138,.38)' },
   emaranhar: { fill: 'rgba(80,150,70,.34)', stroke: 'rgba(110,232,154,.6)' },
@@ -1482,6 +1484,21 @@ export class TabuleiroTopo {
     const r = C * pegada * 0.42;
     const anel = c.side === 'party' ? ANEL_ALIADO : c.side === 'neutro' ? ANEL_NEUTRO : ANEL_INIMIGO;
 
+    // O QUE É PINTADO NO MAPA (o obelisco da Ânima): a arte já está no chão; o tabuleiro só põe o anel do lado, para
+    // se ver que é um alvo
+    if (c.pintadoNoMapa) {
+      if (c.dead) return;
+      ctx.save();
+      ctx.strokeStyle = 'rgba(0,0,0,.6)';
+      ctx.lineWidth = Math.max(3, C * 0.05);
+      ctx.beginPath(); ctx.arc(sx, sy, r * 1.08, 0, Math.PI * 2); ctx.stroke();
+      ctx.strokeStyle = anel;
+      ctx.lineWidth = Math.max(1.5, C * 0.028);
+      ctx.setLineDash([C * 0.12, C * 0.08]);
+      ctx.beginPath(); ctx.arc(sx, sy, r * 1.08, 0, Math.PI * 2); ctx.stroke();
+      ctx.restore();
+      return;
+    }
     // os ganchos de cena (a taverna: o marcador do jogador no chão e a placa com o nome em cima)
     this.aoPes?.(ctx, c, sx, sy);
     ctx.save();

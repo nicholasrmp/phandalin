@@ -16,6 +16,9 @@
 //
 // Textos em palavras nossas. Os números (deslocamento, dados, alcances) seguem o livro.
 
+import { TRACOS_DOS_LIVROS, RACAS_DOS_LIVROS, ANCESTRALIDADES_DO_FIZBAN } from './racas-livros.js';
+import { proficiencyBonus } from './abilities.js';
+
 const T = (nome, tipo, desc, extra = {}) => ({ nome, tipo, desc, fonte: 'racial', ...extra });
 
 export const TRACOS_RACIAIS = {
@@ -121,6 +124,8 @@ export const TRACOS_RACIAIS = {
   infernalLegacy: T('Legado Infernal', 'passiva',
     'Conhece Taumaturgia. No 3º nível conjura Repreensão Infernal (como de 2º círculo) e no 5º, Escuridão, cada uma uma vez por descanso longo, com Carisma.',
     { motor: true }),
+  // AS RAÇAS DOS OUTROS LIVROS (Volo, Mordenkainen, Costa da Espada, Fizban, Tasha, Acquisitions Inc.): `racas-livros.js`
+  ...TRACOS_DOS_LIVROS,
 };
 
 // Ancestralidade dracônica: tipo de dano e forma do sopro (Livro do Jogador, tabela do draconato).
@@ -229,7 +234,9 @@ export const RACAS = {
     tracos: ['darkvision', 'hellishResistance', 'infernalLegacy'], resistencias: ['fogo'], truques: ['taumaturgia'], atributoRacial: 'cha',
     magiasRaciais: [{ nivel: 3, magia: 'repreensaoInfernal', circulo: 2 }, { nivel: 5, magia: 'escuridao' }],
   },
+  ...RACAS_DOS_LIVROS,
 };
+for (const r of Object.values(RACAS)) r.livro ??= 'PHB';
 
 const sa = (s) => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 
@@ -244,6 +251,9 @@ export function corDoDraconato(texto) {
 
 /** O id da raça de uma ficha, pelo texto que ela traz (`raca` primeiro, `ancestry` de reserva). Null se não reconhece. */
 export function racaDe(c) {
+  // O id que a ficha já traz vale primeiro: o herói criado o leva (`criador.js`), e as raças dos livros, que o texto não
+  // separa ("Tiferino de Zariel" é tiferino, "Elfo do mar" é elfo), só se acham por ele.
+  if (c?.racaId && RACAS[c.racaId]) return c.racaId;
   const t = sa(`${c.raca ?? ''} ${c.ancestry ?? ''}`);
   if (!t.trim()) return null;
   if (/drac|dragon/.test(t)) return 'draconato';
@@ -259,8 +269,47 @@ export function racaDe(c) {
   return null;
 }
 
-/** Os traços raciais de uma ficha (ids), ou [] se a raça não é conhecida. */
-export const tracosDaRaca = (c) => RACAS[racaDe(c)]?.tracos ?? [];
+/** O traço que a raça deixa escolher (a estação do eladrin, a descendência do meio-elfo), se a ficha escolheu um válido. */
+export function tracoEscolhido(c, id = racaDe(c)) {
+  const lista = RACAS[id]?.escolhaDeTraco;
+  if (!lista) return null;
+  return lista.includes(c.tracoDaRaca) ? c.tracoDaRaca : lista[0];
+}
+
+/** Os traços raciais de uma ficha (ids), ou [] se a raça não é conhecida. O escolhido entra junto. */
+export function tracosDaRaca(c) {
+  const id = racaDe(c);
+  const r = RACAS[id];
+  if (!r) return [];
+  const escolhido = tracoEscolhido(c, id);
+  return escolhido ? [...r.tracos, escolhido] : r.tracos;
+}
+
+/** O tipo de dano do dragão de um draconato do Fizban, pela cor que a ficha guarda (`ancestralidade`) ou pelo texto. */
+export function danoDoFizban(c, id = racaDe(c)) {
+  const tabela = ANCESTRALIDADES_DO_FIZBAN[id];
+  if (!tabela) return null;
+  if (tabela[c.ancestralidade]) return { cor: c.ancestralidade, dano: tabela[c.ancestralidade] };
+  const t = sa(`${c.raca ?? ''}`);
+  const cor = Object.keys(tabela).find((k) => t.includes(sa(k).slice(0, 5))) ?? Object.keys(tabela)[0];
+  return { cor, dano: tabela[cor] };
+}
+
+/** Os usos de cada recurso da raça no nível do herói (o sopro do Fizban é pelo bônus de proficiência). */
+export function recursosDaRaca(c, nivel = c.level ?? 1) {
+  const r = RACAS[racaDe(c)];
+  if (!r?.recursos) return;
+  c.resources ??= {};
+  c.resourcesMax ??= {};
+  for (const rec of r.recursos) {
+    if (nivel < (rec.nivel ?? 1)) continue;
+    const max = rec.usos === 'prof' ? proficiencyBonus(nivel) : rec.usos;
+    const antes = c.resourcesMax[rec.id];
+    if (antes === max) continue;
+    c.resourcesMax[rec.id] = max;
+    c.resources[rec.id] = Math.min(max, (c.resources[rec.id] ?? 0) + (max - (antes ?? 0)));
+  }
+}
 
 /**
  * Põe a raça na ficha: traços, deslocamento, visão no escuro, treinos, resistências, recursos e a ancestralidade
@@ -276,15 +325,32 @@ export function aplicarRaca(c) {
   const r = RACAS[id];
   c.racaId = id;
   c.features ??= [];
-  for (const t of r.tracos) if (!c.features.includes(t)) c.features.push(t);
-  c.deslocamentoRacial = r.deslocamento;
+  const escolhido = tracoEscolhido(c, id);
+  if (escolhido) c.tracoDaRaca = escolhido;
+  for (const t of tracosDaRaca(c)) if (!c.features.includes(t)) c.features.push(t);
+  // PÉS LIGEIROS escolhido (o meio-elfo da floresta): 35 pés, como o elfo da floresta
+  c.deslocamentoRacial = escolhido === 'fleetOfFoot' ? 35 : r.deslocamento;
   // O MÓVEL (talento) soma 3 m ao deslocamento: um save carregado passa por aqui de novo, e não pode perdê-los.
-  c.speedFt = r.deslocamento + ((c.talentos ?? []).includes('movel') ? 10 : 0);
-  c.visaoNoEscuro = r.visao;
+  c.speedFt = c.deslocamentoRacial + ((c.talentos ?? []).includes('movel') ? 10 : 0);
+  // a VISÃO NO ESCURO da linhagem personalizada é escolha (no lugar da perícia)
+  c.visaoNoEscuro = escolhido === 'darkvision' ? 60 : r.visao;
+  // O TAMANHO: o goblin, o kobold e o verdan são Pequenos, e o texto da raça não diz isso a `tamanho.js`
+  if (r.porte === 'pequeno' && !c.size) c.size = 'pequeno';
+  // OS OUTROS DESLOCAMENTOS (o nado do tritão, a escalada do tabaxi, o voo do tiferino alado)
+  if (r.nado || r.escalada) c.speeds = { ...(c.speeds ?? {}), ...(r.nado ? { swimFt: Math.max(r.nado, c.speeds?.swimFt ?? 0) } : {}), ...(r.escalada ? { climbFt: Math.max(r.escalada, c.speeds?.climbFt ?? 0) } : {}) };
+  if (r.voo) c.flyFt = Math.max(r.voo, c.flyFt ?? 0);
+  if (r.respiraNaAgua) c.respiraNaAgua = true;
+  if (r.armaduraNatural) c.armaduraNatural = r.armaduraNatural;
+  if (r.imunidades) c.immune = [...new Set([...(c.immune ?? []), ...r.imunidades])];
+  if (r.imuneCondicao) c.conditionImmunities = [...new Set([...(c.conditionImmunities ?? []), ...r.imuneCondicao])];
+  if (r.vantagens) c.vantagemRacial = r.vantagens;
+  if (r.armasNaturais) { c.weapons ??= []; for (const a of r.armasNaturais) if (!c.weapons.includes(a)) c.weapons.push(a); }
   c.skills ??= [];
   for (const p of r.pericias ?? []) if (!c.skills.includes(p)) c.skills.push(p);
   c.weaponTraining ??= [];
-  for (const a of r.armas ?? []) if (!c.weaponTraining.includes(a)) c.weaponTraining.push(a);
+  // o TREINO COM ARMAS ÉLFICAS escolhido (o meio-elfo da lua, do sol ou da floresta)
+  const armas = [...(r.armas ?? []), ...(escolhido === 'elfWeaponTraining' ? ['espadaLonga', 'espadaCurta', 'arcoCurto', 'arcoLongo'] : [])];
+  for (const a of armas) if (!c.weaponTraining.includes(a)) c.weaponTraining.push(a);
   c.armorTraining ??= [];
   for (const a of r.armaduras ?? []) if (!c.armorTraining.includes(a)) c.armorTraining.push(a);
   // `resist` é o campo que o motor LÊ (`danoPorTipo`). Este arquivo e a criação escreviam `resistances`, que nada lia: a
@@ -296,6 +362,14 @@ export function aplicarRaca(c) {
   c.resourcesMax ??= {};
   const recurso = (rid) => { if (c.resourcesMax[rid] == null) { c.resourcesMax[rid] = 1; c.resources[rid] = 1; } };
   if (r.tracos.includes('relentlessEndurance')) recurso('relentlessEndurance');
+  recursosDaRaca(c);
+  // O DRACONATO DO FIZBAN: o dano da ancestralidade, a resistência a ele e o sopro que entra no lugar de um ataque
+  const fizban = danoDoFizban(c, id);
+  if (fizban) {
+    c.ancestralidadeDraconica = fizban.cor;
+    c.danoDoFizban = fizban.dano;
+    c.resist = [...new Set([...c.resist, fizban.dano])];
+  }
   if (r.tracos.includes('breathWeapon')) {
     recurso('breathWeapon');
     const cor = corDoDraconato(`${c.raca ?? ''} ${c.ancestry ?? ''}`);
@@ -329,18 +403,21 @@ export function completarConjuracaoRacial(c) {
  */
 export function magiasRaciaisDoNivel(c, nivel) {
   const r = RACAS[c.racaId ?? racaDe(c)];
-  if (!r?.magiasRaciais) return [];
+  if (!r?.magiasRaciais) { recursosDaRaca(c, nivel); return []; }
   c.magiasRaciais ??= [];
   c.resources ??= {};
   c.resourcesMax ??= {};
   const novas = [];
   for (const m of r.magiasRaciais) {
     if (nivel < m.nivel || c.magiasRaciais.some((x) => x.magia === m.magia)) continue;
-    const reg = { magia: m.magia, circulo: m.circulo ?? null, recurso: `racial_${m.magia}` };
+    // a que VOLTA NO CURTO (a Magia Firbolg) tem outra chave, que `descanso.js` reconhece
+    const reg = { magia: m.magia, circulo: m.circulo ?? null, recurso: `${m.curto ? 'racialCurto_' : 'racial_'}${m.magia}`,
+      ...(m.curto ? { rotulo: 'magia da raça, uma vez por descanso curto' } : {}) };
     c.magiasRaciais.push(reg);
     c.resourcesMax[reg.recurso] = 1;
     c.resources[reg.recurso] = 1;
     novas.push(reg);
   }
+  recursosDaRaca(c, nivel);
   return novas;
 }

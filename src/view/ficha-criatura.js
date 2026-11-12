@@ -76,7 +76,7 @@ export function criarFichaDaCriatura(app, root) {
     const token = fichaDe(m);
     const semArte = () => {
       caixa.classList.add('sem-arte');
-      const no = token ? el('img', { class: 'criatura-token', src: token, alt: m.name }) : makePortrait(m.look, 200);
+      const no = token ? el('img', { class: 'criatura-token', src: token, alt: m.name }) : makePortrait(m.look ?? m.defId, 200);
       no.classList?.add('criatura-token');
       // sem nota: "o livro não a ilustra" mentiria para a criatura cuja arte só não foi baixada nesta máquina
       caixa.replaceChildren(no);

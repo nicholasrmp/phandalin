@@ -1032,7 +1032,8 @@ teste('grimório do mago: 6 no 1º nível, 8 no 2º, só magia de mago', () => {
 
 teste('toda magia declara a fonte', () => {
   // as dos livros (`magias-livro-<livro>.js`) declaram o livro de onde vieram
-  for (const s of Object.values(SPELLS)) assert.ok(['srd', 'propria', 'phb', 'xge', 'tce', 'scag', 'dmg', 'ftd', 'bgg'].includes(s.fonte), s.id);
+  // as AÇÕES DAS RAÇAS dos livros (`racas-motor.js`) trazem o livro da raça: o Volo e o Mordenkainen entram aqui
+  for (const s of Object.values(SPELLS)) assert.ok(['srd', 'propria', 'phb', 'xge', 'tce', 'scag', 'dmg', 'ftd', 'bgg', 'vgm', 'mtf'].includes(s.fonte), s.id);
 });
 
 teste('mira: quantos alvos a magia escolhe, com o círculo', () => {
@@ -4190,7 +4191,7 @@ teste('UTIL: toda magia de utilidade existe, é SRD e o combate a recusa', () =>
     const s = SPELLS[id];
     assert.ok(s, id);
     // as de exploração dos livros (`rules/utilidade-livros.js`) declaram o livro de onde vieram
-    assert.ok(['srd', 'propria', 'phb'].includes(s.fonte), id);
+    assert.ok(['srd', 'propria', 'phb', 'xge'].includes(s.fonte), id);
   }
   const novas = Object.values(SPELLS).filter((s) => s.soFora);
   assert.ok(novas.length >= 17, `magias novas: ${novas.length}`);
@@ -6280,7 +6281,8 @@ teste('Gelatina Ocre: cortada, parte-se em duas menores com metade dos PV', () =
   // A metade de 15 PV ainda se divide; abaixo de 10 PV, não.
   enc.applyDamage(gelatinas[0], 8, 'elétrico', party[0]);
   assert.equal(enc.combatants.filter((c) => c.defId === 'gelatinaOcre').length, 3);
-  const pequena = enc.combatants.find((c) => c.size === 'pequeno');
+  // (o herói Pequeno, o halfling, também é 'pequeno': a gelatina se acha pelo id)
+  const pequena = enc.combatants.find((c) => c.defId === 'gelatinaOcre' && c.size === 'pequeno');
   assert.equal(pequena.hp, 7);
   enc.applyDamage(pequena, 8, 'cortante', party[0]);
   assert.equal(enc.combatants.filter((c) => c.defId === 'gelatinaOcre').length, 3, 'com 7 PV não se parte');

@@ -43,12 +43,16 @@ import { darXp } from './nivel.js';
 import { telaDeSubirNivel } from '../view/nivel-tela.js';
 import { descansoLongoDoGrupo } from '../view/descanso-tela.js';
 import { NPCS } from '../rules/npcs.js';
+import { LORE } from '../rules/lore.js';
 import { totalEmCobre, guardar, cobrar, pagarCada, repartir, LOJAS, lojaComSimpatia } from './comercio.js';
 import { abrirLoja } from '../view/loja.js';
 import { garantirInventario } from '../rules/equipment.js';
 import { nomeDoMomento, deNoite } from './relogio.js';
 import { criarCapitulo5NaVila, capitulo5Ativo } from './obelisco5-vila.js';
 import { criarCapitulo6NaVila, capitulo6Ativo } from './obelisco6-vila.js';
+import { capitulo7Ativo, criarCapitulo7NaVila } from './obelisco7-vila.js';
+import { mostrarMudancaDaVila, estagioDaVila } from './vila-reino.js';
+import { avancarTransformacao } from './transformacao.js';
 
 // ------------------------------------------------------------- o tempo ----
 // Seis momentos por dia; o grupo chega no quinto (fim de tarde). Cada visita
@@ -73,6 +77,8 @@ export const MISSOES = {
   sawplee: { titulo: 'Goblins na vila', de: 'Harbin Wester', texto: 'Goblins atacaram quatro lugares de Phandalin: o poço atrás da Barthen, a pedra do Câmbio, o arco do Santuário da Sorte e o balcão do Gigante Adormecido. Descobrir quem são e acabar com isso.', recompensa: 'o resto do pagamento do Harbin' },
   fragmentos: { titulo: 'Os três fragmentos', de: 'Gwyn Oresong', texto: 'Faltam três pedaços do obelisco: em Talhundereth, um templo anão abandonado nas colinas de Starmetal; na Cripta dos Talhund, debaixo dele; e na Encruzilhada da Forca, um velho entreposto subterrâneo. A Gwyn recomenda começar por Talhundereth.' },
   pip: { titulo: 'A aventura de Pip', de: 'Trilena Stonehill', texto: 'Pip, o filho dos Stonehill, saiu para brincar nos campos a sudeste e não voltou.', recompensa: 'cama e comida na Stonehill' },
+  wheel: { titulo: 'O tiferino no escuro', de: 'Gwyn Oresong e Greska', texto: 'O Wheel-of-Fortune, o atendente do Gigante Adormecido, trabalhava ao lado da pedra do obelisco e está mudando de corpo. Ele se trancou no salão da taverna, no escuro.' },
+  illithinoch: { titulo: 'Illithinoch', de: 'Gwyn Oresong', texto: 'Um buraco que não existia abriu no porão do Gigante Adormecido e desce para o fundo da terra. Por ele os goblins fugiram e os moradores sumidos foram levados. A Gwyn acha que leva a Illithinoch, a velha fortaleza dos devoradores de mentes, muito abaixo da vila.' },
   mineiros: { titulo: 'Mineiros sumidos', de: 'Halia Thornton', texto: 'Três mineiros da Halia sumiram numa mina velha a sudoeste, a Mina Hardyhammer, atrás de um "arbusto que anda".', recompensa: 'uma parte do veio de prata' },
   zorzula: { titulo: 'O Repouso de Zorzula', de: 'Gwyn Oresong', texto: 'Os goblins vêm de um velho posto de mineração duergar, o Repouso de Zorzula, a um dia de viagem para o leste, nas Montanhas da Espada. Lá manda um tal de Ruxithid.' },
 };
@@ -84,16 +90,16 @@ export const MISSOES = {
 // ao terminar, marca `app.campanha.feitos.<nome>`, e o convite aparece sozinho
 // na próxima visita. O título é do livro; o texto do convite é nosso.
 export const FACCOES = [
-  { id: 'manopla', nome: 'Ordem da Manopla', lugar: 'pomar', npc: 'daran', titulo: 'Chevall',
+  { id: 'manopla', nome: 'Ordem da Manopla', lugar: 'pomar', npc: 'daran', titulo: 'Chevall', lore: 'faccao:ordemDaManopla',
     quando: (f) => f.marcarrubra && f.pocoDaCoruja,
     convite: 'Daran chama um de vocês para o fundo do pomar, longe dos outros. — A Ordem da Manopla precisa de gente que vigia e não foge. Vi como vocês lutaram. Quem de vocês aceita a manopla?' },
-  { id: 'zhentarim', nome: 'Zhentarim', lugar: 'cambio', npc: 'halia', titulo: 'Presa',
+  { id: 'zhentarim', nome: 'Zhentarim', lugar: 'cambio', npc: 'halia', titulo: 'Presa', lore: 'faccao:zhentarim',
     quando: (f) => f.cajavidro,
     convite: 'Halia fecha a porta do escritório. — Os Marcarrubra eram amadores. Eu represento gente que não é. Dinheiro, influência, amigos nos lugares certos. Algum de vocês tem ambição de verdade?' },
-  { id: 'harpistas', nome: 'Harpistas', lugar: 'santuario', npc: 'irmaGaraele', titulo: 'Sentinela',
+  { id: 'harpistas', nome: 'Harpistas', lugar: 'santuario', npc: 'irmaGaraele', titulo: 'Sentinela', lore: 'faccao:harpistas',
     quando: (f) => f.agathaGrimorio,
     convite: 'Garaele espera o santuário esvaziar. — Há uma rede de gente que sabe das coisas antes de elas acontecerem, e age em silêncio. A informação que vocês trouxeram foi preciosa. Alguém de vocês quer fazer parte?' },
-  { id: 'alianca', nome: 'Aliança dos Lordes', lugar: 'salao', npc: 'sildar', titulo: 'Manto',
+  { id: 'alianca', nome: 'Aliança dos Lordes', lugar: 'salao', npc: 'sildar', titulo: 'Manto', lore: 'faccao:aliancaDosLordes',
     // O Obelisco: acabar com o Castelo OU descobrir a traição do Iarno basta.
     quando: (f, v) => v.sildar && (f.casteloDentefino || f.traicaoDeIarno),
     convite: 'Sildar pede uma palavra em particular. — A Aliança dos Lordes existe para que cidades como esta não fiquem à mercê de um Iarno. Precisamos de quem age, não de quem fala. Quem de vocês vem comigo?' },
@@ -184,6 +190,16 @@ export async function abrirPhandalin(app, { grupo, chegando = false } = {}) {
     ? criarCapitulo6NaVila({ app, camp, v, vivos, rng, registro, missao, concluir, pista, falar })
     : null;
   if (cap6) await cap6.chegada();
+
+  // O CAPÍTULO 7 DO OBELISCO: vencidos os guardiões dos três fragmentos, a vila infectada (`obelisco7-vila.js`).
+  const cap7 = capitulo7Ativo(camp)
+    ? criarCapitulo7NaVila({ app, camp, v, vivos, rng, registro, missao, concluir, pista, falar })
+    : null;
+  if (cap7) await cap7.chegada();
+  // A VILA TOMADA PELO REINO DISTANTE: a mudança do capítulo, uma vez por capítulo (`vila-reino.js`)
+  await mostrarMudancaDaVila(app, camp);
+  // e o herói tomado também, para o jogador que aceitar a regra (`transformacao.js`)
+  await avancarTransformacao(app, camp, vivos(), rng);
 
   // ------------------------------------------------------------ cenas ----
   const CENAS = {
@@ -573,10 +589,24 @@ export async function abrirPhandalin(app, { grupo, chegando = false } = {}) {
                 requer: () => (v.missoes.agatha ? 'a missão já está de pé' : null), oculta: true },
               // O `requer` abaixo já impede o repagamento (`garaelePagou` nasce
               // no `ao` do nó), então o `uma` era redundância com o mesmo risco.
+              { texto: 'O que se diz de Tymora?', vai: 'tymora' },
               { texto: 'A banshee respondeu sobre o grimório.', vai: 'agathaFeita',
                 requer: () => (feitos.agathaGrimorio && !v.feito.garaelePagou ? null : 'nada'), oculta: true },
               { texto: 'Até mais.', fim: 'sai' },
             ],
+          },
+          tymora: {
+            narra: (LORE['deus:tymora']?.fatos ?? []).filter((x) => x.cd <= 15).map((x) => x.texto).join(' '),
+            fala: 'A Senhora protege quem arrisca. A moeda virada para cima é dela, e a sorte ajuda os ousados.',
+            opcoes: [
+              { texto: 'E a irmã dela?', vai: 'beshaba' },
+              { texto: 'Até mais.', fim: 'sai' },
+            ],
+          },
+          beshaba: {
+            narra: (LORE['deus:tymora']?.fatos ?? []).filter((x) => x.cd >= 20).map((x) => x.texto).join(' '),
+            fala: 'Não digam o nome das duas no mesmo fôlego. Cada vez que a moeda cai do lado certo, a Senhora venceu a irmã outra vez.',
+            opcoes: [{ texto: 'Até mais.', fim: 'sai' }],
           },
           agathaFeita: {
             ao: () => {
@@ -893,6 +923,8 @@ export async function abrirPhandalin(app, { grupo, chegando = false } = {}) {
    */
   async function convidar(f) {
     const aceitos = [];
+    const lore = LORE[f.lore];
+    let explicou = false;
     for (;;) {
       const livres = vivos().filter((c) => !c.faccao);
       const quem = await narrar(app.root, {
@@ -900,9 +932,16 @@ export async function abrirPhandalin(app, { grupo, chegando = false } = {}) {
         paginas: [{ retrato: NPCS[f.npc]?.look, texto: [aceitos.length ? `${aceitos.join(' e ')} já ${aceitos.length > 1 ? 'aceitaram' : 'aceitou'}. Mais alguém?` : f.convite] }],
         escolhas: [
           ...livres.map((c) => ({ rotulo: `${c.name} aceita`, valor: c })),
+          ...(lore && !explicou && !aceitos.length ? [{ rotulo: `O que é ${f.nome === 'Zhentarim' ? 'isso, os Zhentarim' : `a ${f.nome}`}?`, valor: 'explicar' }] : []),
           { rotulo: aceitos.length ? 'Pronto' : 'Ninguém, por enquanto', valor: null },
         ],
       });
+      if (quem === 'explicar') {
+        explicou = true;
+        await narrar(app.root, { formato: 'painel', paginas: [{ titulo: lore.nome, retrato: NPCS[f.npc]?.look,
+          texto: [lore.resumo, ...lore.fatos.filter((x) => x.cd <= 15).map((x) => x.texto)] }] });
+        continue;
+      }
       if (!quem) break;
       quem.faccao = f.id;
       quem.titulo = f.titulo;
@@ -978,9 +1017,11 @@ export async function abrirPhandalin(app, { grupo, chegando = false } = {}) {
       return;
     }
     tela.esconder();
-    const doCap5 = cap5 ? await cap5.cenaDoLugar(l.id) : null;
-    const doCap6 = doCap5 == null && cap6 ? await cap6.cenaDoLugar(l.id) : null;
-    const fim = doCap5 ?? doCap6 ?? (l.npc ? await CENAS[l.id]() : await semNpc(l));
+    // o capítulo mais novo fala primeiro: as cenas dos anteriores já acabaram, ou ficam para depois
+    const doCap7 = cap7 ? await cap7.cenaDoLugar(l.id) : null;
+    const doCap5 = doCap7 == null && cap5 ? await cap5.cenaDoLugar(l.id) : null;
+    const doCap6 = doCap7 == null && doCap5 == null && cap6 ? await cap6.cenaDoLugar(l.id) : null;
+    const fim = doCap7 ?? doCap5 ?? doCap6 ?? (l.npc ? await CENAS[l.id]() : await semNpc(l));
     if (fim?.descer) {
       tela.fechar();
       app.newEncounter({ ...app.config, modo: 'campanha', capitulo: 3, cenaDaVila: fim.descer, continuarCom: grupo });
@@ -1066,6 +1107,8 @@ export async function abrirPhandalin(app, { grupo, chegando = false } = {}) {
   }
 
   tela = abrirTelaVila(app.root, {
+    // o TOM do mapa: a vila tomada pelo Reino Distante, capítulo a capítulo (`vila-reino.js`)
+    estagio: estagioDaVila(camp),
     lugares: LUGARES,
     oficial: ARTE_OFICIAL_DA_VILA,
     estado: v,
@@ -1095,7 +1138,9 @@ export async function abrirPhandalin(app, { grupo, chegando = false } = {}) {
         escolhas: [
           { rotulo: 'Acampar fora', valor: 'acampar' },
           { rotulo: 'Galpão da Qelline', valor: 'palheiro' },
-          { rotulo: 'Estalagem', valor: 'estalagem', primaria: true, motivo: totalEmCobre(vivos()) < quarto ? 'sem dinheiro' : null },
+          // no capítulo 8 a Stonehill fechou as portas (`obelisco7-vila.js`): o Toblen não recebe hóspede
+          { rotulo: 'Estalagem', valor: 'estalagem', primaria: estagioDaVila(camp) !== 8,
+            motivo: estagioDaVila(camp) === 8 ? 'a Stonehill está fechada' : totalEmCobre(vivos()) < quarto ? 'sem dinheiro' : null },
         ],
       });
       if (v2 === 'estalagem') cobrar(vivos(), quarto);

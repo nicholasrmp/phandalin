@@ -1,0 +1,1674 @@
+{
+ "Spell Scroll (6th Level)": {
+  "nome": "Pergaminho de Magia (6º Círculo)",
+  "desc": "Guarda uma magia de 6º círculo que só pode ser lida por quem a tem na lista da sua classe, sem gastar componentes materiais. Se ainda não conjura magias desse círculo, precisa passar num teste do atributo de conjuração (CD 16), e falhar apaga a magia. A magia usa CD 17 e +9 de ataque, e o pergaminho vira pó após o uso, mas não se perde se a conjuração for interrompida. Um mago pode copiá-la para o grimório com um teste de Inteligência (Arcanismo) CD 16, mas o pergaminho é destruído de qualquer forma."
+ },
+ "Elemental Gem, Yellow Diamond": {
+  "nome": "Gema Elemental, Diamante Amarelo",
+  "desc": "Com uma ação, você quebra a gema e invoca um elemental da terra, com o mesmo efeito da magia Conjurar Elemental. Depois disso, a gema perde a magia e não pode ser usada de novo. Não exige sintonia."
+ },
+ "Spell Scroll (9th Level)": {
+  "nome": "Pergaminho de Magia (9º Círculo)",
+  "desc": "Contém uma magia de 9º círculo que pode ser conjurada a partir do pergaminho, sem componentes materiais, por quem tem a magia na lista da sua classe; se ainda não conjura magias desse círculo, precisa passar num teste do atributo de conjuração CD 19, e a falha apaga a magia sem efeito. A magia usa CD 19 e bônus de ataque +11, e o pergaminho vira pó após o uso (se a conjuração for interrompida, ele não se perde). Um mago pode copiá-la para o grimório com um teste de Inteligência (Arcanismo) CD 19, que destrói o pergaminho com sucesso ou falha."
+ },
+ "Crystal Ball of True Seeing": {
+  "nome": "Bola de Cristal da Visão da Verdade",
+  "desc": "Exige sintonia. Tocando a esfera, você pode conjurar Vidência (CD 17) através dela. Durante a magia, você ganha visão verdadeira num raio de 36 m em torno do sensor."
+ },
+ "Ring of Necrotic Resistance": {
+  "nome": "Anel de Resistência a Necrótico",
+  "desc": "Enquanto o usa, você tem resistência a dano necrótico. Este anel de azeviche exige sintonia."
+ },
+ "Bag of Tricks, Rust": {
+  "nome": "Bolsa de Truques, Ferrugem",
+  "desc": "Com uma ação, você tira um objeto peludo da bolsa e o arremessa a até 6 m; ao cair, ele vira um animal aliado sorteado em 1d8 (rato, coruja, mastim, bode, bode gigante, javali gigante, leão ou urso-pardo), que age no seu turno e recebe ordens com uma ação bônus. A criatura some ao chegar a 0 PV ou no amanhecer seguinte. Após três usos, a bolsa só volta a funcionar no próximo amanhecer; não exige sintonia."
+ },
+ "Headband of Intellect": {
+  "nome": "Tiara do Intelecto",
+  "desc": "Enquanto usada, eleva sua Inteligência para 19; se o seu valor natural já for 19 ou mais, não traz benefício algum. Requer sintonia."
+ },
+ "Potion of Growth": {
+  "nome": "Poção de Crescimento",
+  "desc": "Ao beber esta poção, você recebe por 1d4 horas o efeito de aumentar da magia Aumentar/Reduzir, sem precisar manter concentração. Não requer sintonia."
+ },
+ "Ring of the Ram": {
+  "nome": "Anel do Carneiro",
+  "desc": "Exige sintonia. Tem 3 cargas e recupera 1d3 ao amanhecer; com uma ação, gaste de 1 a 3 cargas para lançar uma cabeça de carneiro espectral contra uma criatura visível a até 18 m (ataque mágico à distância com +7), que sofre 2d10 de dano energético e é empurrada 1,5 m por carga gasta. Também pode usar a ação e as cargas para tentar quebrar um objeto solto visível a até 18 m, fazendo um teste de Força com +5 por carga."
+ },
+ "Armor of Invulnerability": {
+  "nome": "Armadura da Invulnerabilidade",
+  "desc": "Armadura de placas lendária que exige sintonia e concede resistência a todo dano não mágico enquanto vestida. Uma vez por dia (recupera ao amanhecer), com uma ação, você passa a ser imune a dano não mágico por 10 minutos ou até tirar a armadura."
+ },
+ "Cloak of the Manta Ray": {
+  "nome": "Manto da Arraia-Jamanta",
+  "desc": "Com o capuz levantado, o usuário respira debaixo d'água e ganha deslocamento de natação de 18 m. Levantar ou abaixar o capuz gasta uma ação. Não requer sintonia."
+ },
+ "Frost Brand": {
+  "nome": "Marca Gélida",
+  "desc": "Espada mágica (requer sintonia) cujos acertos causam 1d6 de dano de frio adicional; empunhá-la concede resistência a dano de fogo. Em clima congelante, a lâmina ilumina 3 m com luz plena e mais 3 m com penumbra. Ao sacá-la, você pode apagar todas as chamas não mágicas a até 9 m, no máximo uma vez por hora."
+ },
+ "Potion of Psychic Resistance": {
+  "nome": "Poção de Resistência Psíquica",
+  "desc": "Ao beber esta poção, você ganha resistência a dano psíquico por 1 hora. Não exige sintonia."
+ },
+ "Potion of Water Breathing": {
+  "nome": "Poção de Respirar na Água",
+  "desc": "Ao beber esta poção, você ganha a capacidade de respirar debaixo d'água durante 1 hora. Item consumível, não exige sintonia."
+ },
+ "Manual of Flesh Golems": {
+  "nome": "Manual dos Golens de Carne",
+  "desc": "Só um conjurador com pelo menos dois espaços de magia de 5º círculo consegue decifrar este tomo; qualquer outra criatura que tente lê-lo sofre 6d6 de dano psíquico. Com o livro em mãos, 60 dias de trabalho contínuo (descansando no máximo 8 horas por dia) e 50.000 po em materiais, você cria um golem de carne. Ao final, o manual se consome em chamas e suas cinzas animam o golem, que fica sob seu controle e obedece às suas ordens faladas."
+ },
+ "Red Dragon Scale Mail": {
+  "nome": "Cota de Escamas de Dragão Vermelho",
+  "desc": "Exige sintonia. Vestida, concede +1 na CA, resistência a dano de fogo e vantagem nos testes de resistência contra o sopro e a Presença Aterradora de dragões. Uma vez por dia (recarrega ao amanhecer), com uma ação, você sente a direção e a distância do dragão vermelho mais próximo num raio de 48 km."
+ },
+ "Black Dragon Scale Mail": {
+  "nome": "Cota de Escamas de Dragão Negro",
+  "desc": "Exige sintonia. Vestida, concede +1 na CA, resistência a dano ácido e vantagem em testes de resistência contra o sopro e a Presença Aterradora de dragões. Uma vez por dia (recupera ao amanhecer), com uma ação você sente a direção e a distância do dragão negro mais próximo num raio de cerca de 48 km."
+ },
+ "Potion of Hill Giant Strength": {
+  "nome": "Poção de Força do Gigante da Colina",
+  "desc": "Ao beber, sua Força passa a ser 21 por 1 hora. Se sua Força já for 21 ou maior, a poção não tem efeito."
+ },
+ "Bead of Force": {
+  "nome": "Conta de Energia",
+  "desc": "Com uma ação, você arremessa a conta a até 18 m; ela explode e some, e quem estiver num raio de 3 m faz um teste de resistência de Destreza CD 15 ou sofre 5d4 de dano energético. Por 1 minuto, uma esfera transparente cobre a área: quem falhou e está totalmente dentro fica preso, os demais são empurrados para fora, e só o ar atravessa a parede. Um preso pode usar a ação para rolar a esfera até metade do seu deslocamento, e ela pesa só 0,5 kg ao ser carregada; não exige sintonia."
+ },
+ "Ring of Feather Falling": {
+  "nome": "Anel da Queda Suave",
+  "desc": "Requer sintonia. Enquanto você usa este anel, qualquer queda ocorre lentamente, a 18 m por rodada, e você não sofre dano ao atingir o chão."
+ },
+ "Horn of Valhalla, Silver": {
+  "nome": "Trombeta de Valhalla de Prata",
+  "desc": "Com uma ação, você sopra a trombeta e convoca 2d4 + 2 espíritos guerreiros de Ysgard (estatísticas de berserker), que surgem a até 18 m de você, são amistosos com você e seus aliados e obedecem às suas ordens. Eles retornam a Ysgard após 1 hora ou quando chegam a 0 PV. Depois de usada, a trombeta só funciona de novo após 7 dias; não exige sintonia."
+ },
+ "Sword of Life Stealing": {
+  "nome": "Espada Roubavidas",
+  "desc": "Requer sintonia. Ao tirar 20 natural numa jogada de ataque com esta espada mágica, o alvo sofre 10 de dano necrótico adicional (exceto constructos e mortos-vivos) e você recebe 10 PV temporários."
+ },
+ "Ioun Stone, Sustenance": {
+  "nome": "Pedra Ioun do Sustento",
+  "desc": "Exige sintonia. Com uma ação, você lança este fuso transparente para o alto e ele passa a girar em torno da sua cabeça; enquanto estiver orbitando, você não precisa comer nem beber. Para tirá-la de você, outra criatura precisa gastar uma ação e acertar um ataque contra CA 24 ou passar num teste de Destreza (Acrobacia) CD 24. A pedra tem CA 24, 10 PV e resistência a todo dano, e você pode recolhê-la com uma ação."
+ },
+ "Silver Dragon Scale Mail": {
+  "nome": "Cota de Escamas de Dragão Prateado",
+  "desc": "Exige sintonia. Enquanto vestida, concede +1 na CA, resistência a dano de frio e vantagem nos testes de resistência contra o sopro e a Presença Aterradora de dragões. Uma vez por dia (recupera ao amanhecer), com uma ação, você descobre a direção e a distância do dragão prateado mais próximo em até 48 km."
+ },
+ "Dimensional Shackles": {
+  "nome": "Algemas Dimensionais",
+  "desc": "Com uma ação, você prende estas algemas em uma criatura incapacitada de tamanho Pequeno a Grande; além de funcionarem como algemas comuns, elas impedem qualquer deslocamento extradimensional, como teletransporte ou viagem a outro plano, mas não a passagem por portais. Só você e quem você designar podem retirá-las com uma ação, e a criatura presa pode tentar um teste de Força (Atletismo) CD 30 a cada 30 dias para se libertar, destruindo as algemas em caso de sucesso. Não exige sintonia."
+ },
+ "Potion of Lightning Resistance": {
+  "nome": "Poção de Resistência a Eletricidade",
+  "desc": "Ao beber esta poção, você ganha resistência a dano elétrico por 1 hora. É consumida ao ser usada e não exige sintonia."
+ },
+ "+1 Ammunition": {
+  "nome": "Munição +1",
+  "desc": "Ataques feitos com esta munição recebem +1 nas jogadas de ataque e de dano. Depois de acertar um alvo, ela perde a magia. Não exige sintonia."
+ },
+ "Boots of Speed": {
+  "nome": "Botas da Velocidade",
+  "desc": "Exige sintonia. Com uma ação bônus, você ativa ou desativa as botas: enquanto ativas, seu deslocamento de caminhada dobra e ataques de oportunidade contra você têm desvantagem. O efeito dura até 10 minutos no total, somando todos os usos; depois disso, só volta a funcionar após um descanso longo."
+ },
+ "Ioun Stone, Agility": {
+  "nome": "Pedra Ioun da Agilidade",
+  "desc": "Exige sintonia. Com uma ação, você lança a esfera vermelho-escura ao ar e ela passa a orbitar sua cabeça, aumentando sua Destreza em 2 (máximo 20). Para tirá-la de você, outra criatura precisa usar uma ação e acertar um ataque contra CA 24 ou passar num teste de Destreza (Acrobacia) CD 24. A pedra tem 10 PV e resistência a todo dano, e você pode recolhê-la com uma ação, encerrando o efeito."
+ },
+ "Sword of Kas": {
+  "nome": "Espada de Kas",
+  "desc": "Espada longa senciente (caótica e má) que exige sintonia e concede +3 no ataque e no dano, causa crítico com 19 ou 20 e +2d10 de dano cortante contra mortos-vivos. Some 1d10 à iniciativa; ao atacar com ela, você pode mover parte do bônus de ataque para a CA até seu próximo turno, e uma vez por dia cada pode conjurar Convocar Relâmpagos, Palavra Divina ou Dedo da Morte (CD 18). Se não provar sangue até 1 minuto depois de desembainhada, o portador faz um teste de resistência de Carisma CD 15: sofre 3d6 de dano psíquico se passar ou fica dominado pela espada até saciá-la, se falhar."
+ },
+ "Rod of Rulership": {
+  "nome": "Cetro do Comando",
+  "desc": "Exige sintonia. Com uma ação, você ergue o cetro e escolhe quaisquer criaturas que veja a até 36 m: cada uma faz um teste de resistência de Sabedoria CD 15 e, se falhar, fica enfeitiçada por você por 8 horas, tratando-o como um líder de confiança. O efeito termina para a criatura se você ou seus aliados a ferirem ou se ela receber uma ordem contrária à sua natureza; o cetro só pode ser usado de novo após o próximo amanhecer."
+ },
+ "Javelin of Lightning": {
+  "nome": "Azagaia do Relâmpago",
+  "desc": "Azagaia mágica que, uma vez por amanhecer, pode virar um raio ao ser arremessada com a palavra de comando: cria uma linha de 1,5 m de largura até um alvo a até 36 m, e quem estiver no caminho (exceto você e o alvo) faz um teste de resistência de Destreza CD 13, sofrendo 4d6 de dano elétrico se falhar ou metade se passar. Ao chegar, ela volta a ser azagaia e você faz um ataque à distância contra o alvo, que, se atingido, sofre o dano da arma mais 4d6 elétrico. Fora isso, funciona como arma mágica comum; não exige sintonia."
+ },
+ "Brooch of Shielding": {
+  "nome": "Broche de Proteção",
+  "desc": "Enquanto estiver usando este broche, você tem resistência a dano energético e fica imune ao dano da magia Mísseis Mágicos. Requer sintonia."
+ },
+ "Iron Flask": {
+  "nome": "Frasco de Ferro",
+  "desc": "Com uma ação e a palavra de comando, você mira uma criatura visível a até 18 m que seja nativa de outro plano; ela precisa passar num teste de resistência de Sabedoria CD 17 (com vantagem se já tiver ficado presa antes) ou fica aprisionada no frasco, que guarda uma criatura por vez, sem que ela envelheça nem precise comer ou respirar. Com outra ação você abre o frasco e solta a criatura, que fica amistosa e obedece às suas ordens por 1 hora, apenas se defendendo se não receber ordens ou se a ordem puder matá-la; depois disso, age conforme a própria natureza. Não exige sintonia, e um frasco encontrado pode já conter alguma criatura."
+ },
+ "Wand of Enemy Detection": {
+  "nome": "Varinha de Detecção de Inimigos",
+  "desc": "Exige sintonia. Com uma ação e 1 de suas 7 cargas, por 1 minuto você sabe para que lado está a criatura hostil mais próxima em até 18 m (mas não a distância), mesmo que esteja invisível, etérea, disfarçada ou escondida; o efeito acaba se você soltar a varinha. Recupera 1d6+1 cargas ao amanhecer, e ao gastar a última role 1d20: com 1, ela vira cinzas."
+ },
+ "Dwarven Plate": {
+  "nome": "Armadura de Placas Anã",
+  "desc": "Armadura de placas que concede +2 de bônus na CA. Quando algum efeito empurra você pelo chão contra a sua vontade, você pode gastar sua reação para encurtar o deslocamento em até 3 m. Não exige sintonia."
+ },
+ "Sword of Answering (Answerer)": {
+  "nome": "Espada da Resposta (Respondedora)",
+  "desc": "Espada longa lendária que concede +3 nas jogadas de ataque e de dano; exige sintonia de uma criatura caótica e boa. Enquanto a empunha, quando uma criatura ao seu alcance lhe causa dano, você pode usar a reação para atacá-la corpo a corpo com vantagem, e o dano desse golpe ignora resistências e imunidades do alvo."
+ },
+ "Ring of Jumping": {
+  "nome": "Anel do Salto",
+  "desc": "Exige sintonia. Enquanto o usa, você pode conjurar Salto à vontade como ação bônus, mas a magia só pode ter você mesmo como alvo."
+ },
+ "Periapt of Proof against Poison": {
+  "nome": "Periapto de Proteção contra Veneno",
+  "desc": "Enquanto estiver usando este pingente, você fica imune a dano de veneno e à condição envenenado, e nenhum veneno surte efeito sobre você. Não exige sintonia."
+ },
+ "Armor of Poison Resistance": {
+  "nome": "Armadura de Resistência a Veneno",
+  "desc": "Qualquer tipo de armadura. Enquanto a veste, você tem resistência a dano de veneno. Requer sintonia."
+ },
+ "Sword of Vengeance": {
+  "nome": "Espada da Vingança",
+  "desc": "Espada amaldiçoada que concede +1 nas jogadas de ataque e dano e exige sintonia; enquanto sintonizado, você se recusa a largá-la e tem desvantagem ao atacar com outras armas. Sempre que sofrer dano em combate com ela consigo, faça um teste de resistência de Sabedoria CD 15; se falhar, precisa atacar quem o feriu até que um dos dois chegue a 0 PV ou até não conseguir mais alcançá-lo corpo a corpo. A maldição some pelos meios comuns ou conjurando Banimento na espada, que então vira apenas uma Arma +1."
+ },
+ "Armor of Cold Resistance": {
+  "nome": "Armadura de Resistência ao Frio",
+  "desc": "Enquanto estiver vestida por uma criatura sintonizada, esta armadura (de qualquer tipo) concede resistência a dano de frio. Requer sintonia."
+ },
+ "Cape of the Mountebank": {
+  "nome": "Capa do Charlatão",
+  "desc": "Uma vez por dia (recarrega ao amanhecer), quem a veste pode usar uma ação para conjurar Porta Dimensional, sem exigir sintonia. Na partida e na chegada surge uma nuvem de fumaça que deixa o espaço levemente obscurecido até o fim do seu próximo turno, ou até ser dispersada por um vento de intensidade leve ou maior."
+ },
+ "Figurine of Wondrous Power, Ivory Goats": {
+  "nome": "Estatueta de Poder Maravilhoso, Bodes de Marfim",
+  "desc": "Conjunto de três bodes: com uma ação e a palavra de comando, você arremessa um a até 18 m e ele vira uma criatura aliada que obedece às suas ordens. O bode de viagem vira um cavalo de montaria Grande com 24 cargas (1 por hora ou fração, recupera tudo após 7 dias se esgotar); o bode de labuta vira um bode gigante por até 3 horas (recarga de 30 dias). O bode do terror vira um bode gigante por até 3 horas que não ataca, mas cujos chifres podem ser arrancados com uma ação para virar uma lança +1 e uma espada longa +2; enquanto você o monta, inimigos que iniciam o turno a até 9 m fazem teste de resistência de Sabedoria CD 15 ou ficam amedrontados por 1 minuto (repetem o teste a cada turno e, ao passar, ficam imunes por 24 horas), com recarga de 15 dias."
+ },
+ "Boots of Striding and Springing": {
+  "nome": "Botas do Andarilho e Saltador",
+  "desc": "Exige sintonia. Seu deslocamento de caminhada passa a ser 9 m (se já não for maior) e não diminui por carga excessiva nem por armadura pesada. Seus saltos alcançam o triplo da distância normal, limitados ao movimento que ainda lhe resta."
+ },
+ "+3 Wand of the War Mage": {
+  "nome": "Varinha do Mago de Guerra +3",
+  "desc": "Exige sintonia com um conjurador. Enquanto você empunha a varinha, recebe +3 nas jogadas de ataque com magia, e seus ataques com magia não são afetados por meia cobertura."
+ },
+ "White Dragon Scale Mail": {
+  "nome": "Cota de Escamas de Dragão Branco",
+  "desc": "Exige sintonia. Vestida, concede +1 na CA, resistência a dano de frio e vantagem nos testes de resistência contra a Presença Amedrontadora e o sopro de dragões. Uma vez por dia (recupera ao amanhecer), com uma ação, você sente a direção e a distância do dragão branco mais próximo num raio de 48 km."
+ },
+ "Nine Lives Stealer": {
+  "nome": "Ladra de Nove Vidas",
+  "desc": "Espada que concede +2 nas jogadas de ataque e dano e exige sintonia. Começa com 1d8 + 1 cargas: ao acertar um crítico numa criatura com menos de 100 PV (exceto constructos e mortos-vivos), o alvo faz um teste de resistência de Constituição CD 15 e, se falhar, morre na hora, gastando 1 carga. As cargas não se recuperam e, quando acabam, a espada perde esse poder."
+ },
+ "Ring of Three Wishes": {
+  "nome": "Anel dos Três Desejos",
+  "desc": "O anel tem 3 cargas que não se recuperam; com ele no dedo, gaste uma ação e 1 carga para conjurar Desejo. Quando a última carga é usada, o anel perde toda a magia. Não exige sintonia."
+ },
+ "Mace of Terror": {
+  "nome": "Maça do Terror",
+  "desc": "Maça mágica com 3 cargas que exige sintonia; recupera 1d3 cargas ao amanhecer. Com uma ação e 1 carga, as criaturas que você escolher num raio de 9 m fazem um teste de resistência de Sabedoria CD 15 e, se falharem, ficam amedrontadas por 1 minuto: fogem de você o máximo possível, não chegam a menos de 9 m por vontade própria, não usam reações e só podem Disparar, tentar se libertar de algo que as prenda ou, sem rota de fuga, Esquivar. Cada uma repete o teste no fim de seus turnos e encerra o efeito ao passar."
+ },
+ "Sword of Sharpness": {
+  "nome": "Espada Afiada",
+  "desc": "Exige sintonia e só existe como espada de dano cortante. Contra objetos, os dados de dano da arma sempre causam o valor máximo; contra criaturas, um 20 natural no ataque causa 14 de dano cortante adicional, e, se outro d20 rolado em seguida também der 20, você decepa um membro do alvo (ou um pedaço do corpo, se ele não tiver membros), com as consequências decididas pelo Mestre. Com uma palavra de comando, a lâmina emite luz plena em 3 m e penumbra por mais 3 m, apagando-se ao repetir o comando ou ao ser embainhada."
+ },
+ "Scroll of Protection from Fiends": {
+  "nome": "Pergaminho de Proteção contra Corruptores",
+  "desc": "Com uma ação, você lê o pergaminho e fica no centro de um cilindro invisível de 1,5 m de raio e 3 m de altura que acompanha você por 5 minutos; nenhum corruptor consegue entrar nele nem afetar o que está lá dentro. O efeito acaba se você se mover de modo a colocar um corruptor dentro da área, e uma criatura pode usar uma ação para fazer um teste de Carisma CD 15 e, se passar, deixa de ser barrada. Não requer sintonia."
+ },
+ "Wand of Binding": {
+  "nome": "Varinha da Prisão",
+  "desc": "Exige sintonia de um conjurador. Tem 7 cargas e recupera 1d6+1 ao amanhecer; gastar a última exige rolar 1d20, e com 1 a varinha vira pó. Com uma ação, conjura Imobilizar Pessoa (2 cargas) ou Imobilizar Monstro (5 cargas) com CD 17; além disso, por 1 carga, você ganha vantagem num teste de resistência contra ficar paralisado ou impedido (usando a reação) ou num teste para escapar de uma agarrada."
+ },
+ "Ring of Mind Shielding": {
+  "nome": "Anel de Proteção Mental",
+  "desc": "Exige sintonia. Seu usuário fica imune a magias que leem pensamentos, detectam mentiras ou revelam sua tendência ou tipo de criatura, e só recebe telepatia se permitir; com uma ação, o anel pode ficar invisível até ser revelado com outra ação, removido ou o usuário morrer. Se você morrer usando-o, sua alma pode se abrigar nele (se estiver vazio) e conversar telepaticamente com quem o usar, sem que este possa impedir."
+ },
+ "Ring of Acid Resistance": {
+  "nome": "Anel de Resistência a Ácido",
+  "desc": "Enquanto estiver sintonizado e usando este anel engastado com uma pérola, você tem resistência a dano ácido. Exige sintonia."
+ },
+ "Horn of Valhalla, Iron": {
+  "nome": "Trompa de Valhalla de Ferro",
+  "desc": "Com uma ação, você sopra a trompa e convoca 5d4 + 5 berserkers de Ysgard, que surgem a até 18 m de você e permanecem por 1 hora ou até caírem a 0 PV; depois disso, a trompa só funciona de novo após 7 dias. Se você tiver proficiência com todas as armas marciais, os guerreiros são amistosos com você e seus aliados e obedecem às suas ordens; caso contrário, eles atacam você."
+ },
+ "Manual of Bodily Health": {
+  "nome": "Manual da Saúde Corporal",
+  "desc": "Quem dedicar 48 horas de estudo e prática ao livro, num prazo de até 6 dias, ganha +2 de Constituição, e o limite máximo desse valor também sobe 2. Depois do uso, o manual fica sem magia por cem anos. Não exige sintonia."
+ },
+ "Elixir of Health": {
+  "nome": "Elixir da Saúde",
+  "desc": "Poção de uso único: quem a bebe fica livre de qualquer doença e deixa de estar cego, surdo, paralisado ou envenenado. Não exige sintonia."
+ },
+ "Rod of Absorption": {
+  "nome": "Bastão de Absorção",
+  "desc": "Exige sintonia. Com o bastão em mãos, você pode usar sua reação para anular uma magia que mire apenas você (sem área de efeito) e guardar a energia dela em círculos, até um total de 50 círculos ao longo da existência do item (vem com 1d10 já armazenados). Se você for conjurador, pode gastar esses círculos como espaços de magia para conjurar magias que conhece ou preparou, limitados ao seu maior círculo disponível e ao 5º círculo; quando o bastão não puder mais absorver e ficar sem energia, ele perde a magia."
+ },
+ "Sphere of Annihilation": {
+  "nome": "Esfera da Aniquilação",
+  "desc": "Esfera negra flutuante de 60 cm que destrói qualquer matéria (exceto artefatos) que a atravesse; o que só a toca sofre 4d10 de dano energético. Com uma ação, a até 18 m, você faz um teste de Inteligência (Arcanismo) CD 25 para movê-la 1,5 m × seu modificador de Inteligência (mínimo 1,5 m); se falhar, ela avança 3 m em sua direção, e quem estiver no caminho faz um teste de resistência de Destreza CD 13 para não sofrer 4d10 de dano energético. Se outra criatura já a controla, vocês disputam testes de Arcanismo, e o contato com portais ou espaços extradimensionais pode destruí-la, atravessá-los ou lançar tudo a 54 m para outro plano."
+ },
+ "Quaal's Feather Token, Whip": {
+  "nome": "Pena Mágica de Quaal, Chicote",
+  "desc": "Item de uso único: com uma ação, você lança a pena a até 3 m e ela vira um chicote flutuante que dura até 1 hora, até você dispensá-lo com uma ação ou até ficar incapacitado ou morrer. A cada turno, com uma ação bônus, você pode movê-lo até 6 m e atacar uma criatura a até 3 m dele com um ataque corpo a corpo com magia (+9), causando 1d6+5 de dano energético. Não exige sintonia."
+ },
+ "Ring of Thunder Resistance": {
+  "nome": "Anel de Resistência Trovejante",
+  "desc": "Enquanto usa este anel, adornado com um espinélio, você tem resistência a dano trovejante. Exige sintonia."
+ },
+ "Quaal's Feather Token, Tree": {
+  "nome": "Pena de Quaal, Árvore",
+  "desc": "Uso único, apenas ao ar livre: com uma ação, você toca a pena num espaço vazio do chão e ela some, dando lugar a um carvalho comum (não mágico) de 18 m de altura, com tronco de 1,5 m de diâmetro e copa de 6 m de raio. Não exige sintonia."
+ },
+ "Figurine of Wondrous Power, Obsidian Steed": {
+  "nome": "Estatueta de Poder Maravilhoso, Corcel de Obsidiana",
+  "desc": "Com uma ação e a palavra de comando, você arremessa o cavalo de obsidiana a até 18 m e ele vira um pesadelo amistoso que obedece às suas ordens por até 24 horas, mas só luta para se defender; volta a ser estatueta ao chegar a 0 PV ou se você repetir a palavra tocando-o, e só pode ser usado de novo após 5 dias. Se você tiver tendência boa, há 10% de chance a cada uso de ele ignorar suas ordens, e montá-lo nesse estado leva vocês dois para um ponto aleatório do Hades, onde ele volta à forma de estatueta."
+ },
+ "Gloves of Missile Snaring": {
+  "nome": "Luvas de Captura de Projéteis",
+  "desc": "Exige sintonia. Se você tiver uma mão livre e for atingido por um ataque à distância com arma, pode usar sua reação para diminuir o dano em 1d10 + seu modificador de Destreza. Se o dano cair a 0 e o projétil couber na sua mão, você o apanha no ar."
+ },
+ "Gloves of Swimming and Climbing": {
+  "nome": "Luvas de Natação e Escalada",
+  "desc": "Exige sintonia. Com as luvas calçadas, escalar e nadar não gastam deslocamento adicional, e você recebe +5 nos testes de Força (Atletismo) feitos para escalar ou nadar."
+ },
+ "Ioun Stone, Absorption": {
+  "nome": "Pedra Ioun da Absorção",
+  "desc": "Exige sintonia. Lançada ao ar com uma ação, a pedra passa a orbitar sua cabeça (CA 24, 10 PV, resistência a todo dano; arrancá-la exige acerto contra CA 24 ou teste de Destreza (Acrobacia) CD 24) e permite usar sua reação para anular uma magia de 4º círculo ou menor que tenha apenas você como alvo, lançada por uma criatura que você veja. Depois de anular um total de 20 círculos de magia, a pedra perde o poder, e ela não consegue anular magias de círculo maior que o total que ainda lhe resta."
+ },
+ "Scarab of Protection": {
+  "nome": "Escaravelho de Proteção",
+  "desc": "Exige sintonia. Enquanto você o carrega, tem vantagem em testes de resistência contra magias. Possui 12 cargas que não se recuperam: ao falhar num teste de resistência contra uma magia de necromancia ou um efeito nocivo vindo de um morto-vivo, você pode usar sua reação e gastar 1 carga para converter a falha em sucesso; quando a última carga é gasta, o escaravelho vira pó."
+ },
+ "Pearl of Power": {
+  "nome": "Pérola do Poder",
+  "desc": "Exige sintonia com um conjurador. Com uma ação e a palavra de comando, você recupera um espaço de magia gasto; se ele era de 4º círculo ou maior, volta como espaço de 3º círculo. Funciona uma vez e recarrega ao amanhecer."
+ },
+ "Belt of Cloud Giant Strength": {
+  "nome": "Cinturão da Força do Gigante das Nuvens",
+  "desc": "Item lendário que exige sintonia. Enquanto você o usa, seu valor de Força passa a ser 27. Se sua Força natural já for 27 ou maior, ele não tem efeito."
+ },
+ "Instrument of the Bards, Doss Lute": {
+  "nome": "Instrumento dos Bardos, Alaúde de Doss",
+  "desc": "Exige sintonia com um bardo. Com uma ação, você toca o alaúde e conjura uma destas magias, cada uma uma vez por amanhecer, usando seu próprio atributo e CD de conjuração: Voo, Invisibilidade, Levitação, Proteção contra o Bem e o Mal, Amizade Animal, Proteção contra Energia (só fogo) e Proteção contra Veneno. Tocá-lo junto a uma magia de enfeitiçar com componente somático ou material dá desvantagem no teste de resistência dos alvos, e quem tocar sem estar sintonizado precisa passar num teste de resistência de Sabedoria CD 15 ou sofre 2d4 de dano psíquico."
+ },
+ "Potion of Storm Giant Strength": {
+  "nome": "Poção de Força do Gigante das Tempestades",
+  "desc": "Ao ser bebida, define o valor de Força em 29 durante 1 hora. Se a sua Força já for 29 ou maior, a poção não surte efeito. Não exige sintonia."
+ },
+ "Periapt of Health": {
+  "nome": "Amuleto da Saúde",
+  "desc": "Enquanto usar este pingente, você não pode contrair nenhuma doença. Se já estiver doente, os efeitos da doença ficam suspensos pelo tempo em que o pingente estiver com você. Não requer sintonia."
+ },
+ "Ioun Stone, Insight": {
+  "nome": "Pedra Ioun da Intuição",
+  "desc": "Requer sintonia. Com uma ação, você lança esta esfera azul incandescente ao ar e ela passa a girar em volta da sua cabeça, aumentando sua Sabedoria em 2 (até o máximo de 20); você pode recolhê-la com outra ação. Enquanto orbita, a pedra tem CA 24, 10 PV e resistência a todo dano, e quem quiser tirá-la de você precisa usar uma ação e acertar um ataque contra CA 24 ou passar num teste de Destreza (Acrobacia) CD 24."
+ },
+ "Ring of Lightning Resistance": {
+  "nome": "Anel de Resistência a Elétrico",
+  "desc": "Enquanto usa este anel de citrino, você tem resistência a dano elétrico. Exige sintonia."
+ },
+ "Moonblade": {
+  "nome": "Lâmina Lunar",
+  "desc": "Espada longa senciente (neutra e boa) que exige sintonia de um elfo ou meio-elfo neutro e bom, feita num ritual especial; se ela recusar o candidato, ele sofre desvantagem em testes de atributo, jogadas de ataque e testes de resistência por 24 horas. Tem uma runa por portador que já serviu (normalmente 1d6+1): a primeira dá +1 no ataque e no dano, e cada uma das outras acrescenta uma propriedade, como bônus maior (até +3), acerto crítico com 19 ou 20, +1d6 de dano cortante, lampejo que cega quem estiver a até 9 m (CD 15 de Constituição) ou funcionar como Defensora ou Espada Vorpal. A sintonia dura até a morte do portador ou a destruição da arma."
+ },
+ "Bag of Devouring": {
+  "nome": "Bolsa Devoradora",
+  "desc": "Parece uma Bolsa Devoradora comum, mas é a boca de uma criatura extradimensional: matéria animal ou vegetal posta dentro é consumida, e quem enfia parte do corpo tem 50% de chance de ser puxado para dentro; a vítima pode tentar sair com um teste de Força CD 15 (ação), outro pode puxá-la com Força CD 20, e quem começa o turno lá dentro é destruído. Guarda até cerca de 0,03 m³ de objetos inanimados, mas uma vez por dia os despeja em outro plano escolhido pelo Mestre; virá-la do avesso fecha a abertura, e se for rasgada se destrói e lança o conteúdo a um ponto aleatório do Plano Astral. Não requer sintonia."
+ },
+ "Ring of Regeneration": {
+  "nome": "Anel da Regeneração",
+  "desc": "Exige sintonia. Enquanto estiver com pelo menos 1 PV, o portador recupera 1d6 PV a cada 10 minutos. Partes do corpo perdidas voltam a crescer e ficam plenamente funcionais em 1d6 + 1 dias, desde que ele não caia abaixo de 1 PV nesse período."
+ },
+ "Dagger of Venom": {
+  "nome": "Adaga Venenosa",
+  "desc": "Adaga mágica que concede +1 nas jogadas de ataque e dano, sem exigir sintonia. Uma vez por dia (recupera ao amanhecer), com uma ação você cobre a lâmina de veneno por até 1 minuto; a primeira criatura atingida faz um teste de resistência de Constituição CD 15 e, se falhar, sofre 2d10 de dano de veneno e fica envenenada por 1 minuto."
+ },
+ "Necklace of Prayer Beads": {
+  "nome": "Colar de Contas de Oração",
+  "desc": "Exige sintonia com clérigo, druida ou paladino e traz de 3 a 6 contas mágicas, que perdem o poder se forem retiradas do colar. Usando o colar, você pode gastar uma ação bônus para conjurar a magia de uma conta (com a sua CD de magia), e cada conta só volta a funcionar no amanhecer seguinte. As contas podem ser de Bênção (Bênção), Cura (Curar Ferimentos de 2º círculo ou Restauração Menor), Favor (Restauração Maior), Golpe (Golpe Marcante), Convocação (Aliado Planar) ou Caminhar no Vento (Caminhar no Vento)."
+ },
+ "Book of Exalted Deeds": {
+  "nome": "Livro dos Feitos Exaltados",
+  "desc": "Artefato que exige sintonia de criatura boa e 80 horas de estudo; depois disso, sua Sabedoria aumenta em 2 (máximo 24, uma única vez), espaços de magia gastos em magias de clérigo ou paladino contam como um círculo acima e você ganha um halo (manifestado ou dispensado com ação bônus) que ilumina 3 m com luz plena e mais 3 m com penumbra, dá vantagem em Persuasão com criaturas boas e em Intimidação com criaturas más, e impõe desvantagem nos ataques de corruptores e mortos-vivos dentro da luz plena. Uma criatura má que tente lê-lo sofre 24d6 de dano radiante que ignora resistência e imunidade, sendo destruída se cair a 0 PV. Os benefícios somem se você passar 10 dias sem um ato de bondade ou generosidade, ou se cometer um ato maligno por vontade própria; o livro também tem 2 propriedades benéficas menores e 2 maiores aleatórias."
+ },
+ "Rod of Security": {
+  "nome": "Bastão da Segurança",
+  "desc": "Com uma ação, você e até 199 criaturas voluntárias que você veja são levados a um paraíso extraplanar de aparência à sua escolha, com comida e água para todos; nada de lá pode ser trazido para fora. A cada hora no paraíso, cada visitante recupera PV como se gastasse 1 Dado de Vida e ninguém envelhece; a estadia dura no máximo 200 dias divididos pelo número de criaturas (arredondado para baixo), ou até você encerrá-la com uma ação. Ao final, todos voltam ao ponto de partida (ou ao espaço livre mais próximo), e o bastão só funciona de novo após 10 dias."
+ },
+ "Eyes of Charming": {
+  "nome": "Olhos Encantadores",
+  "desc": "Lentes de cristal usadas sobre os olhos, com 3 cargas que se renovam todas ao amanhecer; exigem sintonia. Gastando 1 carga com uma ação, você conjura Enfeitiçar Pessoa (CD 13) em um humanoide a até 9 m, desde que vocês dois consigam se ver."
+ },
+ "Armor of Acid Resistance": {
+  "nome": "Armadura de Resistência a Ácido",
+  "desc": "Enquanto estiver vestindo esta armadura (de qualquer tipo), você tem resistência a dano ácido. Requer sintonia."
+ },
+ "Armor of Psychic Resistance": {
+  "nome": "Armadura de Resistência Psíquica",
+  "desc": "Qualquer tipo de armadura que, enquanto estiver vestida, dá ao usuário resistência a dano psíquico. Item raro que exige sintonia."
+ },
+ "Heward's Handy Haversack": {
+  "nome": "Mochila Prática de Heward",
+  "desc": "Mochila de 2,5 kg com três bolsos extradimensionais: dois laterais de até 9 kg (0,06 m³) cada e um central de até 36 kg (0,24 m³), sem que o peso mude; tirar um item exige uma ação, e o objeto buscado sempre surge por cima. Sobrecarregar ou rasgar a mochila a destrói junto com o conteúdo, e uma criatura guardada nela só respira por 10 minutos. Colocá-la dentro de uma Bolsa Devoradora, Buraco Portátil ou similar destrói ambos e abre um portal que lança ao Plano Astral quem estiver a até 3 m; não requer sintonia."
+ },
+ "Keoghtom's Ointment": {
+  "nome": "Unguento de Keoghtom",
+  "desc": "Pote com 1d4+1 doses de uma pomada espessa. Com uma ação, uma dose pode ser ingerida ou passada na pele de uma criatura, que recupera 2d8+2 PV, deixa de estar envenenada e fica curada de qualquer doença. Não exige sintonia."
+ },
+ "Ring of Fire Elemental Command": {
+  "nome": "Anel de Comando do Elemental do Fogo",
+  "desc": "Exige sintonia. Dá resistência a dano de fogo, permite falar e entender ignan e garante vantagem nos ataques contra elementais do Plano do Fogo, que têm desvantagem para atacar você. Tem 5 cargas (recupera 1d4+1 ao amanhecer, CD 17): 2 cargas conjuram Dominar Monstro num elemental do fogo. Depois de ajudar a matar um elemental do fogo, você fica imune a fogo e pode gastar cargas para Mãos Flamejantes (1), Bola de Fogo (2) ou Muralha de Fogo (3)."
+ },
+ "Robe of Stars": {
+  "nome": "Manto das Estrelas",
+  "desc": "Exige sintonia e concede +1 em todos os testes de resistência enquanto vestido. Possui 6 estrelas grandes: com uma ação, você arranca uma delas para conjurar Mísseis Mágicos como magia de 5º círculo, e 1d6 estrelas retornam todo dia ao anoitecer. Também com uma ação, você viaja ao Plano Astral levando o que veste e carrega, e volta com outra ação ao espaço onde estava (ou ao mais próximo livre)."
+ },
+ "Animated Shield": {
+  "nome": "Escudo Animado",
+  "desc": "Requer sintonia. Com o escudo em mãos, você usa uma ação bônus e a palavra de comando para fazê-lo flutuar ao seu lado por até 1 minuto, mantendo o bônus de CA dele enquanto suas mãos ficam livres. O efeito acaba antes se você o encerrar com outra ação bônus, ficar incapacitado ou morrer; então o escudo cai no chão ou volta para uma mão sua que esteja livre."
+ },
+ "Dragon Slayer": {
+  "nome": "Matadora de Dragões",
+  "desc": "Espada mágica que concede +1 nas jogadas de ataque e de dano. Ao acertar uma criatura do tipo dragão (o que inclui serpes e tartarugas-dragão), causa 3d6 de dano adicional do mesmo tipo da arma. Não requer sintonia."
+ },
+ "Deck of Illusions": {
+  "nome": "Baralho das Ilusões",
+  "desc": "Com uma ação, você saca uma carta aleatória e a lança a até 9 m; sobre ela surge a ilusão de uma ou mais criaturas (definidas pela carta, de um goblin a um dragão vermelho, ou até você mesmo), que parece real mas não causa dano. Se estiver a até 36 m e puder vê-la, você pode usar uma ação para movê-la a até 9 m da carta; tocá-la revela a farsa, e quem gastar uma ação examinando-a percebe a ilusão com um teste de Inteligência (Investigação) CD 15. A ilusão dura até ser dissipada ou até a carta ser movida, e então a carta se apaga e não pode ser reutilizada; não requer sintonia."
+ },
+ "Ring of Spell Turning": {
+  "nome": "Anel de Reflexão de Magia",
+  "desc": "Requer sintonia. Você tem vantagem em testes de resistência contra magias que tenham apenas você como alvo (sem área de efeito). Se o dado do teste mostrar 20 e a magia for de 7º círculo ou menor, ela não o afeta e se volta contra quem a conjurou, usando o círculo, a CD, o bônus de ataque e o atributo de conjuração do próprio conjurador."
+ },
+ "Gold Dragon Scale Mail": {
+  "nome": "Cota de Escamas de Dragão Dourado",
+  "desc": "Exige sintonia. Vestida, concede +1 na CA, resistência a dano de fogo e vantagem nos testes de resistência contra o sopro e a Presença Aterradora de dragões. Uma vez por dia (recarrega ao amanhecer), com uma ação, você sente a distância e a direção do dragão dourado mais próximo em até 48 km."
+ },
+ "Sword of Wounding": {
+  "nome": "Espada Ferina",
+  "desc": "Espada que exige sintonia; os PV perdidos para o dano dela só voltam com descanso curto ou longo, nunca por magia ou regeneração. Uma vez por turno, ao acertar, você pode ferir o alvo: no início de cada turno dele, ele sofre 1d4 de dano necrótico por ferimento acumulado e depois faz um teste de resistência de Constituição CD 15, encerrando todos os ferimentos se passar. Como alternativa, ele ou alguém a até 1,5 m pode usar uma ação para um teste de Sabedoria (Medicina) CD 15 que também encerra os ferimentos."
+ },
+ "Potion of Gaseous Form": {
+  "nome": "Poção de Forma Gasosa",
+  "desc": "Ao beber, você fica sob o efeito da magia Forma Gasosa por 1 hora, sem precisar manter concentração. Você pode encerrar o efeito antes usando uma ação bônus."
+ },
+ "Wand of Lightning Bolts": {
+  "nome": "Varinha de Relâmpagos",
+  "desc": "Exige sintonia com um conjurador. Tem 7 cargas: com uma ação, gaste 1 carga para conjurar Relâmpago de 3º círculo (CD 15), elevando o círculo em um para cada carga extra gasta. Recupera 1d6 + 1 cargas ao amanhecer; se a última carga for usada, role um d20 e, num 1, a varinha vira cinzas."
+ },
+ "Helm of Telepathy": {
+  "nome": "Elmo da Telepatia",
+  "desc": "Exige sintonia. Com uma ação, você conjura Detectar Pensamentos (CD 13) pelo elmo quantas vezes quiser; enquanto mantiver a concentração, pode usar uma ação bônus para enviar mensagens telepáticas à criatura em foco, que pode responder também com uma ação bônus. Uma vez por amanhecer, com uma ação, você pode conjurar Sugestão (CD 13) na criatura cujos pensamentos está lendo."
+ },
+ "Demon Armor": {
+  "nome": "Armadura Demoníaca",
+  "desc": "Armadura de placas que concede +1 na CA, permite entender e falar Abissal e transforma seus ataques desarmados com as mãos em armas mágicas de 1d8 de dano cortante, com +1 no ataque e no dano; exige sintonia. Amaldiçoada: depois de vestida, só sai com Remover Maldição ou magia semelhante, e você tem desvantagem nas jogadas de ataque contra demônios e nos testes de resistência contra as magias e habilidades especiais deles."
+ },
+ "Ring of Shooting Stars": {
+  "nome": "Anel das Estrelas Cadentes",
+  "desc": "Exige sintonia (feita ao ar livre, à noite); em penumbra ou escuridão, conjura Luzes Dançantes e Luz à vontade com uma ação, e tem 6 cargas que se renovam em 1d6 ao amanhecer. Com uma ação: 1 carga conjura Fogo das Fadas; 2 cargas criam de 1 a 4 esferas elétricas a até 36 m (concentração, até 1 minuto, movidas 9 m com ação bônus) que explodem quando outra criatura chega a 1,5 m, causando dano elétrico se ela falhar num teste de resistência de Destreza CD 15 (1 esfera 4d12, 2 esferas 5d4, 3 esferas 2d6, 4 esferas 2d4). Também pode gastar de 1 a 3 cargas para lançar uma estrela por carga contra pontos a até 18 m, cada uma atingindo um cubo de 4,5 m com 5d4 de dano de fogo (Destreza CD 15 reduz à metade)."
+ },
+ "Elemental Gem, Emerald": {
+  "nome": "Gema Elemental, Esmeralda",
+  "desc": "Uma ação para quebrar a esmeralda invoca um elemental da água, com o mesmo efeito da magia Conjurar Elemental. Depois disso, a gema perde a magia. Não exige sintonia."
+ },
+ "Manual of Stone Golems": {
+  "nome": "Manual do Golem de Pedra",
+  "desc": "Só um conjurador com pelo menos dois espaços de magia de 5º círculo consegue usar este livro; qualquer outra criatura que tente lê-lo sofre 6d6 de dano psíquico. Com 90 dias de trabalho contínuo (descansando até 8 horas por dia) e 80.000 po em materiais, você constrói um golem de pedra. Ao final, o manual se queima, e suas cinzas espalhadas sobre o golem o despertam, obediente às suas ordens faladas."
+ },
+ "Chime of Opening": {
+  "nome": "Sino da Abertura",
+  "desc": "Com uma ação, você toca o tubo apontando para um objeto que possa ser aberto a até 36 m, como uma porta, tampa ou fechadura. Se o som alcançar o alvo, uma tranca ou trinco se solta; sem trancas restantes, o próprio objeto se abre. Funciona dez vezes e depois racha, tornando-se inútil; não exige sintonia."
+ },
+ "Pipes of Haunting": {
+  "nome": "Flauta Assombrada",
+  "desc": "Exige proficiência com instrumentos de sopro e não requer sintonia; tem 3 cargas e recupera 1d3 ao amanhecer. Com uma ação e 1 carga, você toca uma melodia sinistra: criaturas a até 9 m que a ouçam fazem um teste de resistência de Sabedoria CD 15 ou ficam amedrontadas por você por 1 minuto, repetindo o teste ao fim de cada turno (você pode isentar as não hostis). Quem passar no teste fica imune à flauta por 24 horas."
+ },
+ "Potion of Fire Breath": {
+  "nome": "Poção de Sopro de Fogo",
+  "desc": "Depois de bebê-la, você pode usar uma ação bônus para soprar chamas em uma criatura a até 9 m, que sofre 4d6 de dano de fogo (metade se passar num teste de resistência de Destreza CD 13). O efeito permite três sopros e termina ao usá-los ou após 1 hora, o que ocorrer primeiro."
+ },
+ "Mariner's Armor": {
+  "nome": "Armadura do Marinheiro",
+  "desc": "Enquanto veste esta armadura, você ganha deslocamento de natação igual ao seu deslocamento de caminhada. Se começar seu turno submerso e com 0 PV, a armadura o faz subir 18 m em direção à superfície. Não exige sintonia."
+ },
+ "Rope of Entanglement": {
+  "nome": "Corda do Enredamento",
+  "desc": "Segurando uma ponta, use uma ação e a palavra de comando para lançar a corda (9 m) contra uma criatura visível a até 6 m: ela fica impedida se falhar num teste de resistência de Destreza CD 15; você a solta com uma ação bônus, e a vítima pode usar sua ação para tentar se livrar com um teste de Força ou Destreza CD 15. A corda tem CA 20 e 20 PV, recupera 1 PV a cada 5 minutos enquanto tiver ao menos 1 e é destruída ao chegar a 0. Não requer sintonia."
+ },
+ "+2 Shield (*)": {
+  "nome": "Escudo +2",
+  "desc": "Enquanto empunha este escudo, você recebe +2 na CA, somado ao bônus normal que o escudo já concede. Item raro; não exige sintonia."
+ },
+ "Luck Blade": {
+  "nome": "Lâmina da Sorte",
+  "desc": "Espada lendária que exige sintonia: dá +1 nas jogadas de ataque e dano e, enquanto estiver com você, +1 em todos os testes de resistência. Uma vez por amanhecer, sem gastar ação, você pode rolar de novo uma jogada de ataque, teste de atributo ou de resistência, ficando obrigado com o novo resultado. Começa com 1d4−1 cargas não recuperáveis; com uma ação, você gasta 1 para conjurar Desejo (no máximo uma vez por amanhecer), e a espada perde esse poder quando as cargas acabam."
+ },
+ "Dust of Sneezing and Choking": {
+  "nome": "Pó do Espirro e Sufocamento",
+  "desc": "Pó de uso único que se passa por Pó do Desaparecimento, inclusive diante da magia Identificação. Ao espalhá-lo com uma ação, você e toda criatura que respira a até 9 m fazem um teste de resistência de Constituição CD 15; quem falha fica incapacitado e sufocando em meio a espirros, podendo repetir o teste ao fim de cada turno enquanto estiver consciente. A magia Restauração Menor também encerra o efeito."
+ },
+ "Well of Many Worlds": {
+  "nome": "Poço de Muitos Mundos",
+  "desc": "Pano preto dobrável que, estendido como um círculo de 1,8 m de diâmetro sobre uma superfície sólida com uma ação, abre um portal de mão dupla para outro mundo ou plano, cujo destino o Mestre escolhe. Com uma ação você dobra o pano e fecha o portal; depois de abrir um, o item só pode abrir outro após 1d8 horas. Não requer sintonia."
+ },
+ "Figurine of Wondrous Power, Silver Raven": {
+  "nome": "Estatueta de Poder Maravilhoso, Corvo de Prata",
+  "desc": "Com uma ação, você diz a palavra de comando e arremessa a estatueta a até 18 m, e ela vira um corvo amigável que obedece às suas ordens por até 12 horas, ou até cair a 0 PV ou você desfazê-la com outra ação. Enquanto ela estiver nessa forma, você pode conjurar Mensageiro Animal nela à vontade. Depois de usada, só funciona de novo após 2 dias. Não exige sintonia."
+ },
+ "Instrument of the Bards, Cli Lyre": {
+  "nome": "Instrumento dos Bardos, Lira de Cli",
+  "desc": "Requer sintonia com um bardo; quem tocar a lira sem estar sintonizado precisa passar num teste de resistência de Sabedoria CD 15 ou sofre 2d4 de dano psíquico. Com uma ação, você toca e conjura Voo, Invisibilidade, Levitação, Proteção contra o Bem e o Mal, Moldar Rochas, Muralha de Fogo ou Muralha de Vento, usando sua habilidade e CD de magia; cada uma pode ser usada uma vez e volta ao amanhecer. Se tocá-la ao conjurar uma magia com componente somático ou material que deixa alvos enfeitiçados, eles fazem o teste de resistência com desvantagem."
+ },
+ "Tome of the Stilled Tongue": {
+  "nome": "Tomo da Língua Silenciada",
+  "desc": "Exige sintonia de um mago e funciona como grimório e foco arcano. Uma vez por dia (recarrega ao amanhecer), segurando o tomo, você pode usar uma ação bônus para conjurar uma magia escrita nele sem gastar espaço de magia nem componentes verbais ou somáticos. Arrancar a língua da capa apaga para sempre todas as magias do livro, e Vecna observa quem o usa, podendo deixar mensagens enigmáticas nas páginas."
+ },
+ "Scroll of Protection from Fey": {
+  "nome": "Pergaminho de Proteção contra Fadas",
+  "desc": "Com uma ação de leitura, você cria ao seu redor um cilindro invisível de 1,5 m de raio e 3 m de altura que acompanha você por 5 minutos; nenhuma fada consegue entrar nele nem afetar o que está dentro. O efeito acaba se você se mover de modo a colocar uma fada dentro da área, e uma criatura pode gastar uma ação num teste de Carisma CD 15 para deixar de ser barrada. O pergaminho é consumido no uso e não exige sintonia."
+ },
+ "Potion of Vitality": {
+  "nome": "Poção de Vitalidade",
+  "desc": "Ao ser bebida, elimina toda a exaustão e cura qualquer doença ou veneno que afete o bebedor. Nas 24 horas seguintes, cada Dado de Vida gasto recupera o valor máximo de PV possível."
+ },
+ "Bracers of Defense": {
+  "nome": "Braçadeiras de Defesa",
+  "desc": "Concedem +2 na CA a quem as usa sem vestir armadura nem empunhar escudo. Exige sintonia."
+ },
+ "Rope of Climbing": {
+  "nome": "Corda de Escalada",
+  "desc": "Corda de seda de 18 m que aguenta até 1.350 kg; segurando uma ponta, você gasta uma ação com a palavra de comando para animá-la e, com ação bônus, faz a outra ponta avançar 3 m por turno até o destino, além de mandá-la se prender ou se soltar, dar ou desfazer nós e se enrolar. Com nós a cada 30 cm, ela encolhe para 15 m e dá vantagem em testes para escalá-la. Tem CA 20 e 20 PV, recupera 1 PV a cada 5 minutos enquanto tiver ao menos 1 e é destruída se chegar a 0; não exige sintonia."
+ },
+ "+2 Armor": {
+  "nome": "Armadura +2",
+  "desc": "Enquanto estiver vestindo esta armadura, você recebe +2 na CA. Não exige sintonia."
+ },
+ "Oathbow": {
+  "nome": "Arco do Juramento",
+  "desc": "Arco longo que exige sintonia. Ao fazer um ataque à distância, você pode pronunciar a palavra de comando e marcar o alvo como inimigo jurado (um por vez) até ele morrer ou por sete dias; após a morte dele, só pode escolher outro no amanhecer seguinte. Contra o inimigo jurado você tem vantagem, ignora cobertura (exceto total) e a desvantagem por distância longa, e cada acerto causa 3d6 de dano perfurante extra, mas enquanto ele viver você tem desvantagem nos ataques com qualquer outra arma."
+ },
+ "Armor of Radiant Resistance": {
+  "nome": "Armadura de Resistência Radiante",
+  "desc": "Qualquer armadura com esta propriedade concede resistência a dano radiante enquanto você a veste. Requer sintonia."
+ },
+ "Spell Scroll (Cantrip)": {
+  "nome": "Pergaminho de Magia (Truque)",
+  "desc": "Contém um truque que pode ser conjurado uma única vez por quem o tem na lista de magias da sua classe, no tempo de conjuração normal e sem precisar de componentes materiais; depois disso o pergaminho vira pó, mas não se perde se a conjuração for interrompida. A magia usa CD 13 para testes de resistência e +5 de bônus de ataque. Não requer sintonia."
+ },
+ "Robe of the Archmagi": {
+  "nome": "Manto do Arquimago",
+  "desc": "Sem armadura, sua CA base passa a ser 15 + seu modificador de Destreza, e você tem vantagem em testes de resistência contra magias e outros efeitos mágicos. Sua CD de magia e seu bônus de ataque com magia aumentam em +2. Exige sintonia de feiticeiro, bruxo ou mago cuja tendência combine com a cor do manto (branco para bom, cinza para neutro, preto para mau)."
+ },
+ "Lantern of Revealing": {
+  "nome": "Lanterna da Revelação",
+  "desc": "Lanterna com capuz que, acesa, queima por 6 horas com meio litro de óleo e ilumina 9 m com luz plena e mais 9 m com penumbra; qualquer criatura ou objeto invisível dentro da luz plena fica visível. Com uma ação, você baixa o capuz e reduz a luz a penumbra num raio de 1,5 m. Não exige sintonia."
+ },
+ "Staff of Withering": {
+  "nome": "Cajado do Definhamento",
+  "desc": "Funciona como um bordão mágico com 3 cargas, recuperando 1d3 a cada amanhecer; exige sintonia de clérigo, druida ou bruxo. Ao acertar um golpe, você pode gastar 1 carga para causar 2d10 de dano necrótico adicional, e o alvo faz um teste de resistência de Constituição CD 15. Se falhar, sofre desvantagem em testes de atributo e de resistência de Força e Constituição por 1 hora."
+ },
+ "Cloak of the Bat": {
+  "nome": "Manto do Morcego",
+  "desc": "Requer sintonia. Dá vantagem em testes de Destreza (Furtividade) e, sob penumbra ou escuridão, permite voar a 12 m segurando as pontas do manto com as duas mãos; o voo acaba se você soltar as pontas ou sair da penumbra ou escuridão. Uma vez por dia, recuperando ao amanhecer, você pode usar uma ação nessas mesmas condições de luz para conjurar Metamorfose em si mesmo e virar um morcego, mantendo seus valores de Inteligência, Sabedoria e Carisma."
+ },
+ "Scimitar of Speed": {
+  "nome": "Cimitarra da Velocidade",
+  "desc": "Cimitarra mágica com bônus de +2 nas jogadas de ataque e de dano. Em cada um dos seus turnos, você pode usar uma ação bônus para realizar um ataque extra com ela. Requer sintonia."
+ },
+ "Spell Scroll (1st Level)": {
+  "nome": "Pergaminho de Magia (1º Círculo)",
+  "desc": "Contém uma magia de 1º círculo que só pode ser usada por quem a tem na lista de magias da sua classe; ela é conjurada no tempo normal, sem componentes materiais, com CD 13 e bônus de ataque +5, e o pergaminho se desfaz após o uso (mas não se perde se a conjuração for interrompida). Se o círculo for alto demais para você, é preciso passar num teste do atributo de conjuração CD 11, ou a magia se apaga sem efeito. Um mago pode copiá-la para seu grimório com um teste de Inteligência (Arcanismo) CD 11, e o pergaminho é destruído com sucesso ou falha."
+ },
+ "+2 Rod of the Pact Keeper": {
+  "nome": "Bastão do Guardião do Pacto +2",
+  "desc": "Exige sintonia com um bruxo. Empunhando o bastão, você soma +2 às jogadas de ataque com magia e à CD dos testes de resistência das suas magias de bruxo. Uma vez por descanso longo, pode usar uma ação para recuperar um espaço de magia de bruxo."
+ },
+ "Pipes of the Sewers": {
+  "nome": "Flauta dos Esgotos",
+  "desc": "Exige sintonia e proficiência com instrumentos de sopro; ratos comuns e gigantes ignoram você, a menos que sejam ameaçados. Tem 3 cargas (recupera 1d3 ao amanhecer): ao tocar como ação, gaste 1 a 3 cargas com uma ação bônus para atrair um enxame de ratos por carga, se houver ratos num raio de 800 m. Enquanto toca, você pode disputar seu teste de Carisma contra o de Sabedoria de um enxame a até 9 m; se vencer, ele obedece enquanto você continuar tocando a cada rodada, e se perder, o enxame fica imune à flauta por 24 horas."
+ },
+ "Potion of Invulnerability": {
+  "nome": "Poção de Invulnerabilidade",
+  "desc": "Ao beber esta poção, você ganha resistência a todos os tipos de dano durante 1 minuto. Não requer sintonia."
+ },
+ "Potion of Poison": {
+  "nome": "Poção de Veneno",
+  "desc": "Disfarçada por ilusão como uma poção benéfica (como a de Cura), só tem a verdadeira natureza revelada por Identificação. Quem a bebe sofre 3d6 de dano de veneno e precisa passar num teste de resistência de Constituição CD 13 ou fica envenenado, sofrendo 3d6 de dano de veneno no início de cada turno. Ao fim de cada turno repete o teste, e cada sucesso reduz esse dano em 1d6, até o efeito acabar quando o dano chega a 0."
+ },
+ "Sword of Answering (Scather)": {
+  "nome": "Espada da Resposta (Devastadora)",
+  "desc": "Espada longa com +3 nas jogadas de ataque e de dano; exige sintonia de uma criatura leal e má. Enquanto você a empunha, quando uma criatura ao seu alcance lhe causa dano, você pode usar a reação para atacá-la com vantagem, e o dano desse golpe ignora resistências e imunidades do alvo."
+ },
+ "+3 Weapon (no damage)": {
+  "nome": "Arma +3",
+  "desc": "Esta arma concede +3 nas jogadas de ataque feitas com ela. Item muito raro; não exige sintonia."
+ },
+ "Quaal's Feather Token, Fan": {
+  "nome": "Símbolo de Pena de Quaal, Leque",
+  "desc": "Item de uso único, sem sintonia. Estando a bordo de uma embarcação, use uma ação para lançá-lo ao ar e ele vira um enorme leque flutuante que sopra as velas, aumentando a velocidade do navio em cerca de 8 km/h por 8 horas; você pode dispensá-lo com uma ação."
+ },
+ "Ioun Stone, Mastery": {
+  "nome": "Pedra Ioun da Maestria",
+  "desc": "Exige sintonia. Com uma ação, você lança este prisma verde-pálido ao ar e ele passa a girar ao redor da sua cabeça, aumentando seu bônus de proficiência em 1 enquanto orbitar. Outra criatura só consegue tirá-la de você com uma ação, acertando um ataque contra CA 24 ou passando num teste de Destreza (Acrobacia) CD 24; a pedra tem CA 24, 10 PV e resistência a todo dano, e você pode recolhê-la com uma ação, encerrando o efeito."
+ },
+ "Boots of Elvenkind": {
+  "nome": "Botas Élficas",
+  "desc": "Enquanto calçadas, seus passos ficam totalmente silenciosos, sobre qualquer tipo de superfície. Você também recebe vantagem em testes de Destreza (Furtividade) para se mover sem fazer barulho. Não requer sintonia."
+ },
+ "Periapt of Wound Closure": {
+  "nome": "Periapto do Fechamento de Ferimentos",
+  "desc": "Exige sintonia. Se você começar o turno morrendo com o pingente no pescoço, fica estabilizado automaticamente. Além disso, os PV recuperados ao gastar Dados de Vida são dobrados."
+ },
+ "Potion of Climbing": {
+  "nome": "Poção de Escalada",
+  "desc": "Por 1 hora após beber, você ganha deslocamento de escalada igual ao seu deslocamento de caminhada. Nesse período, tem vantagem nos testes de Força (Atletismo) para escalar."
+ },
+ "Trident of Fish Command": {
+  "nome": "Tridente de Comando dos Peixes",
+  "desc": "Tridente mágico com 3 cargas que exige sintonia. Com uma ação e 1 carga, você conjura Dominar Besta (CD 15) em uma besta que tenha deslocamento de natação natural. Recupera 1d3 cargas gastas a cada amanhecer."
+ },
+ "Carpet of Flying, 5 ft. × 7 ft.": {
+  "nome": "Tapete Voador, 1,5 m × 2,1 m",
+  "desc": "Com uma ação, você diz a palavra de comando e o tapete passa a flutuar e voar, obedecendo às suas instruções faladas enquanto você estiver a até 9 m dele. Transporta até 270 kg com deslocamento de voo de 12 m; pode levar até o dobro desse peso, mas acima da capacidade normal voa com metade do deslocamento. Não exige sintonia."
+ },
+ "Slippers of Spider Climbing": {
+  "nome": "Sapatilhas de Patas de Aranha",
+  "desc": "Requer sintonia. Calçadas, concedem deslocamento de escalada igual ao de caminhada, permitindo andar por paredes e de cabeça para baixo no teto sem usar as mãos. Não funcionam em superfícies escorregadias, como gelo ou óleo."
+ },
+ "Potion of Supreme Healing": {
+  "nome": "Poção de Cura Suprema",
+  "desc": "Quem beber esta poção recupera 10d4 + 20 PV. É consumível, usada uma única vez, e não exige sintonia."
+ },
+ "Figurine of Wondrous Power, Bronze Griffon": {
+  "nome": "Estatueta de Poder Maravilhoso, Grifo de Bronze",
+  "desc": "Com uma ação e a palavra de comando, você arremessa a estatueta a um ponto do chão a até 18 m e ela se torna um grifo amigável, que entende seus idiomas e cumpre suas ordens faladas (sem ordens, apenas se defende). O grifo dura até 6 horas e volta a ser estatueta se chegar a 0 PV ou se você repetir a palavra de comando tocando nele com uma ação. Depois de usada, só funciona de novo após 5 dias; não exige sintonia."
+ },
+ "Gem of Seeing": {
+  "nome": "Gema da Visão",
+  "desc": "Exige sintonia. Com uma ação e a palavra de comando, você gasta 1 das 3 cargas e, por 10 minutos, ganha visão verdadeira até 36 m enquanto olhar através da gema. Recupera 1d3 cargas a cada amanhecer."
+ },
+ "Talisman of Ultimate Evil": {
+  "nome": "Talismã do Mal Supremo",
+  "desc": "Requer sintonia por uma criatura maligna; criaturas neutras que o tocam sofrem 6d6 de dano necrótico e as boas sofrem 8d6, repetindo o dano ao fim de cada turno em que o carregam. Clérigos e paladinos malignos podem usá-lo como símbolo sagrado e ganham +2 nas jogadas de ataque com magia enquanto o seguram ou vestem. Tem 6 cargas, que não se recuperam: com uma ação e 1 carga, você escolhe uma criatura boa no chão a até 36 m, que deve passar num teste de resistência de Destreza CD 20 ou cai numa fenda flamejante e é destruída sem deixar restos; ao gastar a última carga, o talismã se desfaz em lodo fétido."
+ },
+ "+2 Ammunition": {
+  "nome": "Munição +2",
+  "desc": "Concede +2 nas jogadas de ataque e de dano feitas com esta munição mágica. Depois de atingir um alvo, a peça perde a magia. Não exige sintonia."
+ },
+ "Spell Scroll (2nd Level)": {
+  "nome": "Pergaminho de Magia (2º Círculo)",
+  "desc": "Contém uma magia de 2º círculo que só pode ser usada por quem a tem na lista da própria classe; conjurá-la leva o tempo normal, dispensa componentes materiais e consome o pergaminho, que vira pó (se a conjuração for interrompida, ele não se perde). Se você ainda não consegue conjurar magias desse círculo, precisa passar num teste de CD 12 com seu atributo de conjuração, ou a magia se apaga sem efeito; a magia usa CD 13 e bônus de ataque +5. Um mago pode copiá-la para o grimório com um teste de Inteligência (Arcanismo) CD 12, mas o pergaminho é destruído tanto no sucesso quanto na falha."
+ },
+ "Ioun Stone, Greater Absorption": {
+  "nome": "Pedra Iônica de Absorção Maior",
+  "desc": "Requer sintonia. Lançada ao ar com uma ação, fica orbitando sua cabeça (CA 24, 10 PV, resistência a todo dano; arrancá-la exige ataque contra CA 24 ou teste de Destreza (Acrobacia) CD 24). Enquanto orbita, você pode usar sua reação para anular uma magia de até 8º círculo que tenha apenas você como alvo e venha de uma criatura que você veja; depois de anular 50 círculos no total, a pedra perde a magia, e ela não anula magias de círculo maior que o total restante."
+ },
+ "Potion of Force Resistance": {
+  "nome": "Poção de Resistência a Energético",
+  "desc": "Ao beber esta poção, você ganha resistência a dano energético por 1 hora. Não requer sintonia."
+ },
+ "Eyes of the Eagle": {
+  "nome": "Olhos da Águia",
+  "desc": "Lentes de cristal usadas sobre os olhos que concedem vantagem em testes de Sabedoria (Percepção) baseados na visão. Com boa visibilidade, permitem distinguir detalhes de criaturas e objetos muito distantes, desde que tenham pelo menos 60 cm. Requer sintonia."
+ },
+ "Wand of Magic Detection": {
+  "nome": "Varinha de Detecção de Magia",
+  "desc": "Com a varinha em mãos, você gasta 1 de suas 3 cargas e uma ação para conjurar Detectar Magia. Ela recupera 1d3 cargas gastas todo dia ao amanhecer. Não exige sintonia."
+ },
+ "Horn of Valhalla, Bronze": {
+  "nome": "Trombeta de Valhalla de Bronze",
+  "desc": "Com uma ação, você sopra a trombeta e convoca 4d4 + 4 berserkers, espíritos guerreiros de Ysgard, que surgem a até 18 m de você e permanecem por 1 hora ou até chegarem a 0 PV; depois disso, ela só pode ser usada novamente após 7 dias. Se você tiver proficiência com armaduras médias, os berserkers são amistosos com você e seus aliados e obedecem às suas ordens; caso contrário, eles atacam você. Não requer sintonia."
+ },
+ "Apparatus of Kwalish": {
+  "nome": "Aparato de Kwalish",
+  "desc": "Barril de ferro Grande que se transforma em uma lagosta mecânica tripulável por até duas criaturas Médias (abri-lo exige achar a trava oculta, CD 20 de Investigação): CA 20, 200 PV, deslocamento e natação de 9 m, imune a veneno e psíquico, hermético por 10 horas de ar divididas entre os ocupantes e capaz de descer até 270 m. Com uma ação, um ocupante aciona até duas de suas dez alavancas para andar, nadar, virar, submergir ou subir 6 m, abrir janelas e escotilha, acender luz de 9 m ou atacar com as pinças (+8 para acertar, 2d6 de concussão ou agarrar com CD 15 para escapar). Não requer sintonia."
+ },
+ "Potion of Poison Resistance": {
+  "nome": "Poção de Resistência a Veneno",
+  "desc": "Ao beber esta poção, você fica com resistência a dano de veneno durante 1 hora. Não exige sintonia e é consumida no uso."
+ },
+ "Staff of Charming": {
+  "nome": "Cajado do Encantamento",
+  "desc": "Funciona como bordão mágico e tem 10 cargas (recupera 1d8+2 ao amanhecer; ao gastar a última, role 1d20 e, com 1, ele vira um bordão comum): com uma ação, gaste 1 carga para conjurar Enfeitiçar Pessoa, Comando ou Compreender Idiomas usando a sua CD de magia. Uma vez por dia, ao falhar num teste de resistência contra magia de encantamento que mire só você, pode transformar a falha em sucesso; e sempre que resistir a uma magia assim, pode usar sua reação e 1 carga para devolvê-la ao conjurador. Exige sintonia com bardo, clérigo, druida, feiticeiro, bruxo ou mago."
+ },
+ "Oil of Slipperiness": {
+  "nome": "Óleo da Escorregadia",
+  "desc": "Passar o óleo leva 10 minutos e cobre uma criatura Média ou menor com seu equipamento (cada categoria de tamanho acima de Média exige um frasco extra); ela recebe os efeitos de Movimentação Livre por 8 horas. Como alternativa, com uma ação você derrama o óleo no chão, criando por 8 horas o efeito de Área Escorregadia num quadrado de 3 m de lado."
+ },
+ "Philter of Love": {
+  "nome": "Filtro do Amor",
+  "desc": "Depois de beber, a primeira criatura que você avistar nos 10 minutos seguintes o deixa enfeitiçado por ela durante 1 hora. Se for alguém pelo qual você normalmente sentiria atração, você a vê como seu verdadeiro amor enquanto o efeito durar. Poção de uso único, sem sintonia."
+ },
+ "Potion of Speed": {
+  "nome": "Poção da Velocidade",
+  "desc": "Ao beber, você fica sob o efeito da magia Velocidade por 1 minuto, sem precisar manter concentração. Não exige sintonia."
+ },
+ "Instrument of the Bards, Canaith Mandolin": {
+  "nome": "Instrumento dos Bardos, Bandolim de Canaith",
+  "desc": "Exige sintonia com um bardo; quem toca sem estar sintonizado precisa passar em um teste de resistência de Sabedoria CD 15 ou sofre 2d4 de dano psíquico. Com uma ação, conjura uma vez por dia (recupera ao amanhecer) cada uma destas magias, usando sua CD e atributo de conjuração: Voo, Invisibilidade, Levitação, Proteção contra o Bem e o Mal, Curar Ferimentos (3º círculo), Dissipar Magia e Proteção contra Energia (apenas elétrico). Tocá-lo enquanto conjura uma magia de enfeitiçar com componente somático ou material dá desvantagem no teste de resistência dos alvos."
+ },
+ "Potion of Heroism": {
+  "nome": "Poção de Heroísmo",
+  "desc": "Ao beber, você recebe 10 PV temporários e fica sob o efeito da magia Bênção, ambos por 1 hora e sem exigir concentração."
+ },
+ "Sending Stones": {
+  "nome": "Pedras Mensageiras",
+  "desc": "Par de pedras ligadas entre si: tocando uma delas, você gasta uma ação para conjurar Enviar Mensagem, tendo como alvo quem estiver portando a outra pedra (se ninguém a portar, você percebe isso e a magia não é gasta). O par só pode ser usado uma vez, voltando a funcionar ao amanhecer, e se uma das pedras for destruída a outra perde a magia. Não exige sintonia."
+ },
+ "+3 Armor": {
+  "nome": "Armadura +3",
+  "desc": "Enquanto estiver vestida, esta armadura lendária concede +3 de bônus na CA, além da proteção normal do tipo de armadura. Não exige sintonia."
+ },
+ "Plate Armor of Etherealness": {
+  "nome": "Armadura de Placas Etérea",
+  "desc": "Armadura de placas lendária que exige sintonia. Com uma ação e a palavra de comando, você recebe o efeito de Forma Etérea por até 10 minutos; o efeito acaba antes se você tirar a armadura ou usar outra ação para repetir a palavra. Só pode ser usada uma vez por dia, recarregando ao amanhecer."
+ },
+ "Nolzur's Marvelous Pigments": {
+  "nome": "Pigmentos Maravilhosos de Nolzur",
+  "desc": "Caixa com pincel e 1d4 potes de tinta; ao pintar concentrando-se numa imagem, você cria objetos ou elementos de terreno reais e não mágicos (uma porta que abre, um fosso, uma árvore, uma arma), cada pote cobrindo até cerca de 93 m² e gerando até cerca de 283 m³ de volume, a um ritmo de 10 minutos para cada 9 m² pintados. Nada criado vale mais que 25 po (objetos valiosos são imitações sem valor), e energias pintadas, como fogo ou raios, somem ao fim da pintura sem causar dano. Não exige sintonia."
+ },
+ "Ring of Radiant Resistance": {
+  "nome": "Anel de Resistência Radiante",
+  "desc": "Anel cravejado de topázio que concede resistência a dano radiante a quem o usa. Exige sintonia."
+ },
+ "Vorpal Sword": {
+  "nome": "Espada Vorpal",
+  "desc": "Espada de dano cortante que concede +3 nas jogadas de ataque e de dano e ignora resistência a dano cortante; exige sintonia. Ao tirar 20 no ataque contra uma criatura com cabeça, você a decapita, matando-a se ela não sobreviver sem essa cabeça. Criaturas sem cabeça, imunes a dano cortante, com ações lendárias ou grandes demais para isso sofrem 6d8 de dano cortante extra no lugar."
+ },
+ "Staff of Frost": {
+  "nome": "Cajado do Gelo",
+  "desc": "Exige sintonia de druida, feiticeiro, bruxo ou mago; enquanto o empunha, você resiste a dano de frio. Com uma ação, gaste cargas (10 no total, recupera 1d6+4 ao amanhecer) para conjurar com sua própria CD: Névoa Obscurecente (1), Tempestade de Gelo (4), Muralha de Gelo (4) ou Cone de Frio (5). Ao gastar a última carga, role 1d20: com 1, o cajado vira água e é destruído."
+ },
+ "+3 Weapon": {
+  "nome": "Arma +3",
+  "desc": "Arma mágica que concede +3 nas jogadas de ataque e de dano feitas com ela. Não exige sintonia."
+ },
+ "Cloak of Displacement": {
+  "nome": "Manto do Deslocamento",
+  "desc": "Exige sintonia. Uma ilusão faz você parecer estar um pouco afastado de onde realmente está, impondo desvantagem a todas as jogadas de ataque contra você. O efeito se desliga ao sofrer dano e retorna no início do seu próximo turno; também fica inativo enquanto você estiver incapacitado, impedido ou sem poder se mover."
+ },
+ "Cloak of Protection": {
+  "nome": "Manto de Proteção",
+  "desc": "Enquanto estiver vestindo este manto, o usuário recebe +1 na CA e +1 em todos os testes de resistência. Exige sintonia."
+ },
+ "Belt of Fire Giant Strength": {
+  "nome": "Cinto da Força do Gigante do Fogo",
+  "desc": "Enquanto você usa este cinto, seu valor de Força passa a ser 25; se a sua Força natural já for 25 ou mais, ele não traz benefício. Exige sintonia."
+ },
+ "Ring of Djinni Summoning": {
+  "nome": "Anel de Convocação de Djinni",
+  "desc": "Exige sintonia. Com uma ação e a palavra de comando, você traz um djinni do Plano Elemental do Ar para um espaço livre a até 36 m; ele é amistoso com seu grupo, cumpre suas ordens em qualquer idioma e, sem ordens, apenas se defende. Ele fica enquanto você mantiver concentração (até 1 hora) ou até cair a 0 PV, só pode ser chamado de novo após 24 horas, e se morrer o anel perde a magia."
+ },
+ "Bowl of Commanding Water Elementals": {
+  "nome": "Tigela de Comando de Elementais da Água",
+  "desc": "Com a tigela cheia de água, você pode usar uma ação e dizer a palavra de comando para invocar um elemental da água, como se conjurasse Conjurar Elemental. Só pode ser usada assim uma vez por dia, recarregando ao amanhecer. Não exige sintonia."
+ },
+ "Staff of Fire": {
+  "nome": "Cajado do Fogo",
+  "desc": "Exige sintonia de druida, feiticeiro, bruxo ou mago e concede resistência a dano de fogo enquanto você o segura. Possui 10 cargas que se recuperam em 1d6+4 ao amanhecer; com uma ação, gaste-as para conjurar Mãos Flamejantes (1), Bola de Fogo (3) ou Muralha de Fogo (4), usando a sua CD de magia. Ao gastar a última carga, role 1d20: com 1, o cajado vira cinzas e é destruído."
+ },
+ "Sword of Answering (Concluder)": {
+  "nome": "Espada da Resposta (Conclusora)",
+  "desc": "Espada longa lendária que concede +3 nas jogadas de ataque e de dano e exige sintonia de uma criatura leal e neutra. Enquanto a empunha, quando uma criatura ao seu alcance lhe causa dano, você pode usar sua reação para atacá-la corpo a corpo com vantagem. O dano desse contra-ataque ignora qualquer resistência ou imunidade do alvo."
+ },
+ "Robe of Eyes": {
+  "nome": "Manto dos Olhos",
+  "desc": "Exige sintonia. Vestido, permite enxergar em todas as direções, concede vantagem em testes de Sabedoria (Percepção) baseados na visão, visão no escuro de 36 m e a capacidade de ver criaturas e objetos invisíveis e o Plano Etéreo até 36 m; seus olhos nunca contam como fechados ou desviados. Porém, uma magia Luz lançada no manto ou Luz do Dia a até 1,5 m dele deixa você cego por 1 minuto, com um teste de resistência de Constituição ao fim de cada turno para encerrar (CD 11 para Luz, CD 15 para Luz do Dia)."
+ },
+ "Oil of Etherealness": {
+  "nome": "Óleo da Etereidade",
+  "desc": "Leva 10 minutos para ser espalhado sobre uma criatura Média ou menor e o equipamento que ela carrega; cada categoria de tamanho acima de Média exige um frasco a mais. Depois disso, a criatura fica sob o efeito da magia Forma Etérea por 1 hora. Não requer sintonia."
+ },
+ "Scroll of Protection from Beasts": {
+  "nome": "Pergaminho de Proteção contra Bestas",
+  "desc": "Com uma ação de leitura, você fica no centro de um cilindro invisível de 1,5 m de raio e 3 m de altura que acompanha seus movimentos e, por 5 minutos, impede que bestas entrem nele ou afetem o que está dentro. O efeito termina se você se mover de modo a colocar uma besta dentro da área, e uma criatura pode usar uma ação para fazer um teste de Carisma CD 15 e, se passar, ignorar a barreira. Uso único, sem sintonia."
+ },
+ "Circlet of Blasting": {
+  "nome": "Diadema da Explosão",
+  "desc": "Usando o diadema, você pode gastar uma ação para conjurar Raio Ardente, fazendo as jogadas de ataque da magia com bônus de +5. Só pode ser usado uma vez, e o uso volta no amanhecer seguinte. Não exige sintonia."
+ },
+ "Figurine of Wondrous Power, Golden Lions": {
+  "nome": "Estatueta de Poder Maravilhoso, Leões Dourados",
+  "desc": "Par de estatuetas de leão em ouro: com uma ação e a palavra de comando, você arremessa uma ou ambas a um ponto no chão a até 18 m, e cada uma vira um leão amigável que obedece às suas ordens por até 1 hora. O leão volta a ser estatueta se cair a 0 PV ou se você repetir a palavra tocando nele, e cada estatueta só pode ser usada de novo após 7 dias. Não exige sintonia."
+ },
+ "Ring of Air Elemental Command": {
+  "nome": "Anel de Comando dos Elementais do Ar",
+  "desc": "Exige sintonia. Você tem vantagem nos ataques contra elementais do ar e eles têm desvantagem contra você; você fala auran, cai lentamente (18 m por rodada) sem sofrer dano de queda e pode gastar 2 das 5 cargas (recupera 1d4+1 ao amanhecer, CD 17) para conjurar Dominar Monstro em um elemental do ar. Depois de ajudar a matar um elemental do ar, você também ganha resistência a dano elétrico, deslocamento de voo igual ao de caminhada (podendo pairar) e pode conjurar Muralha de Vento (1 carga), Lufada de Vento (2) ou Corrente de Relâmpagos (3)."
+ },
+ "Potion of Necrotic Resistance": {
+  "nome": "Poção de Resistência a Dano Necrótico",
+  "desc": "Ao beber esta poção, você ganha resistência a dano necrótico durante 1 hora. É consumida ao ser usada e não exige sintonia."
+ },
+ "Copper Dragon Scale Mail": {
+  "nome": "Cota de Escamas de Dragão de Cobre",
+  "desc": "Exige sintonia. Concede +1 na CA, resistência a dano ácido e vantagem em testes de resistência contra a Presença Amedrontadora e as armas de sopro de dragões. Uma vez por amanhecer, com uma ação, você sente a distância e a direção do dragão de cobre mais próximo num raio de 48 km."
+ },
+ "Ring of Fire Resistance": {
+  "nome": "Anel de Resistência a Fogo",
+  "desc": "Este anel, adornado com uma granada, concede resistência a dano de fogo enquanto estiver no dedo do portador. Requer sintonia."
+ },
+ "Figurine of Wondrous Power, Marble Elephant": {
+  "nome": "Estatueta de Poder Maravilhoso, Elefante de Mármore",
+  "desc": "Com uma ação, você diz a palavra de comando e arremessa a estatueta a um ponto livre no chão a até 18 m, e ela vira um elefante amigável que entende seus idiomas e obedece às suas ordens faladas (sem ordens, apenas se defende). O elefante dura até 24 horas, voltando a ser estatueta antes se cair a 0 PV ou se você usar uma ação para repetir a palavra de comando tocando nele; depois disso, só pode ser usada de novo após 7 dias. Não requer sintonia."
+ },
+ "Elemental Gem, Blue Sapphire": {
+  "nome": "Gema Elemental, Safira Azul",
+  "desc": "Item de uso único que não exige sintonia. Com uma ação, você quebra a gema e invoca um elemental do ar, com o mesmo efeito da magia Conjurar Elemental; depois disso a gema perde a magia."
+ },
+ "Potion of Fire Resistance": {
+  "nome": "Poção de Resistência ao Fogo",
+  "desc": "Ao beber esta poção, você ganha resistência a dano de fogo por 1 hora. Não exige sintonia e se esgota após o uso."
+ },
+ "Cube of Force": {
+  "nome": "Cubo de Força",
+  "desc": "Exige sintonia. Tem 36 cargas e recupera 1d20 ao amanhecer; com uma ação você aperta uma face e gasta de 1 a 5 cargas para criar ao seu redor um cubo invisível de energia com 4,5 m de lado, que se move com você por até 1 minuto e bloqueia, conforme a face, gases, matéria inanimada, seres vivos, efeitos de magia ou tudo (a sexta face desliga a barreira, e trocar de face reinicia a duração). Magias como Desintegrar, Atravessar Paredes, Muralha de Fogo, Spray Prismático e a Trompa da Destruição drenam cargas extras do cubo ao atingir a barreira."
+ },
+ "Giant Slayer": {
+  "nome": "Matadora de Gigantes",
+  "desc": "Machado ou espada que concede +1 nas jogadas de ataque e de dano. Ao acertar uma criatura do tipo gigante (inclusive ettins e trolls), causa 2d6 de dano extra do mesmo tipo da arma, e o alvo precisa passar em um teste de resistência de Força CD 15 ou fica caído. Não exige sintonia."
+ },
+ "Gauntlets of Ogre Power": {
+  "nome": "Manoplas de Poder do Ogro",
+  "desc": "Enquanto usadas, elevam o valor de Força do portador para 19; quem já tem Força 19 ou mais não recebe benefício algum. Exige sintonia."
+ },
+ "Instrument of the Bards, Fochlucan Bandore": {
+  "nome": "Instrumento dos Bardos, Bandore de Fochlucan",
+  "desc": "Exige sintonia com um bardo; quem tocar sem estar sintonizado precisa passar num teste de resistência de Sabedoria CD 15 ou sofre 2d4 de dano psíquico. Com uma ação, você toca o bandore para conjurar Voo, Invisibilidade, Levitação, Proteção contra o Bem e o Mal, Constrição, Fogo das Fadas, Bordão Místico ou Falar com Animais, cada uma uma vez por dia (volta ao amanhecer), usando sua habilidade e CD de magia. Tocá-lo ao conjurar uma magia com componente somático ou material que enfeitice dá desvantagem aos alvos no teste de resistência."
+ },
+ "Eversmoking Bottle": {
+  "nome": "Garrafa da Fumaça Eterna",
+  "desc": "Com uma ação, você abre a garrafa e libera uma nuvem de fumaça densa de 18 m de raio, que deixa a área com escuridão densa (totalmente obscurecida) e cresce 3 m por minuto enquanto a garrafa aberta estiver dentro dela, até no máximo 36 m. A nuvem dura enquanto a garrafa estiver aberta; fechá-la exige uma ação e a palavra de comando, e a fumaça some 10 minutos depois, ou antes com vento moderado (1 minuto) ou forte (1 rodada). Não requer sintonia."
+ },
+ "Staff of the Woodlands": {
+  "nome": "Cajado da Floresta",
+  "desc": "Bordão mágico que concede +2 nas jogadas de ataque e dano e +2 nas jogadas de ataque com magia enquanto empunhado; exige sintonia com um druida. Possui 10 cargas (recupera 1d6+4 ao amanhecer; ao gastar a última, role 1d20 e, com 1, ele vira um bordão comum) para conjurar, com uma ação e a sua CD, Amizade Animal ou Falar com Animais (1), Pele de Árvore ou Localizar Animais ou Plantas (2), Falar com Plantas (3), Despertar (5) ou Muralha de Espinhos (6), além de Passos sem Pegadas à vontade. Com uma ação e 1 carga, fincado em solo fértil, ele se torna uma árvore de 18 m de altura até que você a toque e diga a palavra de comando para revertê-la."
+ },
+ "Sword of Answering (Retorter)": {
+  "nome": "Espada da Resposta (Retorter)",
+  "desc": "Espada longa lendária com bônus de +3 nas jogadas de ataque e dano; exige sintonia com uma criatura leal e boa. Quando uma criatura ao seu alcance causa dano a você, pode usar a reação para golpeá-la com vantagem, e o dano desse contra-ataque ignora resistências e imunidades do alvo."
+ },
+ "Arrow of Slaying (*)": {
+  "nome": "Flecha da Matança",
+  "desc": "Munição mágica (flecha ou virote) feita contra um tipo, raça ou grupo específico de criatura. Quando uma criatura desse grupo sofre dano dela, precisa passar num teste de resistência de Constituição CD 17 ou recebe 6d10 de dano perfurante extra (metade se passar). Depois de causar esse dano extra, a munição perde a magia; não exige sintonia."
+ },
+ "Potion of Clairvoyance": {
+  "nome": "Poção de Clarividência",
+  "desc": "Ao beber a poção, você recebe o efeito da magia Clarividência, sem precisar de concentração nem de componentes. É consumida no uso e não exige sintonia."
+ },
+ "Ring of Free Action": {
+  "nome": "Anel da Ação Livre",
+  "desc": "Requer sintonia. Enquanto usa o anel, você atravessa terreno difícil sem gastar movimento extra, e nenhum efeito mágico consegue diminuir seu deslocamento nem deixá-lo paralisado ou impedido."
+ },
+ "Dwarven Thrower": {
+  "nome": "Martelo Arremessador Anão",
+  "desc": "Martelo de guerra +3 nas jogadas de ataque e dano que pode ser arremessado (alcance 6/18 m) e volta sozinho à sua mão logo após o ataque. Acertos à distância com ele causam 1d8 de dano de concussão adicional, ou 2d8 se o alvo for um gigante. Exige sintonia, e só um anão pode se sintonizar com ele."
+ },
+ "Bronze Dragon Scale Mail": {
+  "nome": "Cota de Escamas de Dragão de Bronze",
+  "desc": "Armadura média de escamas que exige sintonia e concede +1 na CA, resistência a dano elétrico e vantagem em testes de resistência contra a Presença Amedrontadora e o sopro de dragões. Uma vez por dia (recupera ao amanhecer), com uma ação, você sente a direção e a distância do dragão de bronze mais próximo num raio de 48 km."
+ },
+ "Wand of Wonder": {
+  "nome": "Varinha das Maravilhas",
+  "desc": "Exige sintonia com um conjurador. Tem 7 cargas (recupera 1d6+1 ao amanhecer): com uma ação, gaste 1 carga, escolha uma criatura, objeto ou ponto a até 36 m e role 1d100 para um efeito aleatório, que pode ser uma magia como Bola de Fogo, Relâmpago, Lentidão, Nuvem Fétida ou Escuridão (CD 15, alcance de 36 m), ou algo estranho, como borboletas, um rinoceronte, chuva de gemas, cegueira em área ou petrificação, às vezes atingindo você mesmo. Ao gastar a última carga, role 1d20; com 1, a varinha vira pó."
+ },
+ "Ring of Poison Resistance": {
+  "nome": "Anel de Resistência a Veneno",
+  "desc": "Enquanto usa este anel, adornado com uma ametista, você tem resistência a dano de veneno. Requer sintonia."
+ },
+ "Wind Fan": {
+  "nome": "Leque do Vento",
+  "desc": "Segurando o leque, você pode usar uma ação para conjurar Lufada de Vento (CD 13). O uso é seguro uma vez por dia e se renova ao amanhecer; cada uso extra antes disso acumula 20% de chance de o leque falhar e se rasgar, perdendo a magia para sempre. Não exige sintonia."
+ },
+ "Ring of Spell Storing": {
+  "nome": "Anel de Armazenar Magias",
+  "desc": "Requer sintonia. Guarda até 5 círculos de magias no total; qualquer criatura pode carregá-lo conjurando nele uma magia de 1º a 5º círculo enquanto o toca (o espaço ocupado é o círculo do espaço de magia gasto, e a magia se perde se não couber). Quem o usa pode conjurar as magias guardadas, que mantêm o círculo, a CD, o bônus de ataque e o atributo de conjuração de quem as armazenou, liberando o espaço ao serem usadas."
+ },
+ "Medallion of Thoughts": {
+  "nome": "Medalhão dos Pensamentos",
+  "desc": "Exige sintonia. Usado no pescoço, permite gastar 1 de suas 3 cargas e uma ação para conjurar Detectar Pensamentos (CD 13). Recupera 1d3 cargas a cada amanhecer."
+ },
+ "Staff of Power": {
+  "nome": "Cajado do Poder",
+  "desc": "Bordão mágico +2 que, empunhado, também concede +2 na CA, nos testes de resistência e nas jogadas de ataque com magia; exige sintonia de feiticeiro, bruxo ou mago. Tem 20 cargas (recupera 2d8+4 ao amanhecer; ao gastar a última, role d20: no 1 vira só um bordão +2, no 20 recupera 1d8+2): ao acertar um golpe, gaste 1 carga para causar +1d6 de dano energético, ou use uma ação para conjurar Mísseis Mágicos ou Raio do Enfraquecimento (1), Levitação (2), Cone de Frio, Bola de Fogo e Relâmpago no 5º círculo, Imobilizar Monstro ou Muralha de Energia (5) ou Globo de Invulnerabilidade (6) com sua CD e bônus de ataque. Com uma ação você pode quebrá-lo numa explosão de 9 m de raio que causa a cada criatura dano energético de 8, 6 ou 4 vezes as cargas restantes conforme a distância (CD 17 de Destreza reduz à metade), e você tem 50% de chance de escapar para outro plano ou sofre 16 vezes as cargas."
+ },
+ "Ring of Cold Resistance": {
+  "nome": "Anel de Resistência ao Frio",
+  "desc": "Este anel com uma turmalina engastada concede resistência a dano de frio enquanto estiver no dedo do portador. Exige sintonia."
+ },
+ "Armor of Vulnerability (Bludgeoning)": {
+  "nome": "Armadura de Vulnerabilidade (Concussão)",
+  "desc": "Armadura de placas que concede resistência a dano de concussão e exige sintonia. Amaldiçoada: ao se sintonizar, você fica vulnerável a dano perfurante e cortante, e tirar a armadura não resolve; só Remover Maldição ou magia semelhante quebra o efeito. A maldição só é descoberta com Identificação ou ao se sintonizar com ela."
+ },
+ "Sovereign Glue": {
+  "nome": "Cola Soberana",
+  "desc": "Adesivo leitoso que une dois objetos de forma permanente: cada onça cobre uma área de 30 cm x 30 cm e endurece em 1 minuto, e a ligação só se desfaz com Solvente Universal, Óleo da Etereidade ou a magia Desejo. Precisa ser guardada em recipiente revestido por dentro com Óleo da Escorregadio e é encontrada com 1d6 + 1 onças; não exige sintonia."
+ },
+ "Ring of Water Walking": {
+  "nome": "Anel de Caminhar na Água",
+  "desc": "Enquanto usa este anel, você pode ficar de pé e se deslocar sobre qualquer superfície líquida como se fosse terreno firme. Não exige sintonia."
+ },
+ "Quaal's Feather Token, Bird": {
+  "nome": "Símbolo de Pena de Quaal, Pássaro",
+  "desc": "Uso único: com uma ação, você lança a pena para o alto e ela vira uma ave gigantesca e colorida com as estatísticas de um roc, que segue ordens simples mas não ataca. A ave carrega até 225 kg em velocidade máxima (cerca de 25 km/h, até 230 km por dia, descansando 1 hora a cada 3 de voo) ou 450 kg na metade dessa velocidade. Ela some ao chegar a 0 PV, ao completar a distância máxima do dia ou quando você a dispensa com uma ação; não exige sintonia."
+ },
+ "Shield of Missile Attraction": {
+  "nome": "Escudo de Atração de Projéteis",
+  "desc": "Exige sintonia. Empunhado, concede resistência ao dano de ataques com armas à distância. É amaldiçoado: ao se sintonizar, você fica preso à maldição (tirar o escudo não adianta) até receber Remover Maldição ou magia semelhante, e todo ataque com arma à distância feito contra alguém a até 3 m de você passa a ter você como alvo."
+ },
+ "Arrow-Catching Shield": {
+  "nome": "Escudo Apanhador de Flechas",
+  "desc": "Requer sintonia. Empunhando este escudo, você soma +2 à CA contra ataques à distância, além do bônus comum de escudo. Quando alguém a até 1,5 m de você for alvo de um ataque à distância, você pode usar sua reação para tomar o lugar dele como alvo."
+ },
+ "Flame Tongue": {
+  "nome": "Língua de Fogo",
+  "desc": "Espada mágica que exige sintonia. Com uma ação bônus e a palavra de comando, a lâmina se incendeia e passa a causar 2d6 de dano de fogo extra a cada acerto, além de iluminar 12 m com luz plena e mais 12 m com penumbra. O fogo se apaga se você repetir a palavra com outra ação bônus, embainhar a espada ou soltá-la."
+ },
+ "Armor of Fire Resistance": {
+  "nome": "Armadura de Resistência a Fogo",
+  "desc": "Enquanto estiver vestindo esta armadura, você tem resistência a dano de fogo. Exige sintonia."
+ },
+ "Portable Hole": {
+  "nome": "Buraco Portátil",
+  "desc": "Com uma ação, você estende o pano negro (1,8 m de diâmetro) sobre uma superfície sólida e abre um poço extradimensional de 3 m de profundidade; outra ação o dobra de volta, guardando o que houver dentro sem peso algum. Quem fica preso com ele fechado pode usar uma ação para tentar sair com um teste de Força CD 10, surgindo a até 1,5 m do pano, e começa a sufocar após 10 minutos. Colocá-lo dentro de uma Bolsa Devoradora ou item extradimensional parecido destrói os dois e lança quem estiver a até 3 m para um ponto aleatório do Plano Astral."
+ },
+ "Potion of Frost Giant Strength": {
+  "nome": "Poção de Força do Gigante do Gelo",
+  "desc": "Ao beber, sua Força passa a ser 23 durante 1 hora. Não tem efeito se a sua Força já for 23 ou maior. Não exige sintonia."
+ },
+ "Belt of Stone Giant Strength": {
+  "nome": "Cinturão da Força do Gigante de Pedra",
+  "desc": "Exige sintonia. Enquanto usa o cinturão, seu valor de Força passa a ser 23; se sua Força natural já for 23 ou mais, o item não traz benefício."
+ },
+ "Ring of Protection": {
+  "nome": "Anel de Proteção",
+  "desc": "Enquanto estiver usando este anel, seu portador recebe +1 na CA e +1 em todos os testes de resistência. Requer sintonia."
+ },
+ "Wand of Polymorph": {
+  "nome": "Varinha da Metamorfose",
+  "desc": "Exige sintonia com um conjurador. Possui 7 cargas; com uma ação, gaste 1 carga para conjurar Metamorfose (CD 15), e a varinha recupera 1d6 + 1 cargas ao amanhecer. Se a última carga for usada, role 1d20: com 1, ela vira cinzas e é destruída."
+ },
+ "Necklace of Fireballs": {
+  "nome": "Colar de Bolas de Fogo",
+  "desc": "O colar tem 1d6 + 3 contas. Com uma ação, você arranca uma conta e a arremessa a até 18 m, onde ela explode como Bola de Fogo de 3º círculo (CD 15). Na mesma ação, é possível lançar várias contas ou o colar inteiro, e cada conta além da primeira eleva o círculo da magia em 1; não exige sintonia."
+ },
+ "Manual of Gainful Exercise": {
+  "nome": "Manual de Exercícios Físicos",
+  "desc": "Quem dedicar 48 horas de estudo e prática ao livro, num intervalo de até 6 dias, ganha +2 em Força e também no valor máximo desse atributo. Depois do uso, o manual fica sem magia por cem anos. Não exige sintonia."
+ },
+ "+1 Rod of the Pact Keeper": {
+  "nome": "Bastão do Guardião do Pacto +1",
+  "desc": "Exige sintonia com um bruxo. Empunhando o bastão, você soma +1 às jogadas de ataque com magia e à CD dos testes de resistência das suas magias de bruxo. Uma vez por descanso longo, pode usar uma ação para recuperar um espaço de magia de bruxo."
+ },
+ "Tome of Leadership and Influence": {
+  "nome": "Tomo de Liderança e Influência",
+  "desc": "Quem dedicar 48 horas de estudo e prática ao livro, num intervalo de até 6 dias, ganha +2 em Carisma, e o valor máximo desse atributo também sobe 2. Depois disso, o tomo fica sem magia por cem anos. Não exige sintonia."
+ },
+ "Quaal's Feather Token, Anchor": {
+  "nome": "Pena de Quaal, Âncora",
+  "desc": "Item de uso único que não exige sintonia. Com uma ação, você encosta a pena em um barco ou navio, e a embarcação fica totalmente imóvel por 24 horas, sem que nada consiga deslocá-la. Encostar a pena de novo encerra o efeito antes do prazo, e a pena some assim que o efeito termina."
+ },
+ "Potion of Stone Giant Strength": {
+  "nome": "Poção de Força do Gigante de Pedra",
+  "desc": "Ao ser bebida, eleva a Força para 23 durante 1 hora. Quem já tem Força 23 ou mais não ganha nada com ela. Não exige sintonia."
+ },
+ "Sword of Answering (Last Quip)": {
+  "nome": "Espada da Resposta (Última Tirada)",
+  "desc": "Espada longa que concede +3 nas jogadas de ataque e dano; exige sintonia com uma criatura caótica e neutra. Quando uma criatura ao seu alcance causa dano a você, você pode usar sua reação para atacá-la com a espada, com vantagem, e o dano desse ataque ignora qualquer resistência ou imunidade a dano do alvo."
+ },
+ "Potion of Superior Healing": {
+  "nome": "Poção de Cura Superior",
+  "desc": "Ao ser bebida, restaura 8d4 + 8 PV de quem a consumir. Item consumível que se esgota após o uso e não requer sintonia."
+ },
+ "Potion of Mind Reading": {
+  "nome": "Poção de Leitura da Mente",
+  "desc": "Ao beber esta poção, você recebe os efeitos da magia Detectar Pensamentos, com CD 13 para o teste de resistência. Não requer sintonia."
+ },
+ "Spell Scroll (5th Level)": {
+  "nome": "Pergaminho de Magia (5º Círculo)",
+  "desc": "Guarda uma magia de 5º círculo que só pode ser usada por quem a tem na lista de magias da sua classe; a conjuração leva o tempo normal, dispensa componentes materiais e consome o pergaminho, que só se perde se a magia for de fato lançada. Se o círculo estiver acima do que você consegue conjurar, é preciso passar num teste com seu atributo de conjuração (CD 15), ou a magia some sem efeito. A magia usa CD 17 e bônus de ataque +9, e um mago pode copiá-la para o grimório com um teste de Inteligência (Arcanismo) CD 15, destruindo o pergaminho seja qual for o resultado."
+ },
+ "Amulet of the Planes": {
+  "nome": "Amuleto dos Planos",
+  "desc": "Exige sintonia. Com uma ação, você escolhe um local conhecido em outro plano e faz um teste de Inteligência CD 15: se passar, conjura Viagem Planar até lá. Se falhar, você e todas as criaturas e objetos a até 4,5 m são levados a um destino aleatório (role d100: 1–60, um ponto qualquer do plano escolhido; 61–100, um plano sorteado)."
+ },
+ "Gem of Brightness": {
+  "nome": "Gema do Brilho",
+  "desc": "Prisma com 50 cargas que não se recuperam; com uma ação e uma palavra de comando, ilumina 9 m com luz plena e mais 9 m de penumbra sem gastar cargas, dispara um raio contra uma criatura visível a até 18 m (1 carga) ou emite um cone de 9 m (5 cargas). Quem for atingido pelo raio ou pelo cone faz teste de resistência de Constituição CD 15 ou fica cego por 1 minuto, repetindo o teste ao fim de cada turno. Sem cargas, vira uma joia comum de 50 po; não exige sintonia."
+ },
+ "Adamantine Armor": {
+  "nome": "Armadura de Adamante",
+  "desc": "Armadura média ou pesada (exceto de peles) reforçada com adamante. Enquanto você a veste, acertos críticos contra você contam como acertos normais. Não exige sintonia."
+ },
+ "Potion of Acid Resistance": {
+  "nome": "Poção de Resistência a Ácido",
+  "desc": "Ao beber esta poção, você ganha resistência a dano ácido durante 1 hora. Não exige sintonia e é consumida no uso."
+ },
+ "Staff of Swarming Insects": {
+  "nome": "Cajado dos Insetos Enxameantes",
+  "desc": "Exige sintonia de bardo, clérigo, druida, feiticeiro, bruxo ou mago; tem 10 cargas e recupera 1d6+4 ao amanhecer (ao gastar a última, role 1d20: com 1, um enxame devora o cajado). Com uma ação, gaste cargas para conjurar Inseto Gigante (4) ou Praga de Insetos (5) usando sua CD de magia. Por 1 carga, também com uma ação, uma nuvem de insetos inofensivos cobre um raio de 9 m centrado em você por 10 minutos, deixando a área densamente obscurecida para todos menos você, até que um vento forte a disperse."
+ },
+ "Figurine of Wondrous Power, Ebony Fly": {
+  "nome": "Estatueta de Poder Maravilhoso, Mosca de Ébano",
+  "desc": "Com uma ação e a palavra de comando, você arremessa a estatueta a um ponto livre a até 18 m e ela vira uma mosca gigante amistosa por até 12 horas, que obedece às suas ordens e pode servir de montaria. Volta a ser estatueta ao fim da duração, ao cair a 0 PV ou se você repetir a palavra tocando-a com uma ação, e depois só pode ser usada de novo após 2 dias. Não exige sintonia."
+ },
+ "Bracers of Archery": {
+  "nome": "Braçadeiras do Arqueiro",
+  "desc": "Usando estas braçadeiras, você se torna proficiente com arco longo e arco curto e soma +2 às jogadas de dano dos ataques à distância feitos com esses arcos. Requer sintonia."
+ },
+ "Efreeti Chain": {
+  "nome": "Cota de Malha Efreeti",
+  "desc": "Cota de malha lendária que exige sintonia: concede +3 na CA, imunidade a dano de fogo e a capacidade de falar e entender Primordial. O usuário também pode andar e ficar parado sobre rocha derretida como se fosse chão firme."
+ },
+ "Potion of Thunder Resistance": {
+  "nome": "Poção de Resistência a Trovejante",
+  "desc": "Ao beber esta poção, você ganha resistência a dano trovejante por 1 hora. É consumida ao ser usada e não exige sintonia."
+ },
+ "Potion of Cold Resistance": {
+  "nome": "Poção de Resistência ao Frio",
+  "desc": "Ao beber esta poção, você ganha resistência a dano de frio por 1 hora. Não exige sintonia e é consumida ao ser usada."
+ },
+ "Robe of Scintillating Colors": {
+  "nome": "Manto das Cores Cintilantes",
+  "desc": "Exige sintonia. Possui 3 cargas e recupera 1d3 ao amanhecer; com uma ação e 1 carga, o manto passa a brilhar em cores ofuscantes até o fim do seu próximo turno, emitindo luz plena em 9 m e penumbra por mais 9 m. Enquanto isso, quem pode ver você tem desvantagem nos ataques contra você, e cada criatura na luz plena que o veja no momento da ativação precisa passar num teste de resistência de Sabedoria CD 15 ou fica atordoada até o efeito acabar."
+ },
+ "Wand of Fear": {
+  "nome": "Varinha do Medo",
+  "desc": "Exige sintonia; tem 7 cargas e recupera 1d6+1 ao amanhecer (ao gastar a última, role 1d20: com 1 ela vira cinzas). Com uma ação e 1 carga, ordena a uma criatura que fuja ou se prostre, como a magia Comando (CD 15); com 2 cargas, projeta um cone de luz âmbar de 18 m e quem falhar num teste de resistência de Sabedoria CD 15 fica amedrontado por 1 minuto. Enquanto amedrontada, a criatura gasta os turnos se afastando ao máximo (só pode Disparar, tentar se soltar ou, sem saída, Esquivar), não se aproxima a menos de 9 m de você, não usa reações e repete o teste no fim de cada turno."
+ },
+ "Amulet of Proof against Detection and Location": {
+  "nome": "Amuleto à Prova de Detecção e Localização",
+  "desc": "Enquanto o usa, você fica oculto de toda magia de adivinhação: essas magias não podem ter você como alvo, e sensores mágicos de vidência não conseguem enxergá-lo. Requer sintonia."
+ },
+ "Ring of Earth Elemental Command": {
+  "nome": "Anel de Comando dos Elementais da Terra",
+  "desc": "Exige sintonia. Você tem vantagem nos ataques contra elementais do Plano da Terra, eles têm desvantagem contra você, você fala e entende terrano e ignora terreno difícil de pedras, entulho ou terra; o anel tem 5 cargas (recupera 1d4+1 ao amanhecer, CD 17) e 2 delas conjuram Dominar Monstro num elemental da terra. Depois de ajudar a matar um elemental da terra, você ganha resistência a ácido, atravessa terra e rocha sólidas como terreno difícil (se terminar o turno dentro delas, é expelido para o último espaço livre que ocupou) e pode gastar cargas em Moldar Rochas (2), Pele de Pedra (3) ou Muralha de Pedra (3)."
+ },
+ "Horseshoes of Speed": {
+  "nome": "Ferraduras da Velocidade",
+  "desc": "Conjunto de quatro ferraduras de ferro que só funcionam com as quatro presas aos cascos de um cavalo ou criatura semelhante. Assim equipada, a montaria ganha +9 m de deslocamento de caminhada. Não exige sintonia."
+ },
+ "Axe of the Dwarvish Lords": {
+  "nome": "Machado dos Senhores Anões",
+  "desc": "Artefato que exige sintonia: machado de batalha +3 que também funciona como Cinto do Povo Anão, Arremessador Anão e Espada Afiada. Se você for anão, ganha imunidade a dano de veneno, +18 m de visão no escuro e proficiência com ferramentas de ferreiro, cervejeiro e pedreiro. Uma vez por amanhecer, com uma ação, conjura Conjurar Elemental para invocar um elemental da terra; a cada 3 dias, com uma ação e tocando uma obra de pedra anã, conjura Teletransporte, sem risco de falha se o destino for subterrâneo. Maldição: um não anão sintonizado vai ganhando aparência de anão ao longo de sete dias, efeito que só é desfeito por magias como Remover Maldição ou Restauração Maior."
+ },
+ "Armor of Thunder Resistance": {
+  "nome": "Armadura de Resistência a Trovão",
+  "desc": "Enquanto estiver vestindo esta armadura, você tem resistência a dano trovejante. Exige sintonia."
+ },
+ "Vicious Weapon": {
+  "nome": "Arma Cruel",
+  "desc": "Ao tirar 20 no dado de ataque com esta arma mágica, o alvo sofre 7 de dano adicional do mesmo tipo da arma (o SRD indica 2d6, valor considerado um erro). Não exige sintonia."
+ },
+ "Gloves of Thievery": {
+  "nome": "Luvas do Ladrão",
+  "desc": "Luvas que ficam invisíveis enquanto vestidas. Quem as usa recebe +5 nos testes de Destreza (Prestidigitação) e nos testes de Destreza para abrir fechaduras. Não exige sintonia."
+ },
+ "Efreeti Bottle": {
+  "nome": "Garrafa do Efreeti",
+  "desc": "Com uma ação você destampa a garrafa e, ao fim do seu turno, um efreeti surge a até 9 m de você; na primeira abertura, o Mestre rola d100 para definir o resultado. Com 01-10 ele luta contra você por 5 rodadas e some; com 11-90 ele obedece por 1 hora e volta à garrafa (que só pode ser reaberta após 24 horas), repetindo isso por três usos no total e fugindo na quarta abertura; com 91-00 ele concede três magias Desejo e desaparece após o último desejo ou após 1 hora. Quando o efreeti vai embora de vez, a garrafa perde a magia; não requer sintonia."
+ },
+ "Ring of Evasion": {
+  "nome": "Anel de Evasão",
+  "desc": "Exige sintonia. Possui 3 cargas e recupera 1d3 delas a cada amanhecer. Se você falhar em um teste de resistência de Destreza usando o anel, pode gastar sua reação e 1 carga para transformar a falha em sucesso."
+ },
+ "Ioun Stone, Protection": {
+  "nome": "Pedra Ioun da Proteção",
+  "desc": "Enquanto este prisma rosa-empoeirado gira em torno da sua cabeça, você recebe +1 na CA; exige sintonia. Lançá-la em órbita ou guardá-la custa uma ação, e outra criatura só a arranca com um ataque contra CA 24 ou um teste de Destreza (Acrobacia) CD 24. A pedra tem CA 24, 10 PV e resistência a todo dano."
+ },
+ "Winged Boots": {
+  "nome": "Botas Aladas",
+  "desc": "Exige sintonia. Calçadas, concedem deslocamento de voo igual ao seu deslocamento de caminhada, por até 4 horas no total, divididas em quantos voos quiser (cada um gasta no mínimo 1 minuto). Se o tempo acabar em pleno ar, você desce 9 m por rodada até tocar o chão, e as botas recuperam 2 horas de voo a cada 12 horas sem uso."
+ },
+ "Potion of Longevity": {
+  "nome": "Poção da Longevidade",
+  "desc": "Ao beber, você rejuvenesce 1d6 + 6 anos de idade física, sem ficar com menos de 13 anos. A cada nova dose consumida depois da primeira, acumula-se 10% de chance de o efeito se inverter e você envelhecer 1d6 + 6 anos."
+ },
+ "Belt of Frost Giant Strength": {
+  "nome": "Cinto da Força do Gigante do Gelo",
+  "desc": "Enquanto você usa este cinto, sua Força passa a ser 23; se o seu valor natural já for 23 ou maior, ele não tem efeito. Requer sintonia."
+ },
+ "Berserker Axe": {
+  "nome": "Machado do Berserker",
+  "desc": "Machado mágico +1 nos ataques e no dano que, sob sintonia, aumenta seus PV máximos em 1 por nível de personagem. Amaldiçoado: você não se separa dele e tem desvantagem ao atacar com outras armas se houver inimigo percebido a até 18 m. Sempre que uma criatura hostil lhe causar dano, faça um teste de resistência de Sabedoria CD 15; se falhar, entra em fúria e passa a atacar com o machado a criatura mais próxima a cada turno, até começar um turno sem ninguém que possa ver ou ouvir a até 18 m."
+ },
+ "Potion of Animal Friendship": {
+  "nome": "Poção de Amizade Animal",
+  "desc": "Ao beber a poção, você passa a poder conjurar Amizade Animal à vontade (CD 13 para o teste de resistência) durante 1 hora. Não exige sintonia."
+ },
+ "Sun Blade": {
+  "nome": "Lâmina Solar",
+  "desc": "Cabo de espada longa que, com uma ação bônus, cria ou desfaz uma lâmina de radiância com acuidade; conta como espada longa ou curta para proficiência e concede +2 nos ataques e no dano, que passa a ser radiante, com 1d8 radiante extra contra mortos-vivos. A lâmina emite luz solar (9 m de luz plena e mais 9 m de penumbra), e com uma ação você ajusta cada faixa em 1,5 m, entre 3 m e 9 m. Requer sintonia."
+ },
+ "Manual of Iron Golems": {
+  "nome": "Manual do Golem de Ferro",
+  "desc": "Só um conjurador com pelo menos dois espaços de magia de 5º círculo consegue usar este livro; qualquer outra criatura que tente lê-lo sofre 6d6 de dano psíquico. Com 120 dias de trabalho contínuo (descansando no máximo 8 horas por dia) e 100.000 po em materiais, você constrói um golem de ferro, e o manual se consome em chamas ao final. Espalhar as cinzas sobre o golem o anima, e ele passa a obedecer aos seus comandos falados."
+ },
+ "Saddle of the Cavalier": {
+  "nome": "Sela do Cavaleiro",
+  "desc": "Enquanto estiver consciente e montado com esta sela, ninguém consegue derrubá-lo da montaria contra a sua vontade. Além disso, qualquer ataque feito contra a montaria tem desvantagem. Não exige sintonia."
+ },
+ "Helm of Teleportation": {
+  "nome": "Elmo do Teletransporte",
+  "desc": "Exige sintonia. Possui 3 cargas; usando-o, você gasta 1 carga e uma ação para conjurar Teletransporte. Recupera 1d3 cargas a cada amanhecer."
+ },
+ "Scroll of Protection from Aberrations": {
+  "nome": "Pergaminho de Proteção contra Aberrações",
+  "desc": "Com uma ação, você lê o pergaminho e fica no centro de um cilindro invisível de 1,5 m de raio e 3 m de altura que acompanha você por 5 minutos; aberrações não podem entrar nele nem afetar nada em seu interior. O efeito se encerra se você se mover de modo a colocar uma aberração dentro da área, e uma criatura pode usar uma ação para fazer um teste de Carisma CD 15 e, se passar, deixa de ser barrada."
+ },
+ "Ring of Invisibility": {
+  "nome": "Anel da Invisibilidade",
+  "desc": "Exige sintonia. Com uma ação, quem usa o anel fica invisível junto com tudo o que veste e carrega. O efeito dura até a pessoa atacar, conjurar uma magia, tirar o anel ou gastar uma ação bônus para voltar a ser vista."
+ },
+ "Ioun Stone, Regeneration": {
+  "nome": "Pedra Ioun da Regeneração",
+  "desc": "Exige sintonia. Com uma ação você lança este fuso branco perolado ao ar e ele passa a orbitar sua cabeça; a cada hora completa em órbita, você recupera 15 PV, desde que tenha pelo menos 1 PV. Outra criatura só a tira de você com uma ação e um ataque contra CA 24 ou um teste de Destreza (Acrobacia) CD 24; a pedra tem CA 24, 10 PV e resistência a todo dano, e você pode recolhê-la com uma ação."
+ },
+ "Crystal Ball": {
+  "nome": "Bola de Cristal",
+  "desc": "Esfera de cristal com cerca de 15 cm de diâmetro que exige sintonia. Enquanto a toca, você pode conjurar Vidência por meio dela, com CD 17 para o teste de resistência."
+ },
+ "Scroll of Protection from Celestials": {
+  "nome": "Pergaminho de Proteção contra Celestiais",
+  "desc": "Com uma ação de leitura, você fica no centro de um cilindro invisível de 1,5 m de raio e 3 m de altura que se move com você e, por 5 minutos, impede celestiais de entrar nele ou afetar o que está dentro; o efeito termina se você se mover de modo a colocar um celestial dentro da área. Um celestial pode usar uma ação para fazer um teste de Carisma CD 15 e, se passar, deixa de ser barrado. Uso único, não requer sintonia."
+ },
+ "Hat of Disguise": {
+  "nome": "Chapéu do Disfarce",
+  "desc": "Exige sintonia. Usando o chapéu, você pode gastar uma ação para conjurar Disfarçar-se quantas vezes quiser, sem gastar cargas. O disfarce se desfaz assim que o chapéu sai da sua cabeça."
+ },
+ "Rod of Alertness": {
+  "nome": "Bastão da Vigilância",
+  "desc": "Exige sintonia. Empunhando o bastão, você tem vantagem em testes de Sabedoria (Percepção) e de iniciativa, e pode usar uma ação para conjurar à vontade Detectar o Bem e Mal, Detectar Magia, Detectar Veneno e Doença ou Ver o Invisível. Uma vez por dia (recarrega ao amanhecer), com uma ação você o finca no chão e ele ilumina 18 m com luz plena e mais 18 m com penumbra por 10 minutos (ou até alguém usar uma ação para arrancá-lo); na luz plena, você e seus aliados ganham +1 na CA e nos testes de resistência e percebem a posição de inimigos invisíveis que também estejam nela."
+ },
+ "Stone of Controlling Earth Elementals": {
+  "nome": "Pedra de Controle de Elementais da Terra",
+  "desc": "Com a pedra encostada no chão, você pode usar uma ação e dizer a palavra de comando para invocar um elemental da terra, como se conjurasse Conjurar Elemental. Só pode ser usada uma vez por dia, voltando a funcionar no amanhecer seguinte. Não exige sintonia."
+ },
+ "Staff of the Python": {
+  "nome": "Cajado da Píton",
+  "desc": "Requer sintonia de clérigo, druida ou bruxo. Com uma ação e a palavra de comando, você joga o cajado no chão a até 3 m e ele vira uma cobra constritora gigante sob seu controle, com iniciativa própria; você a comanda mentalmente a até 18 m (dando ordens específicas ou gerais) e pode desfazer a transformação com uma ação bônus. Se a cobra chegar a 0 PV, o cajado se quebra e é destruído; se voltar à forma de cajado antes disso, ela recupera todos os PV."
+ },
+ "Candle of Invocation": {
+  "nome": "Vela da Invocação",
+  "desc": "Exige sintonia. Consagrada a uma divindade e com a tendência dela, a vela é acesa com uma ação e queima por até 4 horas no total (pode ser apagada e reacesa, gastando o tempo em minutos), emitindo penumbra em 9 m de raio; criaturas na luz com a mesma tendência têm vantagem em jogadas de ataque, testes de resistência e testes de atributo, e clérigos ou druidas com essa tendência conjuram suas magias preparadas de 1º círculo sem gastar espaço. Em vez disso, ao acendê-la pela primeira vez, você pode conjurar Portal, o que destrói a vela."
+ },
+ "Spellguard Shield": {
+  "nome": "Escudo Guarda-Magia",
+  "desc": "Escudo muito raro que exige sintonia. Enquanto você o empunha, tem vantagem em testes de resistência contra magias e outros efeitos mágicos, e quem faz ataques mágicos contra você sofre desvantagem."
+ },
+ "Potion of Greater Healing": {
+  "nome": "Poção de Cura Maior",
+  "desc": "Ao beber esta poção (uma ação), a criatura recupera 4d4 + 4 PV. Item consumível de uso único; não exige sintonia."
+ },
+ "Armor of Vulnerability (Slashing)": {
+  "nome": "Armadura da Vulnerabilidade (Cortante)",
+  "desc": "Armadura de placas que concede resistência a dano cortante e exige sintonia. Amaldiçoada: ao se sintonizar, você passa a ter vulnerabilidade a dano de concussão e perfurante, e tirar a armadura não resolve; só Remover Maldição ou magia semelhante encerra o efeito. A maldição só é revelada pela magia Identificação ou no momento da sintonia."
+ },
+ "Crystal Ball of Telepathy": {
+  "nome": "Bola de Cristal da Telepatia",
+  "desc": "Exige sintonia. Tocando a esfera, você conjura Vidência (CD 17) e, enquanto ela durar, pode falar telepaticamente com criaturas que vê a até 9 m do sensor. Uma vez por amanhecer, com uma ação, impõe Sugestão (CD 17) a uma delas através do sensor, sem precisar de concentração, mas o efeito termina junto com a Vidência."
+ },
+ "Eyes of Minute Seeing": {
+  "nome": "Olhos da Visão Minuciosa",
+  "desc": "Lentes de cristal usadas sobre os olhos que aguçam muito a visão de perto, até 30 cm. Com elas, você tem vantagem em testes de Inteligência (Investigação) baseados na visão para examinar objetos ou vasculhar áreas dentro desse alcance. Não exige sintonia."
+ },
+ "Iron Bands of Bilarro": {
+  "nome": "Faixas de Ferro de Bilarro",
+  "desc": "Com uma ação e a palavra de comando, você arremessa a esfera contra uma criatura Enorme ou menor a até 18 m (ataque à distância com Destreza + proficiência); se acertar, o alvo fica impedido até você soltá-lo com uma ação bônus. Qualquer criatura pode usar uma ação para tentar romper as faixas com um teste de Força CD 20, destruindo o item se tiver sucesso; quem falhar não pode tentar de novo por 24 horas. Uso único, recarrega ao amanhecer; não exige sintonia."
+ },
+ "Broom of Flying": {
+  "nome": "Vassoura Voadora",
+  "desc": "Ao montar na vassoura e dizer a palavra de comando, ela flutua e voa com deslocamento de 15 m, levando até 180 kg (acima de 90 kg, o voo cai para 9 m); ela deixa de flutuar quando você pousa. Com outra palavra de comando, você pode enviá-la sozinha a um lugar conhecido a até 1,6 km e chamá-la de volta se ainda estiver nesse alcance. Não exige sintonia."
+ },
+ "Rod of Lordly Might": {
+  "nome": "Bastão do Poder Senhorial",
+  "desc": "Exige sintonia. Funciona como uma maça +3, e com uma ação bônus você aperta um de seis botões para transformá-lo em Língua de Fogo, machado de batalha +3, lança +3, escada-poste de até 15 m, aríete (+10 em testes de Força para derrubar barreiras) ou de volta à forma normal, que aponta o norte e indica sua profundidade ou altitude. Uma vez por amanhecer, cada um destes poderes: ao acertar um ataque corpo a corpo, causar 4d6 de dano necrótico extra e recuperar metade em PV (resistência de Constituição CD 17) ou paralisar o alvo por 1 minuto (resistência de Força CD 17); e, com uma ação, amedrontar por 1 minuto as criaturas que você vê a até 9 m (resistência de Sabedoria CD 17), que repetem o teste ao fim de cada turno."
+ },
+ "+2 Weapon (no damage)": {
+  "nome": "Arma +2",
+  "desc": "Esta arma mágica concede bônus de +2 nas jogadas de ataque feitas com ela (sem bônus no dano). Não requer sintonia."
+ },
+ "Ring of Water Elemental Command": {
+  "nome": "Anel de Comando dos Elementais da Água",
+  "desc": "Exige sintonia. Você tem vantagem nos ataques contra elementais do Plano da Água, eles têm desvantagem contra você, você anda sobre líquidos como se fossem chão firme e fala Aquan; o anel tem 5 cargas (recupera 1d4+1 ao amanhecer, CD 17) e com 2 delas conjura Dominar Monstro em um elemental da água. Depois de ajudar a matar um elemental da água, você também respira submerso, ganha deslocamento de natação igual ao de caminhada e pode conjurar Criar ou Destruir Água (1 carga), Tempestade de Gelo (2), Controlar a Água (3) ou Muralha de Gelo (3)."
+ },
+ "Ring of Swimming": {
+  "nome": "Anel da Natação",
+  "desc": "Enquanto estiver usando este anel, você ganha deslocamento de natação de 12 m. Não exige sintonia."
+ },
+ "Hand of Vecna": {
+  "nome": "Mão de Vecna",
+  "desc": "Artefato que exige sintonia (é preciso cortar a própria mão esquerda e enxertá-la no lugar): torna sua tendência neutra e má, eleva sua Força a 20 e faz seus ataques corpo a corpo com ela, de arma ou de magia, causarem 2d8 de dano de frio extra. Tem 8 cargas (recupera 1d4+4 ao amanhecer) para conjurar, com uma ação e CD 18, Sono (1), Lentidão (2), Teleporte (3) ou Dedo da Morte (5), mas a cada uso ela lança Sugestão (CD 18) em você exigindo um ato maligno. Junto ao Olho de Vecna, concede imunidade a doença e veneno, impede que você seja surpreendido, regenera 1d10 PV no início do turno, permite um toque que derrete ossos (CD 18 de Constituição ou cai a 0 PV) e conjurar Desejo a cada 30 dias."
+ },
+ "Sword of Answering (Squelcher)": {
+  "nome": "Espada da Resposta (Silenciadora)",
+  "desc": "Espada longa que concede +3 nas jogadas de ataque e dano e exige sintonia de uma criatura neutra e má. Enquanto a empunha, quando uma criatura ao seu alcance lhe causa dano, você pode usar sua reação para atacá-la corpo a corpo com vantagem, e o dano desse golpe ignora resistências e imunidades do alvo."
+ },
+ "Blackrazor": {
+  "nome": "Blackrazor",
+  "desc": "Espada grande senciente (caótica neutra) que concede +3 nas jogadas de ataque e dano e exige sintonia de criatura não leal; ao reduzir a 0 PV uma criatura que não seja constructo nem morto-vivo, ela mata o alvo e consome sua alma (só Desejo o traz de volta), dando a você PV temporários iguais ao máximo de PV da vítima por 24 horas e, enquanto durarem com a espada em mãos, vantagem em ataques, testes de resistência e testes de atributo. Empunhando-a, você percebe criaturas vivas a até 18 m, não pode ficar enfeitiçado nem amedrontado, e uma vez por dia a espada conjura Velocidade em você e mantém a concentração por conta própria. Acertar um morto-vivo causa 1d10 de dano necrótico a você e cura o alvo em 1d10; se esse dano o levar a 0 PV, ela devora sua alma, e passar três dias sem consumir almas gera conflito com o portador."
+ },
+ "Spell Scroll (8th Level)": {
+  "nome": "Pergaminho de Magia (8º Círculo)",
+  "desc": "Contém uma magia de 8º círculo que só pode ser usada por quem a tem na lista da própria classe; ela é conjurada no tempo normal, sem componentes materiais, com CD 18 e +10 de ataque, e o pergaminho vira pó após o uso (se a conjuração for interrompida, ele não se perde). Quem ainda não conjura magias desse círculo precisa passar num teste do atributo de conjuração contra CD 18, ou a magia some sem efeito. Um mago pode copiá-la para o grimório com um teste de Inteligência (Arcanismo) CD 18, mas o pergaminho é destruído de qualquer forma."
+ },
+ "Quiver of Ehlonna": {
+  "nome": "Aljava de Ehlonna",
+  "desc": "Aljava com três compartimentos extradimensionais que nunca passa de 1 kg: o menor guarda até 60 flechas, virotes ou munições parecidas, o médio até 18 azagaias e o maior até 6 objetos longos, como arcos, bordões ou lanças. Sacar qualquer item dela é tão rápido quanto de uma aljava ou bainha comum. Não exige sintonia."
+ },
+ "+1 Armor": {
+  "nome": "Armadura +1",
+  "desc": "Enquanto estiver vestindo esta armadura, você soma +1 à sua CA. Item raro que não exige sintonia."
+ },
+ "Instrument of the Bards, Mac-Fuirmidh Cittern": {
+  "nome": "Instrumento dos Bardos, Cistre de Mac-Fuirmidh",
+  "desc": "Exige sintonia com um bardo; quem tocar sem estar sintonizado faz um teste de resistência de Sabedoria CD 15 e, se falhar, sofre 2d4 de dano psíquico. Com uma ação, você toca o cistre para conjurar Voo, Invisibilidade, Levitação, Proteção contra o Bem e o Mal, Pele de Árvore, Curar Ferimentos ou Névoa Obscurecente, cada uma uma vez até o próximo amanhecer, usando seu atributo e sua CD de conjuração. Tocá-lo ao conjurar uma magia com componente somático ou material que enfeitice os alvos impõe desvantagem no teste de resistência deles."
+ },
+ "Green Dragon Scale Mail": {
+  "nome": "Cota de Escamas de Dragão Verde",
+  "desc": "Exige sintonia. Vestida, concede +1 na CA, resistência a dano de veneno e vantagem em testes de resistência contra o sopro e a Presença Aterradora de dragões. Uma vez por dia (recupera ao amanhecer), com uma ação, você sente a direção e a distância do dragão verde mais próximo num raio de 48 km."
+ },
+ "Amulet of Health": {
+  "nome": "Amuleto da Saúde",
+  "desc": "Enquanto o portador usa este amuleto, seu valor de Constituição passa a ser 19. Não traz benefício a quem já tem Constituição 19 ou maior. Requer sintonia."
+ },
+ "Wand of Orcus": {
+  "nome": "Varinha de Orcus",
+  "desc": "Artefato senciente e caótico e mau que exige sintonia: ao tentar se sintonizar, faça um teste de resistência de Constituição CD 17; se passar, sofre 10d6 de dano necrótico, e se falhar, morre e se ergue como zumbi. Funciona como uma maça +3 que causa 2d12 de dano necrótico extra e concede +3 na CA enquanto empunhada; com uma ação, gasta suas 7 cargas (recupera 1d4+3 ao amanhecer, CD 18) para conjurar Animar Mortos ou Falar com os Mortos (1), Praga (2), Círculo da Morte ou Dedo da Morte (3) e Palavra de Poder: Matar (4). Uma vez por dia, com uma ação, invoca esqueletos e zumbis que somam até 500 PV, a até 90 m, e eles obedecem até o próximo amanhecer."
+ },
+ "Folding Boat": {
+  "nome": "Barco Dobrável",
+  "desc": "Caixa de madeira de cerca de 30 cm que flutua e pode guardar objetos; com uma ação e uma palavra de comando, vira um bote de 3 m (vela, remos e âncora, para até quatro criaturas Médias) ou um navio de 7,2 m (convés, cabine e vários remos, para até quinze criaturas Médias), mantendo dentro o que estava guardado. Uma terceira palavra o recolhe de volta à forma de caixa se não houver ninguém a bordo, e os objetos que não couberem ficam do lado de fora. Não exige sintonia."
+ },
+ "Wand of Magic Missiles": {
+  "nome": "Varinha de Mísseis Mágicos",
+  "desc": "Possui 7 cargas e não exige sintonia. Com uma ação, você gasta cargas para conjurar Mísseis Mágicos: 1 carga conjura a magia em 1º círculo e cada carga extra aumenta o círculo em um. Recupera 1d6 + 1 cargas ao amanhecer; se a última carga for usada, role um d20 e, com resultado 1, a varinha vira cinzas."
+ },
+ "Cloak of Arachnida": {
+  "nome": "Manto da Aracnídea",
+  "desc": "Exige sintonia. Vestindo-o, você tem resistência a dano de veneno e deslocamento de escalada igual ao de caminhada, podendo andar por paredes e tetos de cabeça para baixo sem usar as mãos; teias nunca o prendem e você as atravessa como terreno difícil. Uma vez por dia (recarrega ao amanhecer), com uma ação, conjura Teia (CD 13) cobrindo o dobro da área normal."
+ },
+ "Mithral Armor": {
+  "nome": "Armadura de Mithral",
+  "desc": "Versão em mithral de uma armadura média ou pesada (exceto gibão de peles), um metal leve e maleável. Ela perde a exigência de Força e não causa desvantagem em testes de Destreza (Furtividade); camisões de malha e peitorais desse metal podem ser usados sob roupas comuns. Não exige sintonia."
+ },
+ "Sword of Answering (Rebutter)": {
+  "nome": "Espada da Resposta (Refutadora)",
+  "desc": "Espada longa com topázio no pomo que concede +3 nas jogadas de ataque e de dano. Enquanto você a empunha, quando uma criatura ao seu alcance lhe causa dano, você pode usar a reação para atacá-la corpo a corpo com vantagem, e o dano desse golpe ignora imunidades e resistências do alvo. Exige sintonia de uma criatura neutra e boa."
+ },
+ "Potion of Cloud Giant Strength": {
+  "nome": "Poção de Força do Gigante das Nuvens",
+  "desc": "Ao ser bebida, eleva sua Força para 27 durante 1 hora. Se sua Força já for 27 ou mais, não tem efeito. Não exige sintonia."
+ },
+ "Potion of Flying": {
+  "nome": "Poção de Voo",
+  "desc": "Ao beber, você ganha por 1 hora deslocamento de voo igual ao seu deslocamento de caminhada e pode pairar no ar. Se o efeito acabar enquanto você estiver voando, você cai, a menos que tenha outro meio de se manter no ar. Não exige sintonia."
+ },
+ "Wand of Web": {
+  "nome": "Varinha de Teia",
+  "desc": "Exige sintonia com um conjurador. Tem 7 cargas: com uma ação, gaste 1 para conjurar Teia (CD 15); recupera 1d6+1 cargas ao amanhecer. Ao usar a última carga, role um d20: com 1, a varinha vira cinzas e é destruída."
+ },
+ "Sword of Answering (Back Talker)": {
+  "nome": "Espada da Resposta (Réplica)",
+  "desc": "Espada longa lendária que concede +3 nas jogadas de ataque e de dano e exige sintonia de uma criatura caótica e má. Enquanto você a empunha, se uma criatura ao seu alcance lhe causar dano, você pode usar a reação para golpeá-la com vantagem, e o dano desse contra-ataque ignora qualquer resistência ou imunidade do alvo."
+ },
+ "Figurine of Wondrous Power, Serpentine Owl": {
+  "nome": "Estatueta de Poder Maravilhoso, Coruja Serpentina",
+  "desc": "Com uma ação, você diz a palavra de comando e arremessa a estatueta a até 18 m, e ela vira uma coruja gigante amistosa que obedece às suas ordens por até 8 horas, voltando a ser estatueta antes disso se cair a 0 PV ou se você tocá-la e repetir a palavra com uma ação. Enquanto estiverem no mesmo plano, a coruja se comunica com você por telepatia a qualquer distância. Depois de usada, só funciona de novo após 2 dias; não exige sintonia."
+ },
+ "Cloak of Elvenkind": {
+  "nome": "Manto Élfico",
+  "desc": "Exige sintonia. Com o capuz erguido, o manto muda de cor para camuflar o usuário: ele recebe vantagem em testes de Destreza (Furtividade) para se esconder, e quem tenta enxergá-lo sofre desvantagem em testes de Sabedoria (Percepção). Erguer ou baixar o capuz custa uma ação."
+ },
+ "Mantle of Spell Resistance": {
+  "nome": "Manto de Resistência à Magia",
+  "desc": "Quem veste este manto recebe vantagem em todos os testes de resistência contra magias. Exige sintonia."
+ },
+ "Dust of Dryness": {
+  "nome": "Pó da Secura",
+  "desc": "Pacote com 1d6+4 pitadas; com uma ação, espalhar uma pitada sobre água reduz um cubo de 4,5 m de aresta a uma pequena bolinha de peso desprezível, que libera toda a água quando alguém usa uma ação para quebrá-la numa superfície dura. Um elemental feito principalmente de água atingido por uma pitada faz um teste de resistência de Constituição CD 13, sofrendo 10d6 de dano necrótico se falhar ou metade se passar. Não exige sintonia."
+ },
+ "Talisman of Pure Good": {
+  "nome": "Talismã do Bem Supremo",
+  "desc": "Exige sintonia de criatura boa; quem não é bom sofre 6d6 de dano radiante ao tocá-lo (8d6 se for mau) e de novo a cada fim de turno em que o carregar. Clérigos e paladinos bons podem usá-lo como símbolo sagrado e recebem +2 nas jogadas de ataque com magia. Tem 7 cargas que não se recuperam: com uma ação, gaste 1 para abrir uma fenda flamejante sob uma criatura maligna visível no chão a até 36 m, que é destruída sem deixar restos se falhar num teste de resistência de Destreza CD 20; ao gastar a última carga, o talismã se desfaz."
+ },
+ "Ioun Stone, Awareness": {
+  "nome": "Pedra Ioun da Consciência",
+  "desc": "Exige sintonia. Com uma ação você lança este losango azul-escuro ao ar e ele passa a orbitar sua cabeça; enquanto isso, você não pode ser surpreendido. Outra criatura só a tira de você usando uma ação e acertando um ataque contra CA 24 ou passando num teste de Destreza (Acrobacia) CD 24; a pedra tem CA 24, 10 PV e resistência a todo dano, e você pode recolhê-la com uma ação, encerrando o efeito."
+ },
+ "Potion of Radiant Resistance": {
+  "nome": "Poção de Resistência a Radiante",
+  "desc": "Ao beber esta poção, você ganha resistência a dano radiante por 1 hora. É consumível e não exige sintonia."
+ },
+ "Helm of Comprehending Languages": {
+  "nome": "Elmo da Compreensão de Idiomas",
+  "desc": "Enquanto estiver usando este elmo, você pode gastar uma ação para conjurar Compreender Idiomas por meio dele, quantas vezes quiser. Não exige sintonia."
+ },
+ "Horn of Valhalla, Brass": {
+  "nome": "Trompa de Valhalla de Latão",
+  "desc": "Com uma ação, você sopra a trompa e convoca 3d4 + 3 berserkers, espíritos guerreiros de Ysgard, que surgem a até 18 m de você e partem após 1 hora ou ao chegarem a 0 PV; o item só volta a funcionar depois de 7 dias. Se você tiver proficiência com todas as armas simples, os berserkers são amistosos com você e seus aliados e cumprem suas ordens; caso contrário, eles atacam você. Não exige sintonia."
+ },
+ "Robe of Useful Items": {
+  "nome": "Manto dos Itens Úteis",
+  "desc": "Coberto de remendos de pano; como ação, quem o veste arranca um deles e ele vira o objeto ou criatura que representa, como adaga, lanterna furta-fogo acesa, espelho de aço, vara de 3 m, corda de 15 m e saco (dois de cada), além de 4d4 remendos extras escolhidos pelo mestre ou sorteados (ouro, gemas, escada, cavalo, fosso, poções de cura, barco, pergaminho de magia, mastins, porta de ferro, janela etc.). Quando o último remendo sai, vira uma roupa comum. Não exige sintonia."
+ },
+ "Bag of Beans": {
+  "nome": "Saco de Feijões",
+  "desc": "Guarda 3d4 feijões secos. Despejar todo o conteúdo no chão provoca uma explosão de 3 m de raio que atinge até o usuário: cada criatura faz um teste de resistência de Destreza CD 15 e sofre 5d4 de dano de fogo (metade se passar), e objetos inflamáveis soltos pegam fogo. Um feijão plantado e regado gera, 1 minuto depois, um efeito imprevisível sorteado pelo mestre, que vai de cogumelos, gêiseres e árvores frutíferas mágicas a monstros hostis, uma pirâmide com um senhor das múmias ou um pé de feijão gigante."
+ },
+ "Mace of Smiting": {
+  "nome": "Maça da Destruição",
+  "desc": "Maça mágica que concede +1 nas jogadas de ataque e dano, subindo para +3 contra constructos; não exige sintonia. Num 20 natural no ataque, causa 7 de dano de concussão adicional (14 se o alvo for um constructo), e um constructo que fique com 25 PV ou menos após esse dano é destruído na hora."
+ },
+ "Wand of Paralysis": {
+  "nome": "Varinha da Paralisia",
+  "desc": "Exige sintonia com um conjurador. Possui 7 cargas: com uma ação, gaste 1 para disparar um raio azul contra uma criatura visível a até 18 m, que fica paralisada por 1 minuto se falhar num teste de resistência de Constituição CD 15, repetindo o teste ao fim de cada turno dela. Recupera 1d6+1 cargas ao amanhecer; se a última carga for gasta, role um d20 e, com 1, a varinha vira cinzas."
+ },
+ "+2 Weapon": {
+  "nome": "Arma +2",
+  "desc": "Arma mágica rara que concede +2 nas jogadas de ataque e de dano feitas com ela. Não exige sintonia."
+ },
+ "Tentacle Rod": {
+  "nome": "Bastão de Tentáculos",
+  "desc": "Exige sintonia. Com uma ação, cada um dos três tentáculos ataca uma criatura visível a até 4,5 m (+9 para acertar, 1d6 de dano de concussão cada). Se os três atingirem o mesmo alvo, ele faz um teste de resistência de Constituição CD 15; se falhar, por 1 minuto fica com metade do deslocamento, sem reações, com desvantagem em testes de resistência de Destreza e só pode usar uma ação ou uma ação bônus por turno, repetindo o teste ao fim de cada turno seu."
+ },
+ "Armor of Necrotic Resistance": {
+  "nome": "Armadura de Resistência a Necrótico",
+  "desc": "Enquanto estiver vestindo esta armadura e sintonizado com ela, você tem resistência a dano necrótico. Pode ser de qualquer tipo de armadura e exige sintonia."
+ },
+ "Deck of Many Things": {
+  "nome": "Baralho das Muitas Coisas",
+  "desc": "Baralho lendário de 13 cartas (às vezes 22) que não exige sintonia: você anuncia quantas cartas vai tirar e cada uma produz seu efeito na hora, com no máximo 1 hora entre as tiradas. Os efeitos vão de bênçãos, como +2 num atributo (até 24), conjurar Desejo 1d3 vezes, ganhar XP, tesouros ou um guerreiro leal, a desgraças, como perder todos os itens mágicos, ter a alma aprisionada, ganhar um inimigo diabólico ou sofrer –2 permanente nos testes de resistência. Toda carta tirada volta ao baralho e pode sair de novo, exceto o Tolo e o Bobo da Corte."
+ },
+ "Ioun Stone, Intellect": {
+  "nome": "Pedra Ioun do Intelecto",
+  "desc": "Requer sintonia. Enquanto orbita sua cabeça, sua Inteligência aumenta em 2 (máximo 20). Lançar a pedra ao ar ou recolhê-la custa uma ação; para tirá-la de você, outra criatura precisa usar uma ação e vencer CA 24 com um ataque ou passar num teste de Destreza (Acrobacia) CD 24. A pedra tem CA 24, 10 PV e resistência a todo dano."
+ },
+ "Ring of X-ray Vision": {
+  "nome": "Anel da Visão de Raio X",
+  "desc": "Requer sintonia. Com uma ação e a palavra de comando, por 1 minuto você enxerga através de matéria sólida num raio de 9 m, atravessando até 30 cm de pedra, 2,5 cm de metal comum ou 90 cm de madeira ou terra (chumbo, mesmo fino, bloqueia). Cada uso extra antes de um descanso longo exige um teste de resistência de Constituição CD 15, e uma falha causa um nível de exaustão."
+ },
+ "Stone of Good Luck": {
+  "nome": "Pedra da Boa Sorte",
+  "desc": "Basta carregar consigo esta ágata polida para somar +1 a todos os seus testes de habilidade e testes de resistência. Requer sintonia."
+ },
+ "Helm of Brilliance": {
+  "nome": "Elmo do Brilho",
+  "desc": "Exige sintonia. O elmo traz gemas que funcionam como cargas: com uma ação, você gasta uma delas para conjurar (CD 18) Luz do Dia (opala), Bola de Fogo (opala de fogo), Borrifo Prismático (diamante) ou Muralha de Fogo (rubi), e a gema usada se desfaz. Enquanto restar ao menos um rubi, você tem resistência a fogo; com uma opala de fogo, uma ação faz a arma empunhada arder em chamas (+1d6 de dano de fogo, luz plena em 3 m); com um diamante, mortos-vivos a até 9 m que iniciam o turno ali sofrem 1d6 de dano radiante. Se você falhar num teste de resistência contra uma magia e sofrer dano de fogo, role 1d20: num 1, o elmo explode em raios e cada outra criatura a até 18 m faz um teste de resistência de Destreza CD 17 ou sofre dano radiante igual ao número de gemas restantes, e o elmo é destruído."
+ },
+ "Ioun Stone, Reserve": {
+  "nome": "Pedra Ioun da Reserva",
+  "desc": "Exige sintonia. Lançado no ar com uma ação, o prisma roxo passa a orbitar sua cabeça (CA 24, 10 PV, resistência a todo dano) e guarda até 3 círculos de magias de 1º a 3º círculo, que qualquer criatura pode conjurar nele tocando-o. Enquanto ele orbita, você pode conjurar as magias armazenadas usando o círculo, a CD, o bônus de ataque e o atributo de quem as guardou, liberando o espaço em seguida."
+ },
+ "Ring of Animal Influence": {
+  "nome": "Anel de Influência Animal",
+  "desc": "Possui 3 cargas e recupera 1d3 cargas gastas ao amanhecer; não requer sintonia. Usando-o, você pode gastar uma ação e 1 carga para conjurar Amizade Animal (CD 13), Falar com Animais ou Medo (CD 13), sendo que esta última só afeta bestas com Inteligência 3 ou menor."
+ },
+ "Alchemy Jug": {
+  "nome": "Jarro Alquímico",
+  "desc": "Com uma ação, você escolhe um líquido e o jarro passa a gerá-lo até um limite próprio: ácido (240 ml), veneno básico (15 ml), cerveja (15 L), mel (4 L), maionese (7,5 L), óleo (1 L), vinagre (7,5 L), água doce (30 L), água salgada (45 L) ou vinho (4 L). Outra ação destampa o jarro, que despeja até cerca de 7,5 L por minuto. Depois de começar um líquido, ele não troca de líquido nem produz além do limite até o próximo amanhecer; não exige sintonia."
+ },
+ "Cloak of Invisibility": {
+  "nome": "Manto da Invisibilidade",
+  "desc": "Exige sintonia. Com uma ação, você cobre a cabeça com o capuz e fica invisível junto com tudo o que carrega ou veste; com outra ação, abaixa o capuz e volta a ser visível. O manto acumula até 2 horas de uso, gastas em blocos de 1 minuto, e para de funcionar quando elas acabam; a cada 12 horas seguidas sem uso, recupera 1 hora."
+ },
+ "Elemental Gem, Red Corundum": {
+  "nome": "Gema Elemental, Coríndon Vermelho",
+  "desc": "Ao quebrar a gema com uma ação, você convoca um elemental do fogo, como se tivesse conjurado Conjurar Elemental. A gema perde sua magia após o uso e não exige sintonia."
+ },
+ "Spell Scroll (7th Level)": {
+  "nome": "Pergaminho de Magia (7º Círculo)",
+  "desc": "Guarda uma magia de 7º círculo que só quem a tem na lista de magias da própria classe consegue ler e conjurar, no tempo normal e sem componentes materiais; se o círculo estiver acima do que você conjura, é preciso passar num teste com seu atributo de conjuração (CD 17), e a falha apaga a magia. A magia usa CD 18 para resistência e +10 de bônus de ataque, e o pergaminho vira pó após o uso (uma conjuração interrompida não o gasta). Um mago pode tentar copiar a magia para seu grimório com um teste de Inteligência (Arcanismo) CD 17, mas o pergaminho se perde com ou sem sucesso."
+ },
+ "Staff of Thunder and Lightning": {
+  "nome": "Cajado do Trovão e Relâmpago",
+  "desc": "Exige sintonia. Funciona como bordão mágico com +2 no ataque e no dano, e cada um de seus poderes pode ser usado uma vez por dia, recuperando-se ao amanhecer: ao acertar um golpe corpo a corpo, causar 2d6 de dano elétrico extra (Relâmpago) ou forçar o alvo a passar num teste de resistência de Constituição CD 17 para não ficar atordoado até o fim do seu próximo turno (Trovão). Com uma ação, dispara uma linha de 1,5 m por 36 m que causa 9d6 de dano elétrico (Destreza CD 17 reduz à metade), ou solta um estrondo que atinge quem estiver a até 18 m com 2d6 de dano trovejante e surdez por 1 minuto (Constituição CD 17 reduz à metade e evita a surdez); um terceiro uso diário, também com uma ação, combina os dois efeitos de uma vez sem gastar os usos deles."
+ },
+ "Boots of the Winterlands": {
+  "nome": "Botas das Terras Invernais",
+  "desc": "Exige sintonia. Quem as calça tem resistência a dano de frio e não sofre com terreno difícil formado por gelo ou neve. Suporta frio de até cerca de −45 °C sem outra proteção, ou até cerca de −73 °C se estiver com roupas pesadas."
+ },
+ "Staff of Healing": {
+  "nome": "Cajado da Cura",
+  "desc": "Exige sintonia de bardo, clérigo ou druida. Tem 10 cargas e, com uma ação, você gasta cargas para conjurar Curar Ferimentos (1 carga por círculo, até o 4º), Restauração Menor (2 cargas) ou Curar Ferimentos em Massa (5 cargas), usando seu próprio atributo de conjuração e sua CD. Recupera 1d6 + 4 cargas ao amanhecer; se a última carga for gasta, role um d20 e, com 1, o cajado some num clarão de luz para sempre."
+ },
+ "Ring of Telekinesis": {
+  "nome": "Anel da Telecinésia",
+  "desc": "Exige sintonia. Enquanto usar o anel, você pode conjurar Telecinésia à vontade, sem gastar cargas, mas apenas sobre objetos que ninguém esteja vestindo ou carregando."
+ },
+ "Immovable Rod": {
+  "nome": "Bastão Imóvel",
+  "desc": "Com uma ação, aperte o botão do bastão para travá-lo magicamente no lugar, mesmo no ar; ele fica fixo até alguém usar outra ação para apertar o botão de novo. Suporta até cerca de 3.600 kg; acima disso, desativa e cai. Uma criatura pode usar uma ação e fazer um teste de Força CD 30 para deslocá-lo até 3 m. Não requer sintonia."
+ },
+ "Wand of Fireballs": {
+  "nome": "Varinha de Bolas de Fogo",
+  "desc": "Exige sintonia com um conjurador. Possui 7 cargas: com uma ação, gaste 1 carga para conjurar Bola de Fogo de 3º círculo (CD 15), elevando o círculo em um para cada carga extra gasta. Recupera 1d6+1 cargas ao amanhecer, mas se a última carga for usada, role 1d20 e, com resultado 1, a varinha vira cinzas."
+ },
+ "Armor of Vulnerability (Piercing)": {
+  "nome": "Armadura da Vulnerabilidade (Perfurante)",
+  "desc": "Armadura de placas que concede resistência a dano perfurante e exige sintonia. É amaldiçoada: ao se sintonizar com ela, você ganha vulnerabilidade a dano de concussão e cortante, e tirar a armadura não resolve, pois só Remover Maldição ou magia parecida acaba com o efeito. A maldição só é descoberta com Identificação ou no momento da sintonia."
+ },
+ "Armor of Force Resistance": {
+  "nome": "Armadura de Resistência a Energia",
+  "desc": "Armadura rara de qualquer tipo que concede resistência a dano energético enquanto você a veste. Exige sintonia."
+ },
+ "+1 Wand of the War Mage": {
+  "nome": "Varinha do Mago de Guerra +1",
+  "desc": "Empunhando esta varinha, você soma +1 às jogadas de ataque com magia, e a meia cobertura do alvo não afeta esses ataques. Exige sintonia com um conjurador."
+ },
+ "Elven Chain": {
+  "nome": "Cota Élfica",
+  "desc": "Armadura média (camisão de malha) que concede +1 de bônus na CA a quem a veste. Qualquer usuário é tratado como proficiente com ela, mesmo sem proficiência em armaduras médias. Não requer sintonia."
+ },
+ "Figurine of Wondrous Power, Onyx Dog": {
+  "nome": "Estatueta de Poder Maravilhoso, Cão de Ônix",
+  "desc": "Com uma ação, você diz a palavra de comando e arremessa a estatueta a um ponto livre no chão a até 18 m, onde ela vira um mastim amigável que obedece às suas ordens por até 6 horas. O cão tem Inteligência 8, fala Comum e possui visão no escuro de 18 m, enxergando criaturas e objetos invisíveis nesse alcance. Ele volta a ser estatueta se cair a 0 PV ou se você o tocar e repetir a palavra de comando com uma ação; depois disso, só pode ser usada de novo após 7 dias. Não requer sintonia."
+ },
+ "Defender": {
+  "nome": "Defensora",
+  "desc": "Espada lendária (exige sintonia) que concede +3 nas jogadas de ataque e dano. No seu primeiro ataque com ela em cada turno, você pode mover parte ou todo esse bônus para a sua CA. A divisão escolhida vale até o início do seu próximo turno, e o bônus na CA só se aplica enquanto você estiver empunhando a espada."
+ },
+ "Manual of Quickness of Action": {
+  "nome": "Manual da Rapidez de Ação",
+  "desc": "Quem dedicar 48 horas de estudo e prática ao manual, num prazo de até 6 dias, ganha +2 em Destreza e também no valor máximo desse atributo. Depois do uso, o livro fica sem magia por 100 anos. Não exige sintonia."
+ },
+ "Weapon of Warning": {
+  "nome": "Arma de Alerta",
+  "desc": "Enquanto estiver com você, esta arma dá vantagem nas rolagens de iniciativa, e nem você nem os aliados a até 9 m podem ser surpreendidos, a menos que estejam incapacitados por algo que não seja sono comum. Se o combate começar enquanto vocês dormem naturalmente, ela acorda todos no alcance. Exige sintonia."
+ },
+ "+1 Weapon (no damage)": {
+  "nome": "Arma +1 (sem dano)",
+  "desc": "Arma mágica incomum que concede +1 nas jogadas de ataque feitas com ela, sem bônus no dano. Não exige sintonia."
+ },
+ "Instrument of the Bards, Anstruth Harp": {
+  "nome": "Instrumento dos Bardos, Harpa de Anstruth",
+  "desc": "Requer sintonia por um bardo; quem tocar a harpa sem estar sintonizado precisa passar em um teste de resistência de Sabedoria CD 15 ou sofre 2d4 de dano psíquico. Com uma ação, você a toca para conjurar Voo, Invisibilidade, Levitação, Proteção contra o Bem e Mal, Controlar o Clima, Curar Ferimentos (5º círculo) ou Muralha de Espinhos, usando sua habilidade e CD de conjuração; cada magia só pode ser usada uma vez por dia e volta ao amanhecer. Ao tocá-la enquanto conjura uma magia com componente somático ou material que enfeitiça os alvos, eles fazem o teste de resistência com desvantagem."
+ },
+ "Scroll of Protection from Plants": {
+  "nome": "Pergaminho de Proteção contra Plantas",
+  "desc": "Com uma ação de leitura, você fica no centro de um cilindro invisível de 1,5 m de raio e 3 m de altura que acompanha seus movimentos e, por 5 minutos, impede que plantas entrem nele ou afetem quem está dentro. O efeito termina se você se mover de modo a colocar uma planta no interior do cilindro; uma criatura pode usar uma ação e fazer um teste de Carisma CD 15 para deixar de ser barrada."
+ },
+ "Goggles of Night": {
+  "nome": "Óculos da Noite",
+  "desc": "Quem usa estas lentes escuras ganha visão no escuro de 18 m. Se a criatura já tiver visão no escuro, o alcance dela aumenta em 18 m. Não exige sintonia."
+ },
+ "Bag of Tricks, Tan": {
+  "nome": "Bolsa de Truques (Castanha)",
+  "desc": "Com uma ação, você tira uma bolinha peluda da bolsa e a arremessa a até 6 m; ao cair, ela vira um animal aliado sorteado em 1d8 (chacal, macaco, babuíno, bico-de-machado, urso-negro, doninha gigante, hiena gigante ou tigre), que age no seu turno e obedece a comandos dados com sua ação bônus. A criatura some ao chegar a 0 PV ou no amanhecer seguinte. A bolsa fornece até três criaturas por dia e volta a funcionar ao amanhecer; não exige sintonia."
+ },
+ "+1 Weapon": {
+  "nome": "Arma +1",
+  "desc": "Esta arma mágica concede bônus de +1 nas jogadas de ataque e de dano feitas com ela. Não requer sintonia."
+ },
+ "Blue Dragon Scale Mail": {
+  "nome": "Cota de Escamas de Dragão Azul",
+  "desc": "Exige sintonia. Esta armadura de escamas concede +1 na CA, resistência a dano elétrico e vantagem em testes de resistência contra o sopro e a Presença Aterradora de dragões. Uma vez por dia (recarrega ao amanhecer), com uma ação, você descobre a distância e a direção do dragão azul mais próximo num raio de 48 km."
+ },
+ "Crystal Ball of Mind Reading": {
+  "nome": "Bola de Cristal da Leitura Mental",
+  "desc": "Exige sintonia. Tocando a esfera, você conjura Vidência (CD 17); enquanto a vidência estiver ativa, pode usar uma ação para conjurar Detectar Pensamentos (CD 17) em criaturas visíveis a até 9 m do sensor. Essa segunda magia não exige concentração, mas termina junto com a Vidência."
+ },
+ "Ioun Stone, Leadership": {
+  "nome": "Pedra Ioun da Liderança",
+  "desc": "Enquanto esta esfera rosa e verde marmorizada gira ao redor da sua cabeça, seu valor de Carisma aumenta em 2, até o máximo de 20. Você a lança no ar com uma ação para ativá-la e pode recolhê-la com outra ação. Para tirá-la de você, uma criatura precisa acertar um ataque contra CA 24 ou passar num teste de Destreza (Acrobacia) CD 24; a pedra tem 10 PV e resistência a todo dano. Requer sintonia."
+ },
+ "Eye of Vecna": {
+  "nome": "Olho de Vecna",
+  "desc": "Artefato que exige sintonia (implantado na órbita, matando o portador se removido): torna sua tendência neutra e má, concede visão verdadeira e permite, com uma ação, enxergar como com um Anel de Visão de Raio X. Tem 8 cargas (recupera 1d4+4 ao amanhecer) para conjurar, com CD 18, Clarividência (2), Coroa da Loucura (1), Desintegrar (4), Mau-Olhado (4) ou Dominar Monstro (5), mas cada uso tem 5% de chance de Vecna devorar sua alma e assumir seu corpo. Junto com a Mão de Vecna, dá imunidade a doenças e veneno, impede que você seja surpreendido, regenera 1d10 PV por turno, permite transformar ossos em geleia com um toque (CD 18 de Constituição ou cai a 0 PV) e conjurar Desejo uma vez a cada 30 dias."
+ },
+ "Bag of Tricks, Gray": {
+  "nome": "Bolsa de Truques Cinza",
+  "desc": "Com uma ação, você tira uma bolinha peluda da bolsa e a arremessa a até 6 m; ao cair, ela vira um animal amigável sorteado com 1d8 (de doninha e rato gigante até lobo atroz e alce gigante), que age no seu turno, obedece a comandos dados com ação bônus e some ao chegar a 0 PV ou no amanhecer seguinte. A bolsa fornece três bolinhas por dia e volta a funcionar ao amanhecer; não exige sintonia."
+ },
+ "Holy Avenger": {
+  "nome": "Vingadora Sagrada",
+  "desc": "Espada que concede +3 nas jogadas de ataque e de dano e causa 2d10 de dano radiante adicional contra corruptores e mortos-vivos. Enquanto está desembainhada em sua mão, você e seus aliados a até 3 m têm vantagem em testes de resistência contra magias e outros efeitos mágicos; com 17 ou mais níveis de paladino, o alcance da aura sobe para 9 m. Exige sintonia com um paladino."
+ },
+ "Sentinel Shield": {
+  "nome": "Escudo Sentinela",
+  "desc": "Enquanto empunha este escudo, você rola a iniciativa com vantagem e também tem vantagem em testes de Sabedoria (Percepção). Não exige sintonia."
+ },
+ "Horn of Blasting": {
+  "nome": "Trombeta da Explosão",
+  "desc": "Com uma ação e a palavra de comando, você sopra a trombeta e libera um estrondo em cone de 9 m (ouvido a 180 m): cada criatura no cone faz um teste de resistência de Constituição CD 15, sofrendo 5d6 de dano trovejante e ficando surda por 1 minuto se falhar, ou metade do dano sem surdez se passar. Criaturas e objetos de vidro ou cristal têm desvantagem no teste e sofrem 10d6 em vez disso. A cada uso há 20% de chance de a trombeta explodir, causando 10d6 de dano de fogo em quem a soprou e sendo destruída; não exige sintonia."
+ },
+ "Armor of Lightning Resistance": {
+  "nome": "Armadura de Resistência a Elétrico",
+  "desc": "Qualquer tipo de armadura com esta propriedade concede ao usuário resistência a dano elétrico enquanto ele a veste. Exige sintonia."
+ },
+ "Talisman of the Sphere": {
+  "nome": "Talismã da Esfera",
+  "desc": "Enquanto segura este talismã, seu bônus de proficiência é dobrado nos testes de Inteligência (Arcanismo) feitos para controlar uma Esfera da Aniquilação. Se você começar o turno controlando uma esfera, pode usar uma ação para movê-la 3 m, mais 3 m adicionais por ponto do seu modificador de Inteligência. Requer sintonia."
+ },
+ "Belt of Storm Giant Strength": {
+  "nome": "Cinto da Força do Gigante das Tempestades",
+  "desc": "Enquanto você o usa, sua Força passa a ser 29; se o seu valor natural já for igual ou maior, o cinto não faz diferença. Exige sintonia."
+ },
+ "Ring of Psychic Resistance": {
+  "nome": "Anel de Resistência Psíquica",
+  "desc": "Anel de jade que concede resistência a dano psíquico enquanto estiver no dedo do portador. Requer sintonia."
+ },
+ "Wave": {
+  "nome": "Onda",
+  "desc": "Tridente senciente que concede +3 nas jogadas de ataque e de dano; num acerto crítico, o alvo sofre dano necrótico extra igual à metade do seu máximo de PV. Também funciona como Tridente de Comando de Peixes, Arma de Alerta e Cubo de Força (você escolhe o efeito diretamente) e, enquanto empunhado, permite respirar debaixo d'água como o Capuz de Respiração Aquática. Exige sintonia de um adorador de um deus do mar; é neutro (Int 14, Sab 10, Car 18), tem visão no escuro de 36 m, fala Aquan por telepatia e conversa com animais aquáticos."
+ },
+ "Mirror of Life Trapping": {
+  "nome": "Espelho Aprisionador",
+  "desc": "Pendurado numa parede, é ativado ou desativado com uma ação e a palavra de comando, estando a até 1,5 m dele; ativo, toda outra criatura que veja seu reflexo a até 9 m faz teste de resistência de Carisma CD 15 (com vantagem se conhece o espelho; constructos passam automaticamente) ou fica presa com seus pertences em uma das 12 celas extradimensionais, de onde só escapa com magia de viagem planar. Com uma ação a até 1,5 m, você pode conversar com um prisioneiro ou libertá-lo com outra palavra de comando; se as celas estiverem cheias, um preso aleatório é solto, e quebrar o espelho (CA 11, 10 PV, vulnerável a concussão) liberta todos."
+ },
+ "Carpet of Flying, 6 ft. × 9 ft.": {
+  "nome": "Tapete Voador, 1,8 m × 2,7 m",
+  "desc": "Com uma ação, você diz a palavra de comando e o tapete passa a flutuar e voar, obedecendo às suas ordens faladas enquanto você estiver a até 9 m dele. Ele transporta até 360 kg com deslocamento de voo de 9 m; aguenta até o dobro desse peso, mas acima da capacidade normal voa com metade do deslocamento. Não exige sintonia."
+ },
+ "Manual of Clay Golems": {
+  "nome": "Manual dos Golens de Argila",
+  "desc": "Só pode ser decifrado e usado por um conjurador com pelo menos dois espaços de magia de 5º círculo; qualquer outra criatura que tente lê-lo sofre 6d6 de dano psíquico. Com 30 dias de trabalho contínuo (descansando no máximo 8 horas por dia) e 65.000 po em materiais, você cria um golem de argila. O livro então se consome em chamas, e suas cinzas espalhadas sobre o golem o animam, deixando-o sob seu controle e obedecendo às suas ordens faladas."
+ },
+ "Ring of Warmth": {
+  "nome": "Anel do Calor",
+  "desc": "Exige sintonia. Quem usa o anel tem resistência a dano de frio, e nem o portador nem o equipamento que ele carrega sofrem efeitos de frio extremo até cerca de −45 °C."
+ },
+ "Potion of Fire Giant Strength": {
+  "nome": "Poção de Força do Gigante de Fogo",
+  "desc": "Ao ser bebida, eleva o valor de Força para 25 durante 1 hora. Não tem efeito se a sua Força já for 25 ou maior. Consumível, sem sintonia."
+ },
+ "Scroll of Protection from Undead": {
+  "nome": "Pergaminho de Proteção contra Mortos-Vivos",
+  "desc": "Ler o pergaminho com uma ação cria ao seu redor, por 5 minutos, um cilindro invisível de 1,5 m de raio e 3 m de altura que acompanha você e impede mortos-vivos de entrar nele ou de afetar o que está dentro. O efeito acaba se você se mover de modo a colocar um morto-vivo dentro da área, e uma criatura pode gastar uma ação num teste de Carisma CD 15 para deixar de ser barrada. Não exige sintonia."
+ },
+ "Wand of Secrets": {
+  "nome": "Varinha dos Segredos",
+  "desc": "Possui 3 cargas e não exige sintonia. Com ela em mãos, gaste uma ação e 1 carga para que a varinha vibre e aponte para a porta secreta ou armadilha mais próxima num raio de 9 m, se houver alguma. Ao amanhecer, recupera 1d3 cargas."
+ },
+ "Ioun Stone, Fortitude": {
+  "nome": "Pedra Ioun da Fortitude",
+  "desc": "Exige sintonia. Com uma ação, você lança este losango rosado ao ar e ele passa a girar ao redor da sua cabeça, elevando seu valor de Constituição em 2 (máximo 20) enquanto orbitar. Outra criatura só consegue tirá-la de você usando uma ação e acertando um ataque contra CA 24 ou passando num teste de Destreza (Acrobacia) CD 24. A pedra tem CA 24, 10 PV e resistência a todo dano, e você pode guardá-la com uma ação, encerrando o efeito."
+ },
+ "+3 Shield (*)": {
+  "nome": "Escudo +3",
+  "desc": "Enquanto você empunha este escudo, sua CA recebe +3, somado ao bônus que o escudo já concede normalmente. Item muito raro; não exige sintonia."
+ },
+ "Rod of Resurrection": {
+  "nome": "Bastão da Ressurreição",
+  "desc": "Exige sintonia de um clérigo, druida ou paladino. Possui 5 cargas e, empunhando-o, você pode usar uma ação para conjurar Cura Completa (1 carga) ou Ressurreição (5 cargas). Recupera 1 carga ao amanhecer; se ficar sem cargas, role 1d20 e, com resultado 1, o bastão se desfaz em um clarão de luz."
+ },
+ "Staff of the Adder": {
+  "nome": "Cajado da Víbora",
+  "desc": "Exige sintonia de clérigo, druida ou bruxo. Com uma ação bônus, a ponta do cajado vira uma cobra venenosa viva por até 1 minuto (outra ação bônus a desfaz); com ela você ataca corpo a corpo com alcance de 1,5 m usando sua proficiência, causando 1d6 de dano perfurante, e o alvo sofre mais 3d6 de dano de veneno se falhar num teste de resistência de Constituição CD 15. Enquanto ativa, a cabeça pode ser atacada (CA 15, 20 PV): se chegar a 0 PV o cajado é destruído, mas ela recupera todos os PV ao voltar à forma inanimada."
+ },
+ "Scroll of Protection from Elementals": {
+  "nome": "Pergaminho de Proteção contra Elementais",
+  "desc": "Com uma ação, você lê o pergaminho e fica dentro de um cilindro invisível de 1,5 m de raio e 3 m de altura que o acompanha por 5 minutos; nesse tempo, elementais não conseguem entrar nele nem afetar nada em seu interior. O efeito termina se você se mover de modo a incluir um elemental no cilindro, e uma criatura pode usar uma ação para fazer um teste de Carisma CD 15 e, se passar, deixa de ser barrada."
+ },
+ "Potion of Invisibility": {
+  "nome": "Poção de Invisibilidade",
+  "desc": "Ao beber esta poção, você e todo o equipamento que veste ou carrega ficam invisíveis por 1 hora. A invisibilidade acaba antes do tempo se você atacar ou conjurar uma magia. O frasco parece vazio, embora se sinta o líquido dentro dele."
+ },
+ "Potion of Diminution": {
+  "nome": "Poção de Diminuição",
+  "desc": "Ao beber, você recebe o efeito de redução da magia Aumentar/Reduzir por 1d4 horas, sem precisar manter concentração. Seu tamanho cai uma categoria, você tem desvantagem em testes de Força e testes de resistência de Força, e suas armas causam 1d4 a menos de dano. Não requer sintonia."
+ },
+ "+1 Shield (*)": {
+  "nome": "Escudo +1",
+  "desc": "Item incomum que não exige sintonia. Empunhado, concede +1 na CA, somado ao bônus que o escudo já fornece normalmente."
+ },
+ "Ioun Stone, Strength": {
+  "nome": "Pedra Ioun da Força",
+  "desc": "Exige sintonia. Enquanto este losango azul-claro gira em torno da sua cabeça (lançá-lo ao ar custa uma ação), seu valor de Força aumenta em 2, até no máximo 20. Outra criatura só consegue tirá-la de você usando uma ação e acertando um ataque contra CA 24 ou passando num teste de Destreza (Acrobacia) CD 24; a pedra tem CA 24, 10 PV e resistência a todo dano, e você pode guardá-la com uma ação, encerrando o efeito."
+ },
+ "Tome of Understanding": {
+  "nome": "Tomo da Compreensão",
+  "desc": "Quem dedicar 48 horas de estudo e prática ao livro, ao longo de no máximo 6 dias, ganha +2 em Sabedoria, e o valor máximo desse atributo também sobe 2. Depois disso o tomo fica sem magia por cem anos. Não exige sintonia."
+ },
+ "Mace of Disruption": {
+  "nome": "Maça da Ruptura",
+  "desc": "Contra corruptores e mortos-vivos, cada acerto causa 2d6 de dano radiante extra; se o alvo ficar com 25 PV ou menos, faz um teste de resistência de Sabedoria CD 15 e é destruído se falhar, ou fica amedrontado por você até o fim do seu próximo turno se passar. Empunhada, emite luz plena em 6 m e penumbra por mais 6 m. Requer sintonia."
+ },
+ "Oil of Sharpness": {
+  "nome": "Óleo da Afiação",
+  "desc": "Leva 1 minuto para ser aplicado em uma arma cortante ou perfurante, ou em até 5 munições desses tipos. Durante 1 hora, o item untado se torna mágico e recebe +3 nas jogadas de ataque e de dano. Não exige sintonia."
+ },
+ "Sword of Answering (Replier)": {
+  "nome": "Espada da Resposta (Replicante)",
+  "desc": "Espada longa com +3 nas jogadas de ataque e dano, que exige sintonia de uma criatura neutra. Enquanto a empunha, quando uma criatura ao seu alcance lhe causa dano, você pode usar sua reação para atacá-la corpo a corpo com vantagem. O dano desse contra-ataque ignora imunidades e resistências do alvo."
+ },
+ "Instrument of the Bards, Ollamh Harp": {
+  "nome": "Instrumento dos Bardos, Harpa Ollamh",
+  "desc": "Exige sintonia de um bardo; quem tocar sem estar sintonizado precisa passar num teste de resistência de Sabedoria CD 15 ou sofre 2d4 de dano psíquico. Com uma ação, você toca a harpa para conjurar Voo, Invisibilidade, Levitação, Proteção contra o Bem e o Mal, Confusão, Controlar o Clima ou Tempestade de Fogo, usando sua própria habilidade e CD de magia; cada uma só pode ser usada uma vez até o próximo amanhecer. Ao tocá-la enquanto conjura uma magia com componente somático ou material que enfeitice quem falhar, os alvos têm desvantagem no teste de resistência."
+ },
+ "Bag of Holding": {
+  "nome": "Bolsa Devoradora",
+  "desc": "Bolsa de 7 kg (peso fixo) cujo interior extradimensional comporta até 225 kg em no máximo 1,8 m³; pegar algo dentro dela custa uma ação, e não exige sintonia. Se for sobrecarregada, furada ou rasgada, se destrói e o conteúdo vai parar no Plano Astral; virada do avesso, despeja tudo intacto. Criaturas lá dentro têm ar por 10 minutos divididos pelo número delas (mínimo 1), e colocá-la em outro espaço extradimensional, como um Buraco Portátil, destrói ambos e suga tudo a até 3 m para o Plano Astral."
+ },
+ "Driftglobe": {
+  "nome": "Globo Flutuante",
+  "desc": "Estando a até 18 m desta esfera de vidro, você pode fazê-la emitir o efeito da magia Luz à vontade ou de Luz do Dia uma vez por dia, recuperada ao amanhecer. Com uma ação e outra palavra de comando, o globo aceso passa a flutuar a até 1,5 m do chão e a seguir você pelo caminho mais curto para ficar a até 18 m de distância; se for impedido de se mover, ele desce ao chão e se apaga. Não exige sintonia."
+ },
+ "Hammer of Thunderbolts": {
+  "nome": "Martelo do Trovão",
+  "desc": "Malho com +1 nas jogadas de ataque e dano; para se sintonizar é preciso usar um cinto de força do gigante e manoplas de força do ogro, e a sintonia acaba se tirar qualquer um deles. Sintonizado e empunhando o martelo, sua Força aumenta em 4 (máximo 30) e, ao tirar 20 no ataque contra um gigante, ele morre se falhar num teste de resistência de Constituição CD 17. Tem 5 cargas (recupera 1d4+1 ao amanhecer): gaste 1 para arremessá-lo (alcance 6/18 m) e, se acertar, o alvo e todas as criaturas a até 9 m dele fazem teste de resistência de Constituição CD 17 ou ficam atordoadas até o fim do seu próximo turno."
+ },
+ "Quaal's Feather Token, Swan Boat": {
+  "nome": "Pena de Quaal, Barco Cisne",
+  "desc": "Item de uso único: com uma ação, você encosta a pena em uma massa de água com pelo menos 18 m de diâmetro e ela se transforma em um barco em forma de cisne, com 15 m de comprimento por 6 m de largura, que navega sozinho a cerca de 10 km/h. A bordo, você gasta uma ação para fazê-lo avançar ou virar até 90 graus. Ele leva até 32 criaturas Médias ou menores (uma Grande ocupa o lugar de 4 e uma Enorme o de 9) e dura 24 horas, mas você pode dispensá-lo antes com uma ação. Não exige sintonia."
+ },
+ "Boots of Levitation": {
+  "nome": "Botas da Levitação",
+  "desc": "Exige sintonia. Calçando estas botas, você pode gastar uma ação para conjurar Levitação em si mesmo quantas vezes quiser, sem gastar cargas."
+ },
+ "Dancing Sword": {
+  "nome": "Espada Dançante",
+  "desc": "Exige sintonia. Com uma ação bônus e a palavra de comando, você solta a espada no ar: ela flutua, voa até 9 m e ataca uma criatura a 1,5 m dela usando sua jogada de ataque e seu modificador de dano; em turnos seguintes, outra ação bônus a move até 9 m (dentro de 9 m de você) e faz um novo ataque. Após o quarto ataque ela volta para sua mão (ou cai aos seus pés se não houver mão livre ou caminho), e também para de flutuar se você a pegar ou se afastar mais de 9 m dela."
+ },
+ "Book of Vile Darkness": {
+  "nome": "Livro da Escuridão Vil",
+  "desc": "Artefato que exige sintonia e 80 horas de estudo; criaturas não malignas que se sintonizam fazem um teste de resistência de Carisma CD 17 ou passam a ser neutras e más. Após o estudo, um atributo à sua escolha sobe 2 (máx. 24) e outro cai 2, e uma marca deformante concede vantagem em Persuasão com criaturas más e em Intimidação com as demais; você também dobra a proficiência em testes de Inteligência sobre o mal. Com uma ação, conjura Dominar Monstro em um alvo mau (CD 18, 1 vez por dia, volta ao amanhecer) ou recita a Fala Sombria, sofrendo 1d12 de dano psíquico e causando 3d6 de dano psíquico a cada criatura não maligna a até 4,5 m."
+ },
+ "Dust of Disappearance": {
+  "nome": "Pó do Desaparecimento",
+  "desc": "Uso único: com uma ação, você espalha o pó no ar e você e todas as criaturas e objetos a até 3 m ficam invisíveis por 2d4 minutos (mesma duração para todos). A invisibilidade de uma criatura termina se ela atacar ou conjurar uma magia. Não requer sintonia."
+ },
+ "Staff of Striking": {
+  "nome": "Cajado do Golpe",
+  "desc": "Bordão mágico que concede +3 nas jogadas de ataque e de dano e exige sintonia. Possui 10 cargas: ao acertar um ataque corpo a corpo com ele, você pode gastar até 3 cargas, e cada uma acrescenta 1d6 de dano energético ao alvo. Recupera 1d6 + 4 cargas ao amanhecer; se a última carga for gasta, role um d20 e, com resultado 1, o cajado vira um bordão comum, sem magia."
+ },
+ "Tome of Clear Thought": {
+  "nome": "Tomo do Pensamento Claro",
+  "desc": "Quem dedicar 48 horas de estudo e prática ao livro, num prazo de até 6 dias, ganha +2 em Inteligência e eleva em 2 o limite máximo desse atributo. Depois disso o tomo fica sem magia por cem anos. Não requer sintonia."
+ },
+ "Potion of Healing": {
+  "nome": "Poção de Cura",
+  "desc": "Ao ser bebida, a poção restaura 2d4 + 2 PV de quem a consome. É de uso único e não exige sintonia."
+ },
+ "Ring of Force Resistance": {
+  "nome": "Anel de Resistência a Energia",
+  "desc": "Enquanto estiver usando este anel de safira, você tem resistência a dano energético. Requer sintonia."
+ },
+ "Censer of Controlling Air Elementals": {
+  "nome": "Incensário de Controle dos Elementais do Ar",
+  "desc": "Com incenso queimando no incensário, você pode usar uma ação e dizer a palavra de comando para invocar um elemental do ar, com o mesmo efeito da magia Conjurar Elemental. O poder só pode ser usado de novo após o próximo amanhecer. Não requer sintonia."
+ },
+ "Spell Scroll (3rd Level)": {
+  "nome": "Pergaminho de Magia (3º Círculo)",
+  "desc": "Contém uma magia de 3º círculo que só pode ser lida por quem a tem na lista de magias da sua classe; conjurá-la leva o tempo normal, dispensa componentes materiais e consome o pergaminho, que se desfaz em pó (se a conjuração for interrompida, ele não se perde). A magia usa CD 15 e bônus de ataque +7; se o círculo estiver acima do que você consegue conjurar, faça um teste com seu atributo de conjuração contra CD 13, e uma falha apaga a magia sem efeito. Magos podem copiá-la para o grimório com um teste de Inteligência (Arcanismo) CD 13, mas o pergaminho é destruído com sucesso ou falha."
+ },
+ "Universal Solvent": {
+  "nome": "Solvente Universal",
+  "desc": "Com uma ação, você derrama o líquido do tubo sobre uma superfície ao seu alcance, desfazendo na hora até cerca de 0,1 m² de qualquer adesivo, inclusive a Cola Soberana. Uso único e não requer sintonia."
+ },
+ "Necklace of Adaptation": {
+  "nome": "Colar de Adaptação",
+  "desc": "Exige sintonia. Quem o usa respira sem problemas em qualquer ambiente, até debaixo d'água ou no vácuo, e tem vantagem nos testes de resistência contra gases e vapores nocivos, como Névoa Mortal, Névoa Fétida, venenos inalados e o sopro de certos dragões."
+ },
+ "Belt of Dwarvenkind": {
+  "nome": "Cinturão dos Anões",
+  "desc": "Requer sintonia. Concede +2 de Constituição (máximo 20) e vantagem em testes de Carisma (Persuasão) com anões; a cada amanhecer, há 50% de chance de surgir ou engrossar uma barba. Usuários que não são anões também ganham visão no escuro de 18 m, o idioma Anão (fala, leitura e escrita), resistência a dano de veneno e vantagem em testes de resistência contra veneno."
+ },
+ "Carpet of Flying, 4 ft. × 6 ft.": {
+  "nome": "Tapete Voador (1,2 m × 1,8 m)",
+  "desc": "Com uma ação, você diz a palavra de comando e o tapete passa a flutuar e voar, obedecendo às suas ordens faladas enquanto você estiver a até 9 m dele. Ele voa a 18 m transportando até 180 kg; aguenta o dobro desse peso, mas com a carga acima do normal sua velocidade cai pela metade. Não exige sintonia."
+ },
+ "+3 Ammunition": {
+  "nome": "Munição +3",
+  "desc": "Concede +3 nas jogadas de ataque e de dano feitas com esta munição mágica (muito rara, sem sintonia). Depois de atingir um alvo, ela perde a magia."
+ },
+ "Spell Scroll (4th Level)": {
+  "nome": "Pergaminho de Magia (4º Círculo)",
+  "desc": "Guarda uma magia de 4º círculo que só pode ser lida por quem a tem na lista da sua classe; a conjuração usa o tempo normal da magia, dispensa componentes materiais e consome o pergaminho, que se desfaz em pó. Se o círculo for alto demais para você, faça um teste com seu atributo de conjuração (CD 14) e, se falhar, a magia se perde sem efeito. A magia usa CD 15 para resistência e +7 de bônus de ataque; magos podem copiá-la para o grimório com um teste de Inteligência (Arcanismo) CD 14, mas o pergaminho é destruído de qualquer forma."
+ },
+ "Glamoured Studded Leather": {
+  "nome": "Couro Batido Encantado",
+  "desc": "Armadura de couro batido que concede +1 na CA. Com uma ação bônus e a palavra de comando, você muda o visual dela para o de roupas comuns ou de outra armadura à sua escolha (cor, estilo e adereços), sem alterar o peso nem o volume reais; a ilusão dura até você usar a propriedade de novo ou tirar a armadura. Não exige sintonia."
+ },
+ "Whelm": {
+  "nome": "Whelm",
+  "desc": "Martelo de guerra senciente +3 que exige sintonia com um anão; pode ser arremessado (6/18 m), volta à mão e causa 1d8 de dano de concussão extra (2d8 contra gigantes), mas, a partir do amanhecer seguinte ao primeiro ataque, o portador sofre desvantagem em ataques, testes de resistência e testes de atributo enquanto vê o céu diurno. Uma vez por amanhecer, com uma ação, golpeia o chão e as criaturas escolhidas no solo a até 18 m fazem um teste de resistência de Constituição CD 15 ou ficam atordoadas por 1 minuto (repetem o teste ao fim de cada turno). Revela portas secretas a até 9 m e conjura Detectar o Bem e o Mal e Localizar Objeto, cada uma uma vez por amanhecer."
+ },
+ "+2 Wand of the War Mage": {
+  "nome": "Varinha do Mago de Guerra +2",
+  "desc": "Requer sintonia com um conjurador. Enquanto a empunha, você recebe +2 nas jogadas de ataque com magia, e seus ataques mágicos não são atrapalhados por alvos em meia cobertura."
+ },
+ "Cubic Gate": {
+  "nome": "Cubo Portal",
+  "desc": "Pequeno cubo de 7,5 cm cujas seis faces estão ligadas a planos de existência diferentes (uma delas ao Plano Material, as demais escolhidas pelo mestre). Com uma ação, você toca uma face para conjurar Portal até o plano correspondente, ou toca a mesma face duas vezes para conjurar Viagem Planar (CD 17) e enviar os alvos para lá. Tem 3 cargas, cada uso gasta 1, e recupera 1d3 cargas ao amanhecer; não exige sintonia."
+ },
+ "Brass Dragon Scale Mail": {
+  "nome": "Cota de Escamas de Dragão de Latão",
+  "desc": "Exige sintonia. Vestida, concede +1 na CA, resistência a dano de fogo e vantagem em testes de resistência contra a Presença Aterradora e as armas de sopro de dragões. Uma vez por dia (recarrega ao amanhecer), com uma ação, você sente a direção e a distância do dragão de latão mais próximo num raio de cerca de 48 km."
+ },
+ "Brazier of Commanding Fire Elementals": {
+  "nome": "Braseiro de Comando de Elementais do Fogo",
+  "desc": "Com fogo aceso no braseiro, você pode usar uma ação e dizer a palavra de comando para invocar um elemental do fogo, como pela magia Conjurar Elemental. Só pode ser usado uma vez por dia, recuperando o uso ao amanhecer. Não exige sintonia."
+ },
+ "Horseshoes of a Zephyr": {
+  "nome": "Ferraduras do Zéfiro",
+  "desc": "Conjunto de quatro ferraduras que, presas aos cascos de um cavalo ou montaria parecida, a fazem flutuar a cerca de 10 cm do chão. Assim ela anda sobre água, lava e outras superfícies instáveis, não deixa rastros e ignora terreno difícil. Também consegue viajar em velocidade normal por até 12 horas diárias sem sofrer exaustão por marcha forçada; não exige sintonia."
+ },
+ "Orb of Dragonkind": {
+  "nome": "Orbe dos Dragões",
+  "desc": "Artefato que exige sintonia: ao ativá-lo com uma ação, você faz um teste de Carisma CD 15; se passar, passa a controlá-lo, e se falhar, fica enfeitiçado pelo orbe enquanto durar a sintonia, sem poder rompê-la e sofrendo Sugestão à vontade (CD 18). Controlando-o, você conjura Detectar Magia sem gastar cargas ou usa suas 7 cargas (recupera 1d4+3 ao amanhecer) para Luz do Dia (1), Proteção contra a Morte (2), Curar Ferimentos de 5º círculo (3) ou Vidência (3), com CD 18. Com uma ação, também emite um chamado telepático que atrai dragões malignos num raio de 64 km, utilizável uma vez por hora; só é destruído por Desintegrar ou um golpe de arma +3."
+ },
+ "+3 Rod of the Pact Keeper": {
+  "nome": "Bastão do Guardião do Pacto +3",
+  "desc": "Exige sintonia com um bruxo. Empunhando o bastão, suas jogadas de ataque com magia e a CD dos testes de resistência das suas magias de bruxo recebem +3. Uma vez por descanso longo, você pode usar uma ação para recuperar um espaço de magia de bruxo."
+ },
+ "Belt of Hill Giant Strength": {
+  "nome": "Cinto da Força do Gigante da Colina",
+  "desc": "Exige sintonia. Usando o cinto, seu valor de Força passa a ser 21; se a sua Força natural já for 21 ou mais, o item não traz benefício."
+ },
+ "Cap of Water Breathing": {
+  "nome": "Capuz da Respiração Aquática",
+  "desc": "Embaixo d'água, use uma ação e diga a palavra de comando para envolver sua cabeça numa bolha de ar que permite respirar normalmente. A bolha dura até você repetir a palavra, tirar o capuz ou sair da água. Não exige sintonia."
+ },
+ "Daern's Instant Fortress": {
+  "nome": "Fortaleza Instantânea de Daern",
+  "desc": "Com uma ação e a palavra de comando, este pequeno cubo de metal vira uma torre de adamante de 6 m de lado e 9 m de altura, com dois andares, seteiras, teto com ameias e uma porta que só abre ao seu comando (ação bônus) e resiste a Arrombar e magias parecidas; para desfazê-la, use outra ação com a torre vazia. Quem estiver no espaço onde ela surge faz um teste de resistência de Destreza CD 15, sofrendo 10d10 de dano de concussão (metade se passar), e é empurrado para fora junto à torre. Teto, porta e cada parede têm 100 PV, imunidade a armas não mágicas (exceto armas de cerco) e resistência aos demais danos, e só podem ser reparados por Desejo (50 PV por conjuração); não exige sintonia."
+ },
+ "Wings of Flying": {
+  "nome": "Asas de Voo",
+  "desc": "Capa que exige sintonia: com uma ação e a palavra de comando, vira asas de morcego ou de pássaro que concedem deslocamento de voo de 18 m por até 1 hora (ou até você desfazê-las com outra ação). Depois que as asas somem, só podem ser usadas de novo após 1d12 horas."
+ },
+ "Decanter of Endless Water": {
+  "nome": "Garrafa de Água Infinita",
+  "desc": "Com uma ação, você destampa a garrafa e escolhe quanto de água doce ou salgada ela despeja até o início do seu próximo turno: um filete de cerca de 4 litros, uma fonte de cerca de 19 litros ou um gêiser de cerca de 114 litros, com 9 m de comprimento. Enquanto segura a garrafa, você pode usar uma ação bônus para mirar o gêiser em uma criatura visível a até 9 m; ela faz um teste de resistência de Força CD 13 e, se falhar, sofre 1d4 de dano de concussão e fica caída. O jato também pode derrubar ou empurrar até 4,5 m um objeto de até 90 kg que ninguém esteja vestindo ou carregando. Não exige sintonia."
+ },
+ "Carpet of Flying, 3 ft. × 5 ft.": {
+  "nome": "Tapete Voador, 0,9 m × 1,5 m",
+  "desc": "Com uma ação para dizer a palavra de comando, o tapete flutua e voa, obedecendo às suas ordens faladas enquanto você estiver a até 9 m dele. Esse tamanho leva até 90 kg com deslocamento de voo de 24 m; pode suportar até o dobro desse peso, mas aí voa com metade do deslocamento. Não exige sintonia."
+ },
+ "Staff of the Magi": {
+  "nome": "Cajado do Magi",
+  "desc": "Bordão mágico +2 que também concede +2 nas jogadas de ataque com magia e vantagem em testes de resistência contra magias; exige sintonia de feiticeiro, bruxo ou mago. Tem 50 cargas (recupera 4d6+2 ao amanhecer) para conjurar com sua CD magias como Bola de Fogo e Relâmpago de 7º círculo, Conjurar Elemental, Viagem Planar, Tempestade de Gelo, Muralha de Fogo, Dissipar Magia, Teia e outras, além de usar sem custo Detectar Magia, Luz, Mão Mágica, Aumentar/Reduzir, Tranca Arcana e Proteção contra o Bem e o Mal. Com uma reação, anula uma magia que mire só você e ganha cargas iguais ao círculo dela (se passar de 50, explode), e você pode quebrá-lo num golpe retributivo que causa dano energético proporcional às cargas restantes num raio de 9 m (CD 17 de Destreza para metade)."
+ }
+}

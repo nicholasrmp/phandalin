@@ -92,6 +92,12 @@ const TRACO_DO_MOTOR = {
   'Heated Weapons': null, 'Unarmored Defense': null, 'Steadfast': 'bravura',
   'Tunneler': 'escavador', 'Ambusher': 'emboscador', 'Surprise Attack': 'ataqueSurpresa', 'Fire Absorption': 'absorcaoDeFogo',
   'Displacement': 'deslocamento', 'Shadow Stealth': 'furtividadeNasSombras',
+  // os outros bestiários: o mesmo traço com outro nome
+  'Plant Camouflage': 'camuflagemGeral', 'Woodland Camouflage': 'camuflagemGeral', 'Low Cunning': 'acaoAstuta', 'Lightfooted': 'acaoAstuta',
+  'Mental Fortitude': 'ascendenciaFeerica', 'Mental Resistance': 'ascendenciaFeerica', 'Touch of Madness': 'ascendenciaFeerica',
+  'Sunlight Hypersensitivity': 'sunlightSensitivity', 'Sunlight Weakness': 'sunlightSensitivity', 'Uncanny Senses': 'sempreAlerta', 'Alert': 'sempreAlerta',
+  'Spell-Resistant Carapace': 'resistenciaAMagia', 'Antimagic Shell': 'resistenciaAMagia', 'Wretched Pack Tactics': 'packTactics',
+  'Liquid Form': 'formaFluida', 'Misty Form': 'formaFluida', 'Out-of-Phase Movement': 'incorporealMovement',
   'Air Form': 'formaFluida', 'Water Form': 'formaFluida', 'Chameleon Carapace': 'camuflagemGeral', 'Chameleon Skin': 'camuflagemGeral',
   'Reactive': 'reativo', 'Prone Deficiency': 'deficienciaCaido', 'Split': 'divisao', 'Assassinate': 'assassinar',
   'Damage Transfer': 'transfereDano', 'Marshal Undead': 'comandaMortos', 'Antimagic Cone': 'coneAntimagia',
@@ -115,6 +121,22 @@ const SABOR = new Set([
   'Snow Camouflage', 'Swamp Camouflage', 'Ice Walk', 'Distress Spores', 'Rapport Spores', 'Tree Stride', 'Heart Sight',
   'Blind Senses', 'Tail Spike Regrowth', 'Limited Spines', 'Fiendish Blessing', 'Transparent', 'Ooze Cube', 'Grasping Tendrils',
   'Shriek', 'Illusory Appearance', 'Nightmare Haunting', 'Body Thief', 'Animating Spores', 'Summon Air Elemental',
+  // os outros bestiários: não precisa de ar, comida, bebida nem sono
+  'Unusual Nature',
+  // ... o que só habilita uma ação que o bloco já tem (as runas dos gigantes), o que já está no número do bloco ("included
+  // in its attacks", a CA que soma Inteligência ou Carisma), e o que é de fora da luta (sentidos a quilômetros, telepatia,
+  // memória, rastro, viagem, ritual, o que se escolhe ao invocar)
+  'Blood Rune', 'Cloud Rune', 'Fire Rune', 'Frost Rune', 'Hill Rune', 'Death Rune', 'Stone Rune', 'Storm Rune',
+  'Foe Smiter of Ilneval', 'Hand of Shargaas', 'Magic Club', "Stone's Strength", 'Deflection', 'Mental Defense', 'Suave Defense', 'Dual Shields',
+  'Astral Entity', 'Assume Form', 'Awakened Mind', 'Corpses', 'Creature Sense', 'Customizable Storage', 'Discern Lie', 'Diabolical Sense',
+  'Devour Soul', 'Dimensional Rift', 'Draconic Essence', "Dragon's Resistance", 'Earth Armor', 'Ethereal Awareness', 'Extra Heads',
+  'Extraordinary Leap', 'Fabricate', 'Firearms Knowledge', 'Forbiddance', 'Glide', 'Controlled Fall', 'Graystaff Magic', 'Howdah',
+  'Hunger-Driven', "Raxivort's Tongue", 'Telepathic Hub', 'Corrupt Water', 'Contortionist', 'Halfling Nimbleness', 'Chromatic Form',
+  'Illumination', 'Sulfurous Impersonation', 'Infernal Tack', 'Inert', 'Iron Boots', 'Keen Tracker', 'Life Sense', 'Living Storm',
+  "Lynx's Sight", 'Mask of the Wild', 'Master of Undeath', 'Mutation', 'Psionic Hub', 'Resonant Connection', 'Scrying', 'Second-Story Work',
+  'Secure Memory', 'Sever Silver Cord', 'Shared Resistances', "Shargaas's Sight", 'Shift Perception', 'Song of Rest', 'Soul Feeding',
+  'Soul Taker', 'Special Equipment', 'Trackless', "Transmuter's Stone", 'Uncanny Smell', 'Undetectable', 'Ventriloquism', 'Violate Corpse',
+  'Wand of Orcus', 'Warp Perception', 'Watery Stealth', 'Worms', 'Boneless', 'Overbearing Pack', 'Keen Smell and Sight', 'Ghostly Inhabitant',
 ]);
 
 // ------------------------------------------------------------------------------------------------ utilidades ----
@@ -188,7 +210,10 @@ export function golpe(acao, nomePt) {
   const alcance = t.match(/range (\d+)(?:\/(\d+))? ft/);
   // dois dados no mesmo golpe ("({@damage 1d12 + 4} plus {@damage 1d8}) slashing"): o segundo vira dano a mais
   const somado = t.match(/\(\{@damage ([^}]+)\} plus \{@damage ([^}]+)\}\) (\w+) damage/);
+  // "10 (1d10 + 5) damage of a type chosen by the dracohydra" (a draco-hidra): o tipo que ela escolhe vira energia
+  const escolhido = !somado && t.match(/\(\{@damage ([^}]+)\}\) damage of a type/);
   const danos = somado ? [[null, somado[1], somado[3]], [null, somado[2], somado[3]]]
+    : escolhido ? [[null, escolhido[1], 'force']]
     : [...t.matchAll(/\(\{@damage ([^}]+)\}\) (\w+) damage/g)];
   // dano FIXO, sem dado ("{@h}1 piercing damage"): entra como NÚMERO, que é o que `parseDice` aceita
   const fixo = !danos.length ? t.match(/\{@h\}(\d+) (\w+) damage/) : null;
@@ -240,7 +265,7 @@ export function golpe(acao, nomePt) {
     delete g.danoExtra;
   }
   if (/swallowed/.test(t) && !/makes one bite attack against/.test(t)) {
-    const tam = t.match(/If the target is an? (\w+) or smaller creature/)?.[1]?.toLowerCase() ?? 'medium';
+    const tam = (t.match(/If the target is an? (\w+) or smaller creature/) ?? t.match(/If the target is a creature of (\w+) size or smaller/))?.[1]?.toLowerCase() ?? 'medium';
     const acido = t.match(/takes \d+ \(\{@damage ([^}]+)\}\) (\w+) damage at the start/);
     const vom = t.match(/takes (\d+) damage or more on a single turn from a creature inside it, the \w+ must succeed on a \{@dc (\d+)\}/);
     const sv = t.match(/must succeed on a \{@dc (\d+)\} (\w+) saving throw or be swallowed/);
@@ -250,6 +275,8 @@ export function golpe(acao, nomePt) {
       ...(vom ? { regurgita: { dano: Number(vom[1]), dc: Number(vom[2]) } } : {}),
       ...(sv ? { save: ATRIBUTO[sv[2].toLowerCase()], dc: Number(sv[1]) } : {}),
       ...(/grappled\}? by the/.test(t) ? { soAgarrado: true } : {}),
+      // o couraçado astral: só engole quem a mordida derruba a 0 PV ou quem já está incapacitado
+      ...(/reduces it to 0 hit points or it is \{@condition incapacitated\}/.test(t) ? { exige: 'zeroOuIncapacitado' } : {}),
     };
     // o ácido do estômago não é dano a mais da mordida
     if (acido && g.danoExtra?.damage === acido[1].replace(/\s+/g, '')) delete g.danoExtra;
@@ -267,7 +294,7 @@ const rechargeDe = (nome) => { const n = Number(nome.match(/\{@recharge (\d)?\}/
 export function sopro(acao, nomePt) {
   const t = semTags(texto(acao.entries));
   // "a line that is 20 feet long and 5 feet wide" (o behir, o ankheg) é a mesma linha
-  const comprida = t.match(/line (?:of \w+ )?that is (\d+) feet long/);
+  const comprida = t.match(/line (?:of \w+ )?that is (\d+) feet long/) ?? t.match(/in a line (\d+) feet long/);
   const forma = comprida ? [null, comprida[1], 'line'] : t.match(/(\d+)-foot(?:-long)?[ -](cone|line|cube|radius|sphere)/);
   const dc = t.match(/DC (\d+) (\w+) saving throw/);
   const dano = t.match(/taking \d+ \(([\dd+ ]+)\) (\w+) damage/);
@@ -478,6 +505,26 @@ const danoDo = (t) => { const d = t.match(/\(\{@damage ([^}]+)\}\) (\w+) damage/
 export function tracoLido(en, tr, golpes, nomesDasAcoes) {
   const bruto = (tr.entries ?? []).filter((e) => typeof e === 'string').join(' ');
   const t = semTags(bruto);
+  // A SEGUNDA FILA DOS BESTIÁRIOS (2026-11-12, `livro-motor.js`)
+  // a AVERSÃO AO FOGO (o oblex): o fogo o deixa com desvantagem nos ataques até o fim do próximo turno dele
+  if (/takes fire damage, it has disadvantage on attack rolls and ability checks until the end of its next turn/.test(t)) return { traco: 'aversaoAoFogo' };
+  // o INDOMÁVEL (o campeão, o senhor da guerra): rola de novo a resistência que falhou, N vezes por dia
+  if (en === 'Indomitable') return { traco: 'indomavelMonstro', usosIndomavel: Number(semTags(tr.name).match(/(\d)\/Day/)?.[1] ?? 1) };
+  // a PROTEÇÃO ARCANA (o abjurador): um escudo de PV que leva o dano antes dele
+  const ward = t.match(/has a magical ward that has (\d+) hit points/);
+  if (ward) return { traco: 'protecaoArcana', protecaoArcana: Number(ward[1]) };
+  // a PELE VENENOSA (o grung): quem o agarra ou o toca com a mão nua testa Constituição ou fica envenenado
+  const pele = /comes into direct contact with the \w+'s skin must succeed on a DC (\d+) Constitution/.exec(t);
+  if (pele) return { traco: 'peleVenenosa', peleVenenosa: { dc: Number(pele[1]) } };
+  // o DESPERTAR DO REBENTO (os berços do Bigby): o berço que cai solta o rebento do gigante no lugar dele
+  if (en === 'Awakening of the Scion') return { traco: 'despertarDoRebento' };
+  // A MASMORRA SEMIPLANAR (o couraçado astral): quem ele engole vai para um semiplano; não o fere de dentro e só sai com
+  // magia de viagem entre planos (`bloco` põe `masmorra` no `engole` da mordida)
+  if (en === 'Demiplanar Donjon') return { traco: 'masmorraSemiplanar' };
+  // O DESPERTAR (os grandes wyrms do Fizban, os aspectos de Tiamat e de Bahamut, a tartaruga-dragão anciã): em vez de cair
+  // a 0 PV, volta com N PV, uma vez por luta, com o sopro recarregado e as resistências lendárias de volta
+  const desperta = t.match(/would be reduced to 0 hit points, (?:its|her|his) current hit point total instead resets to (\d+) hit points/);
+  if (desperta) return { despertar: { pv: Number(desperta[1]) }, traco: 'despertar' };
   if (en === 'Regeneration') {
     const pv = Number(t.match(/regains (\d+) hit points/)?.[1] ?? 0);
     if (!pv) return null;
@@ -487,7 +534,7 @@ export function tracoLido(en, tr, golpes, nomesDasAcoes) {
     const bloqueia = Object.keys(DANO).filter((en) => palavras.includes(en)).map((en) => DANO[en]);
     return { regeneracao: { pv, bloqueia: [...new Set(bloqueia)], ...(/dies only if it starts its turn with 0 hit points/.test(t) ? { naoMorreA0: true } : {}) }, traco: 'regeneracaoDoLivro' };
   }
-  if (en === 'Death Burst' || en === 'Death Throes') {
+  if (['Death Burst', 'Death Throes', 'Death Flash', 'Death Burn', 'Fiery Death and Rebirth', 'Corrupted Carrier', 'Shrapnel Explosion'].includes(en)) {
     const pes = Number(t.match(/within (\d+) feet/)?.[1] ?? t.match(/(\d+)-foot-radius/)?.[1] ?? 5);
     const dc = t.match(/DC (\d+) (\w+) saving throw/);
     // a fumaça do mefite: sem teste, só o ar que escurece por um minuto
@@ -548,7 +595,7 @@ export function tracoLido(en, tr, golpes, nomesDasAcoes) {
     const dc = t.match(/DC (\d+) (\w+) saving throw/);
     if (!dc) return null;
     const medo = en === 'Horrific Appearance';
-    return { aura: { raioFt: Number(t.match(/within (\d+) feet/)?.[1] ?? 30), quando: 'inicioDoAlvo', save: ATRIBUTO[dc[2].toLowerCase()], dc: Number(dc[1]), condition: medo ? 'amedrontado' : 'desnorteado', imunizaAoPassar: medo, rounds: medo ? 10 : 1, ...(medo ? { repete: true } : {}) }, traco: 'aura' };
+    return { aura: { raioFt: Number(t.match(/within (\d+) feet/)?.[1] ?? 30), quando: 'inicioDoAlvo', save: ATRIBUTO[dc[2].toLowerCase()], dc: Number(dc[1]), condition: medo ? 'amedrontado' : 'desnorteado', imunizaAoPassar: medo, rounds: medo ? 10 : 1, ...(medo ? { repete: true } : {}), ...(/Gaze/.test(en) ? { olhar: true } : {}) }, traco: 'aura' };
   }
   if (en === 'Heated Body') {
     const d = danoDo(bruto);
@@ -570,6 +617,31 @@ export function tracoLido(en, tr, golpes, nomesDasAcoes) {
   }
   if (en === "Devil's Sight") return { features: ['devilsSight'], traco: null };
   if (en === 'Evasion') return { features: ['evasion'], traco: null };
+  // (por último: as regras com nome, acima, vencem; e o que é SABOR fica texto)
+  // AS AURAS PELA FRASE: "any creature that starts its turn within N feet of X must succeed on a DC S Y saving throw or take
+  // D damage / be C" (de quem está perto) e "at the start of each of X's turns, each creature within N feet" (do dono)
+  const auraAlvo = t.match(/(?:Any|Each|A|When a) (?:non-[\w-]+ )?creature[^.]*?starts its turn within (\d+) feet of (?:the |one or more )?/i);
+  const auraDono = t.match(/At the start of (?:each of )?(?:the )?[\w'\- ]+?(?:'s)? turns?, (?:any|each) creature (?:of (?:its|the [\w'\- ]+?'s) choice )?within (\d+) feet/i);
+  const dcAura = t.match(/DC (\d+) (\w+) saving throw/);
+  if ((auraAlvo || auraDono) && dcAura && !SABOR.has(en) && !/Bonus|bonus action/.test(t.slice(0, 40))) {
+    const d = danoDo(bruto);
+    // "if the bodak isn't incapacitated" é condição do DONO, não efeito: sai antes de ler a condição
+    const cond = nCond(bruto.replace(/(?:isn't|is not|is|aren't|are not) \{@condition incapacitated\}|(?:isn't|is not) incapacitated|immune to the \{@condition \w+\} condition/g, ''));
+    if (d || cond) {
+      const minuto = /for 1 minute/.test(t);
+      return {
+        aura: {
+          raioFt: Number((auraDono ?? auraAlvo)[1]), quando: auraDono ? 'inicioDoDono' : 'inicioDoAlvo', save: ATRIBUTO[dcAura[2].toLowerCase()], dc: Number(dcAura[1]),
+          ...(d ? { damage: d.damage, damageType: d.type } : {}),
+          ...(cond ? { condition: cond, rounds: minuto ? 10 : 1, ...(minuto ? { repete: true } : {}) } : {}),
+          ...(/gaze|eyes/i.test(en + ' ' + t) ? { olhar: true } : {}),
+          ...(/immune to (?:this|the [\w' ]+?'s) /.test(t) ? { imunizaAoPassar: true } : {}),
+          ...(/of (?:its|the [\w'\- ]+?'s) choice/.test(t) ? { soInimigos: true } : {}),
+        },
+        traco: 'aura',
+      };
+    }
+  }
   return null;
 }
 
@@ -670,28 +742,38 @@ export function acaoEspecial(acao, nomePt) {
     const dc = t.match(/DC (\d+) (\w+) saving throw/);
     return { ...comum, tipo: 'area', shape: 'raio', areaFt: Number(t.match(/within (\d+) feet/)[1]), save: ATRIBUTO[dc[2].toLowerCase()], dc: Number(dc[1]), condition: 'lentificado', rounds: 10, repete: true };
   }
-  const tele = t.match(/teleports.*?up to (\d+) feet/);
+  const tele = t.match(/teleports?\b.*?(?:up to )?(\d+) feet/);
   if (tele) return { ...comum, tipo: 'teleporte', alcanceFt: Number(tele[1]) };
   const cura = bruto.match(/regains \d+ \(\{@dice ([^}]+)\}\) hit points/);
   if (cura) return { ...comum, tipo: 'cura', dados: cura[1].replace(/\s+/g, '') };
+  const curaFixa = t.match(/can regain (\d+) hit points/);
+  if (curaFixa) return { ...comum, tipo: 'cura', dados: curaFixa[1], soEmSi: true };
+  if (/withdraws into its shell/.test(t)) return { ...comum, tipo: 'concha', ca: Number(t.match(/\+(\d+) bonus to AC/)?.[1] ?? 4) };
+  // o GOLPE DE AÇÃO BÔNUS com dano a mais, que deixa quem golpeia exposto (a Fúria Marcial do espectro da espada)
+  const golpeB = bruto.match(/can make one weapon attack(?:, which deals an extra \d+ \(\{@damage ([^}]+)\}\) (\w+) damage on a hit)?\./);
+  if (golpeB) return { ...comum, tipo: 'golpeBonus', ...(golpeB[1] ? { extra: golpeB[1].replace(/\s+/g, ''), extraTipo: DANO[golpeB[2]] ?? golpeB[2] } : {}), exposto: /attack rolls against it have advantage/.test(t) };
   const dc = t.match(/DC (\d+) (\w+) saving throw/);
   if (!dc) return null;
   const d = danoDo(bruto);
   const cond = nCond(bruto) ?? (/roll a \{@dice d6\} at the start of each of its turns/.test(bruto) ? 'euforico'
     : /can't use reactions, its speed is halved/.test(t) ? 'lentificado' : /speed halved and has disadvantage/.test(t) ? 'deformado'
-    : /disadvantage on Wisdom saving throws and all ability checks/.test(t) ? 'amaldicoadoLamia' : /drop to 0 hit points/.test(t) ? 'caido' : null);
+    : /disadvantage on Wisdom saving throws and all ability checks/.test(t) ? 'amaldicoadoLamia'
+      : /disadvantage on ability checks, attack rolls, and saving throws/.test(t) ? 'escarnecido' : /drop to 0 hit points/.test(t) ? 'caido' : null);
   if (!d && !cond) return null;
-  const comprida = t.match(/line (?:of \w+ )?that is (\d+) feet long/);
+  const comprida = t.match(/line (?:of \w+ )?that is (\d+) feet long/) ?? t.match(/in a line (\d+) feet long/);
   const forma = comprida ? [null, comprida[1], 'line'] : t.match(/(\d+)-foot(?:-long)?[ -](cone|line|cube)/);
-  const noEspaco = !forma && /in the [\w ]+'s space/i.test(t) ? [null, '5'] : null;
-  const raio = noEspaco ?? (!forma && /(?:each|every|any) (?:creature|humanoid)/i.test(t) ? t.match(/within (\d+) feet of (?:it|the \w+|him|her)/i) ?? t.match(/(\d+)-foot[ -]radius/i) : null);
-  const varios = !forma && !raio ? (t.match(/up to (\w+) creatures[^.]*?within (\d+) feet/i) ?? t.match(/creates (\w+) bolts of [^.]*?within (\d+) feet/i)) : null;
+  const noEspaco = !forma && (/in the [\w ]+'s space/i.test(t) || (/in its space/i.test(t) && !/within \d+ feet/.test(t))) ? [null, '5'] : null;
+  // "each enemy within 30 feet" (o cavaleiro negro), "Creatures within 30 feet of the deep scion" (o rebento das profundezas)
+  const raio = noEspaco ?? (!forma && /(?:each|every|any) (?:creature|humanoid|enemy)|(?:^|\. )Creatures within/i.test(t)
+    ? t.match(/within (\d+) feet of (?:it|the \w+|him|her)/i) ?? t.match(/(\d+)-foot[ -]radius/i) ?? t.match(/(?:enemy|Creatures) within (\d+) feet/i) : null);
+  const varios = !forma && !raio ? (t.match(/up to (\w+) creatures[^.]*?within (\d+) feet/i) ?? t.match(/creates (\w+) bolts of [^.]*?within (\d+) feet/i)
+    ?? t.match(/targets one or (\w+) creatures[^.]*?within (\d+) feet/i)) : null;
   const alvo = !forma && !raio && !varios ? t.match(/(?:one|a) (?:creature|humanoid|target|frightened creature|creature charmed)[^.]*?within (\d+) feet/i) : null;
   const agarrado = !forma && !raio && !varios && !alvo && /creature grappled by/i.test(t);
   if (!forma && !raio && !varios && !alvo && !agarrado) return null;
   const cai0 = /drop to 0 hit points/.test(t);
   const aoPassar = t.match(/On a successful save, the (?:creature|target) is \{@condition (\w+)\}/) ?? bruto.match(/On a successful save, the (?:creature|target) is \{@condition (\w+)\}/);
-  const rounds = /for 1 minute/.test(t) ? 10 : /until the (?:end|start) of (?:the \w+'s|its) next turn/.test(t) ? 1 : /for (?:1 hour|24 hours|1 day|8 hours)/.test(t) ? 100 : 10;
+  const rounds = /for 1 minute/.test(t) ? 10 : /until the (?:end|start) of (?:the [\w -]+?'s|its) next turn/.test(t) ? 1 : /for (?:1 hour|24 hours|1 day|8 hours)/.test(t) ? 100 : 10;
   return {
     ...comum,
     tipo: alvo || varios || agarrado ? 'alvo' : 'area',
@@ -731,15 +813,20 @@ export function presencaAterradora(acao) {
  * bludgeoning ... knocked prone": o golpe de asa). "Detect" não muda nada no tabuleiro e fica de fora; o resto vai para
  * a fila do motor.
  */
-export function acoesLendarias(m, nomesDasAcoes, nomesPt) {
+export function acoesLendarias(m, nomesDasAcoes, nomesPt, magiasEn = {}) {
   const opcoes = []; const faltam = [];
-  const acaoPt = (en) => Object.entries(nomesDasAcoes).find(([e]) => e.toLowerCase().replace(/s$/, '') === en.toLowerCase().replace(/s$/, ''))?.[1] ?? null;
+  const igual = (a, b) => a.toLowerCase().replace(/s$/, '') === b.toLowerCase().replace(/s$/, '');
+  // o nome exato da ação, e senão a que CONTÉM o nome ("acid lash" é a Lash do Juiblex, "demonic weapon" a do molydeus)
+  const acaoPt = (en) => Object.entries(nomesDasAcoes).find(([e]) => igual(e, en))?.[1]
+    ?? Object.entries(nomesDasAcoes).find(([e]) => !/multiattack/i.test(e) && (e.toLowerCase().includes(en.toLowerCase()) || en.toLowerCase().includes(e.toLowerCase())))?.[1] ?? null;
   for (const l of m.legendary ?? []) {
     const en = limpaNome(l.name);
-    const custo = Number(String(l.name).match(/Costs (\d)/)?.[1] ?? 1);
+    // "Costs 2 Actions", "Cost 2 Actions" (o Bael) e "(2 Actions)" (o comandante githyanki)
+    const custo = Number(String(l.name).match(/Costs? (\d)|\((\d) Actions\)/)?.slice(1).find(Boolean) ?? 1);
     const t = semTags(texto(l.entries));
     const bruto = texto(l.entries);
-    const nome = nomesPt[en] ?? nomesPt[l.name] ?? en;
+    // o custo já vai no número: "(Custa 2 Ações)" que a tradução deixou no nome sai dele
+    const nome = String(nomesPt[en] ?? nomesPt[l.name] ?? en).replace(/\s*\((?:Custa|Custam|Custo)[^)]*\)\s*$/i, '');
     const base = { nome, custo };
     if (en === 'Detect') continue;
     // o GOLPE: "makes one tail attack", "makes one attack with its hooves", "makes one unarmed strike", "makes one weapon attack"
@@ -748,18 +835,70 @@ export function acoesLendarias(m, nomesDasAcoes, nomesPt) {
       ?? (/makes one unarmed strike/i.test(t) ? [null, 'unarmed strike'] : null) ?? t.match(/uses its ([A-Z][a-z]+ [A-Z][a-z]+)(?: action)?\.?$/);
     if (golpeDe) {
       const alvo = golpeDe[1].toLowerCase().trim();
-      const arma = acaoPt(alvo) ?? (alvo === 'weapon' ? Object.entries(nomesDasAcoes).find(([e]) => !/multiattack/i.test(e))?.[1] : null);
+      // "makes one Claw or Tail attack": a primeira das duas que o bloco tem
+      const arma = alvo.split(' or ').map((x) => acaoPt(x.trim())).find(Boolean)
+        ?? (alvo === 'weapon' ? Object.entries(nomesDasAcoes).find(([e]) => !/multiattack/i.test(e))?.[1] : null);
       if (arma) { opcoes.push({ ...base, tipo: 'golpe', arma }); continue; }
     }
+    // os outros jeitos de dizer um golpe: "attacks once with his mace", "makes one attack, either with its demonic weapon"
+    const outroGolpe = t.match(/attacks (?:once )?with (?:his |her |its |their )?([A-Za-z' ]+?)\./) ?? t.match(/makes one attack, either with its ([a-z ]+?) or/)
+      ?? t.match(/makes (?:a|one) (?:melee |ranged )?attack with (?:his |her |its |their )?([A-Za-z' ]+?)\./);
+    if (outroGolpe) {
+      const arma = acaoPt(outroGolpe[1].trim());
+      if (arma) { opcoes.push({ ...base, tipo: 'golpe', arma }); continue; }
+    }
+    // o GOLPE QUE SÓ EXISTE COMO AÇÃO LENDÁRIA (a cauda do Demogorgon, o toque do Juiblex): o golpe vai dentro da opção
+    if (/\{@atk /.test(bruto)) {
+      const g = golpe(l, en);
+      if (g) { g.name = nome; opcoes.push({ ...base, tipo: 'golpe', arma: nome, ataque: g }); continue; }
+    }
+    // a MAGIA COM NOME: "casts acid splash", "casts crown of madness or dissonant whispers", "casts the reverse gravity spell"
+    const lancaMagia = t.match(/casts (?:the )?([a-z' ]+?)(?: spell)?(?: \(| or |,|\.)/);
+    if (lancaMagia) {
+      const nomes = t.replace(/^.*?casts (?:the )?/, '').replace(/ spell\b/, '').replace(/[(,.].*$/, '').split(' or ').map((x) => x.trim());
+      const ids = nomes.map((x) => magiasEn[x]).filter(Boolean);
+      if (ids.length) { opcoes.push({ ...base, tipo: 'magia', magias: ids }); continue; }
+    }
+    // a MAGIA: "uses Psychic Step or Spellcasting" (os dragões de gema) e "expends a spell slot to cast a 1st-, 2nd-, or
+    // 3rd-level spell ... 1 legendary action per level" (três opções, de custo 1 a 3, cada uma até o círculo do custo)
+    if (/uses (?:Psychic Step or )?Spellcasting/.test(t)) { opcoes.push({ ...base, tipo: 'magia' }); continue; }
+    if (/spell slot to cast a 1st-, 2nd-, or 3rd-level spell/.test(t)) {
+      for (const c of [1, 2, 3]) opcoes.push({ ...base, custo: c, tipo: 'magia', maxCirculo: c });
+      continue;
+    }
+    // a LINHA com teste (o Raio Psíquico do grande wyrm de ametista)
+    const linha = t.match(/in a (\d+)-foot line that is (\d+) feet wide/);
+    const dcL = t.match(/DC (\d+) (\w+) saving throw/);
+    const danoL = bruto.match(/\(\{@damage ([^}]+)\}\) (\w+) damage/);
+    if (linha && dcL && danoL) {
+      opcoes.push({ ...base, tipo: 'linha', comprimentoFt: Number(linha[1]), larguraFt: Number(linha[2]), save: ATRIBUTO[dcL[2].toLowerCase()], dc: Number(dcL[1]),
+        damage: danoL[1].replace(/\s+/g, ''), damageType: DANO[danoL[2]] ?? danoL[2], halfOnSave: /half as much/.test(t) });
+      continue;
+    }
+    // as LANÇAS que acertam sem teste, cada uma num alvo à escolha (a Lança Arcana do grande wyrm negro)
+    const lancas = t.match(/creates (\w+) spears of magical force/);
+    const danoLanca = bruto.match(/\(\{@damage ([^}]+)\}\) (\w+) damage/);
+    if (lancas && danoLanca) {
+      const N = { two: 2, three: 3, four: 4, five: 5, six: 6 };
+      opcoes.push({ ...base, tipo: 'lancas', n: N[lancas[1]] ?? Number(lancas[1]) ?? 1, alcanceFt: Number(t.match(/within (\d+) feet/)?.[1] ?? 120),
+        damage: danoLanca[1].replace(/\s+/g, ''), damageType: DANO[danoLanca[2]] ?? danoLanca[2] });
+      continue;
+    }
     // "uses its Fling" / o nome de uma ação especial (a Tempestade de Raios do kraken): a ação especial dele
-    const daAcao = (m.action ?? []).find((a) => limpaNome(a.name) === en || new RegExp(`uses its ${limpaNome(a.name)}`).test(t));
+    const daAcao = (m.action ?? []).find((a) => limpaNome(a.name) === en || new RegExp(`uses (?:its |his |her |their )?${limpaNome(a.name)}`).test(t));
+    // "uses Extract Brain": a ação do bloco que é GOLPE vira o golpe lendário
+    const golpeDaAcao = daAcao && !/Multiattack/.test(daAcao.name) && golpe(daAcao, en) ? nomesDasAcoes[limpaNome(daAcao.name)] : null;
+    if (golpeDaAcao) { opcoes.push({ ...base, tipo: 'golpe', arma: golpeDaAcao }); continue; }
+    const teleDaAcao = daAcao && semTags(texto(daAcao.entries)).match(/teleports[^.]*?up to (\d+) feet/);
+    if (teleDaAcao) { opcoes.push({ ...base, tipo: 'teleporte', alcanceFt: Number(teleDaAcao[1]) }); continue; }
     if (daAcao && !/Multiattack/.test(daAcao.name) && !golpe(daAcao, en)) { opcoes.push({ ...base, tipo: 'especial', acao: nomesDasAcoes[limpaNome(daAcao.name)] ?? limpaNome(daAcao.name) }); continue; }
     if (/random eye ray/.test(t)) { opcoes.push({ ...base, tipo: 'raio' }); continue; }
     if (/casts a cantrip/.test(t)) { opcoes.push({ ...base, tipo: 'magia', soTruque: true }); continue; }
     if (/casts a spell/.test(t)) { opcoes.push({ ...base, tipo: 'magia' }); continue; }
     const tele = t.match(/teleports[^.]*?up to (\d+) feet/);
     if (tele) { opcoes.push({ ...base, tipo: 'teleporte', alcanceFt: Number(tele[1]) }); continue; }
-    const anda = t.match(/(moves|flies) up to (half )?its (?:flying )?speed/);
+    // (o ki-rin escreve "up to its half its speed")
+    const anda = t.match(/(moves|flies) up to (?:its )?(half )?its (?:flying )?speed/);
     if (anda) { opcoes.push({ ...base, tipo: 'mover', metade: !!anda[2], semOportunidade: /without provoking/.test(t) }); continue; }
     const turbilhao = t.match(/transforms into a whirlwind[^.]*?moves up to (\d+) feet/);
     if (turbilhao) { opcoes.push({ ...base, tipo: 'mover', pes: Number(turbilhao[1]), semOportunidade: true }); continue; }
@@ -776,7 +915,8 @@ export function acoesLendarias(m, nomesDasAcoes, nomesPt) {
     const dc = t.match(/DC (\d+) (\w+) saving throw/);
     const cadaUm = /\b[Ee]ach (?:non-undead )?creature|All other creatures/.test(t);
     const raioA = !cadaUm ? null : t.match(/(?:[Ee]ach|All other) [^.]*?creatures?[^.]*?within (\d+) feet/) ?? t.match(/in a (\d+)-foot radius/) ?? t.match(/within (\d+) feet of (?:the|it)/);
-    const umAlvo = t.match(/(?:one creature|Choose one creature)[^.]*?within (\d+) feet/i) ?? t.match(/gaze on one creature [^.]*?within (\d+) feet/i);
+    const umAlvo = t.match(/(?:one creature|Choose one creature)[^.]*?within (\d+) feet/i) ?? t.match(/gaze on one creature [^.]*?within (\d+) feet/i)
+      ?? (cadaUm ? null : t.match(/\b(?:at|around|targets) (?:a|one) (?:creature|enemy)[^.]*?within (\d+) feet/i));
     if (dc && (raioA || umAlvo)) {
       const danos = [...bruto.matchAll(/\(\{@damage ([^}]+)\}\) (\w+) damage/g)];
       const maximo = /hit point maximum is (?:magically )?reduced by \d+ \(([\dd+ ]+)\)/.exec(t);
@@ -910,6 +1050,10 @@ export function bloco(m, pt, magiasEn, pend) {
     const en = limpaNome(tr.name);
     const ptT = (pt.tracos ?? []).find((x) => x.en === en || x.en === tr.name);
     if (en === 'Spellcasting' || en === 'Innate Spellcasting') continue;
+    // A INVISIBILIDADE DE SEMPRE (o perseguidor invisível, o poltergeist: "é invisível", e só): não é a do quasit, que
+    // some por vontade e reaparece ao atacar. Com o mesmo traço, a IA do quasit o deixava parado esperando alguém ficar
+    // fraco, e três perseguidores não tiravam um PV do grupo.
+    if (en === 'Invisibility' && /^The [\w ]+ is \{@condition invisible\}\.?$/.test(String(tr.entries?.[0] ?? ''))) { tracos.push('sempreInvisivel'); continue; }
     if (Object.hasOwn(TRACO_DO_MOTOR, en)) { if (TRACO_DO_MOTOR[en]) tracos.push(TRACO_DO_MOTOR[en]); continue; }
     if (/^Legendary Resistance/.test(en)) continue;
     const lido = tracoLido(en, tr, ataques, nomesDasAcoes);
@@ -921,17 +1065,36 @@ export function bloco(m, pt, magiasEn, pend) {
       continue;
     }
     if (SABOR.has(en)) { textoSo(en, ptT); continue; }
+    // o traço que a PRÓPRIA criatura usa como ação bônus vira ação especial com `bonus` (o Passo Feérico, o Segundo
+    // Fôlego, a Fúria Marcial, a Provocação). Depois da leitura de sempre: o Balbucio do MM fala na ação bônus de quem o ouve
+    // (o Desafio do Campeão prende quem falha perto do Donaar; a frase cita "incapacitado" sobre o próprio Donaar e a leitura
+    // geral tomaria isso pela condição de quem falha: fica na fila)
+    if (en !== 'Champion Challenge' && /(?:^|\. )As a bonus action, |can use a bonus action(?: on its turn)? to /.test(semTags((tr.entries ?? []).filter((e) => typeof e === 'string').join(' ')))) {
+      const esp = acaoEspecial(tr, ptT?.nome ?? en);
+      if (esp) { (especiais ??= []).push({ ...esp, bonus: true }); textoSo(en, ptT); continue; }
+    }
     semMotor(en, ptT, 'traco');
   }
   for (const r of m.reaction ?? []) {
     const en = limpaNome(r.name);
     const ptR = (pt.reacoes ?? []).find((x) => x.en === en);
     if (Object.hasOwn(TRACO_DO_MOTOR, en) && TRACO_DO_MOTOR[en]) { tracos.push(TRACO_DO_MOTOR[en]); continue; }
+    // AS REAÇÕES DE SEMPRE, lidas da frase (o texto delas fica na ficha): revidar quem fere, com teste ou com golpe, e a CA a
+    // mais contra um ataque
+    const lida = reacaoLida(r, nomesDasAcoes, ptR?.nome ?? en);
+    if (lida) {
+      const { traco, features, ...resto } = lida;
+      if (traco) tracos.push(traco);
+      if (features) extra.features = [...new Set([...(extra.features ?? []), ...features])];
+      Object.assign(extra, resto);
+      if (!traco) textoSo(en, ptR);
+      continue;
+    }
     if (SABOR.has(en)) { textoSo(en, ptR); continue; }
     semMotor(en, ptR, 'reacao');
   }
   const nomesLendarios = Object.fromEntries((pt.lendarias ?? []).map((a) => [a.en, a.nome]));
-  const lend = m.legendary?.length ? acoesLendarias(m, nomesDasAcoes, nomesLendarios) : null;
+  const lend = m.legendary?.length ? acoesLendarias(m, nomesDasAcoes, nomesLendarios, magiasEn) : null;
   if (lend?.faltam.length) pend.push({ criatura: id, lendarias: lend.faltam });
   if (lend?.opcoes.length) tracos.push('acoesLendarias');
   const pendMagias = new Set();
@@ -974,6 +1137,54 @@ export function bloco(m, pt, magiasEn, pend) {
   return { def, textoDosTracos };
 }
 
+/**
+ * AS REAÇÕES QUE SE REPETEM ENTRE OS BESTIÁRIOS, pela frase:
+ *   - a Esquiva Sobrenatural (o ladrão mestre) -> a `uncannyDodge` do herói;
+ *   - a CA a mais contra um ataque ("a +5 bonus to its AC against that attack": o Escudo Mágico, a Armadura de Gelo) ->
+ *     `aparar` com `apararBonus`, contra qualquer ataque (`apararTudo`);
+ *   - o REVIDE COM TESTE (a Repreensão Gélida, a Ferida Nociva, o Trovão): quem o fere faz o teste, ou todos a até X dele
+ *     (`repreensao`, a mesma da ocular): dano, metade se passar, condição, empurrão;
+ *   - o REVIDE COM GOLPE ("makes one bite attack against that creature", "with advantage", "against a random creature
+ *     within its reach") -> `revide`.
+ */
+export function reacaoLida(r, nomesDasAcoes, nome) {
+  const bruto = texto(r.entries);
+  const t = semTags(bruto);
+  if (/halves the damage that it takes from an attack that hits it/.test(t)) return { features: ['uncannyDodge'], traco: 'esquivaSobrenatural' };
+  const ca = t.match(/\+(\d+) bonus to (?:its )?AC against (?:that|the) attack/);
+  if (ca && !/gives that creature|another creature/.test(t)) return { traco: 'aparar', apararBonus: Number(ca[1]), apararTudo: true };
+  const quando = /(?:takes damage|is damaged|being damaged|taking damage|hits (?:it|him|her) with|being hit by|hit by a melee)/.test(t);
+  if (!quando) return null;
+  const dc = t.match(/DC (\d+) (\w+) saving throw/);
+  if (dc) {
+    const d = bruto.match(/\(\{@damage ([^}]+)\}\) (\w+) damage/);
+    const cond = /poisoned condition until the end of its next turn|poisoned until the end/.test(t) ? 'envenenado' : null;
+    const raio = t.match(/(?:Each|All other) creatures? (?:within|in that area|in a) ?(\d+)?[- ]?(?:feet|foot)?/);
+    const raioFt = Number(t.match(/(?:Each|All other) creatures? within (\d+) feet/)?.[1] ?? t.match(/(\d+)-foot-radius sphere/)?.[1] ?? 0) || null;
+    if (!d && !cond) return null;
+    return {
+      repreensao: {
+        nome, alcanceFt: Number(t.match(/within (\d+) feet of (?:it|itself|the)/)?.[1] ?? 60), save: ATRIBUTO[dc[2].toLowerCase()], dc: Number(dc[1]),
+        ...(d ? { damage: d[1].replace(/\s+/g, ''), damageType: DANO[d[2]] ?? d[2], metade: /half as much/.test(t) } : {}),
+        ...(cond ? { condition: cond } : {}),
+        ...(raio && raioFt ? { raioFt } : {}),
+        ...(/pushed (?:horizontally )?(\d+) feet/.test(t) ? { empurraFt: Number(t.match(/pushed (?:horizontally )?(\d+) feet/)[1]) } : {}),
+      },
+    };
+  }
+  const golpeR = t.match(/makes? (?:one|a) ([A-Za-z ]+?) attack/) ?? t.match(/can make (?:one|a) ([A-Za-z ]+?) attack/);
+  if (golpeR) {
+    const alvo = golpeR[1].toLowerCase().replace(/^melee (?:weapon )?/, '').trim();
+    const igual = (a, b) => a.toLowerCase().replace(/s$/, '') === b.toLowerCase().replace(/s$/, '');
+    const arma = Object.entries(nomesDasAcoes).find(([e]) => igual(e, alvo))?.[1]
+      ?? Object.entries(nomesDasAcoes).find(([e]) => !/multiattack/i.test(e) && (e.toLowerCase().includes(alvo) || (alvo && alvo.includes(e.toLowerCase()))))?.[1]
+      ?? (/^(?:weapon|)$/.test(alvo) || /melee/.test(golpeR[1]) ? Object.entries(nomesDasAcoes).find(([e]) => !/multiattack/i.test(e))?.[1] : null);
+    if (!arma) return null;
+    return { revide: { nome, arma, ...(/with advantage/.test(t) ? { vantagem: true } : {}), ...(/random creature/.test(t) ? { aoAcaso: true } : {}) } };
+  }
+  return null;
+}
+
 // ------------------------------------------------------------------------------------------------ principal ----
 // só quando rodado pela linha de comando: o teste importa as funções acima sem escrever nada
 if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
@@ -986,7 +1197,13 @@ if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
   const jaTemos = lerJson(JA, {});
   const magiasEn = lerJson(MAGIAS_EN, {});
   const todos = livro.monster.filter((m) => !m._copy);
-  const novos = todos.filter((m) => !jaTemos[m.name]);
+  // O QUE JÁ É BLOCO FEITO À MÃO (os capítulos do Obelisco fizeram vários de outros livros): o `nomeOriginal` dele casa com o
+  // nome no livro. O MM fica fora desta regra: o `ja-temos.json` dele foi casado à mão, e o capítulo 7 cita blocos dele.
+  const aMao = LIVRO === 'mm' ? new Set() : new Set(fs.readdirSync(`${RAIZ}src/rules/monsters`).filter((f) => f.endsWith('.js') && !f.startsWith('livro-'))
+    .flatMap((f) => [...fs.readFileSync(`${RAIZ}src/rules/monsters/${f}`, 'utf8').matchAll(/nomeOriginal: ['"]([^'"]+)['"]/g)].map((m) => m[1])));
+  const pulados = todos.filter((m) => aMao.has(m.name)).map((m) => m.name);
+  if (pulados.length) console.log(`já feitos à mão, ficam de fora: ${pulados.join(', ')}`);
+  const novos = todos.filter((m) => !jaTemos[m.name] && !aMao.has(m.name));
   const comTexto = novos.filter((m) => traducao[m.name]);
   console.log(`${LIVRO.toUpperCase()}: ${todos.length} no livro, ${todos.length - novos.length} que o jogo já tem, ${novos.length} novos, ${comTexto.length} com o texto em pt-br`);
   if (SO_PLANO) process.exit(0);
@@ -995,6 +1212,13 @@ if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
   // do livro, o ghast) ganha o livro no fim do id, em vez de sumir debaixo do outro
   const usados = new Set(fs.readdirSync(`${RAIZ}src/rules/monsters`).filter((f) => f.endsWith('.js') && !f.startsWith('livro-'))
     .flatMap((f) => [...fs.readFileSync(`${RAIZ}src/rules/monsters/${f}`, 'utf8').matchAll(/^  (\w+): \{$/gm)].map((m) => m[1])));
+  // ... e os dos OUTROS livros importados: o mesmo nome em pt-br em dois livros (o "Diabrete" do MM e uma variante do
+  // Mordenkainen) faria o segundo apagar o primeiro no `MONSTERS`. O livro que entra depois ganha o sufixo.
+  for (const f of fs.readdirSync(`${RAIZ}src/rules/monsters`).filter((x) => /^livro-.*\.js$/.test(x) && x !== `livro-${LIVRO}.js`)) {
+    const fonte = fs.readFileSync(`${RAIZ}src/rules/monsters/${f}`, 'utf8');
+    const corpo = fonte.slice(fonte.indexOf('export const LIVRO_'), fonte.indexOf('export const TRACOS_'));
+    for (const m of corpo.matchAll(/^ "(\w+)": \{$/gm)) usados.add(m[1]);
+  }
   const pendentes = [];
   const blocos = {}; const tracosTexto = {};
   for (const m of comTexto) {
@@ -1011,7 +1235,9 @@ if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
   fs.writeFileSync(PENDENTE, `${JSON.stringify(pendentes, null, 1)}\n`);
   // AS FICHAS (o token redondo do 5etools): a lista que `baixar-fichas.py` baixa, e o módulo que o jogo lê — só com as
   // fichas que já estão em `public/fichas` (sem a imagem, a criatura fica com o retrato em pixel).
-  const fichas = Object.fromEntries(Object.values(blocos).map((d) => [d.id, [d.fonte, `${d.nomeOriginal}.webp`]]));
+  // o espelho grava o arquivo sem acento e com o "æ" aberto (o Rothé é `Rothe.webp`, o Mörgæn é `Morgaen.webp`)
+  const arquivoDoToken = (nome) => nome.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/æ/g, 'ae').replace(/Æ/g, 'Ae');
+  const fichas = Object.fromEntries(Object.values(blocos).map((d) => [d.id, [d.fonte, `${arquivoDoToken(d.nomeOriginal)}.webp`]]));
   // a ficha de um id que SAIU da lista (o nome mudou) fica órfã: some, se nenhuma outra lista do jogo usa aquele id
   const antes = Object.keys(lerJson(`${RAIZ}src/dev/bestiario/fichas-${LIVRO}.json`, {}));
   const outras = new Set(['fichas-imgur.json', 'fichas-5etools.json', 'fichas-proprias.json']

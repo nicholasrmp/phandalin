@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import {
   novoRascunho, trocarClasse, problemasDoRascunho, definicaoDoRascunho, definicaoValida, atributosFinais, custoDosPontos,
   periciasDaClasse, periciasFixas, nomeDaRaca, rascunhoDaDefinicao, RACAS_DO_CRIADOR, CORES_DO_DRACONATO, ANTECEDENTES, novoId,
-  MOTIVO_DO_ANTECEDENTE, talentosDoVariante,
+  MOTIVO_DO_ANTECEDENTE, talentosDoVariante, livresDe, coresDaRaca,
 } from '../game/criador.js';
 import { subirNivel } from '../rules/progressao.js';
 import { registrarHeroi, heroiPorId } from '../game/herois.js';
@@ -36,13 +36,17 @@ function rascunho(raca, classe, sexo = 'F') {
   r.nome = 'Teste';
   r.sexo = sexo;
   r.raca = raca;
-  if (raca === 'meioElfo' || raca === 'humanoVariante') {
-    r.livres = ['dex', 'con'];
-    const usadas = new Set([...periciasFixas(r), ...r.periciasEscolhidas]);
-    r.periciasLivres = ['acrobacia', 'arcanismo', 'atletismo', 'atuacao', 'enganacao'].filter((s) => !usadas.has(s)).slice(0, raca === 'meioElfo' ? 2 : 1);
+  // o que a raça deixa escolher (`criador.js livresDe`): os +1, o +2 e as perícias, as primeiras que servem
+  const l = livresDe(r);
+  if (l) {
+    if (l.mais2) r.livreMais2 = 'con';
+    r.livres = ['dex', 'wis', 'int'].slice(0, l.atributos ?? 0);
+    const usadas = new Set([...periciasFixas(r)]);
+    r.periciasLivres = (l.de ?? ['acrobacia', 'arcanismo', 'atletismo', 'atuacao', 'enganacao', 'historia']).filter((s) => !usadas.has(s)).slice(0, l.pericias ?? 0);
   }
+  if (coresDaRaca(raca).length) r.cor = coresDaRaca(raca)[0];
   // o Vigoroso: o talento que mais bate com o de origem, para a conta do conflito rodar em toda classe
-  if (raca === 'humanoVariante') r.talentoVariante = { id: 'vigoroso' };
+  if (raca === 'humanoVariante' || RACAS[raca]?.talentoDaRaca) r.talentoVariante = { id: 'vigoroso' };
   r.periciasEscolhidas = [];
   trocarClasse(r, classe);
   return r;
@@ -215,17 +219,20 @@ teste('o save leva a definição na config, e ela volta válida', () => {
   assert.equal(volta.herois[0].look, `arte:${def.id}`);
 });
 
-teste('os treze antecedentes do Livro do Jogador: as duas perícias do livro, um talento de origem que existe e o motivo', () => {
+teste('os 38 antecedentes (treze do PHB e 25 dos livros): duas perícias, um talento de origem que existe e o motivo', () => {
   const talentos = new Set(TALENTOS_DE_ORIGEM.map((t) => t.id));
-  assert.equal(Object.keys(ANTECEDENTES).length, 13);
+  assert.equal(Object.values(ANTECEDENTES).filter((a) => a.livro === 'PHB' && !['espiao', 'gladiador', 'mercadorDeGuilda', 'cavaleiro', 'pirata'].includes(Object.keys(ANTECEDENTES).find((k) => ANTECEDENTES[k] === a))).length, 13);
+  assert.equal(Object.keys(ANTECEDENTES).length, 38);
   for (const [id, a] of Object.entries(ANTECEDENTES)) {
-    assert.equal(a.pericias.length, 2, id);
-    for (const p of a.pericias) assert.ok(SKILLS[p], `${id}: ${p}`);
+    // as que o livro deixa escolher contam junto: o caçador de recompensas tem as duas na lista
+    assert.equal(a.pericias.length + (a.escolhe?.quantas ?? 0), 2, id);
+    for (const p of [...a.pericias, ...(a.escolhe?.de ?? [])]) assert.ok(SKILLS[p], `${id}: ${p}`);
     assert.ok(talentos.has(a.talento), `${id}: ${a.talento}`);
     assert.ok(MOTIVO_DO_ANTECEDENTE[id], `${id} tem motivo`);
     const r = novoRascunho('guerreiro');
     r.antecedente = id;
     assert.ok(periciasFixas(r).every((p) => SKILLS[p]));
+    assert.equal(new Set(periciasFixas(r).filter((p) => !(a.pericias.includes(p) || a.escolhe?.de.includes(p)))).size, 0, `${id}: perícia de fora`);
   }
   assert.deepEqual(ANTECEDENTES.heroiDoPovo.pericias, ['lidarComAnimais', 'sobrevivencia'], 'o Herói do Povo do livro');
   assert.equal(ANTECEDENTES.forasteiro.iniciado, 'druida', 'o Forasteiro inicia na lista do druida, como o Guia de 2024');

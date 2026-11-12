@@ -820,6 +820,9 @@ export function montarHeroi(id, escolha = escolhaAutomatica(id)) {
   const c = criarPersonagem({
     id: h.id, name: h.name, className: h.className, ancestry: h.ancestry, look: h.look,
     raca: h.raca, abilities: h.abilities, skills, armor: armadura, shield: escudo, speedFt: h.speedFt,
+    // a RAÇA pela chave (as dos livros não se leem pelo texto), o traço que ela deixou escolher e a cor do dragão do Fizban
+    ...(h.racaId ? { racaId: h.racaId } : {}), ...(h.tracoDaRaca ? { tracoDaRaca: h.tracoDaRaca } : {}),
+    ...(h.ancestralidade ? { ancestralidade: h.ancestralidade } : {}),
     weapons: armas.length ? armas : ['adaga'],
     ...(spellcasting ? { spellcasting } : {}),
   }, { classe: h.classe, nivel: 1, escolhas });
@@ -835,6 +838,8 @@ export function montarHeroi(id, escolha = escolhaAutomatica(id)) {
   c.equippedWeapon = c.weapons[0];
   c.raca = h.raca;
   c.blurb = `${h.raca}, ${h.antecedente.toLowerCase()}.`;
+  // a DIVINDADE do herói (o nome, e a chave da lore): Talhundereth e a cripta perguntam por ela
+  if (h.divindade) { c.divindade = h.divindade; c.divindadeId = h.divindadeId ?? null; }
   // A escolha inteira, inclusive o que o motor ainda não joga.
   c.escolhaDeCriacao = structuredClone(escolha);
   c.talentos = [escolha.talento];

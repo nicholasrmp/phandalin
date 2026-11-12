@@ -1,3 +1,4 @@
+import { usoDoItem } from './itens-que-conjuram.js';
 import { raioDoMapa, telecinesiaDoMestre, magiaDoAndarilho, feiticariaPsionica, tentaculosAgarradores, pergaminhoDoEscrivao } from './subclasses-livros.js';
 // PASSIVAS de classe e traços raciais: as regras puras que o motor de combate consulta.
 //
@@ -74,7 +75,7 @@ export function vantagemPorTraco(actor, hab, contra = null) {
   // O monstro guarda os traços em `traits`, e não em `features`: sem juntar os dois, a Resistência a Magia do
   // quasit nunca seria lida, porque o bloco dele não tem `features` nenhuma.
   const f = [...(actor?.features ?? []), ...(actor?.traits ?? [])];
-  if (!f.length || !contra) return [];
+  if ((!f.length && !actor?.doItem && !actor?.vantagemRacial) || !contra) return [];
   const motivos = [];
   const cond = contra.condicao ?? null;
   if (f.includes('brave') && cond === 'amedrontado') motivos.push('Corajoso');
@@ -87,11 +88,20 @@ export function vantagemPorTraco(actor, hab, contra = null) {
   // VONTADE DE AÇO (Caçador, 7º): vantagem contra amedrontado.
   if (f.includes('steelWill') && cond === 'amedrontado') motivos.push('Vontade de Aço');
   if (f.includes('feyAncestry') && ENFEITICADO.has(cond)) motivos.push('Ancestral Feérico');
+  // AS RAÇAS DOS LIVROS (`racas-livros.js vantagens`): a Disciplina Mental, a Resiliência Duergar, a Resistência a Magia do
+  // yuan-ti e a Intuição Telepática do verdan
+  for (const v of actor.vantagemRacial ?? []) {
+    const casa = (v.condicoes ?? []).some((x) => (x === 'enfeiticado' ? ENFEITICADO.has(cond) : x === cond))
+      || (v.magia && contra.magico) || (v.salvas ?? []).includes(hab);
+    if (casa) motivos.push(v.nome);
+  }
   // FORTITUDE MENTAL (os goblins psíquicos do Obelisco): vantagem contra enfeitiçado e amedrontado.
   if (f.includes('fortitudeMental') && (cond === 'amedrontado' || ENFEITICADO.has(cond))) motivos.push('Fortitude Mental');
   const veneno = contra.tipoDano === 'veneno' || cond === 'envenenado';
   if (veneno && f.includes('dwarvenResilience')) motivos.push('Resiliência Anã');
   if (veneno && f.includes('stoutResilience')) motivos.push('Resiliência Robusta');
+  if (veneno && actor.doItem?.vantagemContraVeneno) motivos.push(actor.doItem.vantagemContraVeneno);
+  if (veneno && actor.conditions?.some((c) => c.id === 'antitoxina')) motivos.push('Antitoxina');
   if (contra.magico && ['int', 'wis', 'cha'].includes(hab) && f.includes('gnomeCunning')) motivos.push('Esperteza Gnômica');
   if (contra.magico && ['int', 'wis', 'cha'].includes(hab) && f.includes('astuciaGnomica')) motivos.push('Astúcia Gnômica');
   // NIMBO SAGRADO (paladino, 20º): vantagem contra magias de corruptores e mortos-vivos.
@@ -107,6 +117,8 @@ export function vantagemPorTraco(actor, hab, contra = null) {
   if (contra.magico && f.includes('resistenciaAMagia')) motivos.push('Resistência a Magia');
   // IMUNIDADE À MAGIA LIMITADA (o rakshasa): a magia baixa nem o toca (`livro-motor.js`); contra o resto, vantagem
   if (contra.magico && f.includes('imunidadeMagicaLimitada')) motivos.push('Imunidade à Magia Limitada');
+  // O ITEM (o manto do arquimago, o escaravelho de proteção, o escudo e o manto de resistência a magia)
+  if (contra.magico && actor.doItem?.vantagemContraMagia) motivos.push(actor.doItem.vantagemContraMagia);
   return motivos;
 }
 
@@ -422,8 +434,20 @@ export function darMagiasDeCaracteristica(c, SPELLS) {
   else if (!c.magiasDeKi.length) delete c.magiasDeKi;
 }
 
+/** A magia que o conjurador já tem por conta própria (truque, preparada, sempre pronta): o item fica de reserva. */
+const magiaDoConjurador = (c, spell) => {
+  const sc = c.spellcasting;
+  if (!sc) return false;
+  if (spell.level === 0) return (sc.cantrips ?? []).includes(spell.id);
+  return [...(sc.prepared ?? []), ...(sc.sempreProntas ?? [])].includes(spell.id) && (sc.slots ?? []).some((n, i) => i >= spell.level && n > 0);
+};
+
 export function usoLivreDe(c, spell, pedido = null) {
-  if (!spell || spell.level === 0) return null;
+  if (!spell) return null;
+  // O ITEM QUE CONJURA (a varinha, o cajado): a magia sai das cargas dele, com a CD e o ataque dele (truque também)
+  const doItem = (!c.spellcasting || !magiaDoConjurador(c, spell)) ? usoDoItem(c, spell, pedido) : null;
+  if (doItem) return doItem;
+  if (spell.level === 0) return null;
   const tem = (r) => (c.resources?.[r] ?? 0) > 0;
   const racial = c.magiasRaciais?.find((m) => m.magia === spell.id && tem(m.recurso));
   if (racial) {

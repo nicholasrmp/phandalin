@@ -1,0 +1,67 @@
+[
+ {
+  "criatura": "brahmaLutier",
+  "acao": "Song of Domination"
+ },
+ {
+  "criatura": "donaarBlitZen",
+  "traco": "Champion Challenge"
+ },
+ {
+  "criatura": "flabbergast",
+  "magias": [
+   "distort value",
+   "gift of gab",
+   "fast friends"
+  ]
+ },
+ {
+  "criatura": "jimDarkmagic",
+  "acao": "Minor Conjuration"
+ },
+ {
+  "criatura": "jimDarkmagic",
+  "magias": [
+   "jim's magic missile",
+   "jim's glowing coin",
+   "incite greed",
+   "conjure minor elementals"
+  ]
+ },
+ {
+  "criatura": "ominDran",
+  "traco": "Divine Strike"
+ },
+ {
+  "criatura": "ominDran",
+  "reacao": "War God's Blessing"
+ },
+ {
+  "criatura": "pendragonBeestinger",
+  "traco": "Echo Spell"
+ },
+ {
+  "criatura": "profetisaDran",
+  "traco": "Divine Eminence"
+ },
+ {
+  "criatura": "rosieBeestinger",
+  "reacao": "Deflect Missiles"
+ },
+ {
+  "criatura": "splugothORetornado",
+  "traco": "Defensive Advantage"
+ },
+ {
+  "criatura": "splugothORetornado",
+  "reacao": "Absorb Attack"
+ },
+ {
+  "criatura": "viari",
+  "reacao": "Uncanny Dodge"
+ },
+ {
+  "criatura": "walnutDankgrass",
+  "traco": "Wild Shape"
+ }
+]

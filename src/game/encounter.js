@@ -13,6 +13,13 @@ import { MAPA_ESCONDERIJO, PONTOS_DO_ESCONDERIJO } from './esconderijo.js';
 import { MAPA_CAVERNA_DO_POCO, MAPA_ACAMPAMENTO_SAWPLEE, MAPA_TELHADO_GIGANTE, MAPA_GIGANTE_TERREO, PONTOS_CAP5_VILA } from './obelisco5-mapas.js';
 import { MAPA_ZORZULA_POSTO, MAPA_ZORZULA_MINAS, MAPA_ZORZULA_SANTUARIO, PONTOS_ZORZULA } from './zorzula-mapas.js';
 import { MAPA_CASA_MARTHUNGRIM, MAPA_MINA_HARDYHAMMER, MAPA_LARGO_DA_VACA, PONTOS_CAP6_VILA } from './obelisco6-mapas.js';
+import { MAPA_SANTUARIO_INFECTADO, PONTOS_CAP7_VILA } from './obelisco7-mapas.js';
+import { MAPA_CAVERNAS_GRELLS, MAPA_TOCA_BEHIR, MAPA_GRUTA_TAGARELA, PONTOS_TUNEL7 } from './tunel-cap7-mapas.js';
+import { MAPA_ILLITHINOCH, PONTOS_ILLITHINOCH } from './illithinoch-mapa.js';
+import { MAPA_TRINCHEIRAS, MAPA_OCO_DA_DESOVA, MAPA_LABIRINTO_DOS_OLHOS, PONTOS_FENDAS } from './fendas-mapas.js';
+import { MAPA_LABIRINTO_SALGADO, MAPA_COVIL_LOWARNIZEL, PONTOS_LABIRINTO, PONTOS_COVIL } from './labirinto-salgado-mapa.js';
+import { MAPA_POCA, PONTOS_POCA } from './poca-salgada.js';
+import * as VAZIO from './vazio-mapas.js';
 import { MAPA_TALHUNDERETH, PONTOS_TALHUNDERETH } from './talhundereth-mapa.js';
 import { MAPA_ENCRUZILHADA, PONTOS_ENCRUZILHADA } from './encruzilhada-mapa.js';
 import { MAPA_CRIPTA, PONTOS_CRIPTA } from './cripta-mapa.js';
@@ -405,6 +412,46 @@ export function mapaDo(variante) {
     minaHardyhammer: [MAPA_MINA_HARDYHAMMER, 'MINA_HARDYHAMMER'],
     largoDaVaca: [MAPA_LARGO_DA_VACA, 'LARGO_DA_VACA'],
   };
+  // O CAPÍTULO 7 NA VILA (`obelisco7-lugares.js`): a briga dos moradores infectados, no mapa do largo.
+  // O TÚNEL DO CAPÍTULO 7 (`tunel-cap7.js`): as três cavernas da viagem a Illithinoch.
+  const TUNEL7 = { tunelGrells: [MAPA_CAVERNAS_GRELLS, 'CAVERNAS_GRELLS'], tunelBehir: [MAPA_TOCA_BEHIR, 'TOCA_BEHIR'], tunelGruta: [MAPA_GRUTA_TAGARELA, 'GRUTA_TAGARELA'] };
+  // ILLITHINOCH (o Obelisco, capítulo 7): a fortaleza dos devoradores de mentes (`illithinoch.js`).
+  // AS TRÊS FENDAS DE ILLITHINOCH (`fendas.js`)
+  const FENDAS7 = { fendaTrincheiras: [MAPA_TRINCHEIRAS, 'TRINCHEIRAS'], fendaOco: [MAPA_OCO_DA_DESOVA, 'OCO_DA_DESOVA'], fendaLabirinto: [MAPA_LABIRINTO_DOS_OLHOS, 'LABIRINTO_DOS_OLHOS'] };
+  if (FENDAS7[variante]) {
+    const [mapa, chave] = FENDAS7[variante];
+    const pt = PONTOS_FENDAS[chave];
+    return { ...mapa, altura: null, objetos: [], grupo: pt.grupo, olhar: pt.olhar, cena: 'fenda' };
+  }
+  // O LABIRINTO SALGADO e o covil do Lowarnizel (o Obelisco, capítulo 8; `labirinto-salgado.js`)
+  if (variante === 'labirintoSalgado') {
+    return { ...MAPA_LABIRINTO_SALGADO, altura: null, objetos: [], grupo: PONTOS_LABIRINTO.grupo, olhar: PONTOS_LABIRINTO.olhar, cena: 'labirintoSalgado' };
+  }
+  // AS ILHAS DO VAZIO SEM FIM (`vazio.js`): uma variante por ilha
+  const ILHAS_DO_VAZIO = { vazioCupula: 'CUPULA', vazioPonte: 'PONTE', vazioCharco: 'CHARCO', vazioNematodeo: 'NEMATODEO', vazioMiasma: 'MIASMA', vazioEstatua: 'ESTATUA', vazioCampo: 'CAMPO', vazioAnima: 'ANIMA' };
+  if (ILHAS_DO_VAZIO[variante]) {
+    const k = ILHAS_DO_VAZIO[variante];
+    const pt = VAZIO.PONTOS_VAZIO[k];
+    return { ...VAZIO[`MAPA_VAZIO_${k}`], altura: null, objetos: [], grupo: pt.grupo, olhar: pt.olhar, cena: 'vazio' };
+  }
+  if (variante === 'pocaSalgada') {
+    return { ...MAPA_POCA, altura: null, objetos: [], grupo: PONTOS_POCA.grupo, olhar: PONTOS_POCA.olhar, cena: 'pocaSalgada' };
+  }
+  if (variante === 'covilLowarnizel') {
+    return { ...MAPA_COVIL_LOWARNIZEL, altura: null, objetos: [], grupo: PONTOS_COVIL.grupo, olhar: PONTOS_COVIL.olhar, cena: 'covilLowarnizel' };
+  }
+  if (variante === 'illithinoch') {
+    return { ...MAPA_ILLITHINOCH, altura: null, objetos: [], grupo: PONTOS_ILLITHINOCH.grupo, olhar: PONTOS_ILLITHINOCH.olhar, cena: 'illithinoch' };
+  }
+  if (TUNEL7[variante]) {
+    const [mapa, chave] = TUNEL7[variante];
+    const pt = PONTOS_TUNEL7[chave];
+    return { ...mapa, altura: null, objetos: [], grupo: pt.grupo, olhar: pt.olhar, cena: 'tunel7' };
+  }
+  if (variante === 'santuarioInfectado') {
+    const pt = PONTOS_CAP7_VILA.SANTUARIO_INFECTADO;
+    return { ...MAPA_SANTUARIO_INFECTADO, altura: null, objetos: [], grupo: pt.grupo, olhar: pt.olhar, cena: 'cap7lugar' };
+  }
   if (CAP6[variante]) {
     const [mapa, chave] = CAP6[variante];
     const pt = PONTOS_CAP6_VILA[chave];
@@ -616,7 +663,7 @@ export function mapaDo(variante) {
  */
 export function buildFoes(variante = 'arena') {
   // Os da estrada e do Poço saem da cena (o sorteio do encontro e o livro).
-  if (['ermo', 'ermoNoite', 'poco', 'cume', 'castelo', 'arvoreTrovao', 'ondaEco', 'editor', 'covilAgatha', 'cavernaDoPoco', 'acampamentoSawplee', 'telhadoGigante', 'giganteTerreo', 'zorzulaPosto', 'zorzulaMinas', 'santuarioIndigo', 'casaMarthungrim', 'minaHardyhammer', 'largoDaVaca', 'talhundereth', 'criptaTalhund', 'encruzilhada'].includes(variante)) return [];
+  if (['ermo', 'ermoNoite', 'poco', 'cume', 'castelo', 'arvoreTrovao', 'ondaEco', 'editor', 'covilAgatha', 'cavernaDoPoco', 'acampamentoSawplee', 'telhadoGigante', 'giganteTerreo', 'zorzulaPosto', 'zorzulaMinas', 'santuarioIndigo', 'casaMarthungrim', 'minaHardyhammer', 'largoDaVaca', 'santuarioInfectado', 'tunelGrells', 'tunelBehir', 'tunelGruta', 'illithinoch', 'fendaTrincheiras', 'fendaOco', 'fendaLabirinto', 'labirintoSalgado', 'covilLowarnizel', 'pocaSalgada', 'vazioCupula', 'vazioPonte', 'vazioCharco', 'vazioNematodeo', 'vazioMiasma', 'vazioEstatua', 'vazioCampo', 'vazioAnima', 'talhundereth', 'criptaTalhund', 'encruzilhada'].includes(variante)) return [];
   if (variante.startsWith('casaDaMorte')) return foesDaCasa(variante);
   if (variante === 'grandes') return foesGrandes();
   if (variante === 'emboscada') return foesEmboscada();
@@ -971,7 +1018,7 @@ const REFORCOS_EMBOSCADA = [];
 
 /** Monta os reforços de uma rodada, ou null se não houver. */
 export function reinforcementsFor(round, variante = 'arena') {
-  if (['esconderijo', 'rua', 'mansao', 'mansaoTunel', 'ermo', 'ermoNoite', 'poco', 'cume', 'castelo', 'arvoreTrovao', 'ondaEco', 'editor', 'covilAgatha', 'cavernaDoPoco', 'acampamentoSawplee', 'telhadoGigante', 'giganteTerreo', 'zorzulaPosto', 'zorzulaMinas', 'santuarioIndigo', 'casaMarthungrim', 'minaHardyhammer', 'largoDaVaca', 'talhundereth', 'criptaTalhund', 'encruzilhada', 'grandes', 'casaDaMorte1', 'casaDaMorte2', 'casaDaMorte3', 'casaDaMorte4', 'casaDaMortePorao1', 'casaDaMortePorao2'].includes(variante)) return null;
+  if (['esconderijo', 'rua', 'mansao', 'mansaoTunel', 'ermo', 'ermoNoite', 'poco', 'cume', 'castelo', 'arvoreTrovao', 'ondaEco', 'editor', 'covilAgatha', 'cavernaDoPoco', 'acampamentoSawplee', 'telhadoGigante', 'giganteTerreo', 'zorzulaPosto', 'zorzulaMinas', 'santuarioIndigo', 'casaMarthungrim', 'minaHardyhammer', 'largoDaVaca', 'santuarioInfectado', 'tunelGrells', 'tunelBehir', 'tunelGruta', 'illithinoch', 'fendaTrincheiras', 'fendaOco', 'fendaLabirinto', 'labirintoSalgado', 'covilLowarnizel', 'pocaSalgada', 'vazioCupula', 'vazioPonte', 'vazioCharco', 'vazioNematodeo', 'vazioMiasma', 'vazioEstatua', 'vazioCampo', 'vazioAnima', 'talhundereth', 'criptaTalhund', 'encruzilhada', 'grandes', 'casaDaMorte1', 'casaDaMorte2', 'casaDaMorte3', 'casaDaMorte4', 'casaDaMortePorao1', 'casaDaMortePorao2'].includes(variante)) return null;
   const ondas = variante === 'emboscada' ? REFORCOS_EMBOSCADA : REINFORCEMENTS;
   const wave = ondas.find((w) => w.round === round);
   if (!wave) return null;

@@ -83,18 +83,27 @@ def main():
         if nome.startswith('fichas-') and nome.endswith('.json'):
             do5e.update({k: v for k, v in json.load(open(os.path.join(pasta, nome), encoding='utf-8')).items() if k not in do5e})
     os.makedirs(CRU_5E, exist_ok=True)
+    # o token que o espelho NÃO tem (404) não derruba o resto: antes o primeiro que faltava (o dragão feérico verde)
+    # parava a leva inteira, e quem viesse depois dele na lista ficava sem ficha
+    faltam = []
     for criatura, (livro, arquivo) in do5e.items():
         destino = os.path.join(CRU_5E, f'{criatura}.webp')
         if os.path.exists(destino):
             continue
-        with urllib.request.urlopen(f'{BASE_5E}/{livro}/{urllib.parse.quote(arquivo)}', timeout=30) as r:
-            dados = r.read()
-        Image.open(io.BytesIO(dados)).verify()
+        try:
+            with urllib.request.urlopen(f'{BASE_5E}/{livro}/{urllib.parse.quote(arquivo)}', timeout=30) as r:
+                dados = r.read()
+            Image.open(io.BytesIO(dados)).verify()
+        except Exception as e:
+            faltam.append(f'{criatura} ({livro}/{arquivo}: {e})')
+            continue
         with open(destino, 'wb') as f:
             f.write(dados)
         baixadas += 1
+    for f in faltam:
+        print(f'sem token no espelho: {f}')
     fontes = {criatura: os.path.join(CRU, f'{img_id}.png') for criatura, (img_id, _) in lista.items()}
-    fontes.update({criatura: os.path.join(CRU_5E, f'{criatura}.webp') for criatura in do5e})
+    fontes.update({criatura: os.path.join(CRU_5E, f'{criatura}.webp') for criatura in do5e if os.path.exists(os.path.join(CRU_5E, f'{criatura}.webp'))})
     total = 0
     for criatura, origem in sorted(fontes.items()):
         if criatura in proprias and os.path.exists(os.path.join(SAIDA, f'{criatura}.webp')):

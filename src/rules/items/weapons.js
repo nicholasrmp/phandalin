@@ -37,6 +37,20 @@ export const WEAPONS = {
     categoria: 'simples', peso: 0, custo: 0, fonte: 'phb',
   }),
 
+  // ------------------------------------------------------- arma natural ----
+  // A MORDIDA do povo-lagarto e as GARRAS do tabaxi (Guia de Volo): arma natural, sempre treinada (`semTreino`), que não
+  // se vende nem se larga. Entram na lista de quem tem a raça (`racas.js aplicarRaca`).
+  mordidaRacial: corpo({
+    id: 'mordidaRacial', name: 'Mordida', damage: '1d6', type: 'perfurante',
+    props: ['natural'], art: null, semTreino: true, natural: true,
+    categoria: 'simples', peso: 0, custo: 0, fonte: 'vgm',
+  }),
+  garrasRaciais: corpo({
+    id: 'garrasRaciais', name: 'Garras', damage: '1d4', type: 'cortante',
+    props: ['natural'], art: null, semTreino: true, natural: true,
+    categoria: 'simples', peso: 0, custo: 0, fonte: 'vgm',
+  }),
+
   // ------------------------------------------------------------ magia ----
   // A espada da LÂMINA SOMBRIA (Guia de Xanathar): só existe enquanto a magia dura (`combat.js beginSide` a tira da
   // mão quando ela acaba). Quem a conjura é treinado nela (`semTreino`), e ela não se vende.

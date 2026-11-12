@@ -287,7 +287,12 @@ teste('não se vê o bando de Klarg do lado dos tanques', () => {
 // turno inteira. Nenhum teste em Node desenha HUD, então a prova é dupla: todo monstro tem look desenhado OU ficha,
 // e o `makePortrait` consulta a lista das fichas antes de pedir a folha.
 teste('todo monstro tem retrato: um look desenhado ou a ficha, e o makePortrait sabe da ficha', () => {
+  // o que é OBJETO pintado no mapa (o obelisco da Ânima) tem o retrato desenhado em código, em `sheet.js RETRATOS_DESENHADOS`
+  const fonteDoRetrato = readFileSync('src/art/sheet.js', 'utf8');
+  for (const m of Object.values(MONSTERS).filter((x) => x.pintadoNoMapa)) assert.ok(fonteDoRetrato.includes(`
+  ${m.id}(ctx, t) {`), `${m.id} sem retrato desenhado`);
   const semNada = Object.values(MONSTERS).filter((m) => {
+    if (m.pintadoNoMapa) return false;
     const k = m.look ?? m.id;
     return !LOOKS[k] && !LOOKS[String(k).split(/[~@]/)[0]] && !CRIATURAS_COM_FICHA.includes(k);
   }).map((m) => m.id);
@@ -295,6 +300,11 @@ teste('todo monstro tem retrato: um look desenhado ou a ficha, e o makePortrait 
   const fonte = readFileSync('src/art/sheet.js', 'utf8');
   const corpo = fonte.slice(fonte.indexOf('export function makePortrait'));
   assert.match(corpo.slice(0, 400), /SO_FICHA\.has\(lookKey\)/, 'o makePortrait não olha a ficha antes da folha');
+  // ... e quem chama passa o BLOCO quando a criatura não tem look desenhado: a do bestiário nasce com `look` vazio, e o
+  // retrato da ordem de turno quebrava na primeira luta com os moradores infectados do capítulo 7
+  for (const arq of ['src/view/hud.js', 'src/view/ficha-criatura.js']) {
+    assert.doesNotMatch(readFileSync(arq, 'utf8'), /makePortrait\((c|m)\.look,/, `${arq} pede o retrato sem cair no bloco`);
+  }
 });
 
 teste('toda criatura tem a ficha da galeria no disco, menos as que a galeria não tem', () => {
@@ -302,7 +312,7 @@ teste('toda criatura tem a ficha da galeria no disco, menos as que a galeria nã
   const SEM_FICHA = new Set();   // a vassoura veio do 5etools: agora toda criatura tem
   for (const id of CRIATURAS_COM_FICHA) assert.ok(existsSync(`public/fichas/${id}.webp`), `falta public/fichas/${id}.webp`);
   // a criatura de magia (`monsters/magias.js`) usa a ficha do `look` dela (`fichaDe`)
-  const faltam = Object.keys(MONSTERS).filter((id) => !SEM_FICHA.has(id) && !CRIATURAS_COM_FICHA.includes(id) && !CRIATURAS_COM_FICHA.includes(MONSTERS[id].look));
+  const faltam = Object.keys(MONSTERS).filter((id) => !SEM_FICHA.has(id) && !MONSTERS[id].pintadoNoMapa && !CRIATURAS_COM_FICHA.includes(id) && !CRIATURAS_COM_FICHA.includes(MONSTERS[id].look));
   assert.equal(fichaDe({ side: 'party', defId: 'espadaDeMordenkainen', look: 'espadaVoadora' }), '/fichas/espadaVoadora.webp', 'conjurada por herói também: não há folha em pixel');
   assert.equal(fichaDe({ side: 'foes', defId: 'espadaDeMordenkainen', look: 'espadaVoadora' }), '/fichas/espadaVoadora.webp');
   assert.deepEqual(faltam, [], `criatura sem ficha: ${faltam.join(', ')}`);

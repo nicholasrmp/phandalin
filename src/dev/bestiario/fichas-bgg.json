@@ -1,0 +1,290 @@
+{
+ "aerossauro": [
+  "BGG",
+  "Aerosaur.webp"
+ ],
+ "altissauro": [
+  "BGG",
+  "Altisaur.webp"
+ ],
+ "geleiaDeSaco": [
+  "BGG",
+  "Bag Jelly.webp"
+ ],
+ "carnicalDasColinas": [
+  "BGG",
+  "Barrowghast.webp"
+ ],
+ "aparicaoDeTumuloDePedra": [
+  "BGG",
+  "Cairnwight.webp"
+ ],
+ "ceratops": [
+  "BGG",
+  "Ceratops.webp"
+ ],
+ "colossoDeCinzas": [
+  "BGG",
+  "Cinder Hulk.webp"
+ ],
+ "giganteDasNuvensApostadorDoDestino": [
+  "BGG",
+  "Cloud Giant Destiny Gambler.webp"
+ ],
+ "giganteDasNuvensDoArMaligno": [
+  "BGG",
+  "Cloud Giant of Evil Air.webp"
+ ],
+ "bercoDoRebentoDasNuvens": [
+  "BGG",
+  "Cradle of the Cloud Scion.webp"
+ ],
+ "bercoDoRebentoDeFogo": [
+  "BGG",
+  "Cradle of the Fire Scion.webp"
+ ],
+ "bercoDoHerdeiroDoGelo": [
+  "BGG",
+  "Cradle of the Frost Scion.webp"
+ ],
+ "bercoDoRebentoDasColinas": [
+  "BGG",
+  "Cradle of the Hill Scion.webp"
+ ],
+ "bercoDoRebentoDePedra": [
+  "BGG",
+  "Cradle of the Stone Scion.webp"
+ ],
+ "bercoDoRebentoDaTempestade": [
+  "BGG",
+  "Cradle of the Storm Scion.webp"
+ ],
+ "giganteDaMorteCeifador": [
+  "BGG",
+  "Death Giant Reaper.webp"
+ ],
+ "giganteDaMorteAmortalhado": [
+  "BGG",
+  "Death Giant Shrouded One.webp"
+ ],
+ "colossoDePoeira": [
+  "BGG",
+  "Dust Hulk.webp"
+ ],
+ "ecoDeDemogorgon": [
+  "BGG",
+  "Echo of Demogorgon.webp"
+ ],
+ "ceremorfoEttin": [
+  "BGG",
+  "Ettin Ceremorph.webp"
+ ],
+ "fensirDevorador": [
+  "BGG",
+  "Fensir Devourer.webp"
+ ],
+ "fensirEscaramucador": [
+  "BGG",
+  "Fensir Skirmisher.webp"
+ ],
+ "guardiaoPrimordialFirbolg": [
+  "BGG",
+  "Firbolg Primeval Warden.webp"
+ ],
+ "firbolgAndarilho": [
+  "BGG",
+  "Firbolg Wanderer.webp"
+ ],
+ "giganteDeFogoInvocadorDaForja": [
+  "BGG",
+  "Fire Giant Forgecaller.webp"
+ ],
+ "giganteDoFogoDoFogoMaligno": [
+  "BGG",
+  "Fire Giant of Evil Fire.webp"
+ ],
+ "infernalDeFogo": [
+  "BGG",
+  "Fire Hellion.webp"
+ ],
+ "mortalhaIgnea": [
+  "BGG",
+  "Firegaunt.webp"
+ ],
+ "colossoDeCarne": [
+  "BGG",
+  "Flesh Colossus.webp"
+ ],
+ "fomorianoRastejadorDasProfundezas": [
+  "BGG",
+  "Fomorian Deep Crawler.webp"
+ ],
+ "fomorianoNobre": [
+  "BGG",
+  "Fomorian Noble.webp"
+ ],
+ "fomorianoBruxoDasTrevas": [
+  "BGG",
+  "Fomorian Warlock of the Dark.webp"
+ ],
+ "moldadorDeGeloGiganteDoGelo": [
+  "BGG",
+  "Frost Giant Ice Shaper.webp"
+ ],
+ "giganteDoGeloDaAguaMaligna": [
+  "BGG",
+  "Frost Giant of Evil Water.webp"
+ ],
+ "lamentoGelido": [
+  "BGG",
+  "Frostmourn.webp"
+ ],
+ "furiaDeKostchtchie": [
+  "BGG",
+  "Fury of Kostchtchie.webp"
+ ],
+ "gargantua": [
+  "BGG",
+  "Gargantua.webp"
+ ],
+ "criancaGigante": [
+  "BGG",
+  "Giant Child.webp"
+ ],
+ "gansoGigante": [
+  "BGG",
+  "Giant Goose.webp"
+ ],
+ "linceGigante": [
+  "BGG",
+  "Giant Lynx.webp"
+ ],
+ "boiGigante": [
+  "BGG",
+  "Giant Ox.webp"
+ ],
+ "carneiroGigante": [
+  "BGG",
+  "Giant Ram.webp"
+ ],
+ "carrapatoGigante": [
+  "BGG",
+  "Giant Tick.webp"
+ ],
+ "gigant": [
+  "BGG",
+  "Gigant.webp"
+ ],
+ "goliasParenteDosGigantes": [
+  "BGG",
+  "Goliath Giant-Kin.webp"
+ ],
+ "gatoSorridente": [
+  "BGG",
+  "Grinning Cat.webp"
+ ],
+ "giganteDaColinaAvalanche": [
+  "BGG",
+  "Hill Giant Avalancher.webp"
+ ],
+ "colossoRelampago": [
+  "BGG",
+  "Lightning Hulk.webp"
+ ],
+ "bocarraDeYeenoghu": [
+  "BGG",
+  "Maw of Yeenoghu.webp"
+ ],
+ "colossoDeNevoa": [
+  "BGG",
+  "Mist Hulk.webp"
+ ],
+ "brutamontesDeLama": [
+  "BGG",
+  "Mud Hulk.webp"
+ ],
+ "regissauro": [
+  "BGG",
+  "Regisaur.webp"
+ ],
+ "colossoDeGeada": [
+  "BGG",
+  "Rime Hulk.webp"
+ ],
+ "colossoRunico": [
+  "BGG",
+  "Runic Colossus.webp"
+ ],
+ "rebentoDeGrolantor": [
+  "BGG",
+  "Scion of Grolantor.webp"
+ ],
+ "rebentoDeMemnor": [
+  "BGG",
+  "Scion of Memnor.webp"
+ ],
+ "rebentoDeSkoraeus": [
+  "BGG",
+  "Scion of Skoraeus.webp"
+ ],
+ "rebentoDeStronmaus": [
+  "BGG",
+  "Scion of Stronmaus.webp"
+ ],
+ "rebentoDeSurtur": [
+  "BGG",
+  "Scion of Surtur.webp"
+ ],
+ "rebentoDeThrym": [
+  "BGG",
+  "Scion of Thrym.webp"
+ ],
+ "nuvemEspectral": [
+  "BGG",
+  "Spectral Cloud.webp"
+ ],
+ "leaoMalhado": [
+  "BGG",
+  "Spotted Lion.webp"
+ ],
+ "perseguidorDeBaphomet": [
+  "BGG",
+  "Stalker of Baphomet.webp"
+ ],
+ "giganteDePedraDaTerraMaligna": [
+  "BGG",
+  "Stone Giant of Evil Earth.webp"
+ ],
+ "giganteDePedraFalarrocha": [
+  "BGG",
+  "Stone Giant Rockspeaker.webp"
+ ],
+ "caranguejoDaTempestade": [
+  "BGG",
+  "Storm Crab.webp"
+ ],
+ "giganteDasTempestadesInvocadorDaTormenta": [
+  "BGG",
+  "Storm Giant Tempest Caller.webp"
+ ],
+ "arautoDaTempestade": [
+  "BGG",
+  "Storm Herald.webp"
+ ],
+ "espiritoDaTempestade": [
+  "BGG",
+  "Tempest Spirit.webp"
+ ],
+ "titanoterio": [
+  "BGG",
+  "Titanothere.webp"
+ ],
+ "amalgamaDeTrolls": [
+  "BGG",
+  "Troll Amalgam.webp"
+ ],
+ "trollMutante": [
+  "BGG",
+  "Troll Mutate.webp"
+ ]
+}

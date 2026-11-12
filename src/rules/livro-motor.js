@@ -7,6 +7,8 @@ import { Battlefield, distanceFt, key } from '../core/grid.js';
 import { addCondition, removeCondition, hasCondition, getCondition, conditionEffects, CONDITIONS } from './conditions.js';
 import { categoriaDeTamanho } from './tamanho.js';
 import { nivelDeLuz, fontesDeLuz, CLARO } from './luz.js';
+import { EFEITOS_DA_RACA } from './racas-motor.js';
+import { EFEITOS_DAS_CHAMAS } from './chamas.js';
 
 const luzEm = (enc, pos) => nivelDeLuz(enc.field, pos.x, pos.y, fontesDeLuz(enc));
 
@@ -107,6 +109,8 @@ export function comportamentoForcado(enc, side) {
 // --------------------------------------------------------------------------------------------- engolir ----
 
 export const engolidoPor = (c) => getCondition(c, 'engolido')?.source ?? null;
+/** Quem está na MASMORRA SEMIPLANAR de quem o engoliu (o couraçado astral): fora da luta, como o banido. */
+export const naMasmorra = (c) => Boolean(getCondition(c, 'engolido')?.data?.masmorra);
 export const engolidosDe = (enc, m) => enc.combatants.filter((c) => !c.dead && engolidoPor(c) === m.id);
 
 /** Engole (`dados`: o ácido por turno, o vômito, a fuga do cubo). O agarrão acaba, e o engolido passa a estar DENTRO. */
@@ -114,10 +118,12 @@ export function engolir(enc, m, alvo, dados = {}) {
   for (const cond of [...(alvo.conditions ?? [])]) {
     if (cond.source === m.id && cond.data?.escape != null) removeCondition(alvo, cond.id);
   }
-  addCondition(alvo, 'engolido', { rounds: Infinity, source: m.id, data: { dano: dados.dano ?? null, tipoDano: dados.tipoDano ?? 'ácido', regurgita: dados.regurgita ?? null, escape: dados.escape ?? null } });
+  addCondition(alvo, 'engolido', { rounds: Infinity, source: m.id, data: { dano: dados.dano ?? null, tipoDano: dados.tipoDano ?? 'ácido', regurgita: dados.regurgita ?? null, escape: dados.escape ?? null, masmorra: Boolean(dados.masmorra) } });
   enc.dropConcentration?.(alvo);
   alvo.pos = { ...alvo.pos, x: m.pos.x, y: m.pos.y };
-  enc.say('condicao', `${m.name} engole ${alvo.name}: cego, preso e fora do alcance de todos lá fora.`);
+  enc.say('condicao', dados.masmorra
+    ? `${m.name} engole ${alvo.name}, que some para a masmorra dele, num semiplano: de lá não se fere ${m.name}, e só se sai com magia de viagem entre planos.`
+    : `${m.name} engole ${alvo.name}: cego, preso e fora do alcance de todos lá fora.`);
   enc.onEvent({ type: 'engolido', target: alvo, por: m });
 }
 
@@ -206,6 +212,15 @@ export function engolirAcao(enc, m, a, alvo) {
   const mordida = m.attacks?.find((x) => /mordida/i.test(x.name)) ?? m.attacks?.find((x) => !x.ranged);
   if (!mordida || !alvo || !presoPor(alvo, m) || !cabeNoTamanho(alvo, a.tamanhoMax) || engolidosDe(enc, m).length) return false;
   enc.say('acao', `${m.name} tenta engolir ${alvo.name}.`);
+  // POR TESTE e não por mordida (a fusão de carne, o Obelisco: Destreza, ou para dentro)
+  if (a.save) {
+    if (distanceFt(m.pos, alvo.pos) > 5) return false;
+    const sv = enc.resistencia(alvo, a.save, a.dc);
+    const r = enc.explicarResistencia(alvo, a.save, a.dc, sv, { contra: 'ser engolido', seSucesso: 'escapa' });
+    if (sv.success) { enc.say('condicao', `${alvo.name} se solta da carne de ${m.name}.`, r.conta, { rolagem: r }); return true; }
+    engolir(enc, m, alvo, { dano: a.dano, tipoDano: a.tipoDano, regurgita: a.regurgita });
+    return true;
+  }
   const r = enc.resolveAttack(m, alvo, { weaponId: mordida.name });
   if (r?.hit && !alvo.dead && alvo.hp > 0) engolir(enc, m, alvo, { dano: a.dano, tipoDano: a.tipoDano, regurgita: a.regurgita });
   return true;
@@ -216,7 +231,11 @@ export const presoPor = (alvo, m) => (alvo.conditions ?? []).some((c) => c.sourc
 
 /** A mordida que engole (o verme púrpura, o kraken): o perfil traz `engole`, e o efeito vem depois do acerto. */
 export function mordidaQueEngole(enc, m, alvo, e) {
-  if (alvo.dead || alvo.hp <= 0 || !cabeNoTamanho(alvo, e.tamanhoMax) || hasCondition(alvo, 'engolido')) return;
+  // `exige: 'zeroOuIncapacitado'` (o couraçado astral): só engole quem a mordida derrubou a 0 PV ou quem está incapacitado
+  if (e.exige === 'zeroOuIncapacitado') {
+    if (alvo.dead || !(alvo.hp <= 0 || conditionEffects(alvo).incapacitated) || !cabeNoTamanho(alvo, e.tamanhoMax) || hasCondition(alvo, 'engolido')) return;
+  } else if (alvo.dead || alvo.hp <= 0 || !cabeNoTamanho(alvo, e.tamanhoMax) || hasCondition(alvo, 'engolido')) return;
+  if (e.masmorra === undefined && m.traits?.includes('masmorraSemiplanar')) e = { ...e, masmorra: true };
   if (e.soAgarrado && !presoPor(alvo, m)) return;
   if (e.save) {
     const sv = enc.resistencia(alvo, e.save, e.dc);
@@ -1003,6 +1022,14 @@ export function escolherLendaria(enc, m, opcoes, ctx) {
           && !e.imuneAEspecial?.includes(`${m.id}:${o.nome}`))
           .sort((a, b) => a.hp - b.hp)[0];
         if (!t) return false;
+        // SEM TESTE e SEM DANO, só a condição (a Quebra-Mente da Refração de Ilvaash: desvantagem em tudo até o fim do
+        // próximo turno do alvo)
+        if (o.semTeste && !o.damage && o.condition) {
+          if (enc.imuneACondicao(t, o.condition)) return false;
+          enc.aplicarCondicao(t, o.condition, { rounds: enc.side === t.side ? 2 : 1, quando: 'fim', lado: t.side, source: m.id });
+          enc.say('condicao', `${m.name} embaralha a mente de ${t.name} (${o.nome}).`);
+          return true;
+        }
         if (o.semTeste) {
           const d = damageRoll(enc.rng, o.damage);
           const antes = t.hp;
@@ -1025,13 +1052,48 @@ export function escolherLendaria(enc, m, opcoes, ctx) {
         return ok;
       }
       case 'golpe': {
-        const alvo = inimigos.filter((e) => enc.canAttack(m, e, o.arma).ok).sort((a, b) => a.hp - b.hp)[0];
-        if (!alvo) return false;
-        enc.say('recurso', `${m.name} usa uma ação lendária: ${o.nome}.`);
-        enc.resolveAttack(m, alvo, { weaponId: o.arma, lendaria: true });
+        // o golpe que só existe como ação lendária (`o.ataque`) entra no bloco só enquanto ela dura
+        const proprio = o.ataque && !m.attacks?.some((a) => a.name === o.ataque.name) ? o.ataque : null;
+        if (proprio) (m.attacks ??= []).push(proprio);
+        try {
+          const alvo = inimigos.filter((e) => enc.canAttack(m, e, o.arma).ok).sort((a, b) => a.hp - b.hp)[0];
+          if (!alvo) return false;
+          enc.say('recurso', `${m.name} usa uma ação lendária: ${o.nome}.`);
+          enc.resolveAttack(m, alvo, { weaponId: o.arma, lendaria: true });
+          return true;
+        } finally {
+          if (proprio) m.attacks.splice(m.attacks.indexOf(proprio), 1);
+        }
+      }
+      case 'magia': return ctx.magia(m, !!o.soTruque, o.maxCirculo ?? null, o.magias ?? null);
+      case 'linha': {
+        // a LINHA (o Raio Psíquico): mira no inimigo que põe mais gente dentro; vale com dois, ou com um se é a última
+        let melhor = null;
+        for (const e of inimigos) {
+          const casas = enc.areaDaMagia(m, { shape: 'linha', areaFt: o.comprimentoFt, larguraFt: o.larguraFt, level: 0 }, e.pos) ?? [];
+          const dentro = new Set(casas.map((c) => `${c.x},${c.y}`));
+          const pegos = inimigos.filter((x) => enc.pegadaEmAlgumaCasa(x, dentro));
+          if (!melhor || pegos.length > melhor.length) melhor = pegos;
+        }
+        if (!melhor || melhor.length < Math.min(2, inimigos.length)) return false;
+        enc.say('magia', `${m.name} solta ${o.nome}.`);
+        enc.lendariaDeArea(m, o, melhor);
         return true;
       }
-      case 'magia': return ctx.magia(m, !!o.soTruque);
+      case 'lancas': {
+        // AS LANÇAS (a Lança Arcana): cada uma acerta sem teste um inimigo à vista, no alcance; vão no mais ferido
+        const alvos = inimigos.filter((e) => distanceFt(m.pos, e.pos) <= o.alcanceFt && enc.field.hasLineOfSight(m.pos, e.pos)).sort((a, b) => a.hp - b.hp);
+        if (!alvos.length) return false;
+        enc.say('magia', `${m.name} cria ${o.n} lanças de força (${o.nome}).`);
+        for (let i = 0; i < o.n; i++) {
+          const t = alvos.find((e) => !e.dead && e.hp > 0);
+          if (!t) break;
+          const d = damageRoll(enc.rng, o.damage);
+          enc.say('dano', `Uma lança acerta ${t.name}: ${d.total} de ${o.damageType}.`, `${o.damage}[${d.rolls.join('+')}]`);
+          enc.applyDamage(t, d.total, o.damageType, m, { magico: true });
+        }
+        return true;
+      }
       case 'reforco': {
         const aliados = enc.combatants.filter((c) => c.side === m.side && c !== m && !c.dead && c.pos && distanceFt(c.pos, m.pos) <= o.raioFt && !hasCondition(c, 'reforcado'));
         if (!aliados.length) return false;
@@ -1051,8 +1113,8 @@ export function escolherLendaria(enc, m, opcoes, ctx) {
       default: return false;
     }
   };
-  for (const o of opcoes) if (['curaPropria', 'teleporte', 'escudo', 'raio', 'area'].includes(o.tipo) && tenta(o)) return o;
-  for (const o of opcoes) if (['alvo', 'especial', 'golpe', 'magia', 'reforco', 'semCura', 'tinta', 'mover'].includes(o.tipo) && tenta(o)) return o;
+  for (const o of opcoes) if (['curaPropria', 'teleporte', 'escudo', 'raio', 'area', 'linha'].includes(o.tipo) && tenta(o)) return o;
+  for (const o of opcoes) if (['alvo', 'lancas', 'especial', 'golpe', 'magia', 'reforco', 'semCura', 'tinta', 'mover'].includes(o.tipo) && tenta(o)) return o;
   // a área que só pega um, quando nada mais serviu
   for (const o of opcoes) {
     if (o.tipo !== 'area') continue;
@@ -1071,12 +1133,26 @@ const FORMAS_DE_ALIADO = [['tiranossauroRex', 8], ['mamute', 6], ['alossauro', 2
 const FORMAS_DE_TRANSFORMACAO = [['dragaoVermelhoAdulto', 17], ['dragaoVermelhoJovem', 10], ['tiranossauroRex', 8], ['mamute', 6]];
 
 export function conjurarDoLivro(enc, actor, spell, ctx, deps) {
-  const f = EFEITOS[spell.efeito];
+  // AS AÇÕES DAS RAÇAS DOS LIVROS (`racas-motor.js`): as Mãos Curativas, o Passo Oculto, a Agilidade Felina...
+  const f = EFEITOS[spell.efeito] ?? EFEITOS_DA_RACA[spell.efeito] ?? EFEITOS_DAS_CHAMAS[spell.efeito];
   if (!f) { enc.say('aviso', `${spell.name} ainda não tem efeito no jogo.`); return false; }
   return f(enc, actor, spell, ctx, deps);
 }
 
 const EFEITOS = {
+  // A CAPA DE AUMENTO (o Obelisco, `magias-de-itens.js`): dez minutos de Força e da proficiência no dano de arma
+  menteSolipsista(enc, actor) {
+    addCondition(actor, 'menteSolipsista', { rounds: 600, source: actor.id });
+    actor.reactionUsed = true;
+    enc.say('recurso', `${actor.name} fecha a mente sobre si mesma, como o Jomlus ensinou: 1d8 a mais em Inteligência e Sabedoria, e nenhuma reação, por uma hora.`);
+    return true;
+  },
+  aumentoDaCapa(enc, actor) {
+    const prof = 2 + Math.floor(((actor.level ?? 1) - 1) / 4);
+    addCondition(actor, 'aumentadoPelaCapa', { rounds: 100, source: actor.id, data: { dadosNoAcerto: `+${prof}` } });
+    enc.say('recurso', `${actor.name} cresce dentro da capa: mais forte, e cada golpe pesa mais (+${prof}).`);
+    return true;
+  },
   // ================================================================ as magias do Caldeirão de Tasha
   /**
    * LÂMINA TROVEJANTE e LÂMINA DE CHAMA ESVERDEADA: um golpe com a arma de perto, como parte da magia. A Trovejante deixa
@@ -1539,4 +1615,100 @@ export function turnoDaMagia(enc, c) {
     return true;
   }
   return false;
+}
+
+// ======================================================= a segunda fila dos bestiários (2026-11-12) ==================
+// O que os blocos do Volo, do Mordenkainen, do Bigby e do Acquisitions Inc. pediam e o motor não fazia (os nomes saem do
+// importador, `importar-bestiario.mjs tracoLido` e `acaoEspecial`).
+
+/** PROTEÇÃO ARCANA (o abjurador): o escudo de PV leva o dano primeiro; o que passa dele vai para a criatura. */
+export function protecaoArcana(enc, alvo, amount) {
+  if (alvo.protecaoArcana) alvo.protecaoArcanaPv ??= alvo.protecaoArcana;
+  if (!(alvo.protecaoArcanaPv > 0) || amount <= 0) return amount;
+  const leva = Math.min(alvo.protecaoArcanaPv, amount);
+  alvo.protecaoArcanaPv -= leva;
+  enc.say('recurso', `A proteção arcana de ${alvo.name} absorve ${leva}${alvo.protecaoArcanaPv ? ` (restam ${alvo.protecaoArcanaPv})` : ' e se desfaz'}.`);
+  return amount - leva;
+}
+
+/** AVERSÃO AO FOGO (o oblex): o fogo que o fere lhe dá desvantagem nos ataques até o fim do próximo turno dele. */
+export function aversaoAoFogo(enc, alvo, tipo, amount) {
+  if (tipo !== 'fogo' || amount <= 0 || alvo.dead || !alvo.traits?.includes('aversaoAoFogo')) return;
+  addCondition(alvo, 'aversaoAoFogo', { rounds: 1, quando: 'fim', lado: alvo.side, source: alvo.id });
+}
+
+/** INDOMÁVEL (o campeão): a resistência que falhou se rola de novo, N vezes por dia. Devolve true se gastou um uso. */
+export function indomavelMonstro(enc, actor) {
+  if (!actor.traits?.includes('indomavelMonstro')) return false;
+  actor.usosIndomavelRestantes ??= actor.usosIndomavel ?? 1;
+  if (actor.usosIndomavelRestantes <= 0) return false;
+  actor.usosIndomavelRestantes -= 1;
+  enc.say('recurso', `${actor.name} não se dobra: rola a resistência de novo (Indomável).`);
+  return true;
+}
+
+/**
+ * PELE VENENOSA (o grung): quem o toca com a mão nua (o golpe desarmado, a arma natural) ou o agarra testa Constituição ou
+ * fica envenenado por 1 minuto, repetindo no fim de cada turno.
+ */
+export function peleVenenosa(enc, quem, grung) {
+  const p = grung?.peleVenenosa;
+  if (!p || quem.dead || grung === quem) return;
+  const s = enc.resistencia(quem, 'con', p.dc, { contra: { tipoDano: 'veneno', condicao: 'envenenado' } });
+  if (s.success) return;
+  if (enc.aplicarCondicao(quem, 'envenenado', { rounds: 10, source: grung.id, data: { save: 'con', dc: p.dc, repete: true } })) {
+    enc.say('condicao', `A pele de ${grung.name} envenena ${quem.name}.`);
+  }
+}
+
+/** A CARAPAÇA (o tortle): recolhe-se; +CA, caído, sem deslocamento e sem reação, até sair com uma ação bônus. */
+export function entrarNaConcha(enc, m, a) {
+  if (hasCondition(m, 'naConcha')) return false;
+  addCondition(m, 'naConcha', { rounds: Infinity, source: m.id, data: { ca: a.ca ?? 4 } });
+  addCondition(m, 'caido', { rounds: Infinity, source: m.id });
+  m.reactionUsed = true;
+  enc.say('acao', `${m.name} se recolhe na carapaça (+${a.ca ?? 4} na CA).`);
+  return true;
+}
+export function sairDaConcha(enc, m) {
+  if (!hasCondition(m, 'naConcha') || m.bonusUsed) return false;
+  removeCondition(m, 'naConcha');
+  removeCondition(m, 'caido');
+  m.bonusUsed = true;
+  enc.say('acao', `${m.name} sai da carapaça.`);
+  return true;
+}
+
+/** O GOLPE DE AÇÃO BÔNUS (a Fúria Marcial): um golpe de perto com dano a mais; quem o dá fica exposto até o próximo turno. */
+export function golpeBonus(enc, m, a, alvo) {
+  const golpe = (m.attacks ?? []).find((g) => !g.ranged);
+  if (!alvo || !golpe || !enc.canAttack(m, alvo, golpe.name).ok) return false;
+  const r = enc.resolveAttack(m, alvo, { weaponId: golpe.name });
+  if (r?.hit && !alvo.dead && a.extra) {
+    const d = damageRoll(enc.rng, a.extra, { critical: !!r.critical });
+    enc.say('magia', `${a.nome}: +${d.total} de ${a.extraTipo} em ${alvo.name}.`, `${a.extra}[${d.rolls.join('+')}]`);
+    enc.applyDamage(alvo, d.total, a.extraTipo, m, { magico: true });
+  }
+  if (a.exposto) addCondition(m, 'exposto', { rounds: 1, quando: 'inicio', lado: m.side, source: m.id });
+  return true;
+}
+
+/** O REBENTO de cada berço do Bigby, pelo nome original do bloco. */
+export const REBENTO_DO_BERCO = {
+  'Cradle of the Cloud Scion': 'Scion of Memnor', 'Cradle of the Fire Scion': 'Scion of Surtur', 'Cradle of the Frost Scion': 'Scion of Thrym',
+  'Cradle of the Hill Scion': 'Scion of Grolantor', 'Cradle of the Stone Scion': 'Scion of Skoraeus', 'Cradle of the Storm Scion': 'Scion of Stronmaus',
+};
+/** O DESPERTAR DO REBENTO: o berço que cai a 0 PV solta o rebento na casa dele, na mesma vez da iniciativa. */
+export function despertarORebento(enc, berco, { MONSTERS, makeMonster }) {
+  if (!berco.traits?.includes('despertarDoRebento') || berco.rebentoDesperto) return null;
+  const nome = REBENTO_DO_BERCO[berco.nomeOriginal];
+  const id = Object.keys(MONSTERS).find((k) => MONSTERS[k].nomeOriginal === nome);
+  if (!id) return null;
+  berco.rebentoDesperto = true;
+  const r = makeMonster(id, { x: berco.pos.x, y: berco.pos.y }, { rng: enc.rng });
+  r.side = berco.side;
+  r.acted = berco.acted;
+  enc.addCombatant(r);
+  enc.say('morte', `O berço se desfaz, e dele desperta ${r.name}.`);
+  return r;
 }

@@ -51,6 +51,8 @@ export const UTIL_DOS_LIVROS = {
   reencarnacao: { alvo: 'morto', efeito: 'reviver', tempo: 60, penalidade: 0, corpoNovo: true },
   regeneracao: { alvo: 'aliado', efeito: 'regenerar', tempo: 1 },
   banqueteDeHerois: { alvo: 'grupo', min: 1440, efeito: 'banqueteDosHerois', tempo: 10 },
+  // COCHILO (Xanathar): até três dormem dez minutos e saem com o descanso curto (os dados de vida que o descanso sugere)
+  cochilo: { alvo: 'grupo', min: 10, efeito: 'cochilo' },
   presciencia: { alvo: 'aliado', cond: 'presciencia', min: 480, tempo: 1 },
   // ---- a viagem (na tela da região)
   teletransporte: { alvo: 'si', efeito: 'viagem', soNaRegiao: true },

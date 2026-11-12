@@ -307,5 +307,20 @@ export const CLASSES_DAS_MAGIAS_XGE = {
  ],
  "golpeDeZefiro": [
   "patrulheiro"
+ ],
+ "cochilo": [
+  "bardo",
+  "feiticeiro",
+  "mago"
+ ],
+ "controlarChamas": [
+  "druida",
+  "feiticeiro",
+  "mago"
+ ],
+ "pirotecnia": [
+  "bardo",
+  "feiticeiro",
+  "mago"
  ]
 };

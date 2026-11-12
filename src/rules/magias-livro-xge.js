@@ -104,6 +104,27 @@ export const MAGIAS_XGE = {
   "desc": "Você arremessa um objeto solto de 0,5 a 2,5 kg a até 18 m de você, que voa em linha reta por até 27 m na direção escolhida e para antes se bater numa superfície sólida. Uma criatura no caminho faz um teste de resistência de Destreza; se falhar, é atingida e o objeto para ali. Ao acertar algo, tanto o objeto quanto o que ele atingiu sofrem 3d8 de dano de concussão. Em círculo maior, cada círculo acima do 1º aumenta o peso máximo em 2,5 kg e o dano em 1d8. (Simplificação: há sempre uma pedra à mão para arremessar.)",
   "tom": 5
  },
+ "cochilo": {
+  "id": "cochilo",
+  "name": "Cochilo",
+  "nomeOriginal": "Catnap",
+  "level": 3,
+  "school": "encantamento",
+  "fonte": "xge",
+  "castTime": "action",
+  "rangeFt": 30,
+  "duracaoRodadas": 100,
+  "classes": [
+   "bardo",
+   "feiticeiro",
+   "mago"
+  ],
+  "kind": "utilidade",
+  "utilidade": true,
+  "soFora": true,
+  "desc": "Até três criaturas voluntárias que você veja a até 9 m ficam inconscientes por 10 minutos, sem exigir concentração. O efeito acaba mais cedo para quem sofrer dano ou for acordado por alguém que gaste uma ação para sacudi-lo. Quem dormir a duração inteira recebe os benefícios de um descanso curto e não pode ser afetado de novo por esta magia até terminar um descanso longo. Em círculo 4 ou maior, afeta uma criatura voluntária extra por círculo acima do 3º. (Só fora de combate.)",
+  "tom": 9
+ },
  "causarMedo": {
   "id": "causarMedo",
   "name": "Causar Medo",
@@ -183,6 +204,45 @@ export const MAGIAS_XGE = {
   "desc": "Uma criatura visível a até 9 m faz um teste de resistência de Sabedoria contra a sua CD de SAB, com vantagem se você ou seus aliados estiverem lutando contra ela. Se falhar, fica enfeitiçada e amistosa com você por 1 hora (sem concentração), mas o efeito termina se você ou seus companheiros a prejudicarem de qualquer forma. Quando a magia acaba, a criatura sabe que foi enfeitiçada por você. Em círculo 5 ou maior, afeta uma criatura extra por círculo acima do 4º, desde que todas estejam a até 9 m umas das outras.",
   "tom": -7
  },
+ "controlarChamas": {
+  "id": "controlarChamas",
+  "name": "Controlar Chamas",
+  "nomeOriginal": "Control Flames",
+  "level": 0,
+  "school": "transmutação",
+  "fonte": "xge",
+  "castTime": "action",
+  "rangeFt": 60,
+  "classes": [
+   "druida",
+   "feiticeiro",
+   "mago"
+  ],
+  "kind": "livro",
+  "efeito": "controlarChamas",
+  "mira": "casa",
+  "exigeChama": true,
+  "familiaSonora": "utilidade",
+  "opcoes": [
+   {
+    "id": "apagar",
+    "rotulo": "Apagar",
+    "detalhe": "a chama some"
+   },
+   {
+    "id": "dobrar",
+    "rotulo": "Dobrar a luz",
+    "detalhe": "o claro e a penumbra"
+   },
+   {
+    "id": "metade",
+    "rotulo": "Cortar a luz pela metade",
+    "detalhe": "o claro e a penumbra"
+   }
+  ],
+  "desc": "Truque de transmutação: escolha uma chama não mágica visível a até 18 m que caiba num cubo de 1,5 m. Você pode espalhá-la 1,5 m numa direção onde haja combustível, apagá-la na hora, dobrar ou reduzir à metade a luz que ela emite e/ou mudar sua cor, ou fazer surgir nela formas simples que se movem como você quiser. A alteração de luz e as formas duram 1 hora, com até três desses efeitos ativos ao mesmo tempo, e você pode encerrar um deles com uma ação. (Simplificação: vale para a chama do mapa (a tocha, o braseiro, a fogueira). Espalhar o fogo e dar forma às chamas não existem no jogo, e a luz mudada fica até o fim da cena.)",
+  "tom": -7
+ },
  "criarFogueira": {
   "id": "criarFogueira",
   "name": "Criar Fogueira",
@@ -246,7 +306,7 @@ export const MAGIAS_XGE = {
   "cargas": 7,
   "cargasPorCirculo": 2,
   "desc": "Sete pontos de luz semelhantes a estrelas giram ao redor da sua cabeça por até 1 hora, sem exigir concentração. Com uma ação bônus, você lança um deles contra uma criatura ou objeto a até 36 m e faz um ataque mágico à distância, causando 4d12 de dano radiante se acertar; o ponto se gasta mesmo que você erre, e a magia acaba quando o último for usado. Com quatro ou mais pontos restantes, eles emitem luz plena em 9 m e penumbra por mais 9 m; com um a três, apenas penumbra em 9 m. Em círculo 8 ou maior, surgem dois pontos extras por círculo acima do 7º.",
-  "tom": 3
+  "tom": -4
  },
  "dancaMacabra": {
   "id": "dancaMacabra",
@@ -372,7 +432,7 @@ export const MAGIAS_XGE = {
   "danoConcedido": "3d6",
   "cdNaCondicao": true,
   "desc": "Com uma ação bônus, você toca uma criatura voluntária que tenha boca e escolhe ácido, frio, fogo, elétrico ou veneno; enquanto durar a concentração (até 1 minuto), ela pode usar a ação dela para soprar essa energia em um cone de 4,5 m. Quem estiver no cone faz um teste de resistência de Destreza contra a sua CD, sofrendo 3d6 de dano do tipo escolhido se falhar, ou metade se passar. Em círculo 3 ou maior, o dano aumenta em 1d6 para cada círculo acima do 2º.",
-  "tom": 12
+  "tom": -7
  },
  "redemoinhoDePoeira": {
   "id": "redemoinhoDePoeira",
@@ -543,7 +603,7 @@ export const MAGIAS_XGE = {
   "save": "int",
   "condition": "inimigosEmAbundancia",
   "desc": "Uma criatura que você veja a até 36 m faz um teste de resistência de Inteligência (CD de INT da magia); quem é imune a ficar amedrontado passa automaticamente. Se falhar, por até 1 minuto (concentração) ela passa a ver todas as criaturas visíveis como inimigas e precisa escolher ao acaso o alvo de seus ataques, magias e habilidades entre as criaturas ao alcance que consiga ver. Ela também é obrigada a fazer os ataques de oportunidade provocados por inimigos, se puder. Sempre que sofre dano, repete o teste e encerra o efeito ao passar. (Simplificação: no turno, ataca alguém sorteado que alcance, como o confuso; ao sofrer dano, testa Inteligência de novo.)",
-  "tom": 14
+  "tom": -7
  },
  "enervacao": {
   "id": "enervacao",
@@ -605,7 +665,7 @@ export const MAGIAS_XGE = {
    "semTeste": true
   },
   "desc": "Escolha um ponto visível no chão a até 36 m; terra e pedras explodem num cubo de 6 m centrado nele. Quem estiver na área faz um teste de resistência de Destreza, sofrendo 3d12 de dano de concussão se falhar ou metade se passar. O solo da área vira terreno difícil até ser limpo, o que leva pelo menos 1 minuto de trabalho manual por quadrado de 1,5 m. Em círculo maior que o 3º, o dano aumenta em 1d12 por círculo acima.",
-  "tom": 3
+  "tom": -4
  },
  "passoDistante": {
   "id": "passoDistante",
@@ -738,7 +798,7 @@ export const MAGIAS_XGE = {
   "save": "str",
   "pushFt": 5,
   "desc": "Truque de transmutação: você manipula o ar num ponto visível a até 9 m e escolhe um de três efeitos. Uma criatura Média ou menor faz um teste de resistência de Força e, se falhar, é empurrada até 1,5 m para longe de você; ou um objeto solto de até 2,5 kg, que ninguém esteja segurando ou carregando, é deslocado até 3 m para longe de você, sem causar dano. Também pode criar um efeito sensorial inofensivo, como folhas farfalhando, janelas batendo ou roupas tremulando ao vento. O efeito é instantâneo. (Simplificação: é sempre o empurrão de 1,5 m; mover um objeto e soprar não existem no jogo.)",
-  "tom": -7
+  "tom": 14
  },
  "espiritoCurador": {
   "id": "espiritoCurador",
@@ -852,7 +912,7 @@ export const MAGIAS_XGE = {
    }
   },
   "desc": "Uma criatura visível a até 27 m faz um teste de resistência de Destreza: sofre 8d6 de dano de fogo se falhar, ou metade se passar. Quem falha fica em chamas enquanto durar a concentração (até 1 minuto), emitindo luz plena em 9 m e penumbra por mais 9 m, e repete o teste ao fim de cada turno seu: na falha sofre 4d6 de fogo, no sucesso a magia acaba. O fogo só se apaga por meios mágicos, e quem morrer pelo dano da magia vira cinzas.",
-  "tom": 5
+  "tom": -4
  },
  "infestacao": {
   "id": "infestacao",
@@ -900,7 +960,7 @@ export const MAGIAS_XGE = {
   "condicao": "investiduraDasChamas",
   "familiaSonora": "protecao",
   "desc": "Você se cobre de chamas inofensivas por até 10 minutos (concentração), emitindo luz plena num raio de 9 m e penumbra por mais 9 m. Enquanto durar, você fica imune a dano de fogo e tem resistência a frio, e toda criatura que entrar pela primeira vez no turno a até 1,5 m de você, ou terminar o turno ali, sofre 1d10 de dano de fogo. Com sua ação, você pode disparar uma linha de fogo de 4,5 m por 1,5 m: cada criatura nela faz um teste de resistência de Destreza, sofrendo 4d8 de dano de fogo se falhar ou metade se passar. (Simplificação: o calor que fere quem chega perto não existe no jogo.)",
-  "tom": 14
+  "tom": -7
  },
  "investiduraDeGelo": {
   "id": "investiduraDeGelo",
@@ -925,7 +985,7 @@ export const MAGIAS_XGE = {
   "condicao": "investiduraDeGelo",
   "familiaSonora": "protecao",
   "desc": "Por até 10 minutos (concentração), seu corpo fica coberto de gelo: você ganha imunidade a frio, resistência a fogo e ignora o terreno difícil feito de gelo ou neve. O chão num raio de 3 m ao seu redor congela e vira terreno difícil para todos menos você, acompanhando seus movimentos. Com sua ação, você pode soprar um cone de vento gélido de 4,5 m; cada criatura nele faz teste de resistência de Constituição contra a CD da magia, sofrendo 4d6 de dano de frio e tendo o deslocamento reduzido à metade até o início do seu próximo turno se falhar, ou metade do dano sem a redução se passar. (Simplificação: o chão gelado em volta não existe no jogo.)",
-  "tom": -7
+  "tom": 14
  },
  "investiduraDePedra": {
   "id": "investiduraDePedra",
@@ -950,7 +1010,7 @@ export const MAGIAS_XGE = {
   "condicao": "investiduraDePedra",
   "familiaSonora": "protecao",
   "desc": "Por até 10 minutos (concentração), seu corpo se cobre de rocha e você ganha resistência a dano cortante, perfurante e de concussão vindo de ataques não mágicos. Com uma ação, você faz o chão tremer num raio de 4,5 m ao seu redor, e as demais criaturas nesse solo precisam passar num teste de resistência de Destreza contra a sua CD ou ficam caídas. Terreno difícil de terra ou pedra não lhe custa movimento extra, e você atravessa terra e pedra sólidas como se fossem ar, sem abalá-las. Porém, se terminar o movimento dentro delas, é expelido para o espaço livre mais próximo, a magia acaba e você fica atordoado até o fim do seu próximo turno. (Simplificação: atravessar a pedra não existe no jogo.)",
-  "tom": 14
+  "tom": -7
  },
  "investiduraDoVento": {
   "id": "investiduraDoVento",
@@ -995,7 +1055,7 @@ export const MAGIAS_XGE = {
   "targets": 1,
   "condition": "invulneravel",
   "desc": "Magia de 9º círculo, pessoal: você não sofre dano de nenhuma fonte ou tipo enquanto ela durar. Dura até 10 minutos e exige concentração. Requer um fragmento de adamante de pelo menos 500 po, que é destruído ao conjurar.",
-  "tom": -7
+  "tom": 14
  },
  "transferenciaDeVida": {
   "id": "transferenciaDeVida",
@@ -1195,7 +1255,7 @@ export const MAGIAS_XGE = {
    "rounds": 10
   },
   "desc": "Uma criatura visível a até 18 m faz um teste de resistência de Inteligência (sucesso automático se for imune a ficar enfeitiçado). Com sucesso, sofre 5d10 de dano psíquico e a magia termina. Com falha, sofre o mesmo dano e fica presa numa cela ilusória que só ela percebe, com aparência ameaçadora à sua escolha; enquanto durar, fica contida e não vê nem ouve nada além dela. Se for tirada da ilusão, atacar corpo a corpo através dela ou passar qualquer parte do corpo por ela, sofre 10d10 de dano psíquico e a magia acaba; concentração, até 1 minuto. (Simplificação: os 10d10 de quem tenta sair da prisão não existem no jogo: ele fica.)",
-  "tom": 3
+  "tom": 5
  },
  "lancaMental": {
   "id": "lancaMental",
@@ -1222,7 +1282,7 @@ export const MAGIAS_XGE = {
    "dados": 1
   },
   "desc": "Escolha uma criatura visível a até 18 m: ela faz um teste de resistência de Sabedoria (CD de SAB) e sofre 3d8 de dano psíquico se falhar, ou metade se passar. Se falhar, você sabe onde ela está enquanto mantiver a concentração (até 1 hora) e ambos estiverem no mesmo plano; nesse período ela não consegue se esconder de você e ficar invisível não lhe dá vantagem nenhuma contra você. Em círculo 3 ou maior, o dano aumenta em 1d8 por círculo acima do 2º. (Simplificação: saber onde o alvo está pela hora seguinte não existe no jogo.)",
-  "tom": 0
+  "tom": -4
  },
  "inundacaoDeEnergiaNegativa": {
   "id": "inundacaoDeEnergiaNegativa",
@@ -1268,7 +1328,7 @@ export const MAGIAS_XGE = {
   "condicao": "dorAtroz",
   "save": "con",
   "desc": "Escolha uma criatura visível a até 18 m; se ela tiver 100 PV ou menos e não for imune a ser enfeitiçada, é tomada por uma dor incapacitante, sem teste inicial; caso contrário, nada acontece. Enquanto sofre a dor, seu deslocamento fica limitado a 3 m e ela tem desvantagem em jogadas de ataque, testes de habilidade e testes de resistência, exceto os de Constituição. Para conjurar uma magia, precisa antes passar num teste de resistência de Constituição, ou a magia é perdida. Ao fim de cada turno dela, um novo teste de resistência de Constituição bem-sucedido encerra o efeito.",
-  "tom": -7
+  "tom": 14
  },
  "selvageriaPrimal": {
   "id": "selvageriaPrimal",
@@ -1307,7 +1367,7 @@ export const MAGIAS_XGE = {
   "targets": 1,
   "condition": "protecaoPrimordial",
   "desc": "Abjuração em você mesmo que dura até 1 minuto (concentração) e concede resistência a dano de ácido, frio, fogo, elétrico e trovejante. Ao sofrer dano de um desses tipos, você pode usar sua reação para trocar todas as resistências por imunidade àquele tipo, valendo inclusive contra o dano que a provocou. A imunidade dura até o fim do seu próximo turno e, nesse momento, a magia termina. (Simplificação: a troca da resistência por imunidade, com a reação, não existe no jogo.)",
-  "tom": 14
+  "tom": -7
  },
  "gritoPsiquico": {
   "id": "gritoPsiquico",
@@ -1338,7 +1398,41 @@ export const MAGIAS_XGE = {
    "repete": true
   },
   "desc": "Escolha até dez criaturas que você veja a até 27 m; as que têm Inteligência 2 ou menos são imunes. Cada alvo faz um teste de resistência de Inteligência (CD de INT): se falhar, sofre 14d6 de dano psíquico e fica atordoado; se passar, sofre metade e não fica atordoado. Quem morre por esse dano tem a cabeça explodida, se tiver uma. O atordoado repete o teste ao fim de cada turno seu e se livra do efeito ao passar; a magia é instantânea e não exige concentração. (Simplificação: os alvos são o escolhido e os inimigos mais perto dele, até dez.)",
-  "tom": 5
+  "tom": 3
+ },
+ "pirotecnia": {
+  "id": "pirotecnia",
+  "name": "Pirotecnia",
+  "nomeOriginal": "Pyrotechnics",
+  "level": 2,
+  "school": "transmutação",
+  "fonte": "xge",
+  "castTime": "action",
+  "rangeFt": 60,
+  "classes": [
+   "bardo",
+   "feiticeiro",
+   "mago"
+  ],
+  "kind": "livro",
+  "efeito": "pirotecnia",
+  "mira": "casa",
+  "exigeChama": true,
+  "save": "con",
+  "opcoes": [
+   {
+    "id": "fogos",
+    "rotulo": "Fogos de artifício",
+    "detalhe": "CON ou cego, a 3 m"
+   },
+   {
+    "id": "fumaca",
+    "rotulo": "Fumaça",
+    "detalhe": "6 m de raio, 1 minuto"
+   }
+  ],
+  "desc": "Escolha uma chama não mágica visível a até 18 m que caiba num cubo de 1,5 m; ela se apaga e você escolhe um de dois efeitos, de forma instantânea. Fogos de artifício: cada criatura a até 3 m da chama faz um teste de resistência de Constituição (CD de magia) e, se falhar, fica cega até o fim do seu próximo turno. Fumaça: uma nuvem negra com 6 m de raio se espalha a partir da chama, contornando esquinas, deixando a área com escuridão densa por 1 minuto ou até um vento forte dissipá-la. (Simplificação: vale para a chama do mapa (a tocha, o braseiro, a fogueira), que se apaga. A fumaça não se espalha com o vento.)",
+  "tom": -7
  },
  "laminaSombria": {
   "id": "laminaSombria",
@@ -1383,7 +1477,7 @@ export const MAGIAS_XGE = {
   "targets": 1,
   "condition": "sombraDeMoil",
   "desc": "Você fica envolto por sombras em forma de chamas e passa a ser considerado em área de escuridão densa para os outros. Num raio de 3 m ao seu redor, a luz plena cai para penumbra e a penumbra vira escuridão. Você também ganha resistência a dano radiante, e cada criatura a até 3 m que o acertar com um ataque sofre 2d8 de dano necrótico. Dura 1 minuto (concentração) e exige um olho de morto-vivo engastado numa gema de 150 po.",
-  "tom": -7
+  "tom": 14
  },
  "radianciaNauseante": {
   "id": "radianciaNauseante",
@@ -1421,7 +1515,7 @@ export const MAGIAS_XGE = {
    }
   },
   "desc": "Uma esfera de 9 m de raio de luz verde e fraca surge num ponto a até 36 m e contorna cantos. Quem entra na área pela primeira vez no turno ou começa o turno nela faz um teste de resistência de Constituição; se falhar, sofre 4d10 de dano radiante, ganha um nível de exaustão e passa a brilhar num raio de 1,5 m, o que impede que se beneficie de estar invisível. Dura até 10 minutos (concentração), e o brilho e a exaustão causados por ela desaparecem quando a magia termina. (Simplificação: a luz que não deixa ninguém ficar invisível não existe no jogo.)",
-  "tom": 0
+  "tom": 3
  },
  "enxameDeBolasDeNeveDeSnilloc": {
   "id": "enxameDeBolasDeNeveDeSnilloc",
@@ -1538,7 +1632,7 @@ export const MAGIAS_XGE = {
    "repete": true
   },
   "desc": "Uma explosão psíquica atinge uma esfera de 6 m de raio num ponto a até 36 m; cada criatura na área faz um teste de resistência de Inteligência (CD de INT), sofrendo 8d6 de dano psíquico se falhar ou metade se passar. Criaturas com Inteligência 2 ou menos são imunes. Quem falha fica com a mente confusa por 1 minuto: subtrai 1d6 de suas jogadas de ataque, testes de habilidade e testes de Constituição para manter concentração. O alvo repete o teste de Inteligência ao fim de cada turno seu, encerrando o efeito se passar.",
-  "tom": -4
+  "tom": 0
  },
  "transformacaoDeTenser": {
   "id": "transformacaoDeTenser",
@@ -1561,7 +1655,7 @@ export const MAGIAS_XGE = {
   "familiaSonora": "reforco",
   "pvTemp": 50,
   "desc": "Em você mesmo, por até 10 minutos (concentração): você não pode conjurar magias, mas recebe 50 PV temporários (que somem ao fim) e proficiência com todas as armaduras, escudos e armas simples e marciais, além de proficiência em testes de resistência de Força e Constituição. Seus ataques com armas simples e marciais têm vantagem, cada acerto com arma causa 2d12 de dano energético extra e a ação de Ataque permite dois ataques (sem somar a Ataque Extra ou efeito semelhante). Quando a magia termina, faça um teste de resistência de Constituição CD 15; se falhar, sofre um nível de exaustão. (Simplificação: o treino em armadura, armas e resistências de Força e Constituição, e o cansaço do fim, não existem no jogo.)",
-  "tom": -7
+  "tom": 14
  },
  "passoTrovejante": {
   "id": "passoTrovejante",
@@ -1744,7 +1838,7 @@ export const MAGIAS_XGE = {
    "dados": 1
   },
   "desc": "Cria, a até 36 m, uma parede de luz de até 18 m de comprimento, 3 m de altura e 1,5 m de espessura, em qualquer orientação; ela bloqueia a visão mas pode ser atravessada, e ilumina 36 m com luz plena e mais 36 m com penumbra (concentração, até 10 minutos). Quem estiver na área ao surgir faz teste de resistência de Constituição: falha causa 4d8 de dano radiante e deixa cego por 1 minuto (novo teste ao fim de cada turno), sucesso causa metade sem cegueira; quem terminar o turno dentro dela sofre 4d8 radiante. Com uma ação, você dispara um raio da parede contra uma criatura visível a até 18 m dela (ataque de magia à distância, 4d8 radiante), e a parede encolhe 3 m a cada disparo, acertando ou não, acabando ao chegar a zero. Em círculo 6 ou maior, todo o dano aumenta 1d8 por círculo acima do 5º. (Simplificação: o raio de luz que a muralha dispara, encolhendo, não existe no jogo.)",
-  "tom": -4
+  "tom": 5
  },
  "muralhaDeAreia": {
   "id": "muralhaDeAreia",
@@ -1827,7 +1921,7 @@ export const MAGIAS_XGE = {
   "targets": 1,
   "condition": "ventoProtetor",
   "desc": "Você se envolve num vendaval de cerca de 30 km/h que forma um raio de 3 m centrado em você e o acompanha por até 10 minutos (concentração). Dentro dele, você e todas as outras criaturas ficam surdas, chamas do tamanho de uma tocha ou menores que estejam desprotegidas se apagam, e névoas, gases e vapores que um vento forte dispersaria não conseguem entrar. A área é terreno difícil para todos menos você, e ataques à distância com armas que entrem ou saiam do vento têm desvantagem. (Simplificação: fica o tiro que passa pelo vento com desvantagem; a surdez, as chamas apagadas e o terreno difícil não existem no jogo.)",
-  "tom": 14
+  "tom": 4
  },
  "palavraDeRadiancia": {
   "id": "palavraDeRadiancia",
@@ -1851,7 +1945,7 @@ export const MAGIAS_XGE = {
   "damageType": "radiante",
   "halfOnSave": false,
   "desc": "Truque que exige um símbolo sagrado: ao pronunciar uma palavra divina, você escolhe quaisquer criaturas que esteja vendo a até 1,5 m de você. Cada uma faz um teste de resistência de Constituição contra a sua CD de magia e, se falhar, sofre 1d6 de dano radiante. O efeito é instantâneo. O dano sobe para 2d6 no 5º nível de personagem, 3d6 no 11º e 4d6 no 17º.",
-  "tom": 5
+  "tom": 0
  },
  "golpeDeZefiro": {
   "id": "golpeDeZefiro",

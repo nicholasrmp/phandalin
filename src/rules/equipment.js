@@ -11,13 +11,14 @@
 // uma segunda cópia na ficha é como o número da tela começa a divergir do
 // número que o motor usa.
 import { abilityMod, proficiencyBonus } from './abilities.js';
-import { WEAPONS, ARMORS, SHIELD, SHIELD_AC, ITEMS } from './items/index.js';
+import { WEAPONS, ARMORS, SHIELD, SHIELD_AC, SHIELDS, ITEMS } from './items/index.js';
 import { caDaForja, carismaNaArma, sabedoriaNosBracos } from './subclasses-livros.js';
+import { atualizarItensPassivos } from './itens-passivos.js';
 
 // Reexportados porque meia dúzia de arquivos já importa estes nomes daqui, e
 // mudar todos eles para apontar para `items/` seria churn sem ganho: este
 // continua sendo o lugar onde se pergunta por equipamento.
-export { WEAPONS, ARMORS, SHIELD, SHIELD_AC, ITEMS };
+export { WEAPONS, ARMORS, SHIELD, SHIELD_AC, SHIELDS, ITEMS };
 
 /** CA = base da armadura + DEX (limitado) + escudo + bônus diversos. */
 export function armorClass(actor) {
@@ -29,7 +30,8 @@ export function armorClass(actor) {
   // MESTRE EM ARMADURAS MÉDIAS (talento): com Destreza 16 ou mais, até +3 de Destreza na armadura média.
   const teto = armor.categoria === 'média' && (actor.talentos ?? []).includes('mestreEmArmadurasMedias') && actor.abilities.dex >= 16 ? 3 : armor.dexCap;
   let ac = armor.base - (actor.armaduraCorroida?.[actor.armor] ?? 0) + Math.min(dex, teto);
-  if (actor.shield) ac += SHIELD_AC - (actor.escudoCorroido ?? 0);
+  // o escudo mágico (`actor.shield` guarda o id dele; `true` é o comum) soma o bônus próprio
+  if (actor.shield) ac += SHIELD_AC + (SHIELDS[actor.shield]?.bonusCA ?? 0) - (actor.escudoCorroido ?? 0);
   // `acBonusArmadura` é o Estilo de Luta: Defesa, que a própria ficha descreve
   // como "+1 enquanto estiver de armadura". Enquanto nada podia desequipar,
   // somar sempre dava no mesmo; com o inventário dá para tirar a cota da
@@ -48,6 +50,8 @@ export function armorClass(actor) {
     if (tipo === 'draconica') semArmadura = 13 + dex + (actor.shield ? SHIELD_AC : 0);
     if (semArmadura != null) ac = Math.max(ac, semArmadura);
   }
+  // ARMADURA NATURAL (o povo-lagarto): 13 + DES sem armadura, e o escudo soma
+  if (!comArmadura && actor.armaduraNatural) ac = Math.max(ac, actor.armaduraNatural + dex + (actor.shield ? SHIELD_AC : 0));
   // Armadura Arcana: CA base 13 + DES enquanto estiver sem armadura.
   // ARMADURA DE SOMBRAS (invocação do bruxo): a Armadura Arcana à vontade.
   if (!comArmadura && (actor.armaduraArcana || actor.features?.includes('armorOfShadows'))) ac = Math.max(ac, 13 + dex + (actor.shield ? SHIELD_AC : 0));
@@ -61,6 +65,14 @@ export function armorClass(actor) {
   ac += armor.bonusCA ?? 0;
   // BÊNÇÃO DA FORJA e ALMA DA FORJA (clérigo da Forja, Xanathar)
   ac += caDaForja(actor, armor);
+  // O ITEM QUE O HERÓI USA (`itens-passivos.js`): o anel e o manto de proteção; os braceletes de defesa só sem armadura e
+  // sem escudo; o manto do arquimago dá a base 15 + Destreza sem armadura.
+  const di = actor.doItem;
+  if (di) {
+    if (!comArmadura && di.caBase) ac = Math.max(ac, di.caBase + dex + (actor.shield ? SHIELD_AC : 0) + (actor.acBonus ?? 0));
+    ac += di.ca ?? 0;
+    if (!comArmadura && !actor.shield) ac += di.caSemArmadura ?? 0;
+  }
   return ac;
 }
 
@@ -92,7 +104,7 @@ export function itemDeId(id) {
   if (!id) return null;
   if (WEAPONS[id]) return { tipo: 'arma', dados: WEAPONS[id] };
   if (ARMORS[id]) return { tipo: 'armadura', dados: ARMORS[id] };
-  if (id === SHIELD.id) return { tipo: 'escudo', dados: SHIELD };
+  if (SHIELDS[id]) return { tipo: 'escudo', dados: SHIELDS[id] };
   if (ITEMS[id]) return { tipo: 'item', dados: ITEMS[id] };
   return null;
 }
@@ -107,7 +119,7 @@ export function noEncaixe(actor, slot) {
   if (slot === 'maoPrincipal') return actor.equippedWeapon ?? null;
   if (slot === 'maoSecundaria') return actor.offhandWeapon ?? null;
   if (slot === 'armadura') return actor.armor ?? 'nenhuma';
-  if (slot === 'escudo') return actor.shield ? SHIELD.id : null;
+  if (slot === 'escudo') return actor.shield ? (typeof actor.shield === 'string' ? actor.shield : SHIELD.id) : null;
   return null;
 }
 
@@ -234,6 +246,8 @@ export function marcarTreinoDeArmadura(actor) {
 export function avisoDeArmadura(actor, armorId) {
   const cat = categoriaDaArmadura(armorId);
   if (cat === 'nenhuma') return null;
+  // a malha élfica: quem a veste conta como treinado nela
+  if (ARMORS[armorId]?.semTreino) return null;
   if (treinoEmArmadura(actor).includes(cat)) return null;
   return `${actor.className} não tem treino em armadura ${cat}: desvantagem em ataques, testes e resistências de Força e Destreza, e nada de conjurar.`;
 }
@@ -275,7 +289,29 @@ function bagInicial(actor) {
 export function garantirInventario(actor) {
   if (!actor.bag) actor.bag = bagInicial(actor);
   if (actor.offhandWeapon === undefined) actor.offhandWeapon = null;
+  arrumarMochila(actor);
   return actor;
+}
+
+/**
+ * O SAQUE CAI NA MOCHILA com `tipo: 'item'` (`comercio.js guardar`), qualquer que seja: a arma achada no baú, a
+ * armadura do elfo do casulo. A arma se empunha pela lista `weapons`, a armadura e o escudo pelo `tipo` da entrada —
+ * então aqui a arma vai para a lista (uma por unidade) e a armadura e o escudo ganham o tipo certo. A adaga de veneno
+ * do Repouso de Zorzula ficava na mochila sem poder ir para a mão.
+ */
+function arrumarMochila(actor) {
+  let mexeu = false;
+  for (let i = actor.bag.length - 1; i >= 0; i -= 1) {
+    const e = actor.bag[i];
+    if (WEAPONS[e.id] && !e.municao) {
+      actor.weapons ??= [];
+      for (let k = 0; k < (e.qtd ?? 1); k += 1) actor.weapons.push(e.id);
+      actor.bag.splice(i, 1);
+      mexeu = true;
+    } else if (ARMORS[e.id] && e.tipo !== 'armadura') { e.tipo = 'armadura'; mexeu = true; }
+    else if (SHIELDS[e.id] && e.tipo !== 'escudo') { e.tipo = 'escudo'; mexeu = true; }
+  }
+  if (mexeu) atualizarItensPassivos(actor);
 }
 
 /**
@@ -323,7 +359,7 @@ export function motivoParaRecusar(actor, slot, id) {
   }
   if (slot === 'escudo') {
     if (!id) return null;
-    if (id !== SHIELD.id) return `${nomeDeId(id)} não é escudo`;
+    if (!SHIELDS[id]) return `${nomeDeId(id)} não é escudo`;
     const principal = noEncaixe(actor, 'maoPrincipal');
     if (duasMaos(principal)) return `${nomeDeId(principal)} usa as duas mãos`;
     if (noEncaixe(actor, 'maoSecundaria')) return 'a mão secundária está com uma arma';
@@ -347,7 +383,7 @@ export function candidatosPara(actor, slot) {
     for (const e of actor.bag) if (e.tipo === 'armadura' && permite(e.id)) lista.push(e.id);
   } else if (slot === 'escudo') {
     if (atual) lista.push(null);
-    else if (actor.bag.some((e) => e.id === SHIELD.id) && permite(SHIELD.id)) lista.push(SHIELD.id);
+    for (const e of actor.bag) if (SHIELDS[e.id] && permite(e.id) && !lista.includes(e.id)) lista.push(e.id);
   }
   return lista;
 }
@@ -394,15 +430,19 @@ export function equipar(actor, slot, id) {
     if (de && de !== 'nenhuma') porNaBag(actor, de, 'armadura');
     actor.armor = nova;
   } else if (slot === 'escudo') {
+    if (id && !actor.bag.some((e) => e.id === id)) return { ok: false, why: `${nomeDeId(id)} não está na mochila` };
+    // trocar de escudo guarda o de antes
+    if (de) porNaBag(actor, de, 'escudo');
     if (id) {
-      if (!tirarDaBag(actor, SHIELD.id)) return { ok: false, why: 'o escudo não está na mochila' };
-      actor.shield = true;
+      tirarDaBag(actor, id);
+      actor.shield = id === SHIELD.id ? true : id;
     } else {
       actor.shield = false;
-      porNaBag(actor, SHIELD.id, 'escudo');
     }
   }
 
+  // o que a armadura e o escudo fazem por estar vestidos (a resistência, a sintonia) vem e vai com eles
+  atualizarItensPassivos(actor);
   actor.ac = armorClass(actor);
   marcarTreinoDeArmadura(actor);
   return { ok: true, slot, de, para: id ?? null, acAntes, acDepois: actor.ac, semTreino: actor.armorUntrained };
@@ -504,6 +544,9 @@ export function transferirItem(de, para, id, qtd = 1) {
   else para.bag.push(doado);
   // Deu a última tocha com ela acesa: a luz vai junto com a tocha.
   if (id === 'tocha' && de.tochaAcesa && !de.bag.some((x) => x.id === 'tocha' && x.qtd > 0)) de.tochaAcesa = false;
+  // o item que faz algo só por estar com o herói (o anel de proteção) sai com ele, e a sintonia cai
+  atualizarItensPassivos(de);
+  atualizarItensPassivos(para);
   return { ok: true };
 }
 

@@ -30,6 +30,12 @@ const COM_FICHA = new Set([...FICHAS_DOS_LIVROS,
   'galebDuhr', 'pedregulhoAnimado', 'medusa', 'horrorDeElmo', 'mefitDePoeira', 'wight', 'mutanteHumanoide', 'armadilhaDeIntelecto', 'drowGuerreiroDeElite', 'elementalDaTerra', 'aglomeradoEncefalico', 'revenant', 'hidra', 'aguaViva', 'golemDeArgila', 'fantasma', 'mumia', 'esqueletoAnao', 'gnomoDasProfundezas',
   // a Encruzilhada da Forca (o Obelisco, capítulo 6)
   'qunbraxel',
+  // o capítulo 7 do Obelisco
+  'moradorInfectado', 'grellPsiquico', 'fusaoDeCarne', 'capaNegraMutante', 'oshundo', 'nothicDevoradorDeMentes', 'zeloteAberrante',
+  'profetaDevoradorDeMentes', 'cerebroAnciaoInfectado', 'ocular',
+  // o capítulo 8 do Obelisco (as variantes, a cabeça da Chishinix, o zelote tentaculado, a Nellik e a Varakkta, usam a
+  // ficha do bloco de onde saíram, pelo `look`)
+  'devoradorClarividente', 'lowarnizel', 'refracaoDeIlvaash', 'cranioFlamejante',
 ]);
 
 // O MESMO BLOCO, PESSOAS DIFERENTES: a Casa da Morte faz Rose e Thorn do bloco de fantasma de criança e dá o nome

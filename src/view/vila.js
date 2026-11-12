@@ -46,7 +46,8 @@ export function abrirTelaVila(root, o) {
 
   // A pintura e os marcadores dentro de uma moldura com a proporção dela, para
   // a % dos marcadores cair sempre no mesmo prédio, qualquer que seja a tela.
-  const quadro = el('div', { class: 'vila-quadro', style: { backgroundImage: `url(${o.pintura ?? pintura})` } });
+  // o ESTÁGIO da vila tomada pelo Reino Distante (do 5 ao 8, `game/vila-reino.js`) muda o tom do mapa (`style.css`)
+  const quadro = el('div', { class: `vila-quadro${o.estagio ? ` estagio-${o.estagio}` : ''}`, style: { backgroundImage: `url(${o.pintura ?? pintura})` } });
   // Propriedade personalizada só entra por setProperty.
   if (o.proporcao) quadro.style.setProperty('--proporcao', o.proporcao);
   const mapa = el('div', { class: 'vila-mapa' }, quadro, el('span', { class: 'vila-dica' }, 'Clique num pino para visitar o lugar.'));

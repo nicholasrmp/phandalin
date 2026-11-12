@@ -1,0 +1,366 @@
+[
+ {
+  "criatura": "abjurador",
+  "magias": [
+   "arcane lock",
+   "symbol"
+  ]
+ },
+ {
+  "criatura": "arquidruida",
+  "magias": [
+   "tree stride"
+  ]
+ },
+ {
+  "criatura": "arqueiro",
+  "traco": "Archer's Eye"
+ },
+ {
+  "criatura": "babau",
+  "acao": "Weakening Gaze"
+ },
+ {
+  "criatura": "banderhobb",
+  "acao": "Swallow"
+ },
+ {
+  "criatura": "barghest",
+  "traco": "Fire Banishment"
+ },
+ {
+  "criatura": "bruxaBheur",
+  "magias": [
+   "control weather"
+  ]
+ },
+ {
+  "criatura": "bodak",
+  "traco": "Aura of Annihilation"
+ },
+ {
+  "criatura": "boggle",
+  "traco": "Boggle Oil"
+ },
+ {
+  "criatura": "pescadorDasCavernas",
+  "traco": "Adhesive Filament"
+ },
+ {
+  "criatura": "pescadorDasCavernas",
+  "traco": "Flammable Blood"
+ },
+ {
+  "criatura": "giganteDasNuvensSorridente",
+  "magias": [
+   "control weather"
+  ]
+ },
+ {
+  "criatura": "conjurador",
+  "magias": [
+   "conjure elemental"
+  ]
+ },
+ {
+  "criatura": "anciaoSombrio",
+  "acao": "Darkness"
+ },
+ {
+  "criatura": "beijoDaMorte",
+  "traco": "Lightning Blood"
+ },
+ {
+  "criatura": "devorador",
+  "acao": "Imprison Soul"
+ },
+ {
+  "criatura": "adivinho",
+  "traco": "Portent"
+ },
+ {
+  "criatura": "cerebroAnciao",
+  "acao": "Mind Blast"
+ },
+ {
+  "criatura": "cerebroAnciao",
+  "acao": "Psychic Link"
+ },
+ {
+  "criatura": "cerebroAnciao",
+  "acao": "Sense Thoughts"
+ },
+ {
+  "criatura": "cerebroAnciao",
+  "lendarias": [
+   "Break Concentration",
+   "Psychic Pulse",
+   "Sever Psychic Link"
+  ]
+ },
+ {
+  "criatura": "encantador",
+  "reacao": "Instinctive Charm"
+ },
+ {
+  "criatura": "evocador",
+  "traco": "Sculpt Spells"
+ },
+ {
+  "criatura": "couracadoGiganteDoFogo",
+  "acao": "Shield Charge"
+ },
+ {
+  "criatura": "bruxoDeImixSalamandraDeFogo",
+  "traco": "Imix's Blessing"
+ },
+ {
+  "criatura": "caracolMangual",
+  "traco": "Flail Tentacles"
+ },
+ {
+  "criatura": "flind",
+  "traco": "Aura of Blood Thirst"
+ },
+ {
+  "criatura": "sapomoth",
+  "acao": "Tongue"
+ },
+ {
+  "criatura": "sapomoth",
+  "traco": "Shock Susceptibility"
+ },
+ {
+  "criatura": "giganteDoGeloEterno",
+  "traco": "Vaprak's Rage"
+ },
+ {
+  "criatura": "gnollRoedorDeCarne",
+  "acao": "Sudden Rush"
+ },
+ {
+  "criatura": "gnollDefinhado",
+  "reacao": "Vengeful Strike"
+ },
+ {
+  "criatura": "devastadorHobgoblin",
+  "traco": "Arcane Advantage"
+ },
+ {
+  "criatura": "devastadorHobgoblin",
+  "traco": "Army Arcana"
+ },
+ {
+  "criatura": "koboldEscudoDraconico",
+  "traco": "Heart of the Dragon"
+ },
+ {
+  "criatura": "koboldInventor",
+  "acao": "Weapon Invention"
+ },
+ {
+  "criatura": "feiticeiroEscamadoKobold",
+  "traco": "Sorcery Points"
+ },
+ {
+  "criatura": "korred",
+  "traco": "Command Hair"
+ },
+ {
+  "criatura": "korred",
+  "magias": [
+   "conjure elemental",
+   "stone shape"
+  ]
+ },
+ {
+  "criatura": "sacerdoteDoKraken",
+  "acao": "Voice of the Kraken"
+ },
+ {
+  "criatura": "sacerdoteDoKraken",
+  "magias": [
+   "control water"
+  ]
+ },
+ {
+  "criatura": "leucrota",
+  "traco": "Kicking Retreat"
+ },
+ {
+  "criatura": "adeptoDeArtesMarciais",
+  "reacao": "Deflect Missile"
+ },
+ {
+  "criatura": "devoradorDeMentesPsionico",
+  "magias": [
+   "stone shape"
+  ]
+ },
+ {
+  "criatura": "morkoth",
+  "reacao": "Spell Reflection"
+ },
+ {
+  "criatura": "bocaDeGrolantor",
+  "traco": "Mouth of Madness"
+ },
+ {
+  "criatura": "necromante",
+  "traco": "Grim Harvest"
+ },
+ {
+  "criatura": "nilbog",
+  "traco": "Nilbogism"
+ },
+ {
+  "criatura": "nilbog",
+  "reacao": "Reversal of Fortune"
+ },
+ {
+  "criatura": "laminaDeIlnevalOrc",
+  "acao": "Ilneval's Command"
+ },
+ {
+  "criatura": "orcNutridoDeYurtrus",
+  "acao": "Corrupted Vengeance"
+ },
+ {
+  "criatura": "orcNutridoDeYurtrus",
+  "traco": "Nurtured One of Yurtrus"
+ },
+ {
+  "criatura": "orcPresaVermelhaDeShargaas",
+  "acao": "Veil of Shargaas"
+ },
+ {
+  "criatura": "orcPresaVermelhaDeShargaas",
+  "traco": "Slayer"
+ },
+ {
+  "criatura": "velocino",
+  "traco": "Blurred Movement"
+ },
+ {
+  "criatura": "barreteVermelho",
+  "acao": "Ironbound Pursuit"
+ },
+ {
+  "criatura": "barreteVermelho",
+  "traco": "Outsize Strength"
+ },
+ {
+  "criatura": "criaDoMar",
+  "acao": "Piscine Anatomy"
+ },
+ {
+  "criatura": "mastimDasSombras",
+  "traco": "Shadow Blend"
+ },
+ {
+  "criatura": "rastejadorRastreador",
+  "acao": "Life Leech"
+ },
+ {
+  "criatura": "giganteDasPedrasAndarilhoDosSonhos",
+  "acao": "Petrifying Touch"
+ },
+ {
+  "criatura": "giganteDasPedrasAndarilhoDosSonhos",
+  "traco": "Dreamwalker's Charm"
+ },
+ {
+  "criatura": "quintessenteGiganteDasTempestades",
+  "acao": "Windjavelin"
+ },
+ {
+  "criatura": "quintessenteGiganteDasTempestades",
+  "lendarias": [
+   "One with the Storm"
+  ]
+ },
+ {
+  "criatura": "enxameDeLarvasPutrefatas",
+  "acao": "Bites"
+ },
+ {
+  "criatura": "enxameDeLarvasPutrefatas",
+  "semGolpe": true
+ },
+ {
+  "criatura": "espinhento",
+  "traco": "Thorny Body"
+ },
+ {
+  "criatura": "armadilheiro",
+  "acao": "Smother"
+ },
+ {
+  "criatura": "armadilheiro",
+  "semGolpe": true
+ },
+ {
+  "criatura": "ulitharid",
+  "magias": [
+   "project image"
+  ]
+ },
+ {
+  "criatura": "vargouille",
+  "acao": "Kiss"
+ },
+ {
+  "criatura": "sacerdoteDeGuerra",
+  "reacao": "Guided Strike"
+ },
+ {
+  "criatura": "bruxoDaArquifada",
+  "magias": [
+   "conjure fey"
+  ]
+ },
+ {
+  "criatura": "bruxoDoCorruptor",
+  "traco": "Dark One's Own Luck"
+ },
+ {
+  "criatura": "bruxoDoGrandeAntigo",
+  "magias": [
+   "arcane gate"
+  ]
+ },
+ {
+  "criatura": "senhorDaGuerra",
+  "traco": "Survivor"
+ },
+ {
+  "criatura": "senhorDaGuerra",
+  "lendarias": [
+   "Command Ally"
+  ]
+ },
+ {
+  "criatura": "caoYeth",
+  "traco": "Sunlight Banishment"
+ },
+ {
+  "criatura": "anatemaYuanTi",
+  "traco": "Six Heads"
+ },
+ {
+  "criatura": "yuanTiSussurradorDaMente",
+  "traco": "Mind Fangs"
+ },
+ {
+  "criatura": "yuanTiSussurradorDaMente",
+  "traco": "Sseth's Blessing"
+ },
+ {
+  "criatura": "yuanTiOradoraDePesadelos",
+  "traco": "Death Fangs"
+ },
+ {
+  "criatura": "mestreDoFossoYuanTi",
+  "traco": "Poison's Disciple"
+ }
+]

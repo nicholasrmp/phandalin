@@ -17,6 +17,19 @@ import { garantirInventario } from '../rules/equipment.js';
 import { ctxDe } from './magias-fora.js';
 import { audio } from '../core/audio.js';
 
+/**
+ * A AGULHA ENVENENADA (Livro do Mestre): 1 de perfurante e 2d10 de veneno em quem mexeu na fechadura, e Constituição CD 15
+ * ou envenenado por uma hora. Dispara uma vez (a agulha fica para fora).
+ */
+export function agulhaEnvenenada(enc, c, tranca) {
+  tranca.agulhaDisparada = true;
+  const d = 1 + enc.rng.die(10) + enc.rng.die(10);
+  enc.say('dano', `Uma agulha salta da fechadura e fura a mão de ${c.name}: 1 de perfurante e ${d - 1} de veneno.`);
+  enc.applyDamage(c, 1, 'perfurante', null, {});
+  if (!c.dead) enc.applyDamage(c, d - 1, 'veneno', null, {});
+  if (!c.dead) enc.aplicarVeneno?.(c, { cd: 15, condicoes: [{ id: 'envenenado', rodadas: 600 }] }, 'a agulha', null);
+}
+
 const VIZINHAS = [[1, 0], [-1, 0], [0, 1], [0, -1]];
 
 /** A chave da aresta entre duas casas vizinhas no eixo: 'x,y,N' (o norte da casa de baixo) ou 'x,y,O' (o oeste da da direita). */
@@ -98,6 +111,8 @@ export function opcoesDePorta(app, c, tile, { fora = true } = {}) {
         if (t.passou) { destrancar(); audio.play('lockPick'); abrir(`${c.name} mexe na fechadura até ela ceder (${t.total} contra CD ${cd}) e abre a porta.`); return; }
         audio.play('lockFail');
         enc.say('acao', `A fechadura resiste a ${c.name} (${t.total} contra CD ${cd}).`);
+        // A AGULHA ENVENENADA do Livro do Mestre (`mapa.trancas[...].agulha`): mexer errado na fechadura a solta
+        if (p.tranca.agulha && !p.tranca.agulhaDisparada) agulhaEnvenenada(enc, c, p.tranca);
         app.refresh?.();
       },
     });

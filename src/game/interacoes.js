@@ -25,7 +25,7 @@ import { falaPorMensagem } from '../rules/utilidade.js';
 import { chaveDoTesouro, porqueNaoSaquear } from './saque.js';
 import { opcoesDeClasse } from './interacoes-classe.js';
 import { opcoesDeAtencao, opcaoDeExaminarCorpo, opcaoDeLembrarCriatura, opcaoDoDiario } from './investigar.js';
-import { opcaoDeFogo } from './fogo.js';
+import { opcaoDeFogo, opcoesDeControlarChamas } from './fogo.js';
 import { opcoesDePorta } from './portas.js';
 
 /** Linhas "Dar item" por aliado no menu (o servidor da sala aceita escolha de menu até 60). */
@@ -463,6 +463,15 @@ export function opcoesDaCasa(app, tile) {
           detalhe: 'ação bônus · Intuição contra Enganação · o Ataque Furtivo vale contra ele sem vantagem, um minuto',
           motivo: c.bonusUsed ? semBonus : null,
           fazer: () => app.usarFeature(c, 'insightfulFighting', { target: occ }),
+        });
+      }
+      // o LOBO FRONTAL do Labirinto Salgado: o Ajudar como ação bônus, contra quem está ao lado
+      if (c && vez && occ.side !== c.side && c.conditions?.some((x) => x.id === 'loboFrontal')) {
+        opcoes.push({
+          grupo: 'Apoiar', rotulo: 'Ajudar (lobo frontal)', icone: 'magia-bencao',
+          detalhe: 'ação bônus · o próximo ataque de um aliado contra ele tem vantagem',
+          motivo: c.bonusUsed ? semBonus : longe(5) ? 'a mais de 1,5 m' : null,
+          fazer: () => app.usarFeature(c, 'ajudaDoLobo', { target: occ }),
         });
       }
       if (c && vez && c.features?.includes('masterOfTactics')) {
@@ -915,6 +924,8 @@ export function opcoesDaCasa(app, tile) {
     opcoes.push(...opcoesDeAtencao(app, c, tile, sup, { fora, nome, pistas: [...daCena, ...doEditor] }));
     const fogo = opcaoDeFogo(enc, c, tile, { fora, depois: () => { app.refresh?.(); if (!fora) app.afterAct?.(); } });
     if (fogo) opcoes.push(fogo);
+    // CONTROLAR CHAMAS (Xanathar): de longe, sem tocha, para quem conhece o truque
+    opcoes.push(...opcoesDeControlarChamas(enc, c, tile, { fora, depois: () => { app.refresh?.(); if (!fora) app.afterAct?.(); } }));
   }
   // Uma imagem ilusória do outro lado nesta casa: examinar gasta a ação.
   const imagem = (app.enc?.zonas ?? []).find((z) => z.ilusao && z.lado !== c?.side && z.casas.has(`${tile.x},${tile.y}`));

@@ -1,0 +1,562 @@
+{
+ "desgracadoAbissal": [
+  "MTF",
+  "Abyssal Wretch.webp"
+ ],
+ "kruthikAdulto": [
+  "MTF",
+  "Adult Kruthik.webp"
+ ],
+ "oblexAdulto": [
+  "MTF",
+  "Adult Oblex.webp"
+ ],
+ "mirmidaoElementalDoAr": [
+  "MTF",
+  "Air Elemental Myrmidon.webp"
+ ],
+ "alkilith": [
+  "MTF",
+  "Alkilith.webp"
+ ],
+ "allip": [
+  "MTF",
+  "Allip.webp"
+ ],
+ "amnizu": [
+  "MTF",
+  "Amnizu.webp"
+ ],
+ "armanita": [
+  "MTF",
+  "Armanite.webp"
+ ],
+ "couracadoAstral": [
+  "MTF",
+  "Astral Dreadnought.webp"
+ ],
+ "eladrinDoOutono": [
+  "MTF",
+  "Autumn Eladrin.webp"
+ ],
+ "bael": [
+  "MTF",
+  "Bael.webp"
+ ],
+ "balhannoth": [
+  "MTF",
+  "Balhannoth.webp"
+ ],
+ "baphomet": [
+  "MTF",
+  "Baphomet.webp"
+ ],
+ "berbalang": [
+  "MTF",
+  "Berbalang.webp"
+ ],
+ "abishaiNegro": [
+  "MTF",
+  "Black Abishai.webp"
+ ],
+ "abishaiAzul": [
+  "MTF",
+  "Blue Abishai.webp"
+ ],
+ "garraDeOsso": [
+  "MTF",
+  "Boneclaw.webp"
+ ],
+ "batedorDeBronze": [
+  "MTF",
+  "Bronze Scout.webp"
+ ],
+ "bulezau": [
+  "MTF",
+  "Bulezau.webp"
+ ],
+ "coletorDeCadaveres": [
+  "MTF",
+  "Cadaver Collector.webp"
+ ],
+ "canoloth": [
+  "MTF",
+  "Canoloth.webp"
+ ],
+ "estrangulador": [
+  "MTF",
+  "Choker.webp"
+ ],
+ "florCadaver": [
+  "MTF",
+  "Corpse Flower.webp"
+ ],
+ "bruxoMorto": [
+  "MTF",
+  "Deathlock.webp"
+ ],
+ "mestreBruxomorto": [
+  "MTF",
+  "Deathlock Mastermind.webp"
+ ],
+ "carnicalCondenado": [
+  "MTF",
+  "Deathlock Wight.webp"
+ ],
+ "demogorgon": [
+  "MTF",
+  "Demogorgon.webp"
+ ],
+ "derro": [
+  "MTF",
+  "Derro.webp"
+ ],
+ "sabioDerro": [
+  "MTF",
+  "Derro Savant.webp"
+ ],
+ "dhergoloth": [
+  "MTF",
+  "Dhergoloth.webp"
+ ],
+ "trollTerrivel": [
+  "MTF",
+  "Dire Troll.webp"
+ ],
+ "aracnomanteDrow": [
+  "MTF",
+  "Drow Arachnomancer.webp"
+ ],
+ "consorteFavoritoDrow": [
+  "MTF",
+  "Drow Favored Consort.webp"
+ ],
+ "capitaoDeCasaDrow": [
+  "MTF",
+  "Drow House Captain.webp"
+ ],
+ "inquisidoraDrow": [
+  "MTF",
+  "Drow Inquisitor.webp"
+ ],
+ "matriarcaDrow": [
+  "MTF",
+  "Drow Matron Mother.webp"
+ ],
+ "laminaSombriaDrow": [
+  "MTF",
+  "Drow Shadowblade.webp"
+ ],
+ "despotaDuergar": [
+  "MTF",
+  "Duergar Despot.webp"
+ ],
+ "marteladorDuergar": [
+  "MTF",
+  "Duergar Hammerer.webp"
+ ],
+ "duergarKavalrachni": [
+  "MTF",
+  "Duergar Kavalrachni.webp"
+ ],
+ "mestreMentalDuergar": [
+  "MTF",
+  "Duergar Mind Master.webp"
+ ],
+ "gritadorDuergar": [
+  "MTF",
+  "Duergar Screamer.webp"
+ ],
+ "laminaDaAlmaDuergar": [
+  "MTF",
+  "Duergar Soulblade.webp"
+ ],
+ "guardaDePedraDuergar": [
+  "MTF",
+  "Duergar Stone Guard.webp"
+ ],
+ "senhorDaGuerraDuergar": [
+  "MTF",
+  "Duergar Warlord.webp"
+ ],
+ "duergarXarrorn": [
+  "MTF",
+  "Duergar Xarrorn.webp"
+ ],
+ "dybbuk": [
+  "MTF",
+  "Dybbuk.webp"
+ ],
+ "mirmidaoElementalDaTerra": [
+  "MTF",
+  "Earth Elemental Myrmidon.webp"
+ ],
+ "eidolon": [
+  "MTF",
+  "Eidolon.webp"
+ ],
+ "oblexAnciao": [
+  "MTF",
+  "Elder Oblex.webp"
+ ],
+ "tempestadeAncia": [
+  "MTF",
+  "Elder Tempest.webp"
+ ],
+ "steederFemea": [
+  "MTF",
+  "Female Steeder.webp"
+ ],
+ "mirmidaoElementalDoFogo": [
+  "MTF",
+  "Fire Elemental Myrmidon.webp"
+ ],
+ "frazUrbLuu": [
+  "MTF",
+  "Fraz-Urb'luu.webp"
+ ],
+ "salamandraGlacial": [
+  "MTF",
+  "Frost Salamander.webp"
+ ],
+ "geryon": [
+  "MTF",
+  "Geryon.webp"
+ ],
+ "giff": [
+  "MTF",
+  "Giff.webp"
+ ],
+ "gishGithyanki": [
+  "MTF",
+  "Githyanki Gish.webp"
+ ],
+ "kithRakGithyanki": [
+  "MTF",
+  "Githyanki Kith'rak.webp"
+ ],
+ "comandanteSupremoGithyanki": [
+  "MTF",
+  "Githyanki Supreme Commander.webp"
+ ],
+ "anarcaGithzerai": [
+  "MTF",
+  "Githzerai Anarch.webp"
+ ],
+ "githzeraiIluminado": [
+  "MTF",
+  "Githzerai Enlightened.webp"
+ ],
+ "tecelaoSombrio": [
+  "MTF",
+  "Gloom Weaver.webp"
+ ],
+ "dilaceradorCinzento": [
+  "MTF",
+  "Gray Render.webp"
+ ],
+ "grazZt": [
+  "MTF",
+  "Graz'zt.webp"
+ ],
+ "abishaiVerde": [
+  "MTF",
+  "Green Abishai.webp"
+ ],
+ "maquinaDoFogoInfernal": [
+  "MTF",
+  "Hellfire Engine.webp"
+ ],
+ "uivador": [
+  "MTF",
+  "Howler.webp"
+ ],
+ "hutijin": [
+  "MTF",
+  "Hutijin.webp"
+ ],
+ "hidroloth": [
+  "MTF",
+  "Hydroloth.webp"
+ ],
+ "cobraDeFerro": [
+  "MTF",
+  "Iron Cobra.webp"
+ ],
+ "juiblex": [
+  "MTF",
+  "Juiblex.webp"
+ ],
+ "senhorDaColmeiaKruthik": [
+  "MTF",
+  "Kruthik Hive Lord.webp"
+ ],
+ "leviata": [
+  "MTF",
+  "Leviathan.webp"
+ ],
+ "steederMacho": [
+  "MTF",
+  "Male Steeder.webp"
+ ],
+ "marut": [
+  "MTF",
+  "Marut.webp"
+ ],
+ "maurezhi": [
+  "MTF",
+  "Maurezhi.webp"
+ ],
+ "meazel": [
+  "MTF",
+  "Meazel.webp"
+ ],
+ "merregon": [
+  "MTF",
+  "Merregon.webp"
+ ],
+ "merrenoloth": [
+  "MTF",
+  "Merrenoloth.webp"
+ ],
+ "moloch": [
+  "MTF",
+  "Moloch.webp"
+ ],
+ "molydeus": [
+  "MTF",
+  "Molydeus.webp"
+ ],
+ "nabassu": [
+  "MTF",
+  "Nabassu.webp"
+ ],
+ "nagpa": [
+  "MTF",
+  "Nagpa.webp"
+ ],
+ "narzugon": [
+  "MTF",
+  "Narzugon.webp"
+ ],
+ "andarilhoNoturno": [
+  "MTF",
+  "Nightwalker.webp"
+ ],
+ "nupperibo": [
+  "MTF",
+  "Nupperibo.webp"
+ ],
+ "besteiroDeCarvalho": [
+  "MTF",
+  "Oaken Bolter.webp"
+ ],
+ "criaDeOblex": [
+  "MTF",
+  "Oblex Spawn.webp"
+ ],
+ "ogroAriete": [
+  "MTF",
+  "Ogre Battering Ram.webp"
+ ],
+ "ogroLancadorDeVirotes": [
+  "MTF",
+  "Ogre Bolt Launcher.webp"
+ ],
+ "ogroBrutamontesDeCorrente": [
+  "MTF",
+  "Ogre Chain Brute.webp"
+ ],
+ "ogroLiteira": [
+  "MTF",
+  "Ogre Howdah.webp"
+ ],
+ "oinoloth": [
+  "MTF",
+  "Oinoloth.webp"
+ ],
+ "orcus": [
+  "MTF",
+  "Orcus.webp"
+ ],
+ "orthon": [
+  "MTF",
+  "Orthon.webp"
+ ],
+ "fenix": [
+  "MTF",
+  "Phoenix.webp"
+ ],
+ "abishaiVermelho": [
+  "MTF",
+  "Red Abishai.webp"
+ ],
+ "recuperador": [
+  "MTF",
+  "Retriever.webp"
+ ],
+ "trollApodrecido": [
+  "MTF",
+  "Rot Troll.webp"
+ ],
+ "rutterkin": [
+  "MTF",
+  "Rutterkin.webp"
+ ],
+ "estatuaSagrada": [
+  "MTF",
+  "Sacred Statue.webp"
+ ],
+ "dancarinoDasSombras": [
+  "MTF",
+  "Shadow Dancer.webp"
+ ],
+ "sibriex": [
+  "MTF",
+  "Sibriex.webp"
+ ],
+ "espreitador": [
+  "MTF",
+  "Skulk.webp"
+ ],
+ "senhorDasCaveiras": [
+  "MTF",
+  "Skull Lord.webp"
+ ],
+ "mercadorDeAlmas": [
+  "MTF",
+  "Soul Monger.webp"
+ ],
+ "trollEspiritual": [
+  "MTF",
+  "Spirit Troll.webp"
+ ],
+ "eladrinDaPrimavera": [
+  "MTF",
+  "Spring Eladrin.webp"
+ ],
+ "grueCriaEstelar": [
+  "MTF",
+  "Star Spawn Grue.webp"
+ ],
+ "brutamontesCriaEstelar": [
+  "MTF",
+  "Star Spawn Hulk.webp"
+ ],
+ "magoLarvaCriaEstelar": [
+  "MTF",
+  "Star Spawn Larva Mage.webp"
+ ],
+ "mutiladorCriaEstelar": [
+  "MTF",
+  "Star Spawn Mangler.webp"
+ ],
+ "videnteCriaEstelar": [
+  "MTF",
+  "Star Spawn Seer.webp"
+ ],
+ "predadorDeAco": [
+  "MTF",
+  "Steel Predator.webp"
+ ],
+ "amaldicoadoDePedra": [
+  "MTF",
+  "Stone Cursed.webp"
+ ],
+ "defensorDePedra": [
+  "MTF",
+  "Stone Defender.webp"
+ ],
+ "eladrinDoVerao": [
+  "MTF",
+  "Summer Eladrin.webp"
+ ],
+ "comandanteEspectroDaEspada": [
+  "MTF",
+  "Sword Wraith Commander.webp"
+ ],
+ "guerreiroEspectroDaEspada": [
+  "MTF",
+  "Sword Wraith Warrior.webp"
+ ],
+ "oRaivoso": [
+  "MTF",
+  "The Angry.webp"
+ ],
+ "oFaminto": [
+  "MTF",
+  "The Hungry.webp"
+ ],
+ "oSolitario": [
+  "MTF",
+  "The Lonely.webp"
+ ],
+ "oPerdido": [
+  "MTF",
+  "The Lost.webp"
+ ],
+ "oDesgracado": [
+  "MTF",
+  "The Wretched.webp"
+ ],
+ "titivilus": [
+  "MTF",
+  "Titivilus.webp"
+ ],
+ "tortle": [
+  "MTF",
+  "Tortle.webp"
+ ],
+ "druidaTortle": [
+  "MTF",
+  "Tortle Druid.webp"
+ ],
+ "nevoaVampirica": [
+  "MTF",
+  "Vampiric Mist.webp"
+ ],
+ "trollVenenoso": [
+  "MTF",
+  "Venom Troll.webp"
+ ],
+ "wastrilith": [
+  "MTF",
+  "Wastrilith.webp"
+ ],
+ "mirmidaoElementalDaAgua": [
+  "MTF",
+  "Water Elemental Myrmidon.webp"
+ ],
+ "abishaiBranco": [
+  "MTF",
+  "White Abishai.webp"
+ ],
+ "eladrinDoInverno": [
+  "MTF",
+  "Winter Eladrin.webp"
+ ],
+ "yagnoloth": [
+  "MTF",
+  "Yagnoloth.webp"
+ ],
+ "yeenoghu": [
+  "MTF",
+  "Yeenoghu.webp"
+ ],
+ "kruthikJovem": [
+  "MTF",
+  "Young Kruthik.webp"
+ ],
+ "zaratan": [
+  "MTF",
+  "Zaratan.webp"
+ ],
+ "zariel": [
+  "MTF",
+  "Zariel.webp"
+ ],
+ "zuggtmoy": [
+  "MTF",
+  "Zuggtmoy.webp"
+ ]
+}

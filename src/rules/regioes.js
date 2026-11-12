@@ -21,7 +21,11 @@
 //   texto          { texto }                              o registro diz, e a tela mostra em cima de quem pisou
 //   dano           { dados, dano?, teste?: { atributo, cd, metade? }, seFalhar?: condição }   `seFalhar`: quem falha no
 //                  teste do dano também fica com a condição (a laje que cede: no chão), sem um segundo teste
-//   condicao       { condicao, rodadas?, teste?: { atributo, cd } }
+//   condicao       { condicao, rodadas?, teste?: { atributo, cd }, escape? }   `escape`: a CD de se soltar (a rede, a teia);
+//                  sem ele vale a do teste, e `escape: false` não dá nenhuma (o caído não se "escapa")
+//   dardos         { n, ataque, dados, dano, raioPes?, veneno? }   os dardos do livro: `n` jogadas de ataque com +`ataque`
+//                  contra quem estiver a até `raioPes` de quem pisou, sorteado a cada dardo; o que acerta fere e envenena
+//                  (`veneno` no formato de `combat.js aplicarVeneno`)
 //   parar          {}                                     o passo acaba ali
 //   terrenoDificil {}                                     ENQUANTO LIGADA, as casas custam o dobro (não dispara)
 //   sobreposicao   { id, ligada? }                        acende, apaga ou inverte uma peça de arte do mapa
@@ -51,13 +55,13 @@
 import { damageRoll } from '../core/dice.js';
 import { key } from '../core/grid.js';
 import { danoPorResistencia } from './passivas.js';
-import { CONDITIONS, conditionEffects, hasCondition } from './conditions.js';
+import { CONDITIONS, conditionEffects, hasCondition, caEfetiva } from './conditions.js';
 import { categoriaDeTamanho, categoriaDoNome } from './tamanho.js';
 import { rolarPericia } from './abilities.js';
 
 export const QUANDO = ['entrar', 'sair', 'comecaTurno', 'terminaTurno'];
 export const QUEM = ['todos', 'grupo', 'inimigos'];
-export const EFEITOS = ['texto', 'dano', 'condicao', 'parar', 'terrenoDificil', 'sobreposicao', 'alternar', 'teleporte', 'voltar'];
+export const EFEITOS = ['texto', 'dano', 'condicao', 'dardos', 'parar', 'terrenoDificil', 'sobreposicao', 'alternar', 'teleporte', 'voltar'];
 
 /** A cópia de trabalho das regiões de um mapa, pendurada no campo. Também refaz as casas de terreno difícil. */
 export function prepararRegioes(field, regioes) {
@@ -192,6 +196,8 @@ export function disparar(enc, r, c, quando, de = null) {
         if (o.dead) continue;
         if (condicaoDaRegiao(enc, r, o, e, nome) && o === c) para = true;
       }
+    } else if (e.tipo === 'dardos' && e.n) {
+      dardosDaRegiao(enc, r, c, e, nome);
     } else if (e.tipo === 'voltar') {
       // a volta nunca cai dentro da própria região (o fosso de onde ele acabou de sair)
       if (de && !c.dead && teleportar(enc, c, de, r.casas)) para = true;
@@ -237,6 +243,28 @@ function danoDaRegiao(enc, r, c, e, nome) {
   return { total, passou };
 }
 
+/** Os DARDOS do livro: `n` jogadas de ataque, cada uma num alvo sorteado entre quem está a até `raioPes` de quem pisou. */
+function dardosDaRegiao(enc, r, c, e, nome) {
+  const raio = Math.max(1, Math.round((e.raioPes ?? 10) / 5));
+  const perto = enc.combatants.filter((o) => !o.dead && o.pos && c.pos && Math.max(Math.abs(o.pos.x - c.pos.x), Math.abs(o.pos.y - c.pos.y)) <= raio);
+  if (!perto.length) return;
+  for (let i = 0; i < e.n; i += 1) {
+    const vivos = perto.filter((o) => !o.dead);
+    if (!vivos.length) break;
+    const alvo = vivos[enc.rng.die(vivos.length) - 1];
+    const d20 = enc.rng.die(20);
+    const total = d20 + (e.ataque ?? 0);
+    const ca = caEfetiva(alvo);
+    const acerta = d20 === 20 || (d20 !== 1 && total >= ca);
+    const conta = `d20[${d20}] +${e.ataque ?? 0} = ${total} vs CA ${ca}`;
+    if (!acerta) { enc.say('dano', `${nome}: um dardo passa raspando por ${alvo.name}.`, conta); continue; }
+    const d = damageRoll(enc.rng, e.dados, { critical: d20 === 20 });
+    enc.say('dano', `${nome}: um dardo acerta ${alvo.name} (${d.total} de ${e.dano ?? 'dano'}).`, `${conta} · ${e.dados}[${d.rolls.join('+')}]`);
+    enc.applyDamage(alvo, d.total, e.dano ?? null, null, {});
+    if (e.veneno && !alvo.dead) enc.aplicarVeneno?.(alvo, e.veneno, `o veneno do dardo`, null);
+  }
+}
+
 /** Aplica a condição (com o teste, se houver). Devolve `true` se ela ficou. */
 function condicaoDaRegiao(enc, r, c, e, nome) {
   if (hasCondition(c, e.condicao) || enc.imuneACondicao?.(c, e.condicao)) return false;
@@ -250,7 +278,8 @@ function condicaoDaRegiao(enc, r, c, e, nome) {
       return false;
     }
   }
-  const ok = enc.aplicarCondicao(c, e.condicao, { source: `regiao:${r.id}`, ...(e.rodadas ? { rounds: e.rodadas } : {}), ...(e.teste?.cd ? { data: { escape: e.teste.cd } } : {}) });
+  const escape = e.escape !== undefined ? e.escape : e.teste?.cd;
+  const ok = enc.aplicarCondicao(c, e.condicao, { source: `regiao:${r.id}`, ...(e.rodadas ? { rounds: e.rodadas } : {}), ...(escape ? { data: { escape } } : {}) });
   if (!ok) return false;
   enc.say('condicao', `${nome}: ${c.name} fica ${rotulo}.`, r2?.conta, r2 ? { rolagem: r2 } : undefined);
   return true;

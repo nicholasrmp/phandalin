@@ -1,0 +1,832 @@
+{
+ "Keg Robot": {
+  "nome": "Robô-Barril",
+  "acNote": "armadura natural",
+  "blurb": "Um construto atarracado que soca de perto, esguicha ácido a distância e encharca grupos com cerveja entorpecente ou óleo fervente. Cuidado com fogo perto de quem foi coberto de óleo.",
+  "lore": "Construto de madeira e metal com corpo de barril e cara de anão de elmo com chifres, criado pelo departamento de pesquisa arcana da Acquisitions Incorporated. Foi pensado para carregar líquidos úteis a aventureiros, de água e óleo de lamparina a misturas alquímicas, mas ficou famoso mesmo como chopeira ambulante. Seus compartimentos às vezes vazam, dando um gosto peculiar às bebidas. Tem inteligência suficiente para agir sozinho e distinguir aliados de inimigos, e às vezes exibe um humor grosseiro que ninguém sabe explicar.",
+  "tracos": [
+   {
+    "en": "Customizable Storage",
+    "nome": "Armazenamento Personalizável",
+    "desc": "Carrega até três líquidos diferentes, somando 12 galões; cada ataque líquido gasta um galão. Reabastecer leva 2 rodadas por galão, e cargas diferentes podem mudar seus ataques."
+   }
+  ],
+  "acoes": [
+   {
+    "en": "Fist",
+    "nome": "Punho",
+    "desc": "Ataque corpo a corpo com arma: +5 para acertar, alcance 1,5 m. Acerto: 7 (1d8 + 3) de dano de concussão."
+   },
+   {
+    "en": "Acid Squirt",
+    "nome": "Esguicho de Ácido",
+    "desc": "Ataque à distância com arma: +5 para acertar, alcance 6/12 m. Acerto: 7 (1d8 + 3) de dano ácido."
+   },
+   {
+    "en": "Beer Shower",
+    "nome": "Banho de Cerveja",
+    "desc": "Cone de 4,5 m ou linha de 9 m por 1,5 m: teste de resistência de Constituição CD 13 ou fica envenenado com deslocamento reduzido à metade, repetindo o teste ao fim de cada turno. Apaga chamas na área."
+   },
+   {
+    "en": "Hot Oil Spray",
+    "nome": "Jato de Óleo Fervente",
+    "desc": "Cone de 4,5 m ou linha de 9 m: teste de Destreza CD 13; falha causa 7 (1d8 + 3) de fogo e deixa caído, sucesso causa metade. Por 1 minuto, o próximo dano de fogo nos atingidos causa +3 (1d6); se a área for acesa, queima por 1d4 rodadas causando 3 (1d6) de fogo a quem entrar ou terminar o turno nela."
+   }
+  ],
+  "reacoes": [],
+  "lendarias": []
+ },
+ "Pendragon Beestinger": {
+  "nome": "Pendragon Beestinger",
+  "acNote": "15 com armadura arcana",
+  "blurb": "Mago de apoio que fica à distância lançando raio ardente, nuvem de adagas e sono; uma vez por dia repete a magia do turno anterior como ação bônus. De perto é frágil, com apenas uma espada curta.",
+  "lore": "Pendragon é o cartógrafo da equipe \"B\" da Acquisitions Incorporated, que entrou no lugar de Brahma Lutier e teve como primeira missão ajudar a caçá-lo. Filho adotivo de Rosie Beestinger, da equipe \"C\", ele é o oposto da mãe em quase tudo e chegou a tentar matá-la, morrendo na tentativa antes de ser ressuscitado a pedido dela. Expulso da escola de magia por causa da má fama da família, aprendeu sozinho e virou uma espécie de arqueólogo arcano, fascinado por feitiços perigosos e bugigangas estranhas. Fica na equipe porque busca ali um senso de família, mesmo tendo que aturar Oak Truestrike como figura paterna.",
+  "tracos": [
+   {
+    "en": "Spellcasting",
+    "nome": "Conjuração",
+    "desc": "Conjurador de 4º nível que usa Inteligência (CD 13, +5 para acertar). Truques: respingo ácido, luz, mão mágica, rajada de veneno, toque chocante; 1º nível (4 espaços): detectar magia, armadura arcana, mísseis mágicos, sono; 2º nível (3 espaços): cegueira/surdez, nuvem de adagas, raio ardente."
+   },
+   {
+    "en": "Echo Spell",
+    "nome": "Magia Ecoada",
+    "desc": "Uma vez por dia, pode lançar de novo, como ação bônus, a magia que usou no turno anterior. Gasta um espaço de magia normalmente."
+   }
+  ],
+  "acoes": [
+   {
+    "en": "Shortsword",
+    "nome": "Espada Curta",
+    "desc": "Ataque corpo a corpo com arma: +4 para acertar, alcance 1,5 m, um alvo. Causa 5 (1d6 + 2) de dano perfurante."
+   }
+  ],
+  "reacoes": [],
+  "lendarias": []
+ },
+ "Deep Crow": {
+  "nome": "Corvo das Profundezas",
+  "acNote": "armadura natural",
+  "blurb": "Predador alado que agarra a vítima com as mandíbulas, deixando-a contida enquanto a dilacera com as garras. Some nas sombras com facilidade, mas fica atrapalhado sob a luz do sol.",
+  "lore": "Parece um corvo gigantesco, mas é na verdade um inseto alado, com boca de mandíbulas, quatro garras em cada pé e um aglomerado de olhos vermelhos. Há quem diga que descende de familiares de magos malignos abandonados no subterrâneo; outros falam em corvos comuns deformados por poderes sombrios. Vive sozinho em ninhos quentes perto de lava, saindo apenas para caçar, vigiar o território ou se reproduzir uma única vez na vida. Costuma arrebatar uma presa e levá-la voando para o covil, soltando-a de grandes alturas se ela resistir. Guarda rancores por anos e ensina os filhotes a odiar os mesmos inimigos.",
+  "tracos": [
+   {
+    "en": "Magic Resistance",
+    "nome": "Resistência à Magia",
+    "desc": "Tem vantagem em testes de resistência contra magias e outros efeitos mágicos."
+   },
+   {
+    "en": "Shadow Stealth",
+    "nome": "Furtividade Sombria",
+    "desc": "Em penumbra ou escuridão, pode usar a ação Esconder como ação bônus."
+   },
+   {
+    "en": "Sunlight Sensitivity",
+    "nome": "Sensibilidade à Luz Solar",
+    "desc": "Sob luz solar, tem desvantagem em jogadas de ataque e em testes de Sabedoria (Percepção) baseados na visão."
+   }
+  ],
+  "acoes": [
+   {
+    "en": "Multiattack",
+    "nome": "Ataques Múltiplos",
+    "desc": "Faz três ataques: um com as mandíbulas e dois com as garras."
+   },
+   {
+    "en": "Mandibles",
+    "nome": "Mandíbulas",
+    "desc": "Ataque corpo a corpo, +9 para acertar, alcance 3 m. Causa 16 (2d10 + 5) de dano perfurante e deixa o alvo agarrado (CD 17 para escapar) e contido enquanto durar; não pode morder outro alvo nesse período."
+   },
+   {
+    "en": "Claw",
+    "nome": "Garra",
+    "desc": "Ataque corpo a corpo, +9 para acertar, alcance 1,5 m. Causa 12 (2d6 + 5) de dano cortante."
+   }
+  ],
+  "reacoes": [],
+  "lendarias": []
+ },
+ "Jim Darkmagic": {
+  "nome": "Jim Darkmagic",
+  "acNote": "15 com armadura arcana",
+  "blurb": "Mago de 9º nível que prefere ficar longe, lançando bolas de fogo e mísseis mágicos enquanto troca de lugar com aliados por teletransporte. Carrega uma varinha das maravilhas, então espere o inesperado.",
+  "lore": "Herdeiro de uma excêntrica família de magos que transita entre planos, Jim nasceu com talento arcano de sobra. Mesmo assim, sua verdadeira paixão sempre foi o palco, onde apresenta truques de mão em praças e feiras. Ficou famoso como arcanista-chefe da Acquisitions Incorporated, cargo em que às vezes incendeia mais do que deveria. Sonha em se aposentar para virar um ilusionista de verdade, sem magia real.",
+  "tracos": [
+   {
+    "en": "Special Equipment",
+    "nome": "Equipamento Especial",
+    "desc": "Jim leva uma varinha das maravilhas."
+   },
+   {
+    "en": "Benign Transportation",
+    "nome": "Transporte Benigno",
+    "desc": "Com uma ação bônus, teleporta-se até 9 m para um espaço visível, livre ou ocupado por criatura Pequena ou Média voluntária, com quem troca de lugar. Recarrega quando ele lança uma magia de conjuração de 1º nível ou superior."
+   }
+  ],
+  "acoes": [
+   {
+    "en": "Dagger",
+    "nome": "Adaga",
+    "desc": "Ataque corpo a corpo ou à distância: +5 para acertar, alcance 1,5 m ou distância 6/18 m. Causa 4 (1d4 + 2) de dano perfurante."
+   },
+   {
+    "en": "Minor Conjuration",
+    "nome": "Conjuração Menor",
+    "desc": "Cria na mão ou num espaço livre a até 3 m um objeto inanimado de até 90 cm de lado e 4,5 kg, que emite luz fraca em 1,5 m. Some se sofrer dano, após 1 hora ou se usar o efeito de novo."
+   }
+  ],
+  "reacoes": [],
+  "lendarias": []
+ },
+ "Viari": {
+  "nome": "Viari",
+  "acNote": "couro batido +1; 19 empunhando duas armas corpo a corpo",
+  "blurb": "Ladino ágil que desfere quatro golpes por turno com espada curta e rapieira, somando 4d6 de Ataque Furtivo quando tem vantagem ou um aliado ao lado do alvo. Escala e salta com facilidade e reduz à metade o dano de golpes que vê chegando.",
+  "lore": "Viari cresceu numa pequena fazenda e guarda boas lembranças da família, embora se incomode com a preferência dos pais pelo irmão mais velho e jamais revele o nome que usava naquela época. Subiu rápido na Acquisitions Incorporated e hoje chefia o chamado Departamento de Esfaqueamento da companhia. É tão perigoso num duelo quanto numa discussão, gosta de planejar, adora saltar de lugares altos em combate e sabe ser vingativo. Certa vez derrubou sozinho um gigante com a Adaga do Apocalipse e perdeu o braço no feito; a magia o restaurou, mas quem o conhece percebe que aquele episódio ainda pesa sobre ele.",
+  "tracos": [
+   {
+    "en": "Evasion",
+    "nome": "Evasão",
+    "desc": "Em efeitos com teste de resistência de Destreza para metade do dano, não sofre dano se passar e sofre metade se falhar. Não funciona se estiver incapacitado."
+   },
+   {
+    "en": "Second-Story Work",
+    "nome": "Trabalho no Segundo Andar",
+    "desc": "Escalar não gasta movimento extra, e seus saltos com corrida alcançam 1,5 m a mais."
+   },
+   {
+    "en": "Sneak Attack",
+    "nome": "Ataque Furtivo",
+    "desc": "Uma vez por turno, causa 14 (4d6) de dano extra ao acertar um ataque com arma se tiver vantagem, ou se um aliado não incapacitado estiver a até 1,5 m do alvo e ele não tiver desvantagem."
+   }
+  ],
+  "acoes": [
+   {
+    "en": "Multiattack",
+    "nome": "Ataques Múltiplos",
+    "desc": "Faz dois ataques com a espada curta e dois com a rapieira."
+   },
+   {
+    "en": "+1 Shortsword",
+    "nome": "Espada Curta +1",
+    "desc": "Ataque corpo a corpo, +9 para acertar, alcance 1,5 m. Causa 9 (1d6+6) de dano perfurante."
+   },
+   {
+    "en": "Rapier",
+    "nome": "Rapieira",
+    "desc": "Ataque corpo a corpo, +8 para acertar, alcance 1,5 m. Causa 9 (1d8+5) de dano perfurante."
+   },
+   {
+    "en": "Dagger",
+    "nome": "Adaga",
+    "desc": "Ataque corpo a corpo ou à distância, +8 para acertar, alcance 1,5 m ou 6/18 m. Causa 7 (1d4+5) de dano perfurante."
+   }
+  ],
+  "reacoes": [
+   {
+    "en": "Uncanny Dodge",
+    "nome": "Esquiva Sobrenatural",
+    "desc": "Quando um atacante que ele consegue ver o acerta, reduz o dano desse ataque à metade."
+   }
+  ],
+  "lendarias": []
+ },
+ "Portentia Dran": {
+  "nome": "Portentia Dran",
+  "acNote": "camisão de malha",
+  "blurb": "Portentia ataca três vezes por turno com espadas curtas e causa 14 de dano extra com Ataque Furtivo quando tem vantagem ou um aliado ao lado do alvo. Pode mudar de forma no meio da luta, confundindo quem tenta acompanhá-la.",
+  "lore": "Portentia comanda a Dran Enterprises, a grande concorrente da Acquisitions Incorporated no ramo de aventuras lucrativas. Na verdade, ela é uma changeling que tomou o lugar da verdadeira Portentia quando a menina ainda era pequena. Há anos manipula a família Dran por dentro, e foi ela quem atraiu a irmã Auspicia para a Cripta Errante. Em combate e em conversas troca de rosto e de atitude o tempo todo, lutando para ferir e humilhar. Seus verdadeiros objetivos continuam um segredo só dela.",
+  "tracos": [
+   {
+    "en": "Sneak Attack",
+    "nome": "Ataque Furtivo",
+    "desc": "Uma vez por turno, causa 14 (4d6) de dano extra ao acertar um ataque com arma se tiver vantagem, ou se um aliado não incapacitado estiver a até 1,5 m do alvo e ela não tiver desvantagem."
+   }
+  ],
+  "acoes": [
+   {
+    "en": "Multiattack",
+    "nome": "Ataques Múltiplos",
+    "desc": "Faz três ataques corpo a corpo."
+   },
+   {
+    "en": "Shortsword",
+    "nome": "Espada Curta",
+    "desc": "Ataque corpo a corpo com arma: +6 para acertar, alcance 1,5 m, um alvo. Causa 7 (1d6 + 4) de dano cortante."
+   },
+   {
+    "en": "Change Shape",
+    "nome": "Mudar de Forma",
+    "desc": "Transforma-se magicamente em um humanoide ou fera de ND 3 ou menor, ou volta à forma verdadeira. Mantém suas estatísticas e a fala, mas assume CA, deslocamentos, Força, Destreza e sentidos da nova forma, ganhando também capacidades que ela possua."
+   }
+  ],
+  "reacoes": [],
+  "lendarias": []
+ },
+ "Ancient Deep Crow": {
+  "nome": "Corvo das Profundezas Ancião",
+  "acNote": "armadura natural",
+  "blurb": "Agarra a presa com as mandíbulas e a rasga com as garras enquanto seu grasnado sombrio fere a mente de todos por perto. Esconde-se nas sombras com facilidade e resiste bem à magia.",
+  "lore": "Pouquíssimo se sabe sobre os corvos das profundezas, e menos ainda sobre estes parentes colossais. Ninguém sabe dizer se são corvos comuns que envelheceram até atingir tamanho monstruoso ou uma forma superior que domina os menores. Vivem na escuridão das profundezas e caçam a partir das sombras. Quem estuda essas criaturas costuma recomendar apenas uma coisa: mantenha distância.",
+  "tracos": [
+   {
+    "en": "Magic Resistance",
+    "nome": "Resistência à Magia",
+    "desc": "Tem vantagem em testes de resistência contra magias e outros efeitos mágicos."
+   },
+   {
+    "en": "Shadow Stealth",
+    "nome": "Furtividade Sombria",
+    "desc": "Em penumbra ou escuridão, pode usar a ação Esconder como ação bônus."
+   }
+  ],
+  "acoes": [
+   {
+    "en": "Multiattack",
+    "nome": "Ataques Múltiplos",
+    "desc": "Faz três ataques: um de mandíbulas e dois de garras."
+   },
+   {
+    "en": "Mandibles",
+    "nome": "Mandíbulas",
+    "desc": "Ataque corpo a corpo, +11 para acertar, alcance 3 m. Causa 17 (2d10 + 6) de dano perfurante e deixa o alvo agarrado (CD 19 para escapar) e contido enquanto durar. Só pode prender um alvo por vez com as mandíbulas."
+   },
+   {
+    "en": "Claw",
+    "nome": "Garra",
+    "desc": "Ataque corpo a corpo, +11 para acertar, alcance 1,5 m. Causa 13 (2d6 + 6) de dano cortante."
+   },
+   {
+    "en": "Shadow Caw",
+    "nome": "Grasnado Sombrio",
+    "desc": "Toda criatura a até 18 m que possa ouvi-lo faz um teste de resistência de Constituição CD 17; quem falhar sofre 10 (3d6) de dano psíquico."
+   }
+  ],
+  "reacoes": [],
+  "lendarias": [
+   {
+    "en": "Detect",
+    "nome": "Detectar",
+    "desc": "Faz um teste de Sabedoria (Percepção)."
+   },
+   {
+    "en": "Shadow Caw",
+    "nome": "Grasnado Sombrio",
+    "desc": "Custa 2 ações. Usa o Grasnado Sombrio."
+   },
+   {
+    "en": "Wing Attack",
+    "nome": "Ataque de Asas",
+    "desc": "Custa 2 ações. Cada criatura a até 3 m faz um teste de resistência de Destreza CD 19; quem falhar sofre 13 (2d6 + 6) de dano de concussão e fica caído. Depois, o corvo pode voar até metade do seu deslocamento de voo."
+   }
+  ]
+ },
+ "Auspicia Dran": {
+  "nome": "Auspicia Dran",
+  "acNote": "camisão de malha",
+  "blurb": "Combatente meio-elfa que ataca duas vezes com espada longa ou besta leve, lendo pensamentos dos inimigos para antecipar seus movimentos.",
+  "lore": "Irmã caçula de Omin Dran, Auspicia foi arrebatada ainda criança pela Cripta Errante e passou anos presa num sonho sombrio dentro dela, até ser resgatada pelo irmão e pela Equipe \"C\". De volta ao mundo, tenta descobrir quem realmente é e lidar com as sequelas do cativeiro. Saiu da cripta com poderes psiônicos crescentes: lê mentes sem querer e usa um brinco de diamante para conter o dom. Ainda guarda um elo misterioso com a cripta, que lhe traz lembranças de outros prisioneiros e visões de lugares distantes. Em combate, pressente o que vai acontecer e costuma usar isso para travar a luta e abrir espaço para negociação.",
+  "tracos": [
+   {
+    "en": "Innate Spellcasting",
+    "nome": "Conjuração Inata (Psiônica)",
+    "desc": "Usa Inteligência e não precisa de componentes. Pode lançar detectar pensamentos à vontade e augúrio uma vez por dia."
+   }
+  ],
+  "acoes": [
+   {
+    "en": "Multiattack",
+    "nome": "Ataques Múltiplos",
+    "desc": "Auspicia realiza dois ataques."
+   },
+   {
+    "en": "Longsword",
+    "nome": "Espada Longa",
+    "desc": "Ataque corpo a corpo, +5 para acertar, alcance 1,5 m. Causa 7 (1d8 + 3) de dano cortante, ou 8 (1d10 + 3) se empunhada com as duas mãos."
+   },
+   {
+    "en": "Light Crossbow",
+    "nome": "Besta Leve",
+    "desc": "Ataque à distância, +4 para acertar, alcance 24/96 m. Causa 6 (1d8 + 2) de dano perfurante."
+   }
+  ],
+  "reacoes": [],
+  "lendarias": []
+ },
+ "Brahma Lutier": {
+  "nome": "Brahma Lutier",
+  "acNote": "",
+  "blurb": "Barda elfa que luta de longe com zombarias, provocações e magias de controle como sono e nuvem de adagas. Seu maior perigo é a Canção de Dominação, capaz de virar um aliado contra o grupo.",
+  "lore": "Brahma Lutier é uma elfa que já fez parte da Equipe \"B\" e se destaca como cartógrafa, espiã e trovadora. Aprendeu a arte da música com Audra Courtier, dona de uma estalagem em Red Larch, e ficou famosa por uma canção quase irresistível. Depois de romper com o marido, Oak Truestrike, deixou o grupo e passou a trabalhar sozinha. É alegre e homicida na mesma medida, e combate com um alaúde de guerra de origem draconata, cheio de compartimentos secretos e armas embutidas.",
+  "tracos": [
+   {
+    "en": "Fey Ancestry",
+    "nome": "Ancestralidade Feérica",
+    "desc": "Tem vantagem em testes de resistência contra ficar enfeitiçada, e magia não consegue fazê-la dormir."
+   },
+   {
+    "en": "Taunt",
+    "nome": "Provocação",
+    "desc": "Duas vezes por dia, como ação bônus, escolhe uma criatura que veja a até 9 m e que possa ouvi-la. Se falhar num teste de resistência de Carisma CD 13, o alvo tem desvantagem em testes de habilidade, ataques e testes de resistência até o início do próximo turno de Brahma."
+   }
+  ],
+  "acoes": [
+   {
+    "en": "War Lute",
+    "nome": "Alaúde de Guerra",
+    "desc": "Ataque corpo a corpo com arma: +4 para acertar, alcance 1,5 m, um alvo. Causa 5 (1d6 + 2) de dano cortante."
+   },
+   {
+    "en": "Song of Domination",
+    "nome": "Canção de Dominação",
+    "desc": "Três vezes por dia, uma criatura que possa vê-la ou ouvi-la faz teste de resistência de Sabedoria CD 13; se falhar, fica enfeitiçada por 1 minuto, repetindo o teste ao fim de cada turno (com desvantagem se desejar estar sob o encanto). Por 1 hora após o fim do efeito, o alvo tem desvantagem em testes resistidos de Inteligência, Sabedoria ou Carisma contra Brahma."
+   }
+  ],
+  "reacoes": [],
+  "lendarias": []
+ },
+ "Clockwork Dragon": {
+  "nome": "Dragão Mecânico",
+  "acNote": "armadura natural",
+  "blurb": "Guardião de engrenagens que morde com força e solta um cone de fogo de 4,5 m; parado, passa por estátua e pode surpreender quem se aproxima.",
+  "lore": "É um constructo de mecanismos finos, quase sempre moldado à semelhança dos dragões metálicos e revestido de latão, bronze, cobre ou imitações de ouro e prata. Quem o vê de relance costuma achar que é apenas uma escultura decorativa. Seus criadores o usam como sentinela, já que ele entende ordens complexas e também sabe reagir sozinho a ameaças. O sopro costuma ser de fogo, mas alguns são montados para expelir ácido, frio ou eletricidade, conforme o gosto de quem os fabricou.",
+  "tracos": [
+   {
+    "en": "False Appearance",
+    "nome": "Aparência Falsa",
+    "desc": "Enquanto não se mexe, não há como distingui-lo de uma estátua de metal."
+   }
+  ],
+  "acoes": [
+   {
+    "en": "Bite",
+    "nome": "Mordida",
+    "desc": "Ataque corpo a corpo com arma: +4 para acertar, alcance 1,5 m, um alvo. Acerto: 7 (1d10 + 2) de dano perfurante."
+   },
+   {
+    "en": "Fire Breath",
+    "nome": "Sopro de Fogo",
+    "desc": "Recarga 5–6. Cone de fogo de 4,5 m: cada criatura na área faz um teste de resistência de Destreza CD 11, sofrendo 14 (4d6) de dano de fogo se falhar, ou metade se passar."
+   }
+  ],
+  "reacoes": [],
+  "lendarias": []
+ },
+ "Phoenix Anvil": {
+  "nome": "Phoenix Anvil",
+  "acNote": "cota de malha e escudo",
+  "blurb": "Clérigo de linha de frente que golpeia duas vezes com o martelo de guerra, empurrando inimigos, e pode cegar vários adversários de uma vez com o brilho divino do escudo. Também paralisa alvos com magia e cura aliados.",
+  "lore": "Phoenix Anvil é o clérigo de Waukeen da equipe reserva de uma franquia de aventureiros, um homem tão calado que quase ninguém conhece sua voz. Cresceu brigando nas ruas até que um emprego varrendo a escadaria de um pequeno templo da deusa do comércio mudou seu rumo. Por saber o que é passar necessidade, persegue o ouro com disciplina e cuida com obsessão dos bens e das contas da franquia. Como considera os colegas parte desse patrimônio, é ferozmente leal a eles, embora só tenha criado laços de verdade com Oak Truestrike.",
+  "tracos": [
+   {
+    "en": "Divine Display",
+    "nome": "Exibição Divina",
+    "desc": "Uma vez por dia, como ação bônus, o escudo de Phoenix brilha com luz divina. Criaturas à escolha dele a até 9 m fazem teste de resistência de Sabedoria CD 13 ou ficam cegas por 1 minuto, repetindo o teste ao fim de cada turno."
+   }
+  ],
+  "acoes": [
+   {
+    "en": "Multiattack",
+    "nome": "Ataques Múltiplos",
+    "desc": "Phoenix faz dois ataques corpo a corpo."
+   },
+   {
+    "en": "Warhammer",
+    "nome": "Martelo de Guerra",
+    "desc": "Ataque corpo a corpo com arma: +4 para acertar, alcance 1,5 m, um alvo. Causa 6 (1d8 + 2) de dano de concussão, e o alvo faz teste de resistência de Força CD 12 ou é empurrado 1,5 m."
+   }
+  ],
+  "reacoes": [],
+  "lendarias": []
+ },
+ "Splugoth the Returned": {
+  "nome": "Splugoth, o Retornado",
+  "acNote": "armadura natural",
+  "blurb": "Goblin ágil que ataca duas vezes com a adaga, foge ou se esconde como ação bônus e fica difícil de acertar quando cercado de aliados. Uma vez por dia, pode atordoar quem estiver por perto com palavras trazidas do além.",
+  "lore": "Splugoth já foi Splug, um goblin capturado por aventureiros da Acquisitions Incorporated que o deixaram morrer depois de ele salvar suas vidas. Voltou dos mortos, ninguém sabe quantas vezes, e adotou um nome mais dramático. Hoje lidera a linha de frente do grupo rival conhecido como os Seis. Sua única obsessão é se vingar da Acq Inc e, principalmente, de Omin Dran, nesta vida e nas próximas.",
+  "tracos": [
+   {
+    "en": "Defensive Advantage",
+    "nome": "Vantagem Defensiva",
+    "desc": "Se pelo menos dois aliados não incapacitados estiverem a até 1,5 m dele, os ataques contra Splugoth são feitos com desvantagem."
+   },
+   {
+    "en": "Nimble Escape",
+    "nome": "Fuga Ágil",
+    "desc": "Em cada um de seus turnos, pode usar Desengajar ou Esconder como ação bônus."
+   },
+   {
+    "en": "Touch of Madness",
+    "nome": "Toque de Loucura",
+    "desc": "Tem vantagem em testes de resistência contra ficar enfeitiçado ou amedrontado."
+   }
+  ],
+  "acoes": [
+   {
+    "en": "Multiattack",
+    "nome": "Ataques Múltiplos",
+    "desc": "Faz dois ataques com a adaga."
+   },
+   {
+    "en": "Dagger",
+    "nome": "Adaga",
+    "desc": "Ataque corpo a corpo com +4 para acertar e alcance de 1,5 m. Causa 4 (1d4 + 2) de dano cortante."
+   },
+   {
+    "en": "Word From Beyond",
+    "nome": "Palavra do Além",
+    "desc": "Uma vez por dia, criaturas à escolha dele a até 9 m que consigam ouvi-lo fazem um teste de resistência de Sabedoria CD 12. Quem falhar fica atordoado até o fim do próprio próximo turno."
+   }
+  ],
+  "reacoes": [
+   {
+    "en": "Absorb Attack",
+    "nome": "Absorver Ataque",
+    "desc": "Quando uma criatura visível o acerta com ataque corpo a corpo com arma, o ataque é anulado e a arma fica presa nele. Para soltá-la, a criatura precisa usar uma ação e passar em um teste de Força (Atletismo) CD 12. Armas naturais também têm o ataque anulado, mas se soltam sozinhas no fim do turno do atacante."
+   }
+  ],
+  "lendarias": []
+ },
+ "Donaar Blit'zen": {
+  "nome": "Donaar Blit'zen",
+  "acNote": "armadura de placas",
+  "blurb": "Paladino draconato que prende inimigos perto de si com seu desafio de campeão e os castiga com espada grande, chicote de alcance e vômito ácido em linha. Também conjura destruições e cura aliados.",
+  "lore": "Donaar é o draconato corpulento que toma as decisões da Equipe \"C\", famoso pela fúria em combate e por cair no sono logo depois, ou em qualquer momento inconveniente. Uma peculiaridade de sua linhagem lhe deu uma cauda rara e fez seu sopro ácido sair como vômito, o que o deixou obcecado com a saúde dos dentes: a espada se chama Escova e o chicote, Fio Dental. Sua bravata é em parte encenação, já que ele aproveitou a vida de aventureiro longe do clã para se reinventar, e quem bajula seu orgulho dracônico conquista sua simpatia com facilidade. Ainda assim, tem um lado generoso: atua como padrinho de Chronaar, uma jovem draconata que o adotou como figura paterna enquanto ele vigiava seu ovo.",
+  "tracos": [
+   {
+    "en": "Spellcasting",
+    "nome": "Conjuração",
+    "desc": "Paladino de 5º nível que usa Carisma (CD 13, +5 para acertar). Magias de 1º círculo (4 espaços): comando, duelo compelido, curar ferimentos e destruição colérica. De 2º círculo (2 espaços): auxílio, destruição marcante, restauração menor, vínculo protetor e zona da verdade."
+   },
+   {
+    "en": "Champion Challenge",
+    "nome": "Desafio do Campeão",
+    "desc": "Recarrega após um descanso curto ou longo. Como ação bônus, as criaturas que ele escolher e puder ver a até 9 m fazem um teste de resistência de Sabedoria CD 13. Quem falhar não pode se afastar voluntariamente mais de 9 m dele, e o efeito termina se Donaar ficar incapacitado ou morrer, ou se o alvo for levado para mais longe que isso."
+   }
+  ],
+  "acoes": [
+   {
+    "en": "Multiattack",
+    "nome": "Ataques Múltiplos",
+    "desc": "Realiza dois ataques, ambos com a espada grande ou ambos com o chicote."
+   },
+   {
+    "en": "Greatsword",
+    "nome": "Espada Grande",
+    "desc": "Ataque corpo a corpo, +5 para acertar, alcance 1,5 m. Causa 10 (2d6+3) de dano cortante. Pode rolar de novo dados de dano que mostrem 1 ou 2, ficando com o novo resultado."
+   },
+   {
+    "en": "Whip",
+    "nome": "Chicote",
+    "desc": "Ataque corpo a corpo, +5 para acertar, alcance 3 m. Causa 5 (1d4+3) de dano cortante."
+   },
+   {
+    "en": "Acid Vomit",
+    "nome": "Vômito Ácido",
+    "desc": "Expele ácido em uma linha de 9 m por 1,5 m. Quem estiver nela faz um teste de resistência de Destreza CD 12 e sofre 7 (2d6) de dano ácido se falhar, ou metade se passar."
+   }
+  ],
+  "reacoes": [],
+  "lendarias": []
+ },
+ "Chaos Quadrapod": {
+  "nome": "Quadrápode do Caos",
+  "acNote": "armadura natural",
+  "blurb": "Agarra até dois alvos com tentáculos de 4,5 m de alcance, deixando-os contidos, e pode atordoar um grupo inteiro com uma explosão de luz caótica. Resiste bem à magia.",
+  "lore": "É uma aberração vinda do Reino Distante, formada por quatro tentáculos cheios de ventosas presos a um núcleo pulsante de luz etérea. Carrega consigo a energia anárquica de seu plano natal e a usa para arrasar tudo o que encontra. Move-se arremessando os tentáculos viscosos à frente e puxando o corpo atrás deles. Seu avanço é marcado por um som úmido e repugnante enquanto persegue a presa sem descanso.",
+  "tracos": [
+   {
+    "en": "Magic Resistance",
+    "nome": "Resistência à Magia",
+    "desc": "Tem vantagem em testes de resistência contra magias e outros efeitos mágicos."
+   }
+  ],
+  "acoes": [
+   {
+    "en": "Multiattack",
+    "nome": "Ataques Múltiplos",
+    "desc": "Faz até dois ataques de tentáculo."
+   },
+   {
+    "en": "Tentacle",
+    "nome": "Tentáculo",
+    "desc": "Ataque corpo a corpo com +6 para acertar e alcance de 4,5 m, causando 11 (2d6 + 4) de dano de concussão. Uma criatura atingida fica agarrada (CD 14 para escapar) e contida enquanto durar a agarrada; no máximo dois alvos por vez."
+   },
+   {
+    "en": "Chaos Cloud",
+    "nome": "Nuvem do Caos",
+    "desc": "Recarrega após descanso curto ou longo. Lança um nó de luz que explode num ponto visível a até 18 m; criaturas numa esfera de 6 m de raio fazem teste de resistência de Carisma CD 14 ou ficam atordoadas até o fim do próximo turno delas."
+   }
+  ],
+  "reacoes": [],
+  "lendarias": []
+ },
+ "Walnut Dankgrass": {
+  "nome": "Walnut Dankgrass",
+  "acNote": "armadura de couro",
+  "blurb": "Druida élfica que alterna golpes da cimitarra mágica Foremother e flechas de arco longo com magias como Raio Lunar, Invocar Relâmpago e Constrição; pode virar um lobo atroz e se curar gastando espaços de magia.",
+  "lore": "Walnut cresceu num clã só de mulheres, druidas e patrulheiras devotas de Mielikki, que defendiam a natureza selvagem mais com lâminas do que com palavras. Quando o enclave foi aniquilado, ela ficou sozinha e movida apenas pela vingança. Apesar de detestar cidades, mudou-se para uma delas por acreditar que a origem do mal está ali, e atua como documante da Equipe \"C\". Desconfia de quase todos, exceto de quem lembra a estrutura matriarcal de seu povo, e segue suas convicções sem hesitar.",
+  "tracos": [
+   {
+    "en": "Fey Ancestry",
+    "nome": "Ancestralidade Feérica",
+    "desc": "Tem vantagem em testes de resistência contra ficar enfeitiçada, e magia não a faz dormir."
+   },
+   {
+    "en": "Mask of the Wild",
+    "nome": "Máscara da Natureza",
+    "desc": "Pode tentar se esconder estando só levemente obscurecida por folhagem, chuva forte, neve, névoa ou fenômenos naturais parecidos."
+   },
+   {
+    "en": "Wild Shape",
+    "nome": "Forma Selvagem",
+    "desc": "Com uma ação bônus, vira um lobo atroz por até 3 horas, mantendo Int, Sab, Car e personalidade; volta ao normal com ação bônus ou ao cair a 0 PV ou inconsciente. Recarrega após descanso curto ou longo. Nessa forma seus ataques são mágicos e, com ação bônus, ela gasta um espaço de magia para recuperar 1d8 PV por nível do espaço."
+   }
+  ],
+  "acoes": [
+   {
+    "en": "Multiattack",
+    "nome": "Ataques Múltiplos",
+    "desc": "Faz dois ataques, com Foremother ou com o arco longo."
+   },
+   {
+    "en": "Foremother",
+    "nome": "Foremother (Cimitarra +1)",
+    "desc": "Ataque corpo a corpo: +6 para acertar, alcance 1,5 m. Causa 7 (1d6+4) de dano cortante."
+   },
+   {
+    "en": "Longbow",
+    "nome": "Arco Longo",
+    "desc": "Ataque à distância: +5 para acertar, alcance 45/180 m. Causa 7 (1d8+3) de dano perfurante."
+   }
+  ],
+  "reacoes": [],
+  "lendarias": []
+ },
+ "Oak Truestrike": {
+  "nome": "Oak Truestrike",
+  "acNote": "couro batido",
+  "blurb": "Elfo ágil que desfere três golpes por turno com adagas de gancho ou besta de mão, e revida quando é ferido em combate corpo a corpo.",
+  "lore": "Oak Truestrike é quem toma as decisões da Equipe \"B\" e, segundo alguns, a reencarnação de um semideus. Arrogante e seguro de si, tem um talento estranho para dizer a cada pessoa o que ela quer ouvir, seja por magia sutil ou pura lábia de vigarista. A cada nova vida sua personalidade muda radicalmente, alternando entre bondade e maldade, e ele tenta equilibrar nesta vida as dívidas da anterior. A encarnação atual pende para o bem, embora carregue amargura e um desprezo frequente pelas pessoas.",
+  "tracos": [
+   {
+    "en": "Fey Ancestry",
+    "nome": "Ancestralidade Feérica",
+    "desc": "Tem vantagem em testes de resistência contra ficar enfeitiçado, e magia não consegue fazê-lo dormir."
+   },
+   {
+    "en": "Keen Hearing and Sight",
+    "nome": "Audição e Visão Aguçadas",
+    "desc": "Tem vantagem em testes de Sabedoria (Percepção) baseados em audição ou visão."
+   }
+  ],
+  "acoes": [
+   {
+    "en": "Multiattack",
+    "nome": "Ataques Múltiplos",
+    "desc": "Faz três ataques, com as adagas de gancho ou com a besta de mão."
+   },
+   {
+    "en": "Hooked Dagger",
+    "nome": "Adaga de Gancho",
+    "desc": "Ataque corpo a corpo, +5 para acertar, alcance 1,5 m. Causa 5 (1d4 + 3) de dano perfurante."
+   },
+   {
+    "en": "Hand Crossbow",
+    "nome": "Besta de Mão",
+    "desc": "Ataque à distância, +5 para acertar, alcance 9/36 m. Causa 6 (1d6 + 3) de dano perfurante."
+   }
+  ],
+  "reacoes": [
+   {
+    "en": "Return the Favor",
+    "nome": "Devolver o Favor",
+    "desc": "Três vezes por dia, ao sofrer dano de um ataque corpo a corpo com arma, faz um ataque com a adaga de gancho como reação."
+   }
+  ],
+  "lendarias": []
+ },
+ "Prophetess Dran": {
+  "nome": "Profetisa Dran",
+  "acNote": "peitoral",
+  "blurb": "Clériga elfa que avança com uma marreta e queima os inimigos com luz divina, gastando magia para somar dano radiante aos golpes. Pode cercar-se de guardiões espirituais e curar aliados no meio da luta.",
+  "lore": "Dran é uma elfa devota que fala em nome de sua divindade e é tratada como profetisa por seus seguidores. Ordeira e bondosa, costuma agir como líder espiritual e curandeira de sua comunidade. Ainda assim, não foge do combate: veste peitoral e empunha uma marreta pesada. Quando luta, mistura fé e força bruta, abençoando cada golpe com poder sagrado.",
+  "tracos": [
+   {
+    "en": "Divine Eminence",
+    "nome": "Eminência Divina",
+    "desc": "Com uma ação bônus, gasta um espaço de magia para que seus ataques corpo a corpo com arma causem 10 (3d6) de dano radiante extra até o fim do turno. Cada nível do espaço acima do 1º soma mais 1d6."
+   },
+   {
+    "en": "Fey Ancestry",
+    "nome": "Ancestralidade Feérica",
+    "desc": "Tem vantagem em testes de resistência contra ficar enfeitiçada e não pode ser posta para dormir por magia."
+   },
+   {
+    "en": "Spellcasting",
+    "nome": "Conjuração",
+    "desc": "Conjuradora de 5º nível baseada em Sabedoria (CD 13, +5 para acertar). Truques: luz, chama sagrada, taumaturgia; 1º (4 espaços): curar ferimentos, raio guiador, santuário; 2º (3): restauração menor, arma espiritual; 3º (2): dissipar magia, guardiões espirituais."
+   }
+  ],
+  "acoes": [
+   {
+    "en": "Maul",
+    "nome": "Marreta",
+    "desc": "Ataque corpo a corpo com arma: +4 para acertar, alcance 1,5 m, um alvo. Acerto: 9 (2d6 + 2) de dano de concussão."
+   }
+  ],
+  "reacoes": [],
+  "lendarias": []
+ },
+ "Omin Dran": {
+  "nome": "Omin Dran",
+  "acNote": "armadura de placas",
+  "blurb": "Clérigo de armadura pesada que esmaga inimigos com uma marreta, reforçando cada golpe com poder divino e uma lista ampla de magias como guardiões espirituais e golpe flamejante. Também pode garantir um acerto crucial a um aliado no momento certo.",
+  "lore": "Meio-elfo criado em Red Larch, onde a mãe mantinha uma estalagem movimentada, Omin perdeu uma das irmãs para a Cripta Errante, uma criatura disfarçada de ruína. Em parte para procurá-la, fundou a Acquisitions Incorporated, empresa que transformou aventuras em franquias pela Costa da Espada. Devoto de Tymora, é implacável nos negócios, desastrado no amor e péssimo em jogos de azar. Há boatos de que seria um dos Lordes Mascarados de Águas Profundas, algo que ele apenas ri ao ouvir.",
+  "tracos": [
+   {
+    "en": "Divine Strike",
+    "nome": "Golpe Divino",
+    "desc": "Uma vez por turno, ao acertar um ataque com arma, causa 4 (1d8) de dano extra do mesmo tipo da arma."
+   },
+   {
+    "en": "Fey Ancestry",
+    "nome": "Ancestralidade Feérica",
+    "desc": "Tem vantagem em testes de resistência contra ficar enfeitiçado e não pode ser posto para dormir por magia."
+   },
+   {
+    "en": "Spellcasting",
+    "nome": "Conjuração",
+    "desc": "Conjurador de 9º nível que usa Sabedoria (CD 15, +7 para acertar). Prepara magias de clérigo como chama sagrada, comando, imobilizar pessoa, arma espiritual, guardiões espirituais, dissipar magia, pele de pedra, golpe flamejante e imobilizar monstro."
+   }
+  ],
+  "acoes": [
+   {
+    "en": "Multiattack",
+    "nome": "Ataques Múltiplos",
+    "desc": "Faz dois ataques com a marreta."
+   },
+   {
+    "en": "Maul",
+    "nome": "Marreta",
+    "desc": "Ataque corpo a corpo, +6 para acertar, alcance 1,5 m. Causa 10 (2d6 + 3) de dano de concussão."
+   }
+  ],
+  "reacoes": [
+   {
+    "en": "War God's Blessing",
+    "nome": "Bênção do Deus da Guerra",
+    "desc": "Quando uma criatura a até 9 m faz uma jogada de ataque, antes de saber o resultado, Omin concede +10 nessa jogada. Recarrega após descanso curto ou longo."
+   }
+  ],
+  "lendarias": []
+ },
+ "Rosie Beestinger": {
+  "nome": "Rosie Beestinger",
+  "acNote": "defesa sem armadura",
+  "blurb": "Monja halfling ágil que se teleporta entre sombras e despeja uma rajada de golpes de cajado e socos mágicos. Desvia projéteis e escapa de áreas de efeito com facilidade.",
+  "lore": "Rosie é uma halfling idosa, miúda e de jeito de avó, o que faz muitos a subestimarem uma única vez. É a cartógrafa do Time \"C\" e famosa entre os halflings, em parte por sua enorme família de filhos naturais e adotados, vários deles aventureiros. Estudiosa das estrelas, busca no céu sinais dos laços que a unem à família. Boatos ligam o clã Beestinger ao crime organizado halfling, e seu apelido \"Avó Noite\" não ajuda, embora ela jure não saber de nada.",
+  "tracos": [
+   {
+    "en": "Brave",
+    "nome": "Corajosa",
+    "desc": "Tem vantagem em testes de resistência contra ficar amedrontada."
+   },
+   {
+    "en": "Halfling Nimbleness",
+    "nome": "Agilidade Halfling",
+    "desc": "Pode atravessar o espaço de criaturas de tamanho maior que o dela."
+   },
+   {
+    "en": "Evasion",
+    "nome": "Evasão",
+    "desc": "Em efeitos de Destreza que causam metade do dano no sucesso, não sofre dano se passar e sofre metade se falhar. Não funciona se estiver incapacitada."
+   },
+   {
+    "en": "Shadow Step",
+    "nome": "Passo das Sombras",
+    "desc": "Em penumbra ou escuridão, com ação bônus se teleporta até 18 m para um espaço visível também na penumbra ou escuridão. Ganha vantagem no primeiro ataque corpo a corpo antes do fim do turno."
+   }
+  ],
+  "acoes": [
+   {
+    "en": "Innate Spellcasting",
+    "nome": "Conjuração Inata",
+    "desc": "Usa Sabedoria (CD 12), sem componentes materiais. À vontade: ilusão menor, chama sagrada e taumaturgia; 1 vez por dia cada: comando, escuridão, visão no escuro, passos sem pegadas e silêncio."
+   },
+   {
+    "en": "Multiattack",
+    "nome": "Ataques Múltiplos",
+    "desc": "Faz três ataques e, em seguida, dois ataques desarmados."
+   },
+   {
+    "en": "Staff of the Master",
+    "nome": "Cajado do Mestre",
+    "desc": "Ataque corpo a corpo com bordão +1: +6 para acertar, alcance 1,5 m. Causa 7 (1d6+4) de dano de concussão, ou 8 (1d8+4) usado com as duas mãos."
+   },
+   {
+    "en": "Unarmed Strike",
+    "nome": "Golpe Desarmado",
+    "desc": "Ataque corpo a corpo mágico: +5 para acertar, alcance 1,5 m, 6 (1d6+3) de dano de concussão."
+   }
+  ],
+  "reacoes": [
+   {
+    "en": "Deflect Missiles",
+    "nome": "Desviar Projéteis",
+    "desc": "Ao ser atingida por ataque à distância com arma, reduz o dano em 1d10+9. Se zerar o dano e tiver uma mão livre, apanha o projétil se couber em uma mão."
+   }
+  ],
+  "lendarias": []
+ },
+ "Môrgæn": {
+  "nome": "Môrgæn",
+  "acNote": "couro batido",
+  "blurb": "Arqueira letal que dispara três flechas por turno a até 180 m de distância, ou troca o arco por cimitarras no corpo a corpo. Usa magias de patrulheira como marca do caçador e crescer espinhos para punir quem tenta alcançá-la.",
+  "lore": "Môrgæn é uma patrulheira elfa da Acquisitions Incorporated, famosa como rastreadora e caçadora capaz de acertar alvos de qualquer distância e sumir na mata sem deixar pistas. Suas flechas feitas à mão assustam inimigos e até colegas, tanto que ela é a única do grupo que recebe pagamento adiantado. Criada na floresta, protege a natureza com ferocidade e prefere atirar primeiro sem perguntar depois. Mesmo assim, sabe se virar em missões de infiltração e conversa nas cidades, desde que seu gosto por bebida não atrapalhe.",
+  "tracos": [
+   {
+    "en": "Fey Ancestry",
+    "nome": "Ancestralidade Feérica",
+    "desc": "Tem vantagem em testes de resistência contra ficar enfeitiçada, e magia não consegue fazê-la dormir."
+   }
+  ],
+  "acoes": [
+   {
+    "en": "Multiattack",
+    "nome": "Ataques Múltiplos",
+    "desc": "Faz três ataques, com as cimitarras ou com o arco longo."
+   },
+   {
+    "en": "Scimitars",
+    "nome": "Cimitarras",
+    "desc": "Ataque corpo a corpo com arma: +6 para acertar, alcance 1,5 m, um alvo. Acerto: 7 (1d6 + 4) de dano cortante."
+   },
+   {
+    "en": "Longbow",
+    "nome": "Arco Longo",
+    "desc": "Ataque à distância com arma: +6 para acertar, alcance 45/180 m, um alvo. Acerto: 8 (1d8 + 4) de dano perfurante."
+   }
+  ],
+  "reacoes": [],
+  "lendarias": []
+ },
+ "Flabbergast": {
+  "nome": "Flabbergast",
+  "acNote": "15 com armadura arcana",
+  "blurb": "Mago de 9º nível que prefere a diplomacia, mas quando pressionado fica invisível e dispara relâmpagos e cones de frio. Também manipula mentes com sugestão e magias de persuasão.",
+  "lore": "Flabbergast é o reservado mordomo-chefe da sede da Acquisitions Incorporated, um burocrata pacifista vindo de uma família rica de Neverwinter. Odeia trabalho braçal e violência, preferindo aproximar pessoas e resolver conflitos com conversa. Raramente exibe seu poder mágico. No passado serviu Portentia Dran na Dran Enterprises e ainda carrega culpa por isso, o que faz alguns duvidarem de sua lealdade. É acompanhado pelo familiar Mister Snibbly, um gato.",
+  "tracos": [
+   {
+    "en": "Spellcasting",
+    "nome": "Conjuração",
+    "desc": "Conjurador de 9º nível com Inteligência (CD 13, +5 para acertar). Prepara truques como raio de fogo e mãos mágicas, além de armadura arcana, sugestão, relâmpago, invisibilidade maior e cone de frio, entre outras magias de mago."
+   }
+  ],
+  "acoes": [
+   {
+    "en": "Dagger",
+    "nome": "Adaga",
+    "desc": "Ataque corpo a corpo ou à distância: +4 para acertar, alcance 1,5 m ou 6/18 m, um alvo. Causa 4 (1d4 + 2) de dano perfurante."
+   }
+  ],
+  "reacoes": [],
+  "lendarias": []
+ },
+ "K'thriss Drow'b": {
+  "nome": "K'thriss Drow'b",
+  "acNote": "couro batido",
+  "blurb": "Bruxo drow que prefere lutar à distância com rajada mística, mísseis mágicos do manto e magias como despedaçar e sussurros dissonantes. Se for cercado, ataca duas vezes com a foice, mas é frágil sob a luz do sol.",
+  "lore": "K'thriss é um bruxo drow ligado ao Ur, uma entidade ancestral, faminta e indiferente que existe além da realidade. Quando era um seguidor hesitante de Lolth, tocou fragmentos do Altar Negro, e a experiência deixou seu cabelo negro e seus olhos cristalinos e tortos. Vê a existência como um enigma sem sentido, mas costuma ser cortês, porque sabe que não pode arranjar mais inimigos. Suas magias se manifestam como tentáculos, e ele costuma andar vendado, enxergando pelos olhos de Ligotti, seu familiar alienígena.",
+  "tracos": [
+   {
+    "en": "Special Equipment",
+    "nome": "Equipamento Especial",
+    "desc": "Veste um manto das estrelas, que lhe permite conjurar mísseis mágicos com 7 dardos até 6 vezes por dia."
+   },
+   {
+    "en": "Awakened Mind",
+    "nome": "Mente Desperta",
+    "desc": "Fala por telepatia com qualquer criatura que veja a até 9 m, desde que ela entenda algum idioma."
+   },
+   {
+    "en": "Fey Ancestry",
+    "nome": "Ancestralidade Feérica",
+    "desc": "Tem vantagem nos testes de resistência contra ficar enfeitiçado, e magia não pode fazê-lo dormir. Sob a luz do sol, tem desvantagem nas jogadas de ataque e nos testes de Sabedoria (Percepção) que dependem da visão."
+   }
+  ],
+  "acoes": [
+   {
+    "en": "Multiattack",
+    "nome": "Ataques Múltiplos",
+    "desc": "Faz dois ataques com a foice."
+   },
+   {
+    "en": "Sickle",
+    "nome": "Foice",
+    "desc": "Ataque corpo a corpo com +4 para acertar e alcance de 1,5 m. Causa 4 (1d4 + 2) de dano cortante."
+   }
+  ],
+  "reacoes": [],
+  "lendarias": []
+ }
+}

@@ -30,8 +30,11 @@
 
 import { CLASSES } from '../rules/classes/index.js';
 import { RACAS, ANCESTRALIDADES_DRACONICAS, racaDe } from '../rules/racas.js';
+import { RACAS_DOS_LIVROS, ANCESTRALIDADES_DO_FIZBAN, DRAGOES_DO_FIZBAN } from '../rules/racas-livros.js';
+import { ANTECEDENTES_DOS_LIVROS, MOTIVO_DOS_LIVROS } from './antecedentes-livros.js';
 import { SKILLS, SKILL_NAME, ABILITY_NAME } from '../rules/abilities.js';
 import { TALENTOS_PHB, porqueNaoTalento } from '../rules/talentos-phb.js';
+import { LORE } from '../rules/lore.js';
 
 export const ATRIBUTOS = ['str', 'dex', 'con', 'int', 'wis', 'cha'];
 export const CONJUNTO_PADRAO = [15, 14, 13, 12, 10, 8];
@@ -71,7 +74,10 @@ export const ANTECEDENTES = {
     resumo: 'Anos de convés e de porto: braço forte, olho de vigia e briga de taverna no currículo.' },
   orfao: { nome: 'Órfão', nomeF: 'Órfã', pericias: ['prestidigitacao', 'furtividade'], talento: 'sortudo',
     resumo: 'Cresceu nas ruas sozinho: passa despercebido e conhece os atalhos da cidade.' },
+  // OS DOS OUTROS LIVROS: as variantes do PHB, a Costa da Espada, o Acquisitions Inc. e o Bigby (`antecedentes-livros.js`)
+  ...ANTECEDENTES_DOS_LIVROS,
 };
+for (const a of Object.values(ANTECEDENTES)) a.livro ??= 'PHB';
 
 /**
  * O PORQUÊ DE IR A PHANDALIN, por antecedente. O Obelisco sugere um gancho para cada antecedente do Livro do Jogador; o
@@ -93,11 +99,20 @@ export const MOTIVO_DO_ANTECEDENTE = {
   forasteiro: 'Conhece as trilhas da Floresta de Neverwinter melhor que ninguém, e quem precisa de um guia até Phandalin paga.',
   marinheiro: 'Desembarcou em Neverwinter sem navio e sem dinheiro; a escolta de uma carroça é o trabalho que apareceu.',
   orfao: 'Ouviu nas ruas de Neverwinter que em Phandalin sobra trabalho para quem não tem nome, e foi.',
+  ...MOTIVO_DOS_LIVROS,
 };
 
-/** As raças que o criador oferece, na ordem da tela. */
+/** As raças que o criador oferece, na ordem da tela: as do Livro do Jogador e, depois, as dos outros livros (`racas-livros.js`). */
 export const RACAS_DO_CRIADOR = ['humano', 'humanoVariante', 'anaoColina', 'anaoMontanha', 'altoElfo', 'elfoFloresta', 'drow', 'halflingPesLeves',
-  'halflingRobusto', 'draconato', 'gnomoFloresta', 'gnomoRochas', 'meioElfo', 'meioOrc', 'tiferino'];
+  'halflingRobusto', 'draconato', 'gnomoFloresta', 'gnomoRochas', 'meioElfo', 'meioOrc', 'tiferino', ...Object.keys(RACAS_DOS_LIVROS)];
+
+/** As cores de dragão que a raça deixa escolher: a tabela do PHB para o draconato, a do Fizban para os três dele. */
+export function coresDaRaca(raca) {
+  if (raca === 'draconato') return Object.keys(ANCESTRALIDADES_DRACONICAS).filter((c) => c !== 'preto');
+  return Object.keys(ANCESTRALIDADES_DO_FIZBAN[raca] ?? {});
+}
+/** O tipo de dano de uma cor de dragão, na tabela da raça. */
+export const danoDaCor = (raca, cor) => (raca === 'draconato' ? ANCESTRALIDADES_DRACONICAS[cor]?.dano : ANCESTRALIDADES_DO_FIZBAN[raca]?.[cor]) ?? null;
 
 // O nome da raça e da classe no feminino. O texto da raça é o que a mesa diz ("Anã da montanha"); o motor reconhece a
 // raça pelo texto e pelo grupo juntos (`racaDe`), e é por isso que o grupo vai em `ancestry`, no masculino do livro.
@@ -135,7 +150,11 @@ const ANTECEDENTE_DA_CLASSE = {
 };
 
 export const nomeDaRaca = (raca, sexo, cor = 'vermelho') => {
-  const base = sexo === 'F' ? RACA_F[raca] : RACAS[raca]?.nome;
+  const base = sexo === 'F' ? (RACA_F[raca] ?? RACAS[raca]?.nomeF) : RACAS[raca]?.nome;
+  if (ANCESTRALIDADES_DO_FIZBAN[raca]) {
+    const c = ANCESTRALIDADES_DO_FIZBAN[raca][cor] ? cor : coresDaRaca(raca)[0];
+    return `${base} ${DRAGOES_DO_FIZBAN[c][sexo === 'F' ? 1 : 0]}`;
+  }
   if (raca !== 'draconato') return base ?? raca;
   return `${base} ${COR[cor]?.[sexo === 'F' ? 1 : 0] ?? cor}`;
 };
@@ -157,7 +176,20 @@ export function periciasDaClasse(classe) {
 
 /** As perícias que já vêm sem escolha: as do antecedente e as da raça. */
 export function periciasFixas(r) {
-  return [...new Set([...(ANTECEDENTES[r.antecedente]?.pericias ?? []), ...(RACAS[r.raca]?.pericias ?? [])])];
+  return [...new Set([...(ANTECEDENTES[r.antecedente]?.pericias ?? []), ...periciasDoAntecedente(r), ...(RACAS[r.raca]?.pericias ?? [])])];
+}
+
+/**
+ * As perícias que o antecedente deixa escolher de uma lista (o erudito enclausurado, o caçador de recompensas), as que o
+ * rascunho escolheu e cabem; faltando, as primeiras da lista que não repetem as fixas.
+ */
+export function periciasDoAntecedente(r) {
+  const e = ANTECEDENTES[r.antecedente]?.escolhe;
+  if (!e) return [];
+  const fixas = new Set([...(ANTECEDENTES[r.antecedente]?.pericias ?? []), ...(RACAS[r.raca]?.pericias ?? [])]);
+  const ja = [...new Set(r.periciasDoAntecedente ?? [])].filter((s) => e.de.includes(s) && !fixas.has(s));
+  for (const s of e.de) { if (ja.length >= e.quantas) break; if (!fixas.has(s) && !ja.includes(s)) ja.push(s); }
+  return ja.slice(0, e.quantas);
 }
 
 /** Um rascunho novo, já válido: guerreira humana, soldado, conjunto padrão. */
@@ -166,6 +198,8 @@ export function novoRascunho(classe = 'guerreiro') {
     nome: '', sexo: 'F', raca: 'humano', cor: 'vermelho', classe, antecedente: ANTECEDENTE_DA_CLASSE[classe] ?? 'soldado',
     metodo: 'padrao', base: padraoDaClasse(classe), livres: [], periciasEscolhidas: [], periciasLivres: [],
     talentoVariante: null, historia: '', arte: null,
+    // A DIVINDADE (a chave da lore, `deus:<id>`), opcional: é o que Talhundereth e a cripta perguntam (`heroi.divindade`)
+    divindade: null,
   };
   r.periciasEscolhidas = sugerirPericias(r);
   return r;
@@ -181,7 +215,8 @@ export function trocarClasse(r, classe) {
 /** As perícias da classe que o rascunho ainda pode escolher, as primeiras que não vêm de outro lugar. */
 export function sugerirPericias(r) {
   const { quantas, de } = periciasDaClasse(r.classe);
-  const fixas = periciasFixas(r);
+  // as perícias livres da raça (o kenku, o povo-lagarto) ficam de fora da sugestão: a classe não as toma
+  const fixas = [...periciasFixas(r), ...(r.periciasLivres ?? [])];
   const ja = (r.periciasEscolhidas ?? []).filter((s) => de.includes(s) && !fixas.includes(s));
   for (const s of de) {
     if (ja.length >= quantas) break;
@@ -193,15 +228,38 @@ export function sugerirPericias(r) {
 /** Quantos pontos a compra está gastando. */
 export const custoDosPontos = (base) => ATRIBUTOS.reduce((s, a) => s + (CUSTO_DO_PONTO[base[a]] ?? 99), 0);
 
-/** Quantos +1 livres e quantas perícias livres a raça dá (o meio-elfo: dois e duas; o humano variante: dois e uma). */
-export const LIVRES_DA_RACA = { meioElfo: { atributos: 2, pericias: 2, semCarisma: true }, humanoVariante: { atributos: 2, pericias: 1 } };
+/**
+ * O que a raça deixa escolher: quantos +1 livres (`atributos`), um +2 livre (`mais2`), quantas perícias livres (`pericias`,
+ * de qualquer lista ou de `de`). O meio-elfo: dois +1 e duas perícias; o humano variante: dois +1 e uma; os das raças dos
+ * livros vêm de `racas-livros.js livres` (o kenku, duas perícias de uma lista; o draconato do Fizban, um +2 e um +1).
+ */
+export const LIVRES_DA_RACA = {
+  meioElfo: { atributos: 2, pericias: 2, semCarisma: true }, humanoVariante: { atributos: 2, pericias: 1 },
+  ...Object.fromEntries(Object.entries(RACAS_DOS_LIVROS).filter(([, r]) => r.livres).map(([id, r]) => [id, r.livres])),
+};
 
-/** Os atributos finais: a base, o bônus da raça e os +1 livres (meio-elfo, humano variante). */
+/** O que a raça deixa escolher neste rascunho: a linhagem personalizada que troca a visão por perícia ganha uma. */
+export function livresDe(r) {
+  const base = LIVRES_DA_RACA[r.raca];
+  if (r.raca === 'linhagemPersonalizada' && tracoDoRascunho(r) === 'linhagemPericia') return { ...base, pericias: 1 };
+  return base ?? null;
+}
+
+/** O traço que o rascunho escolheu, quando a raça deixa escolher um (`escolhaDeTraco`). */
+export function tracoDoRascunho(r) {
+  const lista = RACAS[r.raca]?.escolhaDeTraco;
+  if (!lista) return null;
+  return lista.includes(r.tracoDaRaca) ? r.tracoDaRaca : lista[0];
+}
+
+/** Os atributos finais: a base, o bônus da raça, os +1 livres e o +2 livre. */
 export function atributosFinais(r) {
   const bonus = RACAS[r.raca]?.atributos ?? {};
-  const livres = LIVRES_DA_RACA[r.raca] ? (r.livres ?? []) : [];
+  const l = livresDe(r);
+  const livres = l?.atributos ? (r.livres ?? []).slice(0, l.atributos) : [];
+  const mais2 = l?.mais2 ? r.livreMais2 : null;
   const out = {};
-  for (const a of ATRIBUTOS) out[a] = (r.base[a] ?? 8) + (bonus[a] ?? 0) + (livres.includes(a) ? 1 : 0);
+  for (const a of ATRIBUTOS) out[a] = (r.base[a] ?? 8) + (bonus[a] ?? 0) + (livres.includes(a) ? 1 : 0) + (mais2 === a ? 2 : 0);
   return out;
 }
 
@@ -232,7 +290,8 @@ export function problemasDoRascunho(r) {
   if (!nome) p.push('Dê um nome ao herói.');
   else if ([...nome].length > MAX_NOME) p.push(`O nome passa de ${MAX_NOME} letras.`);
   if (!RACAS_DO_CRIADOR.includes(r.raca)) p.push('Escolha a raça.');
-  if (r.raca === 'draconato' && !CORES_DO_DRACONATO.includes(r.cor)) p.push('Escolha a cor do dragão.');
+  if (coresDaRaca(r.raca).length && !coresDaRaca(r.raca).includes(r.cor)) p.push('Escolha a cor do dragão.');
+  if (RACAS[r.raca]?.escolhaDeTraco && r.tracoDaRaca != null && !RACAS[r.raca].escolhaDeTraco.includes(r.tracoDaRaca)) p.push('Escolha o traço da raça.');
   if (!CLASSES[r.classe]) p.push('Escolha a classe.');
   if (!ANTECEDENTES[r.antecedente]) p.push('Escolha o antecedente.');
   const valores = ATRIBUTOS.map((a) => r.base?.[a]);
@@ -243,22 +302,30 @@ export function problemasDoRascunho(r) {
     if (valores.some((v) => !(v in CUSTO_DO_PONTO))) p.push('Na compra de pontos, cada atributo vai de 8 a 15.');
     else if (custoDosPontos(r.base) > PONTOS) p.push(`A compra passou de ${PONTOS} pontos (${custoDosPontos(r.base)}).`);
   } else p.push('Escolha como distribuir os atributos.');
-  const livresDaRaca = LIVRES_DA_RACA[r.raca];
+  const livresDaRaca = livresDe(r);
   if (livresDaRaca) {
-    const quem = r.raca === 'meioElfo' ? 'Meio-elfo' : 'Humano variante';
+    const quem = { meioElfo: 'Meio-elfo', humanoVariante: 'Humano variante' }[r.raca] ?? RACAS[r.raca]?.nome ?? r.raca;
     const livres = [...new Set(r.livres ?? [])];
-    if (livres.length !== livresDaRaca.atributos || (livresDaRaca.semCarisma && livres.includes('cha')) || livres.some((a) => !ATRIBUTOS.includes(a))) {
-      p.push(`${quem}: escolha dois atributos${livresDaRaca.semCarisma ? ' (fora o Carisma)' : ' diferentes'} para ganhar +1.`);
+    const quantos = livresDaRaca.atributos ?? 0;
+    if (livres.length !== quantos || (livresDaRaca.semCarisma && livres.includes('cha')) || livres.some((a) => !ATRIBUTOS.includes(a))
+      || (livresDaRaca.mais2 && livres.includes(r.livreMais2))) {
+      if (quantos) p.push(`${quem}: escolha ${quantos === 1 ? 'um atributo' : quantos === 2 ? 'dois atributos' : `${quantos} atributos`}${livresDaRaca.semCarisma ? ' (fora o Carisma)' : quantos > 1 ? ' diferentes' : livresDaRaca.mais2 ? ' (outro que não o do +2)' : ''} para ganhar +1.`);
+      else if (livres.length) p.push(`${quem}: a raça não dá +1 livre.`);
     }
-    const ok = (r.periciasLivres ?? []).filter((s) => SKILLS[s]);
-    if (new Set(ok).size !== livresDaRaca.pericias) p.push(`${quem}: escolha ${livresDaRaca.pericias === 1 ? 'uma perícia qualquer' : 'duas perícias quaisquer'}.`);
+    if (livresDaRaca.mais2 && !ATRIBUTOS.includes(r.livreMais2)) p.push(`${quem}: escolha o atributo que ganha +2.`);
+    const ok = (r.periciasLivres ?? []).filter((s) => SKILLS[s] && (!livresDaRaca.de || livresDaRaca.de.includes(s)));
+    const nPericias = livresDaRaca.pericias ?? 0;
+    if (new Set(ok).size !== nPericias || (r.periciasLivres ?? []).length !== nPericias) {
+      p.push(`${quem}: escolha ${nPericias === 1 ? 'uma perícia' : `${nPericias} perícias`}${livresDaRaca.de ? ` entre ${livresDaRaca.de.map((s) => SKILL_NAME[s]).join(', ')}` : ' quaisquer'}.`);
+    }
   }
-  if (r.raca === 'humanoVariante') {
+  if (r.raca === 'humanoVariante' || RACAS[r.raca]?.talentoDaRaca) {
     const t = r.talentoVariante;
     const motivo = !t?.id ? 'escolha o talento' : talentosDoVariante(r).find((x) => x.id === t.id)?.motivo ?? null;
-    if (motivo) p.push(`Humano variante: ${t?.id && TALENTOS_PHB[t.id] ? `${motivo} (${t.id})` : motivo}.`);
+    const quem = r.raca === 'humanoVariante' ? 'Humano variante' : RACAS[r.raca]?.nome;
+    if (motivo) p.push(`${quem}: ${t?.id && TALENTOS_PHB[t.id] ? `${motivo} (${t.id})` : motivo}.`);
     const lista = TALENTOS_PHB[t?.id]?.atributo;
-    if (t?.id && Array.isArray(lista) && t.atributo && !lista.includes(t.atributo)) p.push('Humano variante: o +1 do talento vai num atributo que ele permite.');
+    if (t?.id && Array.isArray(lista) && t.atributo && !lista.includes(t.atributo)) p.push(`${quem}: o +1 do talento vai num atributo que ele permite.`);
   }
   const { quantas, de } = periciasDaClasse(r.classe);
   const fixas = periciasFixas(r);
@@ -283,13 +350,17 @@ export const novoId = (aleatorio = Math.random) => `pc-criado-${Math.floor(aleat
 export function definicaoDoRascunho(r, id = novoId()) {
   const raca = RACAS[r.raca];
   const sexo = r.sexo === 'M' ? 'M' : 'F';
-  const skills = [...new Set([...r.periciasEscolhidas, ...periciasFixas(r), ...(LIVRES_DA_RACA[r.raca] ? r.periciasLivres : [])])];
+  const skills = [...new Set([...r.periciasEscolhidas, ...periciasFixas(r), ...(livresDe(r)?.pericias ? r.periciasLivres : [])])];
+  const traco = tracoDoRascunho(r);
   const historia = String(r.historia ?? '').trim();
   return {
     id, criado: true,
     name: String(r.nome).trim(),
     classe: r.classe, className: nomeDaClasse(r.classe, sexo),
     raca: nomeDaRaca(r.raca, sexo, r.cor), ancestry: raca.grupo, racaId: r.raca, sexo,
+    // o TRAÇO ESCOLHIDO (a estação do eladrin) e a COR DO DRAGÃO do Fizban: `racas.js aplicarRaca` os lê
+    ...(traco ? { tracoDaRaca: traco } : {}),
+    ...(ANCESTRALIDADES_DO_FIZBAN[r.raca] ? { ancestralidade: coresDaRaca(r.raca).includes(r.cor) ? r.cor : coresDaRaca(r.raca)[0] } : {}),
     look: `arte:${id}`,
     abilities: atributosFinais(r),
     skills,
@@ -299,9 +370,10 @@ export function definicaoDoRascunho(r, id = novoId()) {
     origem: `${nomeDaRaca(r.raca, sexo, r.cor)}, ${nomeDoAntecedente(r.antecedente, sexo).toLowerCase()}.`,
     historia: historia ? [historia] : [],
     motivo: MOTIVO_DO_ANTECEDENTE[r.antecedente] ?? '', traco: '', ideal: '', vinculo: '', defeito: '',
+    ...(r.divindade && LORE[r.divindade]?.tipo === 'deus' ? { divindade: LORE[r.divindade].nome, divindadeId: r.divindade } : {}),
     arte: r.arte ?? null,
     // o TALENTO DO HUMANO VARIANTE, que `criacao.js montarHeroi` põe na ficha por cima do de origem
-    ...(r.raca === 'humanoVariante' && r.talentoVariante?.id ? { talentoDaRaca: { ...r.talentoVariante } } : {}),
+    ...((r.raca === 'humanoVariante' || RACAS[r.raca]?.talentoDaRaca) && r.talentoVariante?.id ? { talentoDaRaca: { ...r.talentoVariante } } : {}),
     // o rascunho inteiro, para editar depois do jeito que foi feito
     rascunho: { ...structuredClone({ ...r, arte: null }) },
   };
@@ -312,17 +384,30 @@ export function rascunhoDaDefinicao(def) {
   return { ...structuredClone(def.rascunho ?? novoRascunho(def.classe)), arte: def.arte ?? null };
 }
 
+/**
+ * A raça que o TEXTO da definição diz, sem olhar a chave: a do Livro do Jogador pelo `racaDe` de sempre, e a dos livros pelo
+ * nome dela (no masculino ou no feminino) no começo do texto. É o que impede um save de dizer "anão" e levar a chave do drow.
+ */
+function racaPeloTexto(d) {
+  const r = RACAS[d.racaId];
+  if (r && r.livro !== 'PHB') return [r.nome, r.nomeF].some((n) => n && String(d.raca ?? '').startsWith(n)) ? d.racaId : null;
+  return racaDe({ raca: d.raca, ancestry: d.ancestry });
+}
+
 /** Confere uma definição que veio de fora (o navegador, um save): o formato e o que o motor vai ler. */
 export function definicaoValida(d) {
   if (!d || typeof d !== 'object' || !d.criado) return false;
   if (typeof d.id !== 'string' || !/^pc-criado-[a-z0-9]{1,12}$/.test(d.id)) return false;
   if (d.look !== `arte:${d.id}`) return false;
   if (typeof d.name !== 'string' || !d.name.trim() || [...d.name].length > MAX_NOME) return false;
-  if (!CLASSES[d.classe] || !RACAS_DO_CRIADOR.includes(d.racaId) || racaDe(d) !== d.racaId) return false;
+  if (!CLASSES[d.classe] || !RACAS_DO_CRIADOR.includes(d.racaId) || racaPeloTexto(d) !== d.racaId) return false;
   if (!ATRIBUTOS.every((a) => Number.isInteger(d.abilities?.[a]) && d.abilities[a] >= 3 && d.abilities[a] <= 20)) return false;
   if (!Array.isArray(d.skills) || d.skills.some((s) => !SKILLS[s])) return false;
   if (d.arte != null && !arteValida(d.arte)) return false;
-  if (d.talentoDaRaca != null && (d.racaId !== 'humanoVariante' || !TALENTOS_PHB[d.talentoDaRaca.id])) return false;
+  if (d.talentoDaRaca != null && ((d.racaId !== 'humanoVariante' && !RACAS[d.racaId]?.talentoDaRaca) || !TALENTOS_PHB[d.talentoDaRaca.id])) return false;
+  if (d.tracoDaRaca != null && !RACAS[d.racaId]?.escolhaDeTraco?.includes(d.tracoDaRaca)) return false;
+  if (d.ancestralidade != null && !ANCESTRALIDADES_DO_FIZBAN[d.racaId]?.[d.ancestralidade]) return false;
+  if (d.divindadeId != null && (LORE[d.divindadeId]?.tipo !== 'deus' || d.divindade !== LORE[d.divindadeId].nome)) return false;
   return true;
 }
 

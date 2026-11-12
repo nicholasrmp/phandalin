@@ -65,6 +65,7 @@ import { makeMonster } from '../rules/monsters.js';
 import { passivePerception, skillBonus, rolarPericia } from '../rules/abilities.js';
 import { d20 } from '../core/dice.js';
 import { kmEntre, posicaoOficial } from '../rules/regiao-mapa.js';
+import { LORE, fatosAte, saberDoGrupo } from '../rules/lore.js';
 import { rotaEntre, terrenoDoTrecho, kmDeVerdade, resumoDaRota, pontosDaRota, NOME_DO_TERRENO } from '../rules/regiao-rota.js';
 
 export { ENCONTROS, sortearEncontro };
@@ -189,7 +190,13 @@ export function abrirRegiao(app, { grupo, onde = 'phandalin' }) {
   async function aoClicar(l) {
     if (!l.jogavel) {
       tela.esconder();
-      await narrar(app.root, { formato: 'painel', paginas: [{ titulo: l.nome, texto: [l.cidade
+      // O QUE O GRUPO SABE DO LUGAR (`rules/lore.js`, o SCAG com as nossas palavras): os fatos até 10 + a melhor História
+      // do grupo, sem rolar — é o que alguém do grupo já ouviu.
+      const lore = LORE[`lugar:${l.id}`];
+      const sabe = lore ? fatosAte(lore, saberDoGrupo(vivos(), 'historia', skillBonus), { ate: 4 }) : [];
+      await narrar(app.root, { formato: 'painel', paginas: [{ titulo: l.nome, texto: [
+        ...(lore ? [lore.resumo, ...sabe.map((f) => f.texto)] : []),
+        l.cidade
         ? 'Longe demais, e fora desta história: o que vocês procuram está aqui na região.'
         : 'Este caminho fica para uma próxima etapa da construção do jogo.'] }] });
       tela.mostrar();

@@ -7,6 +7,10 @@
 // bebidas saíam "erradas" (Intuição CD 12: a pista do propósito); a dona, que correu atrás deles de vassoura. Subir
 // pela chaminé leva ao telhado (`obelisco5-lutas.js`).
 //
+// O CAPÍTULO 7 (`obelisco7-vila.js`) volta aqui: depois da briga do santuário, o salão está às escuras, porque o
+// Wheel-of-Fortune não suporta luz acima de uma vela, e ele, mudando de corpo, conta do buraco do porão. É o mesmo
+// tabuleiro em outro modo (`cap7`), com a Gwyn junto.
+//
 // A DONA É A GRESKA, uma orc. O capítulo 5 do livro a chama de Grista, uma anã, mas o capítulo 2 do mesmo livro deu o
 // Gigante Adormecido a uma orc chamada Greska, e é ela que o jogo tem desde então: o livro se contradiz, e aqui fica a
 // mesma pessoa.
@@ -20,6 +24,7 @@ import { deNoite } from './relogio.js';
 import { definirEscuridao } from '../rules/luz.js';
 import { PONTOS_CAP5_VILA } from './obelisco5-mapas.js';
 import { PISTAS_DO_CAP5 } from './obelisco5-vila.js';
+import { capitulo7Ativo } from './obelisco7-vila.js';
 
 const P = PONTOS_CAP5_VILA.GIGANTE_TERREO;
 const em = (lista, t) => [].concat(lista).some((q) => q.x === t.x && q.y === t.y);
@@ -32,6 +37,10 @@ export function criarGiganteTerreo(app) {
   const vila = (camp.vila ??= { pistas: [] });
   o5.lutas ??= {};
   const estado = { explorando: false, encerrado: false };
+  // O MODO DO CAPÍTULO 7: vencida a briga do santuário, e o tiferino ainda não ouvido
+  const o7 = camp.obelisco7 ?? null;
+  const cap7 = Boolean(capitulo7Ativo(camp) && o7?.lutas?.santuario && !o7?.feito?.wheelOuvido);
+  const pistaDaVila = (t) => { if (!(vila.pistas ??= []).includes(t)) vila.pistas.push(t); enc.say('acao', `Pista: ${t}`); };
   const herois = () => enc.combatants.filter((c) => c.side === 'party');
   const painel = (texto) => narrar(root, { formato: 'painel', paginas: [{ titulo: 'O Gigante Adormecido', texto: [].concat(texto) }] });
   const ganharPista = (id) => {
@@ -46,6 +55,8 @@ export function criarGiganteTerreo(app) {
   Object.assign(greska, { name: 'Greska', side: 'neutro', facingVec: { dx: -1, dy: 0 } });
   const wheel = makeMonster('plebeu', { ...P.wheel });
   Object.assign(wheel, { name: 'Wheel-of-Fortune', side: 'neutro', facingVec: { dx: -1, dy: 0 } });
+  const gwyn = cap7 ? makeMonster('plebeu', { ...P.grupo[0] }) : null;
+  if (gwyn) Object.assign(gwyn, { name: 'Gwyn Oresong', side: 'neutro', facingVec: { dx: 0, dy: 1 } });
 
   // O TELHADO DE QUEM ENTRA SOME (como o do Foundry): o galpão e as duas casas vizinhas nascem cobertos, e o que há
   // dentro (a cama, a bancada, o cocho) só se vê com alguém lá dentro. `P.telhados` vem do alfa da arte do telhado.
@@ -95,6 +106,67 @@ export function criarGiganteTerreo(app) {
       },
   });
 
+  // O WHEEL-OF-FORTUNE NO CAPÍTULO 7 (o livro): se ninguém o ataca, ele conta o que sabe. As falas são nossas.
+  const arvoreWheel7 = () => ({
+    inicio: 'oi',
+    nos: {
+      oi: {
+        narra: 'Atrás do balcão, longe da única vela, uma figura alta se encolhe. A pele roxa brilha de um muco ralo, e o crânio parece mais comprido do que vocês lembravam, os dedos também. Na penumbra, por um instante, é um devorador de mentes. Depois é só o Wheel-of-Fortune, com medo.',
+        fala: 'Não cheguem com a luz. Por favor. Dói atrás dos olhos. — Ele aperta as têmporas. — Eu não quero machucar ninguém. Alguma coisa está mexendo em mim por dentro, na cabeça e no corpo, e eu sinto que ela está ganhando.',
+        opcoes: [
+          { texto: 'O que aconteceu aqui?', vai: 'porao' },
+          { texto: 'O que você sente?', vai: 'mente' },
+          { texto: '(Deixar que ele olhe para vocês.)', vai: 'rastros', uma: true },
+          { texto: 'Vamos acabar com isso. Com o que está fazendo isso com você.', vai: 'fim' },
+        ],
+      },
+      porao: {
+        fala: 'Dias atrás eu desci ao porão buscar um barril e tinha goblins lá. Correram de mim. E no chão, no canto do fundo, um buraco que não existia, redondo como um poço, com uma rampa descendo. Os goblins fugiram por ele, muitos. Depois eu vi gente da vila sendo levada por ali, de noite. Não fiz nada. Não consegui.',
+        ao: () => { o7.feito.wheelPorao = true; },
+        opcoes: [{ texto: '…', vai: 'oi' }],
+      },
+      mente: {
+        fala: 'Lá embaixo, muito embaixo da vila, tem uma mente. Enorme. Ela não dorme. Às vezes eu sinto que ela olha para cá, e eu escondo a cabeça debaixo do balcão como uma criança. — Ele ri sem graça. — E eu vejo rastros. Trilhas verdes no ar, por onde as pessoas e os bichos passaram. As suas também.',
+        ao: () => { o7.feito.wheelMente = true; },
+        opcoes: [{ texto: '…', vai: 'oi' }],
+      },
+      rastros: {
+        fala: 'Vocês carregam três coisas pesadas. Pedras velhas. A trilha delas é mais escura que a de vocês. — Ele vira a cabeça devagar, como quem escuta. — Um de vocês vai olhar para dentro de um olho que não pisca, e vai ter de decidir se pisca primeiro.',
+        opcoes: [{ texto: '…', vai: 'oi' }],
+      },
+      fim: {
+        fala: 'Então vão. Eu fico. Só peço um canto, longe de todo mundo, onde eu não possa fazer mal a ninguém se essa coisa ganhar de mim antes de vocês voltarem.',
+        ao: () => { o7.feito.wheelPorao = true; o7.feito.wheelMente = true; },
+        opcoes: [{ texto: 'A gente cuida disso.', fim: 'wheelOuvido' }],
+      },
+    },
+  });
+
+  const arvoreGreska7 = () => ({
+    inicio: 'oi',
+    nos: { oi: {
+      narra: 'A Greska está de braços cruzados ao lado da porta, de vela na mão, sem chegar perto do balcão.',
+      fala: 'Apaguei tudo porque ele pediu. Trabalha comigo há três anos. Nunca roubou uma moeda. Façam alguma coisa.',
+      opcoes: [{ texto: 'Vamos fazer.', fim: 'sai' }],
+    } },
+  });
+
+  async function wheelOuvido() {
+    if (o7.feito.wheelOuvido) return;
+    o7.feito.wheelOuvido = true;
+    vila.missoes ??= {};
+    vila.missoes.wheel = 'feita';
+    if (!vila.missoes.illithinoch) vila.missoes.illithinoch = 'ativa';
+    await painel([
+      'A Gwyn escuta tudo de braços cruzados, e quando ele termina tira os óculos para limpar, o que ela faz quando está com medo.',
+      '— Um buraco que desce para o Subterrâneo, debaixo de uma taverna. E uma mente enorme lá embaixo. — Ela recoloca os óculos. — Os livros velhos falam de uma fortaleza dos devoradores de mentes debaixo destas colinas, do tempo do império deles: Illithinoch. E do que vive no fundo de uma fortaleza assim: um cérebro ancião.',
+      '— Eu arranjo um quarto para ele, longe de todo mundo. Vocês — ela aponta a cozinha — vão querer ver o porão.',
+    ]);
+    pistaDaVila('O Wheel-of-Fortune viu os goblins fugirem, e moradores serem levados, por um buraco novo no porão do Gigante Adormecido. Ele sente uma mente enorme muito abaixo da vila; a Gwyn acha que é um cérebro ancião, em Illithinoch, a velha fortaleza dos devoradores de mentes.');
+    enc.say('acao', 'Nova missão: Illithinoch.');
+    app.refresh();
+  }
+
   const arvoreGreska = () => ({
       inicio: 'oi',
       nos: {
@@ -110,6 +182,37 @@ export function criarGiganteTerreo(app) {
     if (!c || !estado.explorando) return [];
     const ops = [];
     const longe = (pes) => (distanceFt(c.pos, tile) > pes ? `longe demais — chegue a ${pes} pés` : null);
+    if (cap7) {
+      // O PORÃO: o alçapão fica na cozinha. O buraco desce até o túnel do capítulo, que é a cena seguinte.
+      if (em(P.cozinha, tile)) {
+        ops.push({
+          rotulo: 'Descer ao porão', icone: 'acao-procurar', motivo: longe(5),
+          fazer: async () => {
+            o7.feito.buracoVisto = true;
+            await painel(['O alçapão da cozinha range. Lá embaixo, entre barris e réstias de cebola, o canto do fundo não tem mais chão: um buraco redondo, largo como uma carroça, de beiradas lisas como se a pedra tivesse sido derretida, e uma rampa que desce em espiral para o escuro.',
+              'Do fundo sobe um ar morno, com cheiro de salmoura. No pó da rampa, pegadas pequenas de goblin, e outras, maiores, de pés que se arrastavam.']);
+            pistaDaVila('No porão do Gigante Adormecido, um buraco novo de beiradas derretidas desce em rampa para o Subterrâneo. Há pegadas de goblins e de gente arrastando os pés.');
+            app.refresh();
+          },
+        });
+      }
+      // visto o buraco, desce-se por ele: o túnel do capítulo 7 (`tunel-cap7.js`)
+      if (em(P.cozinha, tile) && o7.feito.buracoVisto) {
+        ops.push({ rotulo: 'Descer pelo buraco', icone: 'acao-disparada', detalhe: 'o túnel para o fundo', motivo: longe(5), fazer: () => {
+          estado.encerrado = true;
+          root.classList.remove('explorando');
+          app.newEncounter({ ...app.config, modo: 'campanha', capitulo: 3, cenaDaVila: 'tunelGrells', continuarCom: herois().filter((h) => !h.dead) });
+        } });
+      }
+      if (em(P.saida, tile)) {
+        ops.push({ rotulo: 'Voltar à vila', icone: 'acao-disparada', motivo: longe(5), fazer: () => {
+          estado.encerrado = true;
+          root.classList.remove('explorando');
+          app.irParaVila(herois().filter((h) => !h.dead));
+        } });
+      }
+      return ops;
+    }
     if (em(P.balcao, tile)) {
       ops.push({
         rotulo: 'Examinar o balcão', icone: 'acao-procurar', motivo: longe(5),
@@ -167,13 +270,31 @@ export function criarGiganteTerreo(app) {
     get encerrado() { return estado.encerrado; },
     interacoes,
     // A conversa com os dois sai pelo "Conversar" de sempre do botão direito (`app.conversar`).
-    dialogoDe: (npc) => (npc === wheel ? arvoreWheel() : npc === greska ? arvoreGreska() : null),
+    dialogoDe: (npc) => (cap7
+      ? (npc === wheel ? arvoreWheel7() : npc === greska || npc === gwyn ? arvoreGreska7() : null)
+      : (npc === wheel ? arvoreWheel() : npc === greska ? arvoreGreska() : null)),
+    // o fim da conversa com o tiferino (o `fim: 'wheelOuvido'` da árvore)
+    depoisDaConversa(npc, fim) { if (fim === 'wheelOuvido') return wheelOuvido(); return null; },
     depoisDeMover(c) { if (c) c.movementLeftFt = 60; atualizarTelhados(); app.refresh?.(); },
     async fimDoCombate() {},
     evento() {},
-    npcs: { greska, wheel },
+    npcs: { greska, wheel, gwyn },
+    get cap7() { return cap7; },
+    wheelOuvido,
     atualizarTelhados,
     async iniciar() {
+      if (cap7) {
+        // às escuras: o tiferino pediu, e a Greska apagou tudo menos uma vela
+        definirEscuridao(enc.field, 0.85);
+        const casa = enc.casaLivreMaisProxima?.(P.grupo[0]) ?? P.grupo[0];
+        gwyn.pos = { ...gwyn.pos, x: casa.x, y: casa.y };
+        for (const n of [greska, wheel, gwyn]) enc.addCombatant(n);
+        await painel(['O Gigante Adormecido está às escuras. Uma vela só, na mesa perto da porta. A Greska fecha a porta atrás de vocês e não passa da vela.',
+          'Lá no fundo, atrás do balcão novo, alguém respira devagar. Falem com ele (botão direito); a cozinha leva ao porão, e pela borda do mapa volta-se à rua.']);
+        prepararExploracao();
+        atualizarTelhados();
+        return;
+      }
       if (deNoite(vila.tempo ?? 0)) definirEscuridao(enc.field, 0.8);
       for (const n of [greska, wheel]) enc.addCombatant(n);
       await painel(['O salão do Gigante Adormecido parece ter sido atravessado por uma briga de taverna sem ninguém para brigar: mesas viradas, cadeiras quebradas, cacos por todo lado. A Greska e o atendente, um tiferino roxo, tentam pôr ordem.',

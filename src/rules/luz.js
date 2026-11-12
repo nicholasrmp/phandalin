@@ -134,7 +134,8 @@ export function visaoNoEscuro(c) {
   // OLHOS DA NOITE (Crepúsculo, Tasha): 90 m.
   const natural = Math.max(visaoNatural(c), c.features?.includes('eyesOfTheDark') ? 120 : 0, c.features?.includes('eyesOfNight') ? 300 : 0, hasCondition(c, 'semblanteAstral') ? 120 : 0);
   const umbral = c.features?.includes('umbralSight') ? (natural > 0 ? natural + 30 : 60) : natural;
-  return Math.max(magia, umbral);
+  // o item (os óculos de visão noturna)
+  return Math.max(magia, umbral, c.doItem?.visao ?? 0);
 }
 
 function visaoNatural(c) {
