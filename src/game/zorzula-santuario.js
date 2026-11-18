@@ -26,7 +26,9 @@
 //   - "fácil", para os dois goblins da quarta rodada, é medido: ninguém do grupo no chão e o grupo com pelo menos
 //     metade da vida somada;
 //   - a plataforma desce às minas, que são tabuleiro; levar os REFÉNS para fora é narrado (eles mal andam, e ninguém os
-//     faz atravessar as minas de casa em casa).
+//     faz atravessar as minas de casa em casa);
+//   - a PAZ com os Sawplee sai na volta, sem teste (o livro a chama de fácil), e os termos são nossos: o clã fica longe
+//     da vila. A vila resmunga na chegada (`obelisco5-vila.js`), e no posto ninguém mais briga (`zorzula-posto.js semChefe`).
 //
 // O MARCO do 7º nível sai aqui, com o Ruxithid morto (o capítulo 5 vai do 5º ao 7º).
 
@@ -252,6 +254,30 @@ export function criarZorzulaSantuario(app, config = {}) {
     return ops;
   }
 
+  // A PAZ COM OS SAWPLEE (o livro: sem o Ruxithid o clã é pacífico, curioso e travesso, e o grupo consegue uma paz fácil;
+  // a vila não gosta deles). Fácil quer dizer sem teste. Os termos são nossos: o livro não os dá.
+  async function pazComOsSawplee() {
+    if (z.pazSawplee !== undefined) return;
+    const r = await painel([
+      'Antes de vocês ganharem a trilha, um bando de goblins alcança o grupo na porta de pedra do posto. Sem o zumbido do cristal, parecem menores. Um deles, de orelha rasgada, dá um passo à frente e torce as mãos.',
+      '— A gente não queria a vila. Era a voz na cabeça do chefe. A gente só cava, e come, e cuida da Bessie. — Ele olha para os outros. — Vocês vão voltar com mais gente grande?',
+    ], [
+      { rotulo: 'Propor uma trégua: o clã fica longe de Phandalin', valor: 'paz', primaria: true },
+      { rotulo: 'Não prometer nada', valor: 'nada' },
+    ]);
+    if (r !== 'paz') {
+      z.pazSawplee = false;
+      await painel('O goblin de orelha rasgada recua sem dizer nada. Quando vocês olham para trás, o bando inteiro ainda está na ponte, olhando.');
+      return;
+    }
+    z.pazSawplee = true;
+    await painel([
+      'Não é preciso insistir. O de orelha rasgada cospe na mão e a estende; os outros fazem o mesmo, um atrás do outro, até a fila acabar.',
+      '— Nada de vila. Nada de poço, nada de pedra, nada de taverna. — Pausa. — E se um de nós aparecer lá só para olhar, não é ataque. É só olhar.',
+    ]);
+    pista('A trégua com os Sawplee: o clã de Zorzula prometeu ficar longe de Phandalin.');
+  }
+
   async function sair() {
     estado.encerrado = true;
     if (refens.length) z.refensSalvos = true;
@@ -259,6 +285,7 @@ export function criarZorzulaSantuario(app, config = {}) {
       'A plataforma de pedra desce trinta segundos, devagar, até a ponte sobre a lava. Daí, as minas escuras e o elevador até o posto, com os reféns apoiados em ombros. Os goblins que ainda estão por lá se afastam, sem o chefe, curiosos e mansos.',
       refens.length ? 'Lá fora o ar é fresco, e os três reféns choram de alívio. Falta levá-los inteiros até Phandalin.' : 'Lá fora o ar é fresco.',
     ] }] });
+    await pazComOsSawplee();
     root.classList.remove('explorando');
     const grupo = todos();
     app.capitulo = null; app.enc = null; app.board = null; app.selected = null; app.mode = null;
@@ -288,6 +315,7 @@ export function criarZorzulaSantuario(app, config = {}) {
       return null;
     },
     fimDoCombate,
+    pazComOsSawplee,
     evento() {},
     dialogoDe: () => null,
     elenco: { ruxithid, guardiao, refens },

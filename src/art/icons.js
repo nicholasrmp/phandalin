@@ -868,6 +868,8 @@ export function iconeDeRecurso(id) {
 // com nomes próprios. Onde já existe o ícone de 32 da mesma ação, ele vence;
 // onde não existe, o antigo continua.
 const ACAO_DO_HUD = {
+  // a Ação Ardilosa de se esconder tem o desenho da ação Esconder (sem isto o ícone saía em branco: não há `acao-ardilosaEsconder`)
+  ardilosaEsconder: 'acao-esconder',
   correr: 'acao-disparada',
   esquivar: 'acao-esquivar',
   desengajar: 'acao-desengajar',

@@ -20,22 +20,6 @@
   "nome": "Bolsa Devoradora",
   "motivo": "a bolsa que engole o que se põe nela não tem efeito numa luta"
  },
- "Bag of Tricks, Gray": {
-  "nome": "Bolsa de Truques Cinza",
-  "motivo": "convoca criatura (sorteada ou elemental): o herói ainda não convoca por item"
- },
- "Bag of Tricks, Rust": {
-  "nome": "Bolsa de Truques, Ferrugem",
-  "motivo": "convoca criatura (sorteada ou elemental): o herói ainda não convoca por item"
- },
- "Bag of Tricks, Tan": {
-  "nome": "Bolsa de Truques (Castanha)",
-  "motivo": "convoca criatura (sorteada ou elemental): o herói ainda não convoca por item"
- },
- "Bead of Force": {
-  "nome": "Conta de Energia",
-  "motivo": "a esfera de força que prende quem a conta pega não existe no motor"
- },
  "Book of Exalted Deeds": {
   "nome": "Livro dos Feitos Exaltados",
   "motivo": "artefato: fica de fora, como os outros oito do livro"
@@ -44,49 +28,9 @@
   "nome": "Livro da Escuridão Vil",
   "motivo": "artefato: fica de fora, como os outros oito do livro"
  },
- "Bowl of Commanding Water Elementals": {
-  "nome": "Tigela de Comando de Elementais da Água",
-  "motivo": "convoca criatura (sorteada ou elemental): o herói ainda não convoca por item"
- },
- "Brazier of Commanding Fire Elementals": {
-  "nome": "Braseiro de Comando de Elementais do Fogo",
-  "motivo": "convoca criatura (sorteada ou elemental): o herói ainda não convoca por item"
- },
  "Candle of Invocation": {
   "nome": "Vela da Invocação",
-  "motivo": "convoca criatura (sorteada ou elemental): o herói ainda não convoca por item"
- },
- "Censer of Controlling Air Elementals": {
-  "nome": "Incensário de Controle dos Elementais do Ar",
-  "motivo": "convoca criatura (sorteada ou elemental): o herói ainda não convoca por item"
- },
- "Chime of Opening": {
-  "nome": "Sino da Abertura",
-  "motivo": "abrir fechadura de longe: o menu de porta (`portas.js`) ainda não tem a magia de abrir"
- },
- "Cloak of Invisibility": {
-  "nome": "Manto da Invisibilidade",
-  "motivo": "a invisibilidade de duas horas que se gasta por minuto e se liga com uma ação ainda não tem interruptor"
- },
- "Crystal Ball": {
-  "nome": "Bola de Cristal",
-  "motivo": "o efeito só se narra (viagem, vidência, recado, construção): não há o que fazer dele numa luta nem na exploração"
- },
- "Crystal Ball of Mind Reading": {
-  "nome": "Bola de Cristal da Leitura Mental",
-  "motivo": "o efeito só se narra (viagem, vidência, recado, construção): não há o que fazer dele numa luta nem na exploração"
- },
- "Crystal Ball of Telepathy": {
-  "nome": "Bola de Cristal da Telepatia",
-  "motivo": "o efeito só se narra (viagem, vidência, recado, construção): não há o que fazer dele numa luta nem na exploração"
- },
- "Crystal Ball of True Seeing": {
-  "nome": "Bola de Cristal da Visão da Verdade",
-  "motivo": "o efeito só se narra (viagem, vidência, recado, construção): não há o que fazer dele numa luta nem na exploração"
- },
- "Cube of Force": {
-  "nome": "Cubo de Força",
-  "motivo": "as seis faces e as cargas gastas pelo que atravessa a barreira não existem no motor"
+  "motivo": "tudo nela depende de alinhamento (quem ganha vantagem, quem conjura de graça, quem o portal traz), e o jogo não tem alinhamento"
  },
  "Cubic Gate": {
   "nome": "Cubo Portal",
@@ -100,18 +44,6 @@
   "nome": "Baralho das Muitas Coisas",
   "motivo": "o baralho é uma tabela de destinos que se narra"
  },
- "Driftglobe": {
-  "nome": "Globo Flutuante",
-  "motivo": "a luz que segue o dono: a luz que anda com o herói é a tocha, e o globo não tem a peça"
- },
- "Efreeti Bottle": {
-  "nome": "Garrafa do Efreeti",
-  "motivo": "convoca criatura (sorteada ou elemental): o herói ainda não convoca por item"
- },
- "Eversmoking Bottle": {
-  "nome": "Garrafa da Fumaça Eterna",
-  "motivo": "a fumaça que cresce por minuto e esconde uma área grande pede uma zona que não para de crescer"
- },
  "Eye of Vecna": {
   "nome": "Olho de Vecna",
   "motivo": "artefato: fica de fora, como os outros oito do livro"
@@ -120,17 +52,9 @@
   "nome": "Barco Dobrável",
   "motivo": "o efeito só se narra (viagem, vidência, recado, construção): não há o que fazer dele numa luta nem na exploração"
  },
- "Hammer of Thunderbolts": {
-  "nome": "Martelo do Trovão",
-  "motivo": "arma mágica do livro com poder que o motor ainda não faz (as runas da lâmina lunar, os relâmpagos e o gigante do martelo)"
- },
  "Hand of Vecna": {
   "nome": "Mão de Vecna",
   "motivo": "artefato: fica de fora, como os outros oito do livro"
- },
- "Helm of Teleportation": {
-  "nome": "Elmo do Teletransporte",
-  "motivo": "o Teletransporte não existe como magia no jogo"
  },
  "Horseshoes of Speed": {
   "nome": "Ferraduras da Velocidade",
@@ -140,14 +64,6 @@
   "nome": "Ferraduras do Zéfiro",
   "motivo": "é de montaria, e o jogo não tem montaria"
  },
- "Iron Flask": {
-  "nome": "Frasco de Ferro",
-  "motivo": "prende uma criatura de outro plano num frasco: o motor não guarda criatura em item"
- },
- "Moonblade": {
-  "nome": "Lâmina Lunar",
-  "motivo": "arma mágica do livro com poder que o motor ainda não faz (as runas da lâmina lunar, os relâmpagos e o gigante do martelo)"
- },
  "Nolzur's Marvelous Pigments": {
   "nome": "Pigmentos Maravilhosos de Nolzur",
   "motivo": "o efeito só se narra (viagem, vidência, recado, construção): não há o que fazer dele numa luta nem na exploração"
@@ -156,85 +72,17 @@
   "nome": "Orbe dos Dragões",
   "motivo": "artefato: fica de fora, como os outros oito do livro"
  },
- "Ring of Air Elemental Command": {
-  "nome": "Anel de Comando dos Elementais do Ar",
-  "motivo": "o que vale antes de matar um elemental (cair devagar, falar auran) não tem efeito na luta, e as magias vêm só depois"
- },
- "Ring of Animal Influence": {
-  "nome": "Anel de Influência Animal",
-  "motivo": "o Medo do anel só pega fera de Inteligência 3 ou menos, e a magia do jogo não tem esse filtro"
- },
- "Ring of Djinni Summoning": {
-  "nome": "Anel de Convocação de Djinni",
-  "motivo": "convoca criatura (sorteada ou elemental): o herói ainda não convoca por item"
- },
- "Ring of Earth Elemental Command": {
-  "nome": "Anel de Comando dos Elementais da Terra",
-  "motivo": "o que vale antes de matar um elemental (o terreno de pedra, falar terran) não tem efeito na luta, e as magias vêm só depois"
- },
- "Ring of Water Elemental Command": {
-  "nome": "Anel de Comando dos Elementais da Água",
-  "motivo": "andar sobre a água e falar aquan, antes de matar um elemental; as magias vêm só depois"
- },
  "Saddle of the Cavalier": {
   "nome": "Sela do Cavaleiro",
   "motivo": "é de montaria, e o jogo não tem montaria"
- },
- "Scroll of Protection from Aberrations": {
-  "nome": "Pergaminho de Proteção contra Aberrações",
-  "motivo": "pergaminho de proteção: a barreira que um tipo de criatura não atravessa ainda não existe no motor"
- },
- "Scroll of Protection from Beasts": {
-  "nome": "Pergaminho de Proteção contra Bestas",
-  "motivo": "pergaminho de proteção: a barreira que um tipo de criatura não atravessa ainda não existe no motor"
- },
- "Scroll of Protection from Celestials": {
-  "nome": "Pergaminho de Proteção contra Celestiais",
-  "motivo": "pergaminho de proteção: a barreira que um tipo de criatura não atravessa ainda não existe no motor"
- },
- "Scroll of Protection from Elementals": {
-  "nome": "Pergaminho de Proteção contra Elementais",
-  "motivo": "pergaminho de proteção: a barreira que um tipo de criatura não atravessa ainda não existe no motor"
- },
- "Scroll of Protection from Fey": {
-  "nome": "Pergaminho de Proteção contra Fadas",
-  "motivo": "pergaminho de proteção: a barreira que um tipo de criatura não atravessa ainda não existe no motor"
- },
- "Scroll of Protection from Fiends": {
-  "nome": "Pergaminho de Proteção contra Corruptores",
-  "motivo": "pergaminho de proteção: a barreira que um tipo de criatura não atravessa ainda não existe no motor"
- },
- "Scroll of Protection from Plants": {
-  "nome": "Pergaminho de Proteção contra Plantas",
-  "motivo": "pergaminho de proteção: a barreira que um tipo de criatura não atravessa ainda não existe no motor"
- },
- "Scroll of Protection from Undead": {
-  "nome": "Pergaminho de Proteção contra Mortos-Vivos",
-  "motivo": "pergaminho de proteção: a barreira que um tipo de criatura não atravessa ainda não existe no motor"
  },
  "Sending Stones": {
   "nome": "Pedras Mensageiras",
   "motivo": "o efeito só se narra (viagem, vidência, recado, construção): não há o que fazer dele numa luta nem na exploração"
  },
- "Sphere of Annihilation": {
-  "nome": "Esfera da Aniquilação",
-  "motivo": "a esfera que se move pela vontade e apaga o que toca não existe no motor"
- },
- "Staff of the Adder": {
-  "nome": "Cajado da Víbora",
-  "motivo": "o cajado que vira cobra e morde pede um ataque de item que o herói ainda não tem"
- },
  "Sword of Kas": {
   "nome": "Espada de Kas",
   "motivo": "artefato: fica de fora, como os outros oito do livro"
- },
- "Talisman of the Sphere": {
-  "nome": "Talismã da Esfera",
-  "motivo": "controla a Esfera da Aniquilação, que fica de fora"
- },
- "Tentacle Rod": {
-  "nome": "Bastão de Tentáculos",
-  "motivo": "os três tentáculos que atacam com a ação e prendem pedem um ataque de item que o herói ainda não tem"
  },
  "Tome of the Stilled Tongue": {
   "nome": "Tomo da Língua Silenciada",

@@ -23,6 +23,8 @@ const ENFEITICADO = new Set(['enfeiticado', 'sugerido', 'hipnotizado', 'coroaDaL
  * QUEDA LENTA (monge, 4º): o dano de queda cai em 5 × o nível do monge. Vale também fora da luta, quando a cena sorteia o dano.
  */
 export function danoDeQueda(c, dano) {
+  // o ANEL DE COMANDO DOS ELEMENTAIS DO AR: cai devagar, sem dano
+  if (c?.doItem?.semDanoDeQueda) return 0;
   if (!c?.features?.includes('slowFall')) return dano;
   return Math.max(0, dano - 5 * (c.level ?? 1));
 }
@@ -92,7 +94,9 @@ export function vantagemPorTraco(actor, hab, contra = null) {
   // yuan-ti e a Intuição Telepática do verdan
   for (const v of actor.vantagemRacial ?? []) {
     const casa = (v.condicoes ?? []).some((x) => (x === 'enfeiticado' ? ENFEITICADO.has(cond) : x === cond))
-      || (v.magia && contra.magico) || (v.salvas ?? []).includes(hab);
+      || (v.magia && contra.magico) || (v.salvas ?? []).includes(hab)
+      // `veneno` (o orc nutrido de Yurtrus, a terceira fila dos bestiários): o teste contra veneno
+      || (v.veneno && (contra.tipoDano === 'veneno' || cond === 'envenenado'));
     if (casa) motivos.push(v.nome);
   }
   // FORTITUDE MENTAL (os goblins psíquicos do Obelisco): vantagem contra enfeitiçado e amedrontado.
@@ -281,7 +285,7 @@ export function chanceDeNaturalMinimo(actor, minimo, opcoes = {}) {
 export const TIPOS_DA_PUREZA = ['aberração', 'celestial', 'elemental', 'fada', 'corruptor', 'morto-vivo'];
 
 /** As condições de ENCANTO, que os traços e as auras tratam como uma família. */
-export const CONDICOES_DE_ENCANTO = ['enfeiticado', 'sugerido', 'hipnotizado', 'coroaDaLoucura', 'cativado'];
+export const CONDICOES_DE_ENCANTO = ['enfeiticado', 'sugerido', 'hipnotizado', 'coroaDaLoucura', 'cativado', 'cobicaIncitada'];
 
 /**
  * O dano de uma resistência que "pela metade se passar", com a EVASÃO (ladino e monge, 7º): numa resistência de DESTREZA

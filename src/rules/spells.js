@@ -96,6 +96,8 @@ import { ANCESTRALIDADES_DRACONICAS, AREA_DO_SOPRO } from './racas.js';
 import { MAGIAS_PHB } from './magias-livro-phb.js';
 import { MAGIAS_XGE } from './magias-livro-xge.js';
 import { MAGIAS_TCE } from './magias-livro-tce.js';
+// as duas do Acquisitions Incorporated que o Jim Darkmagic conjura (a moeda e a cobiça)
+import { MAGIAS_AI } from './magias-livro-ai.js';
 // as ações que uma magia concede (o sopro do Sopro do Dragão, o meteoro, a estrela): magias internas, fora de toda lista
 import { MAGIAS_CONCEDIDAS, concedidasDe } from './magias-concedidas.js';
 import { ACOES_RACIAIS } from './racas-motor.js';
@@ -109,6 +111,7 @@ import { magiasDosItens } from './itens-que-conjuram.js';
 export const esferaDoCruzamento = (spell) => spell?.shape === 'sphere' && !spell.centradoEmSi && !spell.emVoltaDaCasa && (spell.areaFt ?? 0) >= 5;
 
 export const SPELLS = {
+  ...MAGIAS_AI,
   ...MAGIAS_TCE,
   ...MAGIAS_XGE,
   ...MAGIAS_PHB,

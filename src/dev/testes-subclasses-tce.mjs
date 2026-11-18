@@ -962,5 +962,76 @@ await teste('Ordem dos Escribas: o Grimório Desperto troca o tipo; o pergaminho
   assert.equal(enc.testeDeAtributo(h, 'int', 0, 'Arcanismo', { pericia: 'arcanismo' }).mode, 'vantagem');
 });
 
+// ---------------------------------------------------------------- os recursos que estavam sem efeito (2026-11-17)
+await teste('Magia Selvagem: a Consciência Mágica diz quem mantém que magia, com a escola, e quem leva item mágico', () => {
+  const h = heroi('barbaro', 3, 'magiaSelvagemBarbaro');
+  const { enc, foes: [ogro], log } = montar(h);
+  ogro.concentrating = { spellId: 'bencao', targets: [], rounds: 10 };
+  assert.ok(h.resources.magicAwareness >= 2);
+  assert.ok(enc.useFeature(h, 'magicAwareness'));
+  const texto = log.map((l) => l.text).join('\n');
+  assert.match(texto, /Bênção \(encantamento\)/, texto);
+});
+
+await teste('Lâmina da Alma: o Talento Psi-Reforçado soma um dado psiônico ao teste treinado que falhou, e só o gasta se passar', async () => {
+  const { rolarTeste, estadoDe } = await import(P + 'rules/utilidade.js');
+  const h = heroi('ladino', 3, 'laminaDaAlma');
+  h.skills = [...new Set([...(h.skills ?? []), 'furtividade'])];
+  const antes = h.resources.psionicEnergy;
+  // d20 = 10: sem o dado, o total fica abaixo da CD; com o d6 que rola 6, passa
+  const rng = { die: (l) => (l === 20 ? 10 : 6), next: () => 0.5, pick: (l) => l[0] };
+  const cd = 10 + skillBonus(h, 'furtividade') + 3;
+  const r = rolarTeste(estadoDe({}), [h], rng, h, 'furtividade', cd);
+  assert.ok(r.passou, JSON.stringify(r));
+  assert.equal(h.resources.psionicEnergy, antes - 1);
+  // CD alta demais: o dado não basta e não se gasta
+  const r2 = rolarTeste(estadoDe({}), [h], rng, h, 'furtividade', cd + 20);
+  assert.ok(!r2.passou && h.resources.psionicEnergy === antes - 1);
+});
+
+await teste('Guerreiro Psiônico: o Movimento Telecinético põe o aliado marcado na casa escolhida, e o segundo uso gasta um dado psiônico', async () => {
+  const { concedidasDe } = await import(P + 'rules/magias-concedidas.js');
+  const h = heroi('guerreiro', 7, 'psiGuerreiro');
+  const { enc, aliada } = montar(h);
+  assert.ok(concedidasDe(h).includes('movimentoTelecinetico'), String(h.features));
+  assert.equal(h.resources.telekineticMovement, 1);
+  assert.match(enc.canCast(h, 'movimentoTelecinetico', { point: { x: 9, y: 9 } }).why ?? '', /Ctrl\+clique/);
+  assert.match(enc.canCast(h, 'movimentoTelecinetico', { point: { x: 9, y: 9 }, escalas: [{ ...h.pos }] }).why ?? '', /não você/);
+  const r = enc.castSpell(h, 'movimentoTelecinetico', { point: { x: 9, y: 9 }, escalas: [{ ...aliada.pos }] });
+  assert.ok(r.ok, JSON.stringify(r));
+  assert.deepEqual([aliada.pos.x, aliada.pos.y], [9, 9]);
+  assert.equal(h.resources.telekineticMovement, 0);
+  novoTurno(h);
+  assert.match(enc.canCast(h, 'movimentoTelecinetico', { point: { x: 9, y: 2 }, escalas: [{ ...aliada.pos }] }).why ?? '', /9 m dela/);
+  const psi = h.resources.psionicEnergy;
+  novoTurno(h);
+  assert.ok(enc.castSpell(h, 'movimentoTelecinetico', { point: { x: 9, y: 13 }, escalas: [{ ...aliada.pos }] }).ok);
+  assert.equal(h.resources.psionicEnergy, psi - 1);
+});
+
+await teste('Escribas: a Mente Manifesta põe a mente a 18 m, e com o interruptor a magia de mago sai do lugar dela', () => {
+  const h = heroi('mago', 6, 'escribas');
+  h.spellcasting.cantrips = [...new Set([...(h.spellcasting.cantrips ?? []), 'raioDeGelo'])];
+  const { enc, foes: [ogro], texto } = montar(h, { foes: [['ogro', { x: 5, y: 18 }]] });
+  // a 19,5 m do ogro: fora dos 18 m do Raio de Gelo
+  assert.ok(!enc.canCast(h, 'raioDeGelo', { target: ogro }).ok, 'de longe, não alcança');
+  assert.ok(enc.castSpell(h, 'menteManifesta', { point: { x: 5, y: 15 } }).ok);
+  assert.deepEqual([h.menteManifesta.x, h.menteManifesta.y], [5, 15]);
+  assert.equal(h.resources.invocarMente, 0);
+  assert.ok(enc.useFeature(h, 'conjurarDaMente', { modo: 'ligar' }));
+  const usos = h.resources.manifestMind;
+  assert.ok(usos >= 3);
+  assert.ok(enc.canCast(h, 'raioDeGelo', { target: ogro }).ok, 'do lugar da mente, alcança');
+  const r = enc.castSpell(h, 'raioDeGelo', { target: ogro });
+  assert.ok(r.ok, JSON.stringify(r));
+  assert.deepEqual([h.pos.x, h.pos.y], [5, 5], 'quem conjura não saiu do lugar');
+  assert.equal(h.resources.manifestMind, usos - 1);
+  assert.match(texto(), /Mente Manifesta/);
+  // mover a mente: até 9 m dela, e não pede o uso de pôr
+  novoTurno(h);
+  assert.match(enc.canCast(h, 'menteManifesta', { point: { x: 5, y: 3 } }).why ?? '', /9 m/);
+  assert.ok(enc.castSpell(h, 'menteManifesta', { point: { x: 6, y: 13 } }).ok);
+});
+
 console.log(`\n${total - falhas} de ${total} provas passaram`);
 if (falhas) process.exit(1);

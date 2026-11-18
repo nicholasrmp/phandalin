@@ -229,8 +229,9 @@ await teste('o térreo do Gigante: o balcão dá a pista do nome, a cozinha se a
   assert.equal(greska.side, 'neutro');
   assert.ok(cena.dialogoDe(wheel)?.nos?.maldito, 'o Wheel esconde as bebidas erradas');
   assert.ok(cena.dialogoDe(greska)?.nos?.oi);
-  // as quatro portas da FA têm folha (abrem e fecham)
-  assert.equal(mapa.folhas.length, 4);
+  // as cinco portas da FA têm folha (abrem e fecham); a quinta, a leste da casa do sul, a parede que encostava no batente
+  // engolia (revisão de 2026-11-13)
+  assert.equal(mapa.folhas.length, 5);
   // OS TELHADOS dos vizinhos cobrem o que há dentro e somem quando um herói entra
   const telhados = T.telhados;
   for (const [id, objId] of [['telhadoGalpao', 'cocho'], ['telhadoSudeste', 'camaSE'], ['telhadoSul', 'bau']]) {

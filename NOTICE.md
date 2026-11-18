@@ -43,7 +43,7 @@ Tudo que vier do SRD deve ficar em `src/rules/` e ser marcado com o comentário
 
 ---
 
-## 2. Cenário e personagens — Política de Conteúdo de Fã da WotC
+## 2. Cenário, aventuras e os livros — Política de Conteúdo de Fã da WotC
 
 > Phandalin é conteúdo de fã não oficial, permitido sob a
 > [Fan Content Policy](https://company.wizards.com/en/legal/fancontentpolicy)
@@ -51,58 +51,60 @@ Tudo que vier do SRD deve ficar em `src/rules/` e ser marcado com o comentário
 > Partes dos materiais utilizados são propriedade da Wizards of the Coast.
 > ©Wizards of the Coast LLC.
 
-Cobre: nomes de lugares, personagens e elementos de cenário dos Reinos
-Esquecidos usados na campanha.
+Condições que o projeto respeita:
 
-Condições que o projeto precisa respeitar, e respeita:
-
-- **É gratuito.** Sem venda, sem assinatura, sem loja.
+- **É gratuito.** Sem venda, sem assinatura, sem loja, sem anúncio.
 - Traz o aviso acima de forma visível (rodapé do jogo e este arquivo).
 - Não usa logotipos nem marcas registradas da Wizards.
 - Não remove avisos de copyright de material deles.
 
-**A Maldição de Strahd** (a Casa da Morte, `src/game/casadamorte*.js`, `capitulo-casadamorte.js`) é conteúdo
-de fã do mesmo tipo: nomes (Strahd von Zarovich, Baróvia, Rose e Thorn, os Durst), a ordem das salas, as CDs e o que
-há em cada área seguem o livro; **todo o texto de descrição, os diálogos, as plantas e a arte são nossos**. As
-plantas foram desenhadas à mão, com os mapas da Morvold Press (Jeff Todd) só como referência de organização: nenhum
-desses mapas é distribuído, copiado ou embutido neste repositório (a pasta de referência é ignorada pelo git). A
-vassoura animada de ataque não é SRD e vem marcada `fonte: 'propria'`.
+**O que o jogo usa da Wizards além do SRD, dito sem rodeio.** Desde 2026-11-08, por decisão do dono do projeto, o
+conteúdo não se limita mais ao SRD 5.1 nem à cena de fã de antes. Entram como DADO e MECÂNICA:
 
-**Os mapas pintados** de `public/mapas/` são NOSSOS: gerados por nós em modelos de imagem (o da emboscada dos
-goblins, `emboscada.webp`, saiu do Nano Banana Pro pelo OpenArt) e depois cortados na grade do jogo. Mapa de
-batalha comprado ou baixado de terceiro não entra no repositório nem é distribuído: quando serve de referência de
-trabalho, fica em `_referencias/`, que o git ignora.
+- **As aventuras.** *A Mina Perdida de Phandelver* e *Phandelver and Below: The Shattered Obelisk* (capítulos 1 a 8):
+  os lugares, as salas, os encontros, as criaturas de cada sala, os NPCs, o tesouro e o enredo. *A Maldição de Strahd*
+  na Casa da Morte, parada mas no jogo.
+- **Os livros.** Os blocos de monstro do *Monster Manual*, do *Volo's Guide*, do *Mordenkainen's Tome of Foes*, do
+  *Fizban's Treasury*, do *Bigby Presents* e do *Acquisitions Incorporated*, com as criaturas que são identidade da
+  Wizards (o devorador de mentes, o observador, a besta deslocadora e as outras); as magias, os talentos, as raças, os
+  antecedentes e as subclasses do *Livro do Jogador*, do *Xanathar*, do *Tasha*, da *Costa da Espada* e do Fizban;
+  os itens mágicos, os venenos, as doenças e as armadilhas do *Livro do Mestre*; e a lore de deuses, lugares e povos.
+- **A origem dos números.** Os números (CA, PV, dano, CD, alcance) vêm do espelho público do 5e.tools no GitHub, que
+  hospeda o conteúdo desses livros sem licença da Wizards. A regra de cada um foi conferida e escrita à mão nas tabelas
+  de `src/dev/**/ajustes-*.mjs` e `src/rules/classes/subclasses-*.js`.
 
-**O Esconderijo dos Marcarrubra** (a Mansão) teve, por baixo da planta, o mapa oficial da campanha de A Mina
-Perdida de Phandelver no Roll20 — a mesma que o dono deste repositório comprou e tem na conta dele —, servido
-por um HOTLINK para o CDN do Roll20. Em 2026-11-05 o hotlink saiu: a imagem passou a ser a do battlemap da
-Forgotten Adventures, no disco de quem a baixou, porque apontar para o CDN de terceiro fazia a banda deles
-servir a arte a quem jogasse. As duas plantas batem 1 para 1 (ambas decalque do mesmo mapa do livro), então a
-regra não mudou. A pasta `_referencias/roll20/`, onde a imagem fica durante o trabalho de medição, continua
-ignorada pelo git.
+**O que NÃO entra, e é medido.** A PROSA dos livros — o texto lido em voz alta, as descrições, as falas, a regra
+escrita — não se copia: todo texto do jogo é nosso, e `python src/dev/conferir-colagem.py --min 10` acusa qualquer
+trecho de dez palavras ou mais igual ao livro (hoje, zero). As traduções dos livros para o português foram escritas
+por modelo de linguagem com instrução de usar as nossas palavras, nunca as do livro.
 
-**A arte da Forgotten Adventures** (Esconderijo Cragmaw, Mansão, Poço, Cume, Onda Eco) **nunca entra no
-repositório nem na publicação**: a licença deles proíbe embutir em video game, e vale para o release grátis.
-Ela fica em `mapas/` e `public/mapas/fa/`, ignorados pelo git, e o `src/dev/verificar-publicavel.mjs` falha o
-`npm run build` se sobrar arte ignorada dentro de `public/`. Sem o arquivo, a cena abre com o chão do jogo.
+**As fichas das criaturas** (`public/fichas/`, os tokens redondos do tabuleiro) SÃO arte de terceiros e vão com o
+jogo: as da galeria "D&D Monster Tokens" do imgur (postada por topped2013 em 2019), as do espelho do 5e.tools (arte da
+Wizards) e as nossas, montadas sobre a arte dos heróis. As listas estão em `src/dev/fichas-imgur.json` e
+`src/dev/fichas-5etools.json`.
 
-**Atenção:** esta política **não** é irrevogável, diferente da CC-BY. É por isso
-que o motor e a campanha são separados no código — se um dia ela mudar, troca-se
-o arquivo de campanha e o motor continua de pé.
+**O risco, assumido.** A Política de Conteúdo de Fã é revogável, e não está claro que ela cubra um jogo que carrega
+o conteúdo de quinze livros como dado. O dono do projeto decidiu em 2026-11-18 publicar assim mesmo, sabendo que a
+Wizards pode pedir que o conteúdo saia do ar. Se pedir, sai: o motor (`src/rules/`, com o que é `fonte: 'srd'`)
+continua de pé, e o que é dos livros está separado por arquivo (`livro-*.js`, `magias-livro-*.js`,
+`subclasses-*.js`, `caracteristicas-*.js`, os capítulos do Obelisco em `src/game/`).
 
 ---
 
-## 3. O que este projeto NÃO faz
+## 3. A arte de terceiros que NÃO se publica
 
-- **Não** reproduz o texto, as caixas de leitura, os mapas ou o conteúdo de
-  nenhum módulo de aventura publicado. A política de fã permite criações de fã,
-  não redistribuição de produtos à venda.
-- **Não** usa conteúdo extraído de sites que hospedam os livros sem licença.
-- **Não** usa monstros fora do SRD que são IP exclusiva da Wizards
-  (beholder, mind flayer, displacer beast, entre outros).
+Estas ficam no disco de quem as baixou, para jogar aqui (`npm run dev`), e nunca vão ao repositório nem ao site. O
+`.gitignore` as marca, e o build só leva de `public/` o que o git conhece (`src/dev/montar-publico.mjs`):
 
-Todo o texto de aventura, diálogo, encontro e mapa deste repositório é escrito
-do zero para este projeto.
+- **Os battlemaps da Forgotten Adventures** (`public/mapas/fa/`, `/mapas/`). Não é questão de risco: a licença deles
+  proíbe embutir em video game, também no release grátis. Sem o arquivo, a cena abre com o chão do jogo.
+- **Os mapas oficiais do Obelisco** (`public/mapas/oficial/`) e **a figura inteira de cada criatura**
+  (`public/criaturas/`), arte da Wizards baixada do 5e.tools. Ficaram de fora por decisão anterior do dono; sem
+  eles, a região e a vila mostram a pintura nossa, e a ficha da criatura mostra o token.
+- **Os mapas da Morvold Press** da Casa da Morte (`_referencias/`, `public/mapas/casa-da-morte/`): só referência.
+
+Os mapas pintados que VÃO com o jogo são nossos, gerados em modelo de imagem (o da emboscada dos goblins saiu do
+Nano Banana Pro pelo OpenArt) e cortados na grade.
 
 ---
 

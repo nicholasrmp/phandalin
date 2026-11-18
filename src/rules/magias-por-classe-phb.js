@@ -1392,5 +1392,34 @@ export const CLASSES_DAS_MAGIAS_PHB = {
  ],
  "palavraDeRecordacao": [
   "clerigo"
+ ],
+ "portalArcano": [
+  "feiticeiro",
+  "bruxo",
+  "mago"
+ ],
+ "trancaArcana": [
+  "mago"
+ ],
+ "criarPassagem": [
+  "mago"
+ ],
+ "caminharEmArvores": [
+  "druida",
+  "patrulheiro"
+ ],
+ "formaEterea": [
+  "bardo",
+  "clerigo",
+  "feiticeiro",
+  "bruxo",
+  "mago"
+ ],
+ "muralhaPrismatica": [
+  "mago"
+ ],
+ "desejo": [
+  "feiticeiro",
+  "mago"
  ]
 };

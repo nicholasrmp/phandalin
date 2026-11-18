@@ -474,7 +474,8 @@ export const MAPA_ONDA_ECO = {
    },
    "claro": 30,
    "penumbra": 30,
-   "tipo": "braseiro"
+   "tipo": "braseiro",
+   "sobreposicaoApagada": "alojamentoNorteApagado"
   },
   {
    "pos": {
@@ -483,7 +484,8 @@ export const MAPA_ONDA_ECO = {
    },
    "claro": 30,
    "penumbra": 30,
-   "tipo": "fogueira"
+   "tipo": "fogueira",
+   "sobreposicaoApagada": "temploApagado"
   },
   {
    "pos": {
@@ -512,7 +514,8 @@ export const MAPA_ONDA_ECO = {
    },
    "claro": 15,
    "penumbra": 30,
-   "tipo": "braseiro"
+   "tipo": "braseiro",
+   "sobreposicao": "sacerdoteAceso"
   },
   {
    "pos": {
@@ -521,7 +524,8 @@ export const MAPA_ONDA_ECO = {
    },
    "claro": 15,
    "penumbra": 30,
-   "tipo": "braseiro"
+   "tipo": "braseiro",
+   "sobreposicao": "alojamentoSulAceso"
   },
   {
    "pos": {
@@ -531,7 +535,8 @@ export const MAPA_ONDA_ECO = {
    "claro": 20,
    "penumbra": 40,
    "tipo": "braseiro",
-   "apagada": true
+   "apagada": true,
+   "sobreposicao": "braseiroNorteAceso"
   },
   {
    "pos": {
@@ -541,7 +546,8 @@ export const MAPA_ONDA_ECO = {
    "claro": 20,
    "penumbra": 40,
    "tipo": "braseiro",
-   "apagada": true
+   "apagada": true,
+   "sobreposicao": "braseiroSulAceso"
   },
   {
    "pos": {
@@ -552,6 +558,239 @@ export const MAPA_ONDA_ECO = {
    "penumbra": 30,
    "tipo": "braseiro",
    "apagada": true
+  }
+ ],
+ "sobreposicoes": [
+  {
+   "id": "temploApagado",
+   "url": "/mapas/fa/ondaeco-temploApagado.webp",
+   "x": 4,
+   "y": 3,
+   "w": 10,
+   "h": 12,
+   "ligada": false
+  },
+  {
+   "id": "alojamentoNorteApagado",
+   "url": "/mapas/fa/ondaeco-alojamentoNorteApagado.webp",
+   "x": 22,
+   "y": 23,
+   "w": 10,
+   "h": 8,
+   "ligada": false
+  },
+  {
+   "id": "sacerdoteAceso",
+   "url": "/mapas/fa/ondaeco-sacerdoteAceso.webp",
+   "x": 14,
+   "y": 3,
+   "w": 6,
+   "h": 6,
+   "ligada": true
+  },
+  {
+   "id": "alojamentoSulAceso",
+   "url": "/mapas/fa/ondaeco-alojamentoSulAceso.webp",
+   "x": 34,
+   "y": 51,
+   "w": 6,
+   "h": 12,
+   "ligada": true
+  },
+  {
+   "id": "braseiroNorteAceso",
+   "url": "/mapas/fa/ondaeco-braseiroNorteAceso.webp",
+   "x": 30,
+   "y": 35,
+   "w": 7,
+   "h": 7,
+   "ligada": false
+  },
+  {
+   "id": "braseiroSulAceso",
+   "url": "/mapas/fa/ondaeco-braseiroSulAceso.webp",
+   "x": 38,
+   "y": 44,
+   "w": 7,
+   "h": 7,
+   "ligada": false
+  },
+  {
+   "id": "portaGuarita",
+   "url": "/mapas/fa/ondaeco-portaGuarita.webp",
+   "x": 35,
+   "y": 81,
+   "w": 2,
+   "h": 2,
+   "ligada": false,
+   "arestas": [
+    "36,82,O"
+   ]
+  },
+  {
+   "id": "portaEnsaiador",
+   "url": "/mapas/fa/ondaeco-portaEnsaiador.webp",
+   "x": 41,
+   "y": 81,
+   "w": 3,
+   "h": 2,
+   "ligada": false,
+   "arestas": [
+    "42,82,O"
+   ]
+  },
+  {
+   "id": "portaAlojNorteOeste",
+   "url": "/mapas/fa/ondaeco-portaAlojNorteOeste.webp",
+   "x": 21,
+   "y": 26,
+   "w": 3,
+   "h": 3,
+   "ligada": false,
+   "arestas": [
+    "22,27,O"
+   ]
+  },
+  {
+   "id": "portaAlojNorteLeste",
+   "url": "/mapas/fa/ondaeco-portaAlojNorteLeste.webp",
+   "x": 30,
+   "y": 26,
+   "w": 3,
+   "h": 4,
+   "ligada": false,
+   "arestas": [
+    "32,27,O"
+   ]
+  },
+  {
+   "id": "portaTemplo",
+   "url": "/mapas/fa/ondaeco-portaTemplo.webp",
+   "x": 7,
+   "y": 13,
+   "w": 4,
+   "h": 3,
+   "ligada": false,
+   "arestas": [
+    "8,15,N",
+    "9,15,N"
+   ]
+  },
+  {
+   "id": "portaAlojSulNorte",
+   "url": "/mapas/fa/ondaeco-portaAlojSulNorte.webp",
+   "x": 33,
+   "y": 54,
+   "w": 3,
+   "h": 3,
+   "ligada": false,
+   "arestas": [
+    "34,55,O"
+   ]
+  },
+  {
+   "id": "portaAlojSulSul",
+   "url": "/mapas/fa/ondaeco-portaAlojSulSul.webp",
+   "x": 36,
+   "y": 61,
+   "w": 3,
+   "h": 3,
+   "ligada": false,
+   "arestas": [
+    "37,63,N"
+   ]
+  },
+  {
+   "id": "portaDeposito",
+   "url": "/mapas/fa/ondaeco-portaDeposito.webp",
+   "x": 47,
+   "y": 55,
+   "w": 3,
+   "h": 3,
+   "ligada": false,
+   "arestas": [
+    "48,57,N"
+   ]
+  },
+  {
+   "id": "portaMagos",
+   "url": "/mapas/fa/ondaeco-portaMagos.webp",
+   "x": 63,
+   "y": 50,
+   "w": 4,
+   "h": 4,
+   "ligada": false,
+   "arestas": [
+    "65,53,N",
+    "64,51,O",
+    "64,52,O"
+   ]
+  },
+  {
+   "id": "portaForja",
+   "url": "/mapas/fa/ondaeco-portaForja.webp",
+   "x": 61,
+   "y": 36,
+   "w": 3,
+   "h": 4,
+   "ligada": false,
+   "arestas": [
+    "62,37,O",
+    "62,38,O"
+   ]
+  },
+  {
+   "id": "portaOficinaForja",
+   "url": "/mapas/fa/ondaeco-portaOficinaForja.webp",
+   "x": 67,
+   "y": 33,
+   "w": 3,
+   "h": 3,
+   "ligada": false,
+   "arestas": [
+    "67,35,N",
+    "68,35,N"
+   ]
+  },
+  {
+   "id": "portaSacerdote",
+   "url": "/mapas/fa/ondaeco-portaSacerdote.webp",
+   "x": 15,
+   "y": 7,
+   "w": 3,
+   "h": 3,
+   "ligada": false,
+   "arestas": [
+    "15,9,N",
+    "16,9,N"
+   ]
+  },
+  {
+   "id": "guaritaSemMortos",
+   "url": "/mapas/fa/ondaeco-guaritaSemMortos.webp",
+   "x": 26,
+   "y": 78,
+   "w": 10,
+   "h": 7,
+   "ligada": false
+  },
+  {
+   "id": "fundicaoSemCorpos",
+   "url": "/mapas/fa/ondaeco-fundicaoSemCorpos.webp",
+   "x": 37.75,
+   "y": 25,
+   "w": 12.5,
+   "h": 12,
+   "ligada": false
+  },
+  {
+   "id": "forjaSemItens",
+   "url": "/mapas/fa/ondaeco-forjaSemItens.webp",
+   "x": 68,
+   "y": 40,
+   "w": 2,
+   "h": 1,
+   "ligada": false
   }
  ]
 };

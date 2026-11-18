@@ -96,7 +96,7 @@ INTERATIVOS_CASA = [
           'no coração: o símbolo de Dumathoin, o guardião dos segredos debaixo da montanha. Velas de sebo derretidas há muito.',
           'lembrar', 12, 'Dumathoin é o deus anão das coisas escondidas na pedra e do descanso dos mortos. Paladinos dele juram '
           'devolver ao sono os mortos que não descansam.', 'Dumathoin'),
-    Z.obj(2, 6, 'grade', 'Olhar a grade', 'Uma grade de ferro caída por cima do entulho, que era a porta de alguma coisa lá em '
+    Z.obj(2, 5, 'grade', 'Olhar a grade', 'Uma grade de ferro caída por cima do entulho, que era a porta de alguma coisa lá em '
           'cima. Torta pela queda.'),
     Z.obj(5, 6, 'cordas', 'Olhar as cordas', 'Cordas e sacos de mineiro, apodrecendo num canto. A corda que vocês trouxeram é '
           'bem mais nova.'),
@@ -140,7 +140,7 @@ def mina():
 
 
 INTERATIVOS_MINA = [
-    Z.obj(9, 9, 'vagonete', 'Olhar o vagonete', 'Um vagonete de mina com a roda solta, tombado na boca do túnel. Lá dentro, uma '
+    Z.obj(10, 9, 'vagonete', 'Olhar o vagonete', 'Um vagonete de mina com a roda solta, tombado na boca do túnel. Lá dentro, uma '
           'picareta e um lampião sem óleo.'),
     Z.obj(9, 5, 'carrinho', 'Olhar o carrinho', 'Um carrinho de mão de madeira, com terra fresca: alguém trabalhava aqui há '
           'pouco tempo.'),
@@ -150,6 +150,9 @@ INTERATIVOS_MINA = [
           'O veio de prata'),
     Z.obj(12, 12, 'entulho', 'Olhar as pedras', 'Pedras caídas e mato alto tapando metade da boca da mina. Quem não soubesse '
           'que ela estava aqui passaria reto.'),
+    # a caverna leste, o covil do monte (o livro: ele ganhou o poder comendo um goblin psíquico)
+    Z.obj(12, 6, 'covilDoMonte', 'Olhar o chão', 'Folhas podres, lodo e ossos pequenos, tudo amassado num leito só. Por cima, '
+          'uma roupa de couro de goblin, inteira, como se o dono tivesse sido tirado de dentro dela.'),
 ]
 
 
@@ -172,6 +175,11 @@ def largo():
         terreno[c[1]][c[0]] = 'C'
     terreno = [''.join(l) for l in terreno]
     luz = [''.join('2' for _ in l) for l in terreno]
+    # A PORTA LESTE DA CASA DO MEIO (a Door2 da FA, de (9.75,10.5) a (10.25,11.25)): o traço dela deriva a aresta certa, mas a
+    # parede que só ENCOSTA a ponta no batente ganha dela pela prioridade (`mapa-editor.js arestasDosTracos`), e a casa ficava
+    # com uma porta só. Revisão de 2026-11-13.
+    assert b['paredes']['o'][10][10] == '#', 'a porta leste da casa do meio mudou na cena do Foundry'
+    b['paredes']['o'][10] = b['paredes']['o'][10][:10] + '+' + b['paredes']['o'][10][11:]
     folhas = []
     for y in range(len(terreno)):
         for x in range(len(terreno[0])):

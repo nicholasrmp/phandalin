@@ -51,7 +51,7 @@ import { escalarEspirito } from './monsters/espiritos-tce.js';
 import { spellMod } from './party.js';
 import { modificadoresDeLuz, sofreComOSol, podeVer, nivelDeLuz, fontesDeLuz, CLARO } from './luz.js';
 import { magiasDosItens, gastarCargaDoItem, cargasDe } from './itens-que-conjuram.js';
-import { atualizarItensPassivos } from './itens-passivos.js';
+import { atualizarItensPassivos, idsCarregados } from './itens-passivos.js';
 import { DOENCAS, curarDoencas } from './doencas.js';
 import { regioesNoPasso, regioesNoTurno } from './regioes.js';
 import { categoriaDeTamanho } from './tamanho.js';
@@ -327,6 +327,8 @@ export class Encounter {
     this.combatants = [...party, ...foes];
     // o que os itens fazem só por estar com o herói (`itens-passivos.js`): a soma pronta, conferida no começo da luta
     for (const c of party) if (c.bag?.length || c.doItem) atualizarItensPassivos(c);
+    // a MENTE MANIFESTA da cena de antes não está neste tabuleiro
+    for (const c of party) { delete c.menteManifesta; c.conjurarDaMente = false; }
     // Áreas que ficam no chão depois da magia (Graxa). O terreno difícil delas
     // vai para o campo, que é quem calcula o custo de andar.
     this.zonas = [];
@@ -467,13 +469,16 @@ export class Encounter {
   }
 
   enemiesOf(actor) {
+    // o DEMÔNIO HOSTIL A TODOS (os Invocar Demônios do Xanathar): qualquer um que não seja demônio, de qualquer lado
+    if (actor.hostilATodos) return Livro.alvosDoHostil(this, actor);
     // O NPC neutro (o goblin que só quer conversar) não é inimigo de ninguém
     // até a cena mudar o lado dele.
     // `ignora`: um guardião pode não ver inimigo em quem traz a senha ou o
     // sinal certo (os esqueletos da cripta e o manto vermelho). A cena põe o
     // predicado na criatura; sem ele, nada muda. Antes isso só decidia se a
     // luta COMEÇAVA — começada, o esqueleto atacava até quem estava de manto.
-    const todos = this.combatants.filter((c) => c.side !== actor.side && c.side !== 'neutro'
+    // (o demônio hostil a todos é inimigo de todo mundo, mesmo do lado de quem o chamou)
+    const todos = this.combatants.filter((c) => (c.side !== actor.side || (c.hostilATodos && c !== actor)) && c.side !== 'neutro'
       && !c.dead && !hasCondition(c, 'inconsciente') && !conditionEffects(c).inalcancavel
       && !actor.ignora?.(c));
     // Quem finge de morto só é ignorado havendo outro alvo; senão a luta travava num impasse.
@@ -564,8 +569,10 @@ export class Encounter {
     // então não há surpresa, mas rola a iniciativa com desvantagem. É o castigo
     // de quem tentou se esconder e foi notado (`game/regiao.js`).
     const benção = { party: Sub.vantagemDaBencaoVigilante(this, 'party'), foes: Sub.vantagemDaBencaoVigilante(this, 'foes') };
-    const partyInit = d20(this.rng, this.bestDex('party'), { advantage: this.instintoSelvagem('party') || Sub.vantagemNaIniciativa(this, 'party') || benção.party, disadvantage: this.iniciativaRuim === 'party' });
-    const foeInit = d20(this.rng, this.bestDex('foes'), { advantage: this.instintoSelvagem('foes') || Sub.vantagemNaIniciativa(this, 'foes') || benção.foes, disadvantage: this.iniciativaRuim === 'foes' });
+    // a MOEDA BRILHANTE DE JIM: o lado em que TODOS estão distraídos rola a iniciativa com desvantagem (a iniciativa aqui é do lado)
+    const distraido = (lado) => { const v = this.combatants.filter((c) => c.side === lado && !c.dead); return v.length > 0 && v.every((c) => hasCondition(c, 'distraidoPelaMoeda')); };
+    const partyInit = d20(this.rng, this.bestDex('party'), { advantage: this.instintoSelvagem('party') || Sub.vantagemNaIniciativa(this, 'party') || benção.party, disadvantage: this.iniciativaRuim === 'party' || distraido('party') });
+    const foeInit = d20(this.rng, this.bestDex('foes'), { advantage: this.instintoSelvagem('foes') || Sub.vantagemNaIniciativa(this, 'foes') || benção.foes, disadvantage: this.iniciativaRuim === 'foes' || distraido('foes') });
     // DISPARO SEMPRE PRONTO e ESPÍRITO INCANSÁVEL: um uso de volta ao rolar a iniciativa sem nenhum.
     Sub.aoRolarIniciativa(this);
     this.say('inicio', `Iniciativa — Grupo ${partyInit.total} × ${foeInit.total} Inimigos`);
@@ -737,7 +744,8 @@ export class Encounter {
     Sub.auraDeConquistaNoInicio(this, side);
     // Piscar: quem sumiu no fim do turno anterior volta antes de qualquer outra coisa.
     // (quem FUGIU para o Plano Etéreo — a bruxa da noite, o íncubo, o pesadelo — não volta)
-    for (const c of this.allOf(side)) if (hasCondition(c, 'etereo') && !getCondition(c, 'etereo').data?.fuga) this.voltarDoEtereo(c);
+    // (a FORMA ETÉREA não volta sozinha: quem a conjurou volta com a ação, `livro-motor.js voltarDoEtereo`)
+    for (const c of this.allOf(side)) if (hasCondition(c, 'etereo') && !getCondition(c, 'etereo').data?.fuga && !getCondition(c, 'etereo').data?.formaEterea) this.voltarDoEtereo(c);
     for (const c of this.allOf(side)) {
       c.movementLeftFt = this.speedOf(c);
       c.actionUsed = false;
@@ -768,6 +776,14 @@ export class Encounter {
       Livro.auraDeVidaNoTurno(this, c);
       Livro.couroFarpado(this, c);
       Livro.apontarCone(this, c);
+      // a MURALHA PRISMÁTICA: a camada violeta que bane, e o brilho que cega quem a vê de perto
+      Livro.inicioPrismatico(this, c);
+      // a IRA DA NATUREZA: os galhos das árvores da área, no começo do turno de quem a mantém
+      Livro.inicioDaIra(this, c);
+      // a GARRAFA DA FUMAÇA ETERNA: a nuvem cresce 3 m por minuto
+      Livro.crescerFumaca(this, c);
+      // o VENTO descendente derruba quem começa o turno voando nele
+      Livro.inicioDoVento(this, c);
       this.nimboTick(c);
       // SURTO PERSISTENTE (surto de magia selvagem): um novo surto no começo de cada turno dele.
       if (hasCondition(c, 'surtoRepetido') && !c.dead && !this.surtando) {
@@ -821,13 +837,15 @@ export class Encounter {
       if (c.dead) continue;
       for (const zona of this.zonasEm(c.pos)) if (zona.quando === 'inicio') this.resistirAZona(c, zona, 'começa o turno');
       for (const aura of this.aurasHostisEm(c, c.pos)) this.golpeDaAura(aura, c, 'começa o turno');
+      // a Presença Pútrida, o Peso das Eras, o Mestre da Sepultura (`livro-motor.js inicioDoTurnoPerto`)
+      Livro.inicioDoTurnoPerto(this, c);
     }
     regioesNoTurno(this, side, 'comecaTurno');
     // OS BESTIÁRIOS DOS LIVROS, depois de o turno de cada um estar armado: a Máscara Perturbadora (amedronta antes de
     // agir), o Chão Aberrante (prende o pé), quem voltou do Salto Etéreo (gastou a ação bônus nisso), e o d8 e o d6 de
     // quem está fora de si (age por eles, então vem por último).
     Livro.mascaraPerturbadora(this, side);
-    if (this.combatants.some((m) => m.traits?.includes('chaoAberrante'))) { this.atualizarTerrenoDasZonas(); Livro.chaoAberrante(this, side); }
+    if (this.combatants.some((m) => Livro.mexeNoChao(m))) { this.atualizarTerrenoDasZonas(); Livro.chaoAberrante(this, side); }
     for (const c of this.allOf(side)) if (c.voltouDoSalto) { c.bonusUsed = true; delete c.voltouDoSalto; }
     Livro.comportamentoForcado(this, side);
     Livro.chegamInvocados(this, side);
@@ -1028,6 +1046,8 @@ export class Encounter {
         if (zona.fimDano && !c.dead) this.danoDeFimDaZona(c, zona);
       }
     }
+    // a Degeneração Rançosa e a Aura da Aniquilação (`livro-motor.js fimDoTurnoDoLivro`)
+    for (const c of this.allOf(side)) Livro.fimDoTurnoDoLivro(this, c);
     // Piscar: o d20 do fim do turno, antes de a duração andar.
     for (const c of this.allOf(side)) this.piscarNoFimDoTurno(c);
     this.contarZonas(side);
@@ -1242,13 +1262,15 @@ export class Encounter {
    * A casa livre e andável mais próxima de `pos`, por anéis de distância.
    * Null se não houver nenhuma a até 6 casas — aí o chamador decide.
    */
-  casaLivreMaisProxima(pos) {
+  casaLivreMaisProxima(pos, { evitar = [] } = {}) {
     // A pegada inteira precisa estar livre: fera Grande (f = 2) ocupa 2x2.
     const f = pos.f ?? 1;
+    // `evitar`: as pegadas já reservadas para quem ainda não entrou no campo (`espalharFora`)
+    const reservada = (x, y) => evitar.some((r) => x >= r.x && x < r.x + (r.f ?? 1) && y >= r.y && y < r.y + (r.f ?? 1));
     const livre = (x, y) => {
       for (let dy = 0; dy < f; dy++) {
         for (let dx = 0; dx < f; dx++) {
-          if (!this.field.inside(x + dx, y + dy) || this.field.blocksMove(x + dx, y + dy) || this.occupied(x + dx, y + dy)) return false;
+          if (!this.field.inside(x + dx, y + dy) || this.field.blocksMove(x + dx, y + dy) || this.occupied(x + dx, y + dy) || reservada(x + dx, y + dy)) return false;
         }
       }
       // E sem parede de borda cortando o corpo dela.
@@ -1273,6 +1295,27 @@ export class Encounter {
       }
     }
     return null;
+  }
+
+  /**
+   * PÕE UM GRUPO QUE AINDA NÃO ENTROU NO CAMPO em casas livres perto da âncora (`ancora(i, c)` ou uma casa só), sem empilhar e com a
+   * pegada inteira de cada um. Sem isto, quem calculava a casa criatura a criatura antes do `addCombatant` punha todas na MESMA casa
+   * livre: os valentes da cripta, os espectros do labirinto, os perseguidores do Miasma, a fusão de carne em cima do dragão.
+   * Quem não acha casa nenhuma fica de fora da lista devolvida.
+   */
+  espalharFora(criaturas, ancora) {
+    const postas = [];
+    const dentro = [];
+    for (const [i, c] of criaturas.entries()) {
+      const a = typeof ancora === 'function' ? ancora(i, c) : ancora;
+      const f = c.pos?.f ?? 1;
+      const q = this.casaLivreMaisProxima({ x: a.x, y: a.y, f }, { evitar: postas });
+      if (!q) continue;
+      c.pos = { ...c.pos, x: q.x, y: q.y, f };
+      postas.push({ x: q.x, y: q.y, f });
+      dentro.push(c);
+    }
+    return dentro;
   }
 
   addCombatant(c) {
@@ -1440,18 +1483,26 @@ export class Encounter {
   /** "Agir sozinho" de UM invocado: a IA aliada joga o turno dele. */
   definirAutoDoInvocado(c, auto) {
     // O companheiro do Senhor das Feras só age com a ordem do patrulheiro: não há "agir sozinho".
-    if (c.invocado && c.invocado.spellId !== 'companheiroAnimal') c.invocado.auto = Boolean(auto);
+    // e o demônio que não obedece (os Invocar Demônios) ninguém comanda
+    if (c.invocado && c.invocado.spellId !== 'companheiroAnimal' && !c.invocado.hostil) c.invocado.auto = Boolean(auto);
   }
 
   /** "Agir sozinhos" para TODOS os invocados do dono (e para os que ele invocar depois). */
   definirAutoDosInvocados(dono, auto) {
     dono.invocadosAuto = Boolean(auto);
-    for (const c of this.invocadosDe(dono)) if (c.invocado.spellId !== 'companheiroAnimal') c.invocado.auto = Boolean(auto);
+    for (const c of this.invocadosDe(dono)) if (c.invocado.spellId !== 'companheiroAnimal' && !c.invocado.hostil) c.invocado.auto = Boolean(auto);
   }
 
   /** Tira do encontro as criaturas invocadas que `quais` escolher (a magia acabou, o encontro acabou). */
   dispensarInvocados(quais, motivo = null) {
-    const saem = this.combatants.filter((c) => c.invocado && quais(c));
+    // o ELEMENTAL DO VASO (a tigela, o braseiro, o incensário): a concentração que cai não o manda embora, ele fica hostil a todos
+    const ficam = this.combatants.filter((x) => x.invocado?.ficaHostil && !x.dead && quais(x) && !this.over);
+    for (const c of ficam) {
+      c.invocado.ficaHostil = false;
+      Livro.tornarHostilATodos(c);
+      this.say('magia', `${c.name} se solta do comando e se volta contra todos.`);
+    }
+    const saem = this.combatants.filter((c) => c.invocado && quais(c) && !ficam.includes(c));
     if (!saem.length) return;
     this.combatants = this.combatants.filter((c) => !saem.includes(c));
     for (const c of saem) {
@@ -1556,10 +1607,14 @@ export class Encounter {
     for (const cond of [...(c.conditions ?? [])]) {
       const def = CONDITIONS[cond.id];
       if (!def?.danoNoInicio || !cond.data?.dano || c.dead) continue;
-      const r = damageRoll(this.rng, cond.data.dano);
       const dono = this.combatants.find((x) => x.id === cond.source) ?? null;
-      this.say('condicao', `${def.name}: ${c.name} sofre ${r.total} de ${def.danoNoInicio}.`, `${cond.data.dano}[${r.rolls.join('+')}]`);
-      this.applyDamage(c, r.total, def.danoNoInicio, dono, { magico: true });
+      // `data.tipo` e `data.dano2`: o aperto do armadilheiro é concussão E ácido (`livro-motor.js efeitoDoEspecial`)
+      for (const [dd, tp] of [[cond.data.dano, cond.data.tipo ?? def.danoNoInicio], [cond.data.dano2, cond.data.tipo2]]) {
+        if (!dd || c.dead) continue;
+        const r = damageRoll(this.rng, dd);
+        this.say('condicao', `${def.name}: ${c.name} sofre ${r.total} de ${tp}.`, `${dd}[${r.rolls.join('+')}]`);
+        this.applyDamage(c, r.total, tp, dono, { magico: true });
+      }
     }
   }
 
@@ -1576,6 +1631,14 @@ export class Encounter {
   /** Marca o combatente como tendo terminado e, se o lado acabou, passa a vez. */
   endTurn(actor) {
     if (actor.cabecas != null && !actor.dead) this.cabecasCrescem(actor);
+    // a SEDE DE SANGUE do flind: o gnoll perto dele morde com a ação bônus que sobrou
+    Livro.mordidaDaSede(this, actor);
+    Livro.tremorNoFimDoTurno(this, actor);
+    // o DEMÔNIO MAIOR testa Carisma para se soltar; as RAÍZES da Fúria da Natureza prendem um inimigo
+    Livro.fimDoTurnoDoDemonio(this, actor);
+    // o ESCARAMUÇADOR (ladino Batedor): o inimigo que termina o turno colado nele o vê sair, sem ataque de oportunidade
+    Livro.escaramucador(this, actor);
+    Livro.fimDaIra(this, actor);
     // REFLEXOS DE LADRÃO (ladino Ladrão, 17º): na PRIMEIRA rodada, dois turnos — no livro, o segundo cai na iniciativa −10. Como a
     // iniciativa aqui é por lado, o segundo turno vem logo em seguida ao primeiro, uma vez por luta.
     if (this.round === 1 && actor.features?.includes('thiefsReflexes') && !this.reflexosUsados?.has(actor.id) && !actor.dead) {
@@ -1645,6 +1708,7 @@ export class Encounter {
         casaLonge: (q, inimigos, pes) => casaLongeDe(this, q, inimigos, pes),
         magia: (q, soTruque, maxCirculo, magias) => magiaLendaria(this, q, soTruque, maxCirculo, magias),
         tinta: (q, o) => this.tintaLendaria(q, o),
+        circuloDe: (id) => getSpell(id)?.level ?? 1,
       });
       if (feita) {
         m.lendariasRestantes -= feita.custo;
@@ -1744,6 +1808,8 @@ export class Encounter {
           : o.condition === 'caido' ? { source: m.id } : { rounds: o.rounds ?? 10, source: m.id, data: { save: o.save, dc: o.dc, repete: !!o.repete } });
         this.say('condicao', `${t.name} fica ${CONDITIONS[o.condition]?.name.toLowerCase() ?? o.condition} (${o.nome}).`, r.conta, { rolagem: r });
       }
+      // o VENDAVAL UIVANTE: quem falha vai arremessado para longe da linha
+      if (o.arremessaFt && !t.dead) Livro.arremessar(this, t, o.arremessaFt, { de: m.pos, dcDaBatida: o.dcDaBatida ?? null, m });
     }
     return o;
   }
@@ -1903,7 +1969,7 @@ export class Encounter {
     this.field.escalando = this.escalaAgora(actor);
     // Andar na Água e Forma Gasosa: as duas mexem em POR ONDE se passa, então
     // viajam no campo como o voo e a escalada.
-    this.field.sobreAgua = conditionEffects(actor).sobreAgua || nadador(actor);
+    this.field.sobreAgua = conditionEffects(actor).sobreAgua || nadador(actor) || Boolean(actor.doItem?.sobreAgua);
     this.field.atravessaVao = conditionEffects(actor).atravessaVao || Boolean(actor.traits?.includes('amorfo'));
     this.field.semTerrenoDificil = conditionEffects(actor).semTerrenoDificil || (temTalento(actor, 'movel') && actor.disparouEm === this.turnoKey());
     this.field.passoDaTerra = Boolean(actor.features?.includes('landsStride'));
@@ -1913,7 +1979,8 @@ export class Encounter {
     this.field.escalaSemCusto = Boolean(actor.features?.includes('secondStoryWork') || temTalento(actor, 'atleta'));
     this.field.rastejando = this.rastejando(actor);
     // Círculo Mágico: o tipo barrado não entra (quem já está dentro anda livre).
-    const barras = this.circulosQueBarram(actor);
+    // (e o CUBO DE FORÇA com a face da matéria viva: quem não estava dentro não entra)
+    const barras = [...this.circulosQueBarram(actor), ...Livro.cubosQueBarram(this, actor)];
     const cabeFinal = barras.length
       ? (x, y) => !barras.some((z) => this.pegadaEmZona(z, x, y, f)) && (!cabe || cabe(x, y))
       : cabe;
@@ -2089,17 +2156,19 @@ export class Encounter {
       (e) => (!actor.disengaging || temTalento(e, 'sentinela'))
         && !atacou.includes(e.id)
         // DEFENSOR VIGILANTE (Cavaleiro, 18º): uma reação a mais por criatura, só para isto
-        && (!e.reactionUsed || Sub.temReacaoVigilante(this, e, actor))
+        && (!e.reactionUsed || Sub.temReacaoVigilante(this, e, actor) || Livro.temCabecaReativa(this, e))
         // PANACHE: o provocado só pega de oportunidade o espadachim
         && !Sub.panacheImpedeOportunidade(this, e, actor)
         && getCondition(actor, 'manobrado')?.data?.de !== e.id
         && !conditionEffects(e).incapacitated
         && (this.armaDeOportunidade(e) !== undefined || this.magiaDeOportunidade(e, actor))
         && !this.separadosPelaAltura(e, actor)
-        && distanceFt(e.pos, from) <= this.reachOf(e)
-        && this.field.contato(e.pos, from)
-        // MANTER A LINHA (Cavaleiro, 10º): andar DENTRO do alcance dele também provoca
-        && (distanceFt(e.pos, to) > this.reachOf(e) || Sub.segueNaLinha(e))
+        && ((distanceFt(e.pos, from) <= this.reachOf(e)
+          && this.field.contato(e.pos, from)
+          // MANTER A LINHA (Cavaleiro, 10º): andar DENTRO do alcance dele também provoca
+          && (distanceFt(e.pos, to) > this.reachOf(e) || Sub.segueNaLinha(e)))
+          // o ALCANCE MORTAL (a garra de osso): quem ENTRA no alcance dela também provoca
+          || (Livro.alcanceMortal(e) && distanceFt(e.pos, from) > this.reachOf(e) && distanceFt(e.pos, to) <= this.reachOf(e)))
         && this.vePraReagir(e, actor, from),
     );
   }
@@ -2142,7 +2211,7 @@ export class Encounter {
       this.field.dificeisExtra = hostil;
       this.field.voando = noAr;
       this.field.escalando = this.escalaAgora(actor);
-      this.field.sobreAgua = conditionEffects(actor).sobreAgua || nadador(actor);
+      this.field.sobreAgua = conditionEffects(actor).sobreAgua || nadador(actor) || Boolean(actor.doItem?.sobreAgua);
       this.field.atravessaVao = conditionEffects(actor).atravessaVao || Boolean(actor.traits?.includes('amorfo'));
       this.field.semTerrenoDificil = conditionEffects(actor).semTerrenoDificil || (temTalento(actor, 'movel') && actor.disparouEm === this.turnoKey());
       this.field.passoDaTerra = Boolean(actor.features?.includes('landsStride'));
@@ -2202,6 +2271,10 @@ export class Encounter {
     for (let i = 1; i < path.length; i++) {
       const from = { ...actor.pos };
       const to = path[i];
+      // BLOQUEAR O CAMINHO (o ogro aríete): quem falha a Força não sai do alcance dele
+      if (Livro.barraASaida(this, actor, from, to)) { ate = i - 1; break; }
+      // o DESAFIO DO CAMPEÃO (o Donaar): quem falhou não se afasta mais de 9 m dele
+      if (Livro.desafioSegura(this, actor, to)) { ate = i - 1; break; }
       const threats = this.ameacasNoPasso(actor, from, to);
       // O ataque de oportunidade acontece LOGO ANTES de o alvo sair do
       // alcance: resolvido com ele ainda na casa de partida. Resolvido depois,
@@ -2310,12 +2383,16 @@ export class Encounter {
     Livro.levarEngolidos(this, actor);
     Livro.zonasSeguem(this, actor);
     Livro.conchaAntivida(this, actor);
-    if (actor.traits?.includes('chaoAberrante')) this.atualizarTerrenoDasZonas();
+    if (Livro.mexeNoChao(actor)) this.atualizarTerrenoDasZonas();
     // O ESCAVADOR (a broca infernal): a rocha por onde passou vira túnel.
     if (actor.traits?.includes('escavador')) this.abrirTunel(actor, path.slice(0, ate + 1));
     // a última reta andada (a INVESTIDA pede 6 m em linha reta)
     const reta = retaNoFim(path.slice(0, ate + 1));
     actor.retaAndada = reta ? { ...reta, vez: this.turnoKey() } : null;
+    // a CABEÇADA do giff: 6 m em linha reta que acabam ao lado de alguém
+    Livro.investidaDeCabeca(this, actor);
+    // o PERGAMINHO DE PROTEÇÃO: a barreira anda com quem a leu
+    Livro.moverBarreira(this, actor);
     this.invisivelNaAgua(actor);
     return true;
   }
@@ -2349,7 +2426,10 @@ export class Encounter {
     const alvo = this.combatants.find((c) => c.id === m.grudadoEm);
     if (!alvo || alvo.dead) { this.soltarGrudado(m, 'se solta: não há mais o que beber'); return false; }
     if (!isAdjacent(m.pos, alvo.pos)) this.levarGrudados(alvo);
-    const r = damageRoll(this.rng, '1d4+3');
+    // o carrapato gigante (`motorDoLivro.grude`): outro dado, dano necrótico, sem teto, e ele cura o que tirou
+    const grude = m.motorDoLivro?.grude;
+    if (grude && ['morto-vivo', 'constructo'].includes(alvo.tipo)) { this.soltarGrudado(m, 'se solta: não há sangue ali'); return false; }
+    const r = damageRoll(this.rng, grude?.dano ?? '1d4+3');
     const antes = alvo.hp;
     // SEM TIPO, de propósito. O livro separa duas coisas que são fáceis de
     // confundir: o acerto que GRUDA o stirge causa dano perfurante (está na
@@ -2366,10 +2446,12 @@ export class Encounter {
     // SIMPLIFICAÇÃO DECLARADA: isto continua passando por `applyDamage`, então
     // ainda conta como "apanhou" para sustentar a Fúria e ainda pede teste de
     // concentração. Perda de PV de verdade não faria nenhum dos dois.
-    this.applyDamage(alvo, r.total, null, m);
-    m.drenado += Math.max(0, antes - alvo.hp) || r.total;
-    this.say('dano', `${m.name} drena o sangue de ${alvo.name}: ${r.total} PV.`, `1d4+3 = ${r.total}`);
-    if (alvo.dead || m.drenado >= 10) {
+    this.applyDamage(alvo, r.total, grude?.tipo ?? null, m);
+    const tirou = Math.max(0, antes - alvo.hp) || r.total;
+    m.drenado += tirou;
+    this.say('dano', `${m.name} drena o sangue de ${alvo.name}: ${r.total} PV.`, `${grude?.dano ?? '1d4+3'} = ${r.total}`);
+    if (grude?.curaIgual) { const curou = this.heal(m, tirou, m); if (curou) this.say('cura', `${m.name} incha com o sangue: +${curou} PV.`); }
+    if (alvo.dead || (!grude?.semLimite && m.drenado >= 10)) {
       // Cheio, ele voa para digerir (o Manual): não ataca mais (`saciado`).
       if (!alvo.dead) m.saciado = true;
       this.soltarGrudado(m, alvo.dead ? 'se solta do corpo' : 'se solta, cheio de sangue, e voa para longe');
@@ -2571,6 +2653,8 @@ export class Encounter {
   repreensaoObsessiva(alvo, fonte) {
     const rr = alvo.repreensao;
     if (!rr || !fonte || fonte === alvo || fonte.dead || !fonte.pos || fonte.side === alvo.side || this.reagindo) return;
+    // `soTipos`: só o dano desses tipos a dispara (a Ferida Nociva do carniçal das colinas: corte ou ponta)
+    if (rr.soTipos && !rr.soTipos.includes(this.ultimoTipoDano)) return;
     if (alvo.dead || alvo.hp <= 0 || alvo.reactionUsed || conditionEffects(alvo).incapacitated) return;
     if (distanceFt(alvo.pos, fonte.pos) > rr.alcanceFt || !this.field.hasLineOfSight(alvo.pos, fonte.pos)) return;
     this.reagindo = true;
@@ -2591,7 +2675,10 @@ export class Encounter {
           if (total) this.outraFonte(() => this.applyDamage(t, total, rr.damageType, alvo, { magico: true }));
         } else this.say('reacao', `${alvo.name} revida em ${t.name} (${rr.nome}, reação)${sv.success ? `: ${t.name} aguenta` : ''}.`, r.conta, { rolagem: r });
         if (sv.success || t.dead) continue;
-        if (rr.condition && !this.imuneACondicao(t, rr.condition)) this.aplicarCondicao(t, rr.condition, { rounds: 1, quando: 'fim', lado: t.side, source: alvo.id });
+        // `rounds`: a Voz Temível do Hutijin amedronta por um minuto, com o teste no fim de cada turno
+        if (rr.condition && !this.imuneACondicao(t, rr.condition)) {
+          this.aplicarCondicao(t, rr.condition, rr.rounds ? { rounds: rr.rounds, source: alvo.id, data: { save: rr.save, dc: rr.dc, repete: !!rr.repete } } : { rounds: 1, quando: 'fim', lado: t.side, source: alvo.id });
+        }
         if (rr.empurraFt) this.empurrar(t, alvo.pos, rr.empurraFt);
       }
     } finally {
@@ -2657,10 +2744,28 @@ export class Encounter {
   }
 
   /** Quem a ação especial pega, mirando em `alvo` (casa ou criatura). */
+  /** Anda até a casa livre ao lado de `alvo`, com o deslocamento inteiro, sem gastar o do turno. Devolve se chegou. */
+  andarAteOAlvo(m, alvo) {
+    const desloc = this.speedOf(m);
+    const reach = this.reachableFor(m, { orcamentoFt: desloc });
+    let melhor = null;
+    for (const n of reach.values()) {
+      if (n.parar === false || n.cost > desloc || !this.field.vizinhos({ x: n.x, y: n.y }, alvo.pos)) continue;
+      if (!melhor || n.cost < melhor.cost) melhor = n;
+    }
+    if (!melhor) return false;
+    const guarda = m.movementLeftFt;
+    m.movementLeftFt = desloc;
+    this.moveAlong(m, Battlefield.pathFrom(reach, melhor));
+    m.movementLeftFt = guarda;
+    return !m.dead && this.field.vizinhos(m.pos, alvo.pos);
+  }
+
   pegosDaAcaoEspecial(m, a, alvo) {
     // `poupaTipo`: quem é do tipo não sente (o Gemido do cloaker mutante não pega aberração); `escolhe`: as criaturas
     // que ELE escolhe (a Rajada Mental do cérebro ancião), e ele não escolhe os dele
-    const filtro = (lista) => lista.filter((c) => (!a.poupaTipo || !String(c.tipo ?? '').startsWith(a.poupaTipo))
+    // `soTipos`: só quem é de um tipo (os esporos da Zuggtmoy: humanoides e feras)
+    const filtro = (lista) => lista.filter((c) => (!a.soTipos || a.soTipos.includes(c.tipo ?? 'humanoide')) && (!a.poupaTipo || !String(c.tipo ?? '').startsWith(a.poupaTipo))
       && (!a.escolhe || (c.side !== m.side && c.side !== 'neutro')));
     if (a.tipo === 'alvo') return alvo && Livro.alvoServe(this, m, a, alvo) ? filtro(Livro.maisAlvos(this, m, a, alvo)) : [];
     if (a.shape === 'raio') return filtro(this.combatants.filter((c) => c !== m && !c.dead && c.hp > 0 && c.pos && distanceFt(m.pos, c.pos) <= a.areaFt));
@@ -2694,6 +2799,41 @@ export class Encounter {
       // a SEGUNDA FILA DOS BESTIÁRIOS: a carapaça do tortle e o golpe de ação bônus da Fúria Marcial
       concha: () => Livro.entrarNaConcha(this, m, a),
       golpeBonus: () => Livro.golpeBonus(this, m, a, alvo),
+      // a TERCEIRA FILA: o comando aos aliados, o golpe reforçado dos mirmidões, a disparada do gnoll
+      comandar: () => Livro.comandarAliados(this, m, a),
+      sumir: () => Livro.sumir(this, m, a),
+      animarAliados: () => Livro.animarAliados(this, m, a),
+      golpeReforcado: () => Livro.golpeReforcado(this, m, a, alvo),
+      disparada: () => Livro.disparada(this, m, a),
+      // a DÉCIMA PRIMEIRA LEVA: atropelar pelo espaço das criaturas, a cura corrompida
+      atropelar: () => Livro.atropelar(this, m, a, alvo),
+      curaCorrompida: () => Livro.curaCorrompida(this, m, a, alvo),
+      // a DÉCIMA SEGUNDA: a postura que vira condição nele mesmo (o Bloquear o Caminho do ogro aríete)
+      postura: () => {
+        this.aplicarCondicao(m, a.condicao, a.ateFimDoTurno ? { rounds: 1, quando: 'fim', lado: m.side, source: m.id, data: a.data }
+          : { rounds: a.rounds ?? 1, quando: 'inicio', lado: m.side, source: m.id, data: a.data });
+        this.say('acao', `${m.name} usa ${a.nome}.`);
+        return true;
+      },
+      // a DÉCIMA QUARTA: o tremor que quebra a concentração (os rebentos andam antes)
+      tremor: () => Livro.tremor(this, m, a, alvo),
+      // a DÉCIMA OITAVA: o golpe próprio que gasta a ação (as invenções do kobold) e a duplicata do berbalang
+      golpeEspecial: () => Livro.golpeBonus(this, m, a, alvo),
+      duplicata: () => Livro.duplicataEspectral(this, m, a, alvo),
+      // a VIGÉSIMA PRIMEIRA: os cadáveres da flor (colher, digerir, erguer)
+      colherMorto: () => Livro.colherMorto(this, m, a),
+      digerir: () => Livro.digerirCadaver(this, m, a),
+      animarCadaver: () => Livro.animarCadaver(this, m, a),
+      // a VIGÉSIMA SEGUNDA: a alma presa do devorador e os espinhos de pedra do berço
+      aprisionarAlma: () => Livro.aprisionarAlma(this, m, a, alvo),
+      // a VIGÉSIMA TERCEIRA: a forma selvagem de quem é monstro (a Walnut Dankgrass)
+      // a VIGÉSIMA QUARTA: o dybbuk que veste um cadáver (o corpo é a forma; perdido o corpo, ele sai)
+      possuirCadaver: () => Livro.possuirCadaver(this, m, a, vestirFera),
+      // a VIGÉSIMA SEXTA: a Tempestade Vingativa do rebento de Stronmaus e a Magia Ecoada da Pendragon
+      tempestadeVingativa: () => Livro.tempestadeVingativa(this, m, a, alvo),
+      magiaEcoada: () => Livro.magiaEcoada(this, m),
+      formaSelvagem: () => { if (m.formaSelvagem || !vestirFera(m, a.fera, { livre: true })) return false; this.say('magia', `${m.name} vira ${m.formaSelvagem.nome} (${a.nome}).`); return true; },
+      espinhosDoChao: () => this.espinhosDoChao(m, a, alvo),
     };
     if (a.soDepoisDeSaltar) {
       if (!Livro.saltoMortal(this, m, a, alvo)) return false;
@@ -2706,10 +2846,32 @@ export class Encounter {
       try { this.efeitoGeralDoEspecial(m, a, pegos); } finally { for (const k of Object.keys(a)) delete a[k]; Object.assign(a, guarda); }
     } else if (NOVOS[a.tipo]) {
       if (!NOVOS[a.tipo]()) return false;
+    } else if (a.anda && a.tipo === 'alvo' && alvo?.pos && !this.field.vizinhos(m.pos, alvo.pos) && !this.andarAteOAlvo(m, alvo)) {
+      // `anda` (a Perseguição Férrea do barrete vermelho): o movimento é parte da ação; sem chegar ao lado, não sai
+      return false;
+    } else if (a.tipo === 'golpes') {
+      // a RAJADA DE GARRAS (o mutilador cria estelar): N golpes da arma no mesmo alvo colado
+      if (!alvo || alvo.dead || !this.field.vizinhos(m.pos, alvo.pos)) return false;
+      this.say('acao', `${m.name} usa ${a.nome}: ${a.vezes} golpes em ${alvo.name}.`);
+      for (let i = 0; i < a.vezes && !alvo.dead && !m.dead; i++) this.resolveAttack(m, alvo, { weaponId: a.arma });
+    } else if (a.tipo === 'reviver') {
+      // ERGUER CARNIÇAL (o maurezhi): o carniçal ou o lívido morto a até 9 m volta com toda a vida
+      if (!Livro.reviverAliado(this, m, a, alvo)) return false;
+    } else if (a.tipo === 'puxarAlvo') {
+      if (!Livro.puxarComALingua(this, m, a, alvo)) return false;
+    } else if (a.tipo === 'sacrificio') {
+      // a VINGANÇA CORROMPIDA (o orc nutrido de Yurtrus): ele mesmo se leva a 0 PV, e a explosão ao morrer faz o resto
+      this.say('acao', `${m.name} abre o próprio corpo (${a.nome}).`);
+      this.applyDamage(m, (m.hp ?? 0) + (m.tempHp ?? 0) + 9999, 'necrótico', m);
     } else if (a.tipo === 'teleporte') {
       if (!alvo || this.occupied(alvo.x, alvo.y) || this.field.blocksMove(alvo.x, alvo.y) || distanceFt(m.pos, alvo) > a.alcanceFt) return false;
+      if (Livro.trancaDimensional(this, m, m.pos, alvo)) return true;
+      // o PASSO DAS SOMBRAS (a lâmina sombria drow): de uma sombra para outra
+      if (a.soNaSombra && (!Livro.naSombra(this, m.pos) || !Livro.naSombra(this, alvo))) return false;
+      const deOnde = { ...m.pos };
       m.pos = { ...m.pos, x: alvo.x, y: alvo.y };
-      this.say('magia', `${m.name} some e reaparece a ${distanceFt(m.posNoInicioDoTurno ?? m.pos, alvo)} pés dali (${a.nome}).`);
+      this.say('magia', `${m.name} some e reaparece a ${distanceFt(m.posNoInicioDoTurno ?? deOnde, alvo)} pés dali (${a.nome}).`);
+      Livro.depoisDoTeleporte(this, m, a, deOnde);
     } else if (a.tipo === 'cura') {
       // o SEGUNDO FÔLEGO (o campeão) só cura quem o tem
       if (a.soEmSi) alvo = m;
@@ -2722,7 +2884,8 @@ export class Encounter {
       if (!pegos.length) return false;
       this.efeitoGeralDoEspecial(m, a, pegos);
     }
-    if (a.bonus) m.bonusUsed = true; else m.actionUsed = true;
+    // `multi` (os Golpes Ígneos): a ação é o próprio multiataque, que vem logo depois e a gasta
+    if (a.bonus) m.bonusUsed = true; else if (!a.multi) m.actionUsed = true;
     if (a.recharge) (m.recarregando ??= {})[a.recargaDe ?? a.nome] = true;
     if (a.porDia) m.usosEspeciais[a.nome] -= 1;
     this.onEvent({ type: 'habilidade', actor: m, id: a.nome });
@@ -2738,41 +2901,45 @@ export class Encounter {
     this.say('acao', `${m.name} usa ${a.nome}.`);
     let drenado = 0;
     for (const t of pegos) {
-      if (t.imuneAEspecial?.includes(`${m.id}:${a.nome}`)) continue;
-      const sv = this.resistencia(t, a.save, a.dc, { contra: { tipoDano: a.damageType ?? null, condicao: a.condition ?? null, magico: true } });
-      const r = this.explicarResistencia(t, a.save, a.dc, sv, { contra: a.nome, seSucesso: a.halfOnSave ? 'metade do dano' : 'nada' });
+      // `sorteio` (os Raios Prismáticos do falarrocha): um d6 por criatura escolhe o dano e a condição dela
+      const e = a.sorteio ? { ...a, ...Livro.sortearOEfeito(this, a) } : a;
+      if (t.imuneAEspecial?.includes(`${m.id}:${e.nome}`)) continue;
+      // `semTeste` (o Dardo de Vento do gigante quintessente): acerta sem errar
+      const sv = e.semTeste ? { success: false, total: 0, natural: 0 } : this.resistencia(t, e.save, e.dc, { contra: { tipoDano: e.damageType ?? null, condicao: e.condition ?? null, magico: true } });
+      const r = e.semTeste ? { conta: 'sem errar' } : this.explicarResistencia(t, e.save, e.dc, sv, { contra: e.nome, seSucesso: e.halfOnSave ? 'metade do dano' : 'nada' });
       let entrou = 0;
-      if (a.damage) {
-        for (const [dd, tp] of [[a.damage, a.damageType], [a.damage2, a.damageType2]]) {
+      if (e.damage) {
+        for (const [dd, tp] of [[e.damage, e.damageType], [e.damage2, e.damageType2]]) {
           if (!dd) continue;
           const d = damageRoll(this.rng, dd);
-          const total = danoPorResistencia(t, a.save, !!a.halfOnSave, sv.success, d.total, conditionEffects(t).incapacitated);
+          const total = e.danoSemTeste ? d.total : danoPorResistencia(t, e.save, !!e.halfOnSave, sv.success, d.total, conditionEffects(t).incapacitated);
           const antes = t.hp;
           if (total) this.applyDamage(t, total, tp, m, { magico: true });
           entrou += Math.max(0, antes - Math.max(0, t.hp));
           this.say('dano', `${t.name} ${sv.success ? 'resiste' : 'falha'} e sofre ${total} de ${tp}.`, `${r.conta} · ${dd}[${d.rolls.join('+')}]`, { rolagem: r });
         }
-      } else if (!a.cai0) this.say('condicao', sv.success ? `${t.name} resiste a ${a.nome}.` : `${t.name} não resiste a ${a.nome}.`, r.conta, { rolagem: r });
-      drenado += Livro.efeitoDoEspecial(this, m, a, t, sv, entrou);
-      if (sv.success) { if (a.imunizaAoPassar) (t.imuneAEspecial ??= []).push(`${m.id}:${a.nome}`); continue; }
+      } else if (!e.cai0) this.say('condicao', sv.success ? `${t.name} resiste a ${e.nome}.` : `${t.name} não resiste a ${e.nome}.`, r.conta, { rolagem: r });
+      drenado += Livro.efeitoDoEspecial(this, m, e, t, sv, entrou);
+      if (sv.success) { if (e.imunizaAoPassar) (t.imuneAEspecial ??= []).push(`${m.id}:${e.nome}`); continue; }
       // O CHORO da ocular: quem falha perde a concentração
-      if (a.quebraConcentracao && t.concentrating) { this.dropConcentration(t); this.say('magia', `${t.name} perde a concentração.`); }
-      if (a.condition && !t.dead && t.hp > 0 && !this.imuneACondicao(t, a.condition)) {
+      if (e.quebraConcentracao && t.concentrating) { this.dropConcentration(t); this.say('magia', `${t.name} perde a concentração.`); }
+      if (e.condition && !t.dead && t.hp > 0 && !this.imuneACondicao(t, e.condition) && (!e.soFalhandoPor || sv.total <= e.dc - e.soFalhandoPor)) {
+        // `soFalhandoPor`: a condição só de quem falha por 5 ou mais (a Tempestade de Raios da tempestade anciã)
         // "até o fim do PRÓXIMO turno dele": posta no turno do dono, a contagem tem de pular o fim deste (era `rounds: 1`
         // e a condição acabava no fim do mesmo turno em que nascia; o grupo nunca jogava amedrontado pelo Gemido)
         // `ateInicioDoTurnoDoDono`: até o começo do próximo turno de quem a usou (o Sopro da Singularidade do Lowarnizel)
-        this.aplicarCondicao(t, a.condition, a.ateInicioDoTurnoDoDono
+        this.aplicarCondicao(t, e.condition, e.ateInicioDoTurnoDoDono
           ? { rounds: 1, quando: 'inicio', lado: m.side, source: m.id }
-          : a.ateFimDoTurnoDele
+          : e.ateFimDoTurnoDele
           ? { rounds: this.side === m.side ? 2 : 1, quando: 'fim', lado: m.side, source: m.id }
-          : a.ateFimDoTurnoDoAlvo
+          : e.ateFimDoTurnoDoAlvo
             ? { rounds: this.side === t.side ? 2 : 1, quando: 'fim', lado: t.side, source: m.id }
-            : { rounds: a.rounds ?? 10, source: m.id, data: { save: a.save, dc: a.dc, repete: !!a.repete } });
+            : { rounds: e.rounds ?? 10, source: m.id, data: { save: e.save, dc: e.dc, repete: !!e.repete } });
       }
     }
-    // DRENAR VIDA (o semilich): cura o que tirou de todos
-    if (a.drena && drenado > 0 && !m.dead) {
-      const curou = this.heal(m, drenado, m);
+    // DRENAR VIDA (o semilich): cura o que tirou de todos; o beijo da morte, a metade
+    if ((a.drena || a.drenaMetade) && drenado > 0 && !m.dead) {
+      const curou = this.heal(m, a.drenaMetade ? Math.floor(drenado / 2) : drenado, m);
       if (curou) this.say('cura', `${m.name} bebe a vida que tirou: +${curou} PV.`);
     }
   }
@@ -2923,7 +3090,7 @@ export class Encounter {
       obscuro: spell.zona.obscuro ?? null,
       // Só esconde: não fere, não prende (a IA que desvia de zona não desvia dela).
       inofensiva: (!!spell.zona.obscuro || !!spell.zona.silencio || !!spell.zona.barraProjetil || !!spell.zona.luz || !!spell.zona.ilusao || !!spell.zona.cordao || !!spell.zona.glifo)
-        && !dano && !spell.zona.fimDano && !spell.zona.danoPorPasso && !!spell.zona.semTeste,
+        && !dano && !spell.zona.fimDano && !spell.zona.danoPorPasso && !!spell.zona.semTeste && !spell.zona.prismatica,
       // Silêncio: ninguém conjura nem sofre trovão. Muralha de Vento: barra projétil de arma.
       silencio: !!spell.zona.silencio,
       barraProjetil: !!spell.zona.barraProjetil,
@@ -2931,6 +3098,8 @@ export class Encounter {
       // vista; a de Força é invisível, e por isso barra o passo e não a visão.
       barraPasso: !!spell.zona.barraPasso,
       barraVisao: !!spell.zona.barraVisao,
+      // a MURALHA PRISMÁTICA: quem entra passa pelas sete camadas (`livro-motor.js atravessarPrismatica`), com a CD de quem conjurou
+      prismatica: spell.zona.prismatica ? { cd } : null,
       // A MURALHA QUE SE QUEBRA. Só duas das seis têm CA e PV no livro — a de Pedra e a de Gelo —, e
       // os PV são POR TRECHO, não da muralha inteira: derrubar um trecho abre um VÃO e o resto fica
       // de pé. Por isso é um mapa casa a casa, e não um número só. A de Força é imune de propósito
@@ -3070,7 +3239,11 @@ export class Encounter {
     if (!casas.length) return false;
     const dentro = new Set(casas.map((t) => key(t.x, t.y)));
     const pegos = this.combatants.filter((c) => !c.dead && this.pegadaEmAlgumaCasa(c, dentro));
-    this.say('recurso', `${actor.name} enche o peito e solta ${b.name.toLowerCase()} num cone de ${b.areaFt / 5 * 1.5} m.`);
+    // `tiposAEscolher` (o Sopro Prismático da dracohidra): o tipo que mais fere os inimigos no cone, como o Orbe Cromático
+    const tipoDoSopro = b.tiposAEscolher
+      ? [...b.tiposAEscolher].sort((x, y) => pegos.filter((c) => c.side !== actor.side).reduce((s2, c) => s2 + this.danoPorTipo(c, 10, y, true) - this.danoPorTipo(c, 10, x, true), 0))[0]
+      : b.damageType;
+    this.say('recurso', `${actor.name} enche o peito e solta ${b.name.toLowerCase()} num cone de ${b.areaFt / 5 * 1.5} m${b.tiposAEscolher ? ` (${tipoDoSopro})` : ''}.`);
     this.onEvent({ type: 'spell', caster: actor, spell: { id: b.id ?? 'soproVenenoso', name: b.name, origem: b.origem ?? 'sopro' }, point: alvo, areaTiles: casas });
     for (const t of pegos) {
       if (!b.damage) {
@@ -3092,17 +3265,17 @@ export class Encounter {
         this.say('condicao', `${b.name} pega ${t.name}: fica ${CONDITIONS[b.condition]?.name.toLowerCase() ?? b.condition}.`, rr.conta, { rolagem: rr });
         continue;
       }
-      const save = this.resistencia(t, b.save, b.dc, { contra: { tipoDano: b.damageType } });
+      const save = this.resistencia(t, b.save, b.dc, { contra: { tipoDano: tipoDoSopro } });
       const dmg = damageRoll(this.rng, b.damage);
       const total = danoPorResistencia(t, b.save, !!b.halfOnSave, save.success, dmg.total, conditionEffects(t).incapacitated);
       const r = this.explicarResistencia(t, b.save, b.dc, save, {
         contra: `${b.name} (cone de ${b.areaFt / 5 * 1.5} m)`,
         seSucesso: b.halfOnSave ? 'metade do dano' : 'nenhum dano',
       });
-      this.say('magia', `${t.name} ${save.success ? 'resiste' : 'falha'} contra ${b.name} e sofre ${total}.`,
+      this.say('magia', `${t.name} ${save.success ? 'resiste' : 'falha'} contra ${b.name} e sofre ${total} de ${tipoDoSopro}.`,
         `${r.conta} · ${b.damage}[${dmg.rolls.join('+')}]${save.success && b.halfOnSave ? ` → metade = ${total}` : ''}`,
         { rolagem: r });
-      this.applyDamage(t, total, b.damageType, actor);
+      this.applyDamage(t, total, tipoDoSopro, actor);
     }
     (actor.recarregando ??= {})[b.chaveRecarga ?? b.name] = true;
     actor.actionUsed = true;
@@ -3345,6 +3518,8 @@ export class Encounter {
    */
   tentarContramagia(conjurador, spell, slot, gratis = false) {
     if (this.negarMagia(conjurador, spell, slot, gratis)) return true;
+    // a REFLEXÃO DE MAGIA do colosso rúnico: o tiro de força em quem conjura, e a magia falha se ele não passar
+    if (!this.reagindo && Livro.reflexaoRunica(this, conjurador, spell, slot)) return true;
     // NÊMESIS DOS CONJURADORES (Matador de Monstros, 11º): vale até contra truque.
     if (!this.reagindo && Sub.nemesisDosConjuradores(this, conjurador, spell)) return true;
     if (spell.level === 0 || this.reagindo) return false;
@@ -3412,6 +3587,8 @@ export class Encounter {
     const r = damageRoll(this.rng, dados);
     // QUEDA LENTA (monge, 4º): o dano cai em 5 × o nível.
     r.total = danoDeQueda(c, r.total);
+    // a corrente ASCENDENTE do Controlar Ventos: metade
+    if (Livro.quedaNaAscendente(this, c)) r.total = Math.floor(r.total / 2);
     this.say('condicao', `${c.name} deixa de ${dados === '1d6' ? 'voar' : 'levitar'} e cai: ${r.total} concussão.`, `${dados}[${r.rolls.join('+')}]`);
     this.applyDamage(c, r.total, 'concussão', null);
     if (!c.dead && !hasCondition(c, 'inconsciente')) addCondition(c, 'caido');
@@ -3496,6 +3673,10 @@ export class Encounter {
   /** Teste contra a zona. Devolve true se ficou de pé. */
   resistirAZona(c, zona, porque) {
     if (zona.noChao && this.voaAgora(c)) return true;
+    if (zona.prismatica) return Livro.atravessarPrismatica(this, c, zona, porque);
+    // o CUBO DE FORÇA com a face do gás: a névoa e a nuvem não entram nele
+    if (Livro.cuboBarraGas(this, c, zona)) return true;
+    if (zona.vento) return Livro.ventoNoVoador(this, c, zona);
     // ANDAR NA TEIA (as aranhas): a teia não as prende
     if (zona.spellId === 'teia' && c.traits?.includes('webWalker')) return true;
     // Guardião da Fé: "qualquer criatura HOSTIL A VOCÊ". O aliado passa por ela
@@ -3707,7 +3888,7 @@ export class Encounter {
       return !def.contraTipos || def.contraTipos.includes(fonte?.tipo);
     });
     // Os blocos de monstro escrevem "enfeitiçado" e "imobilizado".
-    const APELIDOS = { dominado: 'enfeitiçado', sugerido: 'enfeitiçado', hipnotizado: 'enfeitiçado', enfeiticado: 'enfeitiçado', coroaDaLoucura: 'enfeitiçado', contido: 'imobilizado', presoPorVinhas: 'imobilizado' };
+    const APELIDOS = { dominado: 'enfeitiçado', sugerido: 'enfeitiçado', cobicaIncitada: 'enfeitiçado', hipnotizado: 'enfeitiçado', enfeiticado: 'enfeitiçado', coroaDaLoucura: 'enfeitiçado', contido: 'imobilizado', presoPorVinhas: 'imobilizado' };
     // o item que o herói usa (o amuleto contra veneno: nada de envenenado)
     const doItem = alvo.doItem?.imuneCondicao ?? [];
     return porMagia || lista.includes(id) || lista.includes(APELIDOS[id]) || doItem.includes(id) || doItem.includes(APELIDOS[id]);
@@ -3764,7 +3945,7 @@ export class Encounter {
    * num terreno difícil custa 3 pés por pé, e não 4 (`Battlefield.costOf` cobra os +5 por casa).
    */
   rastejando(actor) {
-    return hasCondition(actor, 'caido');
+    return hasCondition(actor, 'caido') && !Livro.posturaRastejante(actor);
   }
 
   /**
@@ -4077,7 +4258,8 @@ export class Encounter {
 
   /** As zonas de Círculo Mágico que valem contra o tipo de `c`. */
   circulosContra(c) {
-    return (this.zonas ?? []).filter((z) => z.circuloMagico && z.circuloMagico.tipo === (c.tipo ?? 'humanoide'));
+    // (o PERGAMINHO DE PROTEÇÃO usa a mesma barreira, e quem venceu a dele no Carisma passa)
+    return (this.zonas ?? []).filter((z) => z.circuloMagico && z.circuloMagico.tipo === (c.tipo ?? 'humanoide') && !z.pergaminho?.vencidos?.has(c.id));
   }
 
   /** O círculo barra o tipo de quem anda — a menos que ele já esteja dentro dele. */
@@ -4132,7 +4314,7 @@ export class Encounter {
   }
 
   opportunityAttack(attacker, target, { weaponId = null } = {}) {
-    Sub.gastarReacaoDeOportunidade(this, attacker, target);
+    if (!Livro.gastarCabecaReativa(this, attacker)) Sub.gastarReacaoDeOportunidade(this, attacker, target);
     // CONJURADOR DE GUERRA (talento): no lugar do golpe, um truque de uma ação que mire só quem provocou.
     const arma = weaponId ?? this.armaDeOportunidade(attacker);
     const magia = this.magiaDeOportunidade(attacker, target);
@@ -4143,10 +4325,23 @@ export class Encounter {
     }
     this.say('reacao', `${attacker.name} aproveita a brecha (ataque de oportunidade).`);
     // ESCAPAR DA HORDA (Caçador, 7º): os ataques de oportunidade contra ele têm desvantagem.
+    const bloqueio = getCondition(attacker, 'bloqueandoOCaminho');
     const r = this.resolveAttack(attacker, target, {
       opportunity: true, weaponId: arma,
       disadvantage: target.features?.includes('escapeTheHorde') ? 'Escapar da Horda' : false,
+      vantagem: bloqueio ? 'Bloquear o Caminho' : false,
     });
+    if (r?.hit && bloqueio?.data?.extra && !target.dead) {
+      const d = damageRoll(this.rng, bloqueio.data.extra);
+      this.applyDamage(target, d.total, 'concussão', attacker, { deArma: true, corpoACorpo: true });
+      this.say('dano', `${attacker.name} vinha esperando: mais ${d.total} de concussão em ${target.name}.`, `${bloqueio.data.extra}[${d.rolls.join('+')}]`);
+    }
+    // o ALCANCE MORTAL: o golpe que acerta dá um segundo no mesmo alvo
+    const mortal = Livro.alcanceMortal(attacker);
+    if (r?.hit && mortal && !target.dead && !attacker.dead) {
+      this.say('reacao', `${attacker.name} golpeia de novo (${mortal.nome}).`);
+      this.resolveAttack(attacker, target, { opportunity: true, weaponId: arma });
+    }
     // SENTINELA (talento): o ataque de oportunidade que acerta zera o deslocamento do alvo até o fim do turno.
     if (r?.hit && (temTalento(attacker, 'sentinela') || Sub.segueNaLinha(attacker)) && !target.dead) {
       target.detidoEm = this.turnoKey();
@@ -4251,7 +4446,7 @@ export class Encounter {
     return true;
   }
 
-  attackModifiers(attacker, target, { ranged = false, opportunity = false } = {}) {
+  attackModifiers(attacker, target, { ranged = false, opportunity = false, deMagia = false } = {}) {
     const atkFx = conditionEffects(attacker);
     const tgtFx = conditionEffects(target);
     // `mods` carrega as mesmas três chaves de antes (`advantage`,
@@ -4260,6 +4455,11 @@ export class Encounter {
     const mods = modsVazios();
 
     if (atkFx.attackDisadvantage) fonte(mods, 'desvantagem', 'atacante prejudicado');
+    // os ANÉIS DE COMANDO DOS ELEMENTAIS: vantagem contra o elemental do plano do anel, e ele com desvantagem contra quem o usa
+    if (attacker.doItem?.flagelo?.includes(target?.defId)) fonte(mods, 'vantagem', 'anel de comando');
+    if (target?.doItem?.flagelo?.includes(attacker.defId)) fonte(mods, 'desvantagem', 'anel de comando');
+    // CONTROLAR VENTOS: a arma à distância que passa pelo vento, ou mira quem está nele (a magia não sente o vento)
+    if (ranged && !deMagia && attacker.pos && target?.pos && Livro.ventoNoCaminho(this, attacker.pos, target.pos)) fonte(mods, 'desvantagem', 'o vento');
     if (hasCondition(attacker, 'gritoDeGuerra')) fonte(mods, 'vantagem', 'grito de guerra');
     if (atkFx.vantagemNosAtaques) {
       const qual = (attacker.conditions ?? []).find((c) => CONDITIONS[c.id]?.vantagemNosAtaques);
@@ -4357,6 +4557,12 @@ export class Encounter {
     if (attacker.furiaFerida && attacker.hp <= attacker.furiaFerida.limiar) fonte(mods, 'vantagem', 'fúria ferida');
     // DESLOCAMENTO (a besta deslocadora): desvantagem contra ela, até ela ser atingida.
     if (target.traits?.includes('deslocamento') && !target.deslocamentoFalhou && !conditionEffects(target).incapacitated) fonte(mods, 'desvantagem', 'deslocamento');
+    // O MOVIMENTO BORRADO (o velocino), a FORMA BORRADA (a nuvem espectral), a VANTAGEM DEFENSIVA (o Splugoth)
+    const borrado = Livro.desvantagemContraEle(this, attacker, target);
+    if (borrado) fonte(mods, 'desvantagem', borrado.toLowerCase());
+    // a Formação em Falange, a Vantagem na Água, a Companhia, o Matador, o Oportunista (`livro-motor.js vantagemNoAtaque`)
+    const porCondicao = Livro.vantagemNoAtaque(this, attacker, target, { opportunity });
+    if (porCondicao) fonte(mods, porCondicao.modo, porCondicao.motivo.toLowerCase());
     // FRENESI DE SANGUE (o tubarão, o piranha): vantagem de perto em quem não está com todos os PV.
     if (!ranged && attacker.traits?.includes('frenesiDeSangue') && target.hp < target.maxHp) fonte(mods, 'vantagem', 'frenesi de sangue');
     // IMPRUDENTE (o minotauro, o berserker): golpeia com vantagem e é golpeado com vantagem.
@@ -4407,7 +4613,7 @@ export class Encounter {
     const close = distanceFt(attacker.pos, target.pos) <= 5;
     // Caído: quem ataca a até 1,5 m tem vantagem; de mais longe, desvantagem.
     // Conta a DISTÂNCIA, não o tipo de arma — um arco encostado tem vantagem.
-    if (tgtFx.attackedAdvantageMelee) {
+    if (tgtFx.attackedAdvantageMelee && !(close && Livro.posturaRastejante(target))) {
       fonte(mods, close ? 'vantagem' : 'desvantagem', close ? 'alvo caído e perto' : 'alvo caído e longe');
     }
 
@@ -4491,11 +4697,15 @@ export class Encounter {
         // atributo e quanto é proficiência. Dizer "bloco da criatura" é honesto;
         // repartir em FOR e proficiência seria invenção nossa.
         bonusPartes: [{ rotulo: 'bloco da criatura', valor: atk.bonus }],
+        // ACERTA SEMPRE (a Pancada Infalível do marut): sem jogada de ataque
+        acertaSempre: !!atk.acertaSempre,
         // Acao por TESTE de resistencia (o Olhar Apodrecedor do nothic): sem
         // jogada de ataque; o alvo testa e, falhando, leva o dano.
         teste: atk.teste ?? null,
         // Drenar Sangue (o stirge): o acerto gruda no alvo.
         gruda: !!atk.gruda,
+        // INFESTA (as larvas putrefatas): o acerto põe as larvas
+        infesta: atk.infesta ?? null,
         // INVESTIDA (a broca infernal, a carga rolante do galeb duhr). Sem esta linha ela morria no perfil do golpe:
         // `resolveAttack` lê `p.investida`, e só o teste a chamava direto. A broca nunca embalou no jogo.
         investida: atk.investida ?? null,
@@ -4629,6 +4839,12 @@ export class Encounter {
 
   canAttack(actor, target, weaponId) {
     if (actor.proibidoAtacar) return { ok: false, why: 'a fera só recebeu uma ordem de apoio' };
+    // o PERGAMINHO DE PROTEÇÃO: o tipo barrado não afeta quem está dentro da barreira
+    if (Livro.barreiraBloqueia(this, actor, target)) return { ok: false, why: `${target.name} está atrás da barreira do pergaminho` };
+    // o CUBO DE FORÇA: a barreira entre os dois barra o golpe de perto (face 3), o projétil (face 2) ou tudo (face 5)
+    if (actor.pos && target?.pos && Livro.cuboBloqueia(this, actor, target, distanceFt(actor.pos, target.pos) > this.reachOf(actor) ? 'longe' : 'perto')) {
+      return { ok: false, why: 'a barreira do cubo de força está no caminho' };
+    }
     if (actor.proibidoAtacar) return { ok: false, why: 'a fera só recebeu uma ordem de apoio' };
     // Forma Gasosa: a névoa não ataca. Antes da arma na mão, porque névoa não
     // tem mão — perguntar da arma primeiro daria o motivo errado.
@@ -4724,7 +4940,12 @@ export class Encounter {
     // ENTRE OS MORTOS (Imortal): o morto-vivo que mira o bruxo pode trocar de alvo, ou perder o golpe
     target = Sub.entreOsMortos(this, attacker, target);
     if (!target) return null;
-    const r = this.resolveAttackBase(attacker, target, opts);
+    // o NILBOGISMO: quem tenta ferir o nilbog faz Carisma antes, ou perde o golpe enfeitiçado
+    if (Livro.nilbogismo(this, attacker, target)) return { hit: false, cancelado: true };
+    // o MOTOR DA DOR do duergar martelador: quem mira o duergar preso ataca com desvantagem, e o acerto fere mais e acorda a máquina
+    const dor = Livro.miraNoPreso(this, attacker, target);
+    const r = this.resolveAttackBase(attacker, target, dor ? { ...opts, disadvantage: opts.disadvantage || 'mirando o duergar preso' } : opts);
+    if (dor) Livro.depoisDoGolpeNoPreso(this, attacker, target, r, dor);
     // SENTINELA (talento): quem ataca outro ao lado de quem a tem leva um golpe de reação.
     if (r && !attacker.dead) this.sentinelaReage(attacker, target);
     // A finta vale para UM ataque: errando, ela se desfaz (a ação bônus já foi paga).
@@ -5164,6 +5385,7 @@ export class Encounter {
     // o primeiro ataque do turno já foi (o golpe de oportunidade é de outro turno)
     if (!opportunity) attacker.atacouNoTurno = true;
     const mods = this.attackModifiers(attacker, target, { ranged: p.ranged, opportunity });
+    if (Livro.gastarExperiencia(attacker)) fonte(mods, 'vantagem', 'experiência emprestada');
     // TETO BAIXO (o Obelisco, os túneis de mina da Onda Eco): criatura Média ou maior ataca corpo a corpo com
     // desvantagem ali, a não ser com arma leve. A cena diz as casas (`field.tetoBaixo`, chaves 'x,y').
     if (!p.ranged && attacker.pos && this.field.tetoBaixo?.has?.(`${attacker.pos.x},${attacker.pos.y}`) && categoriaDeTamanho(attacker) >= 2) {
@@ -5257,6 +5479,8 @@ export class Encounter {
 
     // CRÍTICO APRIMORADO / SUPERIOR (Campeão): o d20 que é crítico desce para 19 ou 18, só em ataque com arma.
     mods.critMin = margemDeCritico(attacker);
+    // a LÂMINA LUNAR (a runa do crítico): 19 ou 20, sintonizada
+    if (p.weapon?.poder === 'laminaLunar' && (attacker.sintonizados ?? []).includes(p.weapon.id)) mods.critMin = Math.min(mods.critMin, 19);
     // MALDIÇÃO DO LÂMINA MALDITA: crítico com 19 contra o amaldiçoado.
     if (Sub.amaldicoadoPor(target, attacker)) mods.critMin = Math.min(mods.critMin, 19);
     // RESTAURAR O EQUILÍBRIO e TRANSE DA ORDEM (Alma Mecânica); a CANÇÃO DA LÂMINA para no golpe de duas mãos
@@ -5276,8 +5500,8 @@ export class Encounter {
       const t = atk.total - atk.natural + 10;
       atk = { ...atk, natural: 10, total: t, fumble: false, hit: t >= ac };
     }
-    // REDIRECIONAR ATAQUE: o golpe que vem redirecionado já acertou
-    if (forcarAcerto) atk = { ...atk, hit: true, critical: false, fumble: false };
+    // REDIRECIONAR ATAQUE: o golpe que vem redirecionado já acertou; e o golpe que acerta sempre (o do marut)
+    if (forcarAcerto || p.acertaSempre) atk = { ...atk, hit: true, critical: false, fumble: false };
     Sub.gastarAjuda(this, attacker, target);
     if (!atk.hit && !atk.fumble) {
       const f = Sub.favorecidoPelosDeuses(this, attacker, atk.total, ac);
@@ -5335,6 +5559,19 @@ export class Encounter {
       caPartes.push({ rotulo: 'Aparar', valor: bonusAparar });
       atk.hit = false;
       this.say('reacao', `${target.name} apara o golpe de ${attacker.name} (+${bonusAparar} de CA).`);
+    }
+    // A TERCEIRA FILA: o INTERCEPTAR do defensor de pedra (+5 de CA ao aliado colado) e o GOLPE GUIADO (+10 no ataque do
+    // aliado que ia errar)
+    const intercepta = Livro.interceptar(this, attacker, target, atk, ac);
+    if (intercepta) { ac += intercepta.bonus; caPartes.push({ rotulo: intercepta.nome, valor: intercepta.bonus }); if (atk.total < ac) atk.hit = false; }
+    const guiado = Livro.golpeGuiado(this, attacker, target, atk, ac);
+    if (guiado) { atk.total += guiado.bonus; atk.hit = true; }
+    if (Livro.cultivarAPaz(this, attacker, atk)) atk.hit = false;
+    const olho = Livro.olhoDoArqueiro(this, attacker, atk, ac, p);
+    if (olho) { atk.total += olho.bonus; if (atk.total >= ac) atk.hit = true; }
+    if (!atk.hit && atk.natural !== 1) {
+      const instrucao = Livro.instrucaoCortante(this, attacker, atk.total, ac);
+      if (instrucao) { atk.total += instrucao; if (atk.total >= ac) atk.hit = true; }
     }
     // DISTORCER A REALIDADE (o devorador clarividente do Obelisco): acertado por uma jogada de ataque, a reação soma +4 à
     // CA contra ela, e então ele some e reaparece a até 18 m, numa casa livre que vê. Some acertando ou não.
@@ -5476,6 +5713,7 @@ export class Encounter {
       });
       if (entropica && !target.dead) addCondition(target, 'desordemEntropica', { rounds: 2, source: attacker.id });
       if (!p.ranged) { this.desviarParaOutro(attacker, target, { weaponId }); this.riposta(attacker, target); Livro.escudoPegajoso(this, attacker, target, p); }
+      Livro.coiceERecua(this, attacker, p);
       delete target.resisteAoGolpe;
       // REDIRECIONAR ATAQUE (Mestre Bêbado, 6º): o golpe de perto que erra o monge acerta outro colado nele.
       // O golpe ACERTA a outra criatura (o livro não pede nova jogada nem alcance): o dano da arma, nela.
@@ -5548,6 +5786,8 @@ export class Encounter {
       dmg.total += dmg.rolls.reduce((s, v) => s + (sides - v), 0);
       dmg.rolls = dmg.rolls.map(() => sides);
     }
+    // o REDUZIR do mestre mental duergar: Miúdo, o golpe de arma fere 1
+    if (dmg && hasCondition(attacker, 'reduzidoDuergar')) { dmg.total = Math.min(dmg.total, 1); dmg.rolls = [1]; }
     // Raio do Enfraquecimento: golpe de Força causa metade.
     const deForca = attacker.attacks ? !p.ranged : (p.weapon && weaponAbility(attacker, p.weapon) === 'str');
     // DISPARO DEBILITANTE (Arqueiro Arcano): os ataques com arma do alvo causam metade.
@@ -5668,6 +5908,11 @@ export class Encounter {
     // RUNA DA NUVEM (Cavaleiro Rúnico): o golpe que derrubaria o aliado passa para outro inimigo, com a mesma rolagem.
     const nuvem = attacker.side !== target.side ? Sub.runaDaNuvem(this, target, attacker, total) : null;
     if (nuvem) target = nuvem;
+    // o Guarda-Costas Leal, o Servo Protetor e a Curvatura do Espaço: outro toma o golpe (`livro-motor.js quemTomaOGolpe`)
+    const tomaNoLugar = !nuvem && attacker.side !== target.side ? Livro.quemTomaOGolpe(this, attacker, target) : null;
+    if (tomaNoLugar) target = tomaNoLugar;
+    // o MOTOR PSÍQUICO do déspota duergar estoura no crítico
+    if (critical) Livro.motorPsiquico(this, target);
     // O GOLPE DE PERTO EM CURSO: o que vem com ele (o Golpe Divino, a Marca do Caçador, o veneno da lâmina) é o MESMO
     // ataque corpo a corpo, e é por ele que o golpe não letal derruba sem matar.
     const golpeDePertoAntes = this.golpeDePerto;
@@ -5678,7 +5923,8 @@ export class Encounter {
       this.extrasDoAcerto(attacker, target, { arma: true, ranged: p.ranged, tipo: p.type, critical, hpAntes: hpAntesDoGolpe, atkTotal: atk.total });
       // `contra`: dano extra que só vale num tipo de criatura (o de Hew, em planta).
       // `contra` é um tipo ou uma lista (a vingadora sagrada: corruptor e morto-vivo)
-      if (p.danoExtra && !target.dead && (!p.danoExtra.contra || [].concat(p.danoExtra.contra).includes(target.tipo))) {
+      // o duergar reduzido: o golpe de arma inteiro fere 1, o veneno da lâmina junto
+      if (p.danoExtra && !target.dead && !hasCondition(attacker, 'reduzidoDuergar') && (!p.danoExtra.contra || [].concat(p.danoExtra.contra).includes(target.tipo))) {
         this.danoExtraDoGolpe(attacker, target, p, critical);
       }
       // O PODER DA ARMA MÁGICA (a vorpal, a espada do gume, a ladra de vida...): o 20 natural e o golpe contra um tipo
@@ -5714,7 +5960,8 @@ export class Encounter {
       }
       if (target.traits?.includes('deslocamento')) target.deslocamentoFalhou = true;
       // CORPO QUENTE (o azer, o balor): quem o acerta de perto se queima
-      if (target.corpoQuente && !p.ranged && !attacker.dead && distanceFt(attacker.pos, target.pos) <= 5) {
+      if (target.corpoQuente && !p.ranged && !attacker.dead && distanceFt(attacker.pos, target.pos) <= 5
+        && (!target.corpoQuente.soCortaOuFura || ['cortante', 'perfurante'].includes(p.type))) {
         const q = damageRoll(this.rng, target.corpoQuente.damage);
         this.outraFonte(() => this.applyDamage(attacker, q.total, target.corpoQuente.type, target, { magico: true }));
         this.say('dano', `${attacker.name} se queima em ${target.name}: ${q.total} de ${target.corpoQuente.type}.`, `${target.corpoQuente.damage}[${q.rolls.join('+')}]`);
@@ -5723,6 +5970,15 @@ export class Encounter {
       if (attacker.eminencia?.rodada === this.round && this.side === attacker.side && !p.ranged && !target.dead) {
         this.danoExtraDoGolpe(attacker, target, { ...p, danoExtra: { damage: attacker.eminencia.dano, type: 'radiante' } }, critical);
       }
+      // A TERCEIRA FILA DOS BESTIÁRIOS: o dano do primeiro acerto do turno (as Presas Mentais, o Golpe Divino) e o golpe
+      // reforçado dos mirmidões (o dado a mais, e o teste da condição depois)
+      const primeiro = Livro.danoDoPrimeiroAcerto(this, attacker, target, p);
+      if (primeiro) this.danoExtraDoGolpe(attacker, target, { ...p, name: primeiro.nome, danoExtra: primeiro }, critical);
+      const doEstado = Livro.danoExtraDoEstado(this, attacker, target, p);
+      if (doEstado) this.danoExtraDoGolpe(attacker, target, { ...p, name: doEstado.nome, danoExtra: doEstado }, critical);
+      const reforco = Livro.reforcoDoAcerto(this, attacker, target, p);
+      if (reforco) this.danoExtraDoGolpe(attacker, target, { ...p, name: reforco.nome, danoExtra: reforco }, critical);
+      if (reforco) Livro.condicaoDoReforco(this, attacker, target);
     });
     } finally { this.golpeDePerto = golpeDePertoAntes; }
     // TASHA (3º lote): os LAMENTOS DO TÚMULO (Fantasma) e o RASGAR A MENTE (Lâmina da Alma), depois do Ataque Furtivo
@@ -5788,6 +6044,7 @@ export class Encounter {
     for (const efeito of [].concat(p.onHit ?? [])) this.efeitoDoGolpe(attacker, target, { ...p, onHit: efeito });
     // Drenar Sangue (o stirge): o acerto GRUDA no alvo, sem teste.
     if (p.gruda && !target.dead && !attacker.dead) this.grudar(attacker, target);
+    if (p.infesta && !target.dead) Livro.infestar(this, attacker, target, p.infesta);
     // INVESTIDA (a broca infernal): quem andou 6 m antes de acertar soma dano e pode derrubar.
     if (p.investida && !attacker.dead) this.investida(attacker, target, p.investida);
     if (p.puxa && !target.dead && !attacker.dead && (!p.puxaSeAgarrado || getCondition(target, 'agarrado')?.source === attacker.id)) {
@@ -5800,6 +6057,7 @@ export class Encounter {
     if (attacker.espetar) Livro.espetar(this, attacker, target, p);
     Livro.golpeBanidor(this, attacker, target);
     if (!semAljava) Livro.aljavaVeloz(this, attacker, target, p);
+    Livro.coiceERecua(this, attacker, p);
     // CONSOME (o aglomerado encefálico): quem o golpe zera morre na hora e vira comida.
     if (p.consome && target.kind === 'pc' && !target.dead && target.hp <= 0) {
       this.say('morte', `${attacker.name} engole ${target.name} inteiro.`);
@@ -6069,6 +6327,28 @@ export class Encounter {
       }
       // A SEGUNDA LEVA DO LIVRO DO MESTRE (2026-11-12)
       // a ARMA CRUEL: no 20, +7 do tipo dela
+      // o CAJADO DA VÍBORA: a cabeça de cobra morde; Constituição CD 15 ou 3d6 de veneno
+      case 'vibora': {
+        if (target.dead) return;
+        const sv = this.resistencia(target, 'con', 15, { contra: { magico: true, tipoDano: 'veneno' } });
+        const r = this.explicarResistencia(target, 'con', 15, sv, { contra: 'o veneno da víbora', seSucesso: 'nada' });
+        if (!sv.success) { this.say('ataque', `A víbora do cajado injeta o veneno em ${target.name}.`, r.conta); extra('3d6', 'veneno', 'o veneno da víbora'); }
+        return;
+      }
+      // a LÂMINA LUNAR: a runa do dano, 1d6 cortante a mais em todo acerto
+      case 'laminaLunar': extra('1d6', 'cortante', 'a runa da lâmina lunar'); return;
+      // o MARTELO DOS RAIOS: com o cinto de força de gigante e as manoplas de força de ogro, o gigante acertado faz Constituição CD 17 ou morre
+      case 'martelo': {
+        if (target.dead || !/gigante|giant/i.test(`${target.nomeOriginal ?? ''} ${target.name ?? ''} ${JSON.stringify(target.marcas ?? '')}`)) return;
+        const ids = idsCarregados(attacker);
+        if (!ids.includes('manoplasDeForcaDeOgro') || !ids.some((id) => id.startsWith('cintoDoGigante'))) return;
+        const sv = this.resistencia(target, 'con', 17, { contra: { magico: true } });
+        const r = this.explicarResistencia(target, 'con', 17, sv, { contra: w.name, seSucesso: 'aguenta' });
+        if (sv.success) { this.say('ataque', `${target.name} aguenta o golpe do ${w.name.toLowerCase()}.`, r.conta); return; }
+        this.say('ataque', `O ${w.name.toLowerCase()} acerta ${target.name} como um raio: o gigante cai morto.`, r.conta);
+        this.applyDamage(target, target.hp + (target.tempHp ?? 0), null, attacker, { magico: true });
+        return;
+      }
       case 'cruel': if (vinte) { this.say('ataque', `${w.name}: o 20 abre a ferida, +7.`); this.applyDamage(target, 7, p.type, attacker, { magico: true, deArma: true }); } return;
       // ONDA: no crítico, necrótico igual à metade dos PV máximos do alvo
       case 'onda': {
@@ -6531,7 +6811,7 @@ export class Encounter {
       || Sub.resisteComoSubclasse(this, target, type, magico) || Sub.resisteDaTempestade(target, type) || Sub.resisteRadiante(target, type)
       || Sub.resisteNasEstrelas(target, type) || Sub.resistePsiquico(target, type);
     if (!semResistencia && (porCondicao || infernal || porCaracteristica || target.resist?.includes(type) || target.doItem?.resiste?.includes(type) || (!magico && (target.resistNaoMagico?.includes(type) || target.doItem?.resisteNaoMagico?.includes(type))))) out = Math.floor(out / 2);
-    if (target.vulnerable?.includes(type) || target.doItem?.vulneravel?.includes(type) || (target.conditions ?? []).some((c) => { const d = CONDITIONS[c.id]; return d?.vulnerabilidadeTotal || d?.vulnerabilidade?.includes?.(type); })) out *= 2;
+    if (target.vulnerable?.includes(type) || target.doItem?.vulneravel?.includes(type) || Livro.vulneravelFerido(target, type) || (target.conditions ?? []).some((c) => { const d = CONDITIONS[c.id]; return d?.vulnerabilidadeTotal || d?.vulnerabilidade?.includes?.(type); })) out *= 2;
     return out;
   }
 
@@ -6669,22 +6949,31 @@ export class Encounter {
    */
   testeDeAtributo(actor, hab, bonus, rotulo = '', { pericia = null } = {}) {
     const fx = conditionEffects(actor);
+    const emprestada = Livro.gastarExperiencia(actor);
     let r = d20(this.rng, bonus, {
       // MANOBRA ELEGANTE (Espadachim, 13º): vantagem na próxima Acrobacia ou Atletismo
-      advantage: fx.vantagemTeste.includes(hab) || fx.vantagemSoTeste.includes(hab) || Sub.usaManobraElegante(actor, pericia) || Sub.forcaDoUrso(this, actor, hab)
+      advantage: emprestada || fx.vantagemTeste.includes(hab) || fx.vantagemSoTeste.includes(hab) || Sub.usaManobraElegante(actor, pericia) || Sub.forcaDoUrso(this, actor, hab)
         || (['intuicao', 'intimidacao'].includes(pericia) && hasCondition(actor, 'semblanteAstral'))
         // ATLETA SEM IGUAL e LENDA VIVA (Glória)
         || Sub.vantagemDeAtleta(actor, pericia) || Sub.vantagemDaLenda(actor, hab)
         // CANÇÃO DA LÂMINA (Acrobacia) e UM COM A PALAVRA (Escribas, Arcanismo)
-        || (pericia === 'acrobacia' && Sub.cantando(actor)) || (pericia === 'arcanismo' && !!actor.features?.includes('oneWithTheWord')),
+        || (pericia === 'acrobacia' && Sub.cantando(actor)) || (pericia === 'arcanismo' && !!actor.features?.includes('oneWithTheWord'))
+        // o ÓLEO DO BOGGLE: escorregadio para escapar, grudento para segurar
+        || ((pericia === 'acrobacia' || pericia === 'atletismo') && !!actor.motorDoLivro?.oleoDoBoggle)
+        // OLHAR FIRME (ladino Inquisitivo): Percepção e Investigação com vantagem, andando no máximo metade do deslocamento
+        || (['percepcao', 'investigacao'].includes(pericia) && !!actor.features?.includes('steadyEye') && (actor.corridaFt ?? 0) <= this.speedOf(actor) / 2),
       disadvantage: fx.desvantagemTeste.includes(hab) || fx.desvantagemSoTeste.includes(hab)
-        || (!!actor.armorUntrained && (hab === 'str' || hab === 'dex')),
+        || (!!actor.armorUntrained && (hab === 'str' || hab === 'dex'))
+        // o CATIVADO e o DISTRAÍDO PELA MOEDA: a Percepção com desvantagem
+        || (pericia === 'percepcao' && (actor.conditions ?? []).some((c) => CONDITIONS[c.id]?.percepcaoPenalidade)),
     });
     // o DRAGÃO da Forma Estrelada: 9 ou menos no d20 de INT e SAB conta como 10.
     // e o TRANSE DA ORDEM (Alma Mecânica), em todo teste
     if ((Sub.pisoDoDragao(actor, hab) || Sub.pisoDaOrdem(actor)) && r.natural < 10) r = { ...r, natural: 10, total: 10 + bonus };
     // LÍNGUA DE PRATA (Eloquência): na Persuasão e na Enganação, 9 ou menos no d20 conta como 10.
     if (Sub.linguaDePrata(actor, pericia) && r.natural < 10) r = { ...r, natural: 10, total: 10 + bonus };
+    // OUVIDO PARA MENTIRAS (ladino Inquisitivo): na Intuição, 7 ou menos no d20 conta como 8
+    if (pericia === 'intuicao' && actor.features?.includes('earForDeceit') && r.natural < 8) r = { ...r, natural: 8, total: 8 + bonus };
     // As passivas do dado: Sorte (halfling), Talento Confiável (ladino, 11º), Poder Indomável (bárbaro, 18º).
     r = ajustarTeste(this.rng, actor, r, bonus, { ability: hab, treinada: pericia ? treinadoEm(actor, pericia) : false });
     if (r.passivas?.length) this.say('recurso', `${actor.name}: ${r.passivas.join(' e ')} no teste${rotulo ? ` de ${rotulo}` : ''}.`);
@@ -6750,6 +7039,7 @@ export class Encounter {
   }
 
   applyDamage(target, amount, type, source = null, { critical = false, magico = false, deArma = false, corpoACorpo = false, deDentro = false, transferido = false, deAtaque = false } = {}) {
+    Livro.fogoMataLarvas(this, target, type);
     if (amount <= 0 || target.dead) return;
     // O GOLPE NÃO LETAL que já derrubou: o resto do mesmo golpe (o Golpe Divino que vem depois) não mata o desacordado
     if (target.capturado && target.hp <= 0 && source?.naoLetal && this.golpeDePerto === source) return;
@@ -6842,6 +7132,7 @@ export class Encounter {
     if (amount > 0) Sub.respostaInstavel(this, target, amount);
     if (amount > 0) Sub.depoisDoDanoNaRedencao(this, target, source, amount, { deAtaque: deArma || deAtaque });
     this.ultimoDano = Math.max(0, amount);
+    this.ultimoTipoDano = type ?? null;
     // AS CABEÇAS DA HIDRA: 25 de dano num turno arrancam uma; sem cabeça nenhuma, ela morre
     if (target.cabecas != null && amount > 0 && this.cabecasDaHidra(target, amount)) amount = Math.max(amount, target.hp + (target.tempHp ?? 0));
     // BRISA DAS CINZAS (zumbi das cinzas): a primeira vez que ele leva dano, a
@@ -6917,14 +7208,16 @@ export class Encounter {
     if (source && deArma && amount > 0) this.iraDaTempestade(target, source);
     // DEFLETIR PROJÉTEIS (monge, 3º): reação; um ataque À DISTÂNCIA com arma que acerta o monge perde 1d10 + DES + nível do dano. Se zerar
     // e ele tiver 1 de ki, devolve o projétil: um ataque à distância dele contra quem atirou, com o mesmo dano.
-    if (source && deArma && !corpoACorpo && amount > 0 && !target.reactionUsed && target.features?.includes('deflectMissiles')
+    // o DESVIO DE PROJÉTIL de monstro (o adepto de artes marciais, a Rosie): os dados do bloco, e ele não devolve
+    const desvioDoBloco = Livro.desvioDeProjetil(target);
+    if (source && deArma && !corpoACorpo && amount > 0 && !target.reactionUsed && (target.features?.includes('deflectMissiles') || desvioDoBloco)
       && !conditionEffects(target).incapacitated && !hasCondition(target, 'cego')) {
-      const reduz = this.rng.die(10) + abilityMod(target.abilities.dex) + (target.level ?? 1);
+      const reduz = desvioDoBloco ? damageRoll(this.rng, desvioDoBloco).total : this.rng.die(10) + abilityMod(target.abilities.dex) + (target.level ?? 1);
       target.reactionUsed = true;
       const cheio = amount;
       amount = Math.max(0, amount - reduz);
       this.say('recurso', `${target.name} defleta o projétil: -${reduz}, o dano vai de ${cheio} a ${amount}.`);
-      if (amount === 0 && (target.resources?.ki ?? 0) > 0 && !source.dead && distanceFt(target.pos, source.pos) <= 60) {
+      if (amount === 0 && !desvioDoBloco && (target.resources?.ki ?? 0) > 0 && !source.dead && distanceFt(target.pos, source.pos) <= 60) {
         target.resources.ki -= 1;
         const d = this.rng.die(20);
         const acerta = d === 20 || (d !== 1 && d + abilityMod(target.abilities.dex) + proficiencyBonus(target.level ?? 1) >= caEfetiva(source));
@@ -6943,6 +7236,12 @@ export class Encounter {
     if (amount <= 0) return;
     // PARAR O TEMPO acaba quando quem parou o tempo fere outra criatura
     if (source && source !== target && hasCondition(source, 'tempoParado')) { removeCondition(source, 'tempoParado'); this.say('magia', `O tempo volta a correr: ${source.name} feriu ${target.name}.`); }
+    // A QUARTA LEVA DA FILA: as reações que mexem no dano ANTES de ele entrar (o nilbog zera, o caçador de ovos se adapta,
+    // o lamento gélido se desfaz em nevasca, o espreitador de gemas toma para si, o orador dracônico tira um d6)
+    amount = Livro.reacaoAntesDoDano(this, target, amount, type, source, { deAtaque: deArma || deAtaque });
+    if (amount <= 0) return;
+    amount = Livro.espelhoPsiquico(this, target, amount, type, source);
+    if (amount <= 0) return;
     // TRANSFERÊNCIA DE DANO (o espreitador, o tapete sufocante): metade cai em quem ele agarra
     amount = Livro.transferirDano(this, target, amount, type, source, { critical, magico, deArma, corpoACorpo, transferido });
     if (amount <= 0) return;
@@ -6999,9 +7298,13 @@ export class Encounter {
       target.danoPorTipo[type] = (target.danoPorTipo[type] ?? 0) + amount;
     }
     target.hp -= left;
+    // os TENTÁCULOS-MANGUAL do caracol: a cada turno em que ele leva 10 ou mais, morre um
+    if (left > 0) Livro.tentaculosMangual(this, target, left);
     // o VÉU PSÍQUICO de quem feriu se rasga, o EXPULSO pelo Vigilante volta a si, e o BALUARTE MORTAL bane
     if (amount > 0) Sub.depoisDoDanoTce3(this, target, source, { deAtaque: deArma || deAtaque });
     if (amount > 0) Sub.depoisDoDanoLivros2(this, target, source);
+    // a RETRIBUIÇÃO EXPLOSIVA do orthon: ferido até 15 PV (e ainda de pé), ele explode, com os PV já descontados
+    if (amount > 0 && target.hp > 0 && Livro.explodeFerido(this, target)) return;
     // FORMA SELVAGEM: zerar os PV da fera não derruba o druida; ele volta à forma normal e o dano que sobrou desconta dos PV dele.
     if (target.formaSelvagem && target.hp <= 0) {
       const sobra = -target.hp;
@@ -7072,6 +7375,14 @@ export class Encounter {
       if (encanto && source && quemEncantou && source.side === quemEncantou.side && !encanto.data?.permanente && !encanto.data?.fimSeFerirFonte) {
         removeCondition(target, 'enfeiticado');
         this.say('condicao', `${target.name} acorda do encanto com o golpe.`);
+      }
+      // INCITAR COBIÇA (o Jim Darkmagic): o mal que o conjurador ou um aliado dele faz quebra o encanto da gema.
+      const cobica = getCondition(target, 'cobicaIncitada');
+      const quemMostra = cobica && this.combatants.find((x) => x.id === cobica.source);
+      if (cobica && source && quemMostra && source.side === quemMostra.side) {
+        removeCondition(target, 'cobicaIncitada');
+        this.say('condicao', `${target.name} esquece a gema com o golpe e volta à luta.`);
+        this.soltouDaConcentracao(target, 'cobicaIncitada');
       }
       // Sugestão: o dano de quem sugeriu (ou de um aliado dele) quebra a sugestão.
       const sug = getCondition(target, 'sugerido');
@@ -7216,6 +7527,11 @@ export class Encounter {
       target.morreuNaRodada = this.round;
       // o BERÇO do Bigby que cai solta o rebento do gigante: antes de qualquer conta de fim de luta
       Livro.despertarORebento(this, target, { MONSTERS, makeMonster });
+      // o MAGO-LARVA se desfaz num enxame de insetos na casa dele
+      Livro.voltarAosVermes(this, target, { makeMonster });
+      // a DUPLICATA do berbalang: cai ela, o corpo acorda; cai o corpo, ela some
+      Livro.fimDaDuplicata(this, target);
+      if (target.dead) Livro.maldicaoMortal(this, target);
       removeCondition(target, 'esquivando');
       this.say('morte', `${target.name} cai.`);
       this.explosaoMental(target);
@@ -7223,6 +7539,10 @@ export class Encounter {
       if (target.pedregulhos?.length) this.pedregulhosVoltamAPedra(target, `${target.name} caiu`);
       this.guardiaoSemMestre(target);
       this.aoMatar(source, target);
+      // o Golpe Vingador do gnoll definhado e o Motor Psíquico do déspota duergar
+      Livro.golpeVingador(this, target, source);
+      Livro.motorPsiquico(this, target);
+      Livro.colheitaSinistra(this, target, source);
       Sub.guardiaoDasAlmas(this, target, MONSTERS[target.defId]?.hpDice);
       // a MALDIÇÃO DO LÂMINA MALDITA que se fecha (ou passa), o ESPECTRO AMALDIÇOADO, e o CÃO DO MAU AGOURO sem alvo
       Sub.aoMorrerNaMaldicao(this, target, source);
@@ -7240,7 +7560,9 @@ export class Encounter {
       // quem estava DENTRO sai do corpo; o humanoide que cai no cone do tirano levanta zumbi
       Livro.libertarEngolidos(this, target, { caido: true, motivo: 'pelo corpo morto' });
       Livro.zumbiDoCone(this, target);
-      if (target.traits?.includes('chaoAberrante')) this.atualizarTerrenoDasZonas();
+      // a GAIOLA DE ALMAS: o monstro humanoide que cai também (o herói passa por `morrer`)
+      Livro.gaiolaDeAlmas(this, target);
+      if (Livro.mexeNoChao(target)) this.atualizarTerrenoDasZonas();
     this.onEvent({ type: 'died', target });
     } else if (sobra >= maxHpEfetivo(target)) {
       this.morrer(target, 'dano maciço');
@@ -7256,6 +7578,9 @@ export class Encounter {
       if (Sub.renascerEmChamas(this, target)) { this.onEvent({ type: 'damage', target, amount, source }); return; }
       // INVOCAÇÃO FIEL (Pastor, 14º): quatro feras vêm defender o druida que cai.
       Sub.invocacaoFiel(this, target);
+      // o COMEDOR DE VIDA (o andarilho noturno): quem ele leva a 0 PV morre ali, sem teste contra a morte
+      const comedor = Livro.comedorDeVida(source);
+      if (comedor) { this.say('morte', `${source.name} come a vida de ${target.name} (${comedor.nome}).`); this.morrer(target, comedor.nome); return; }
       if (hasCondition(target, 'furia')) { removeCondition(target, 'furia'); target.furiaAgiu = false; }
       addCondition(target, 'inconsciente');
       addCondition(target, 'caido');
@@ -7273,6 +7598,7 @@ export class Encounter {
         return;
       }
       this.say('morte', `${target.name} cai inconsciente.`);
+      Livro.pvTempAoDerrubar(this, source, target);
       this.soltarAgarroesDe(target);
       this.onEvent({ type: 'downed', target });
     }
@@ -7322,6 +7648,7 @@ export class Encounter {
    */
   aoMatar(matador, vitima) {
     if (!matador || matador.dead || matador.side === vitima.side) return;
+    Livro.pvTempAoDerrubar(this, matador, vitima);
     // TOQUE DA MORTE (Longa Morte, 3º)
     Sub.toqueDaMorte(this, matador, vitima);
     if (matador.features?.includes('darkOnesBlessing')) {
@@ -7380,7 +7707,22 @@ export class Encounter {
   }
 
   /** Morte de personagem: três falhas, ou dano maciço. */
+  /** OS ESPINHOS DE PEDRA (o berço do rebento de pedra): um quadrado de chão que fere a cada passo, até o começo do próximo turno do dono. */
+  espinhosDoChao(m, a, alvo) {
+    const ponto = alvo?.pos ?? alvo;
+    if (!ponto || distanceFt(m.pos, ponto) > a.alcanceFt) return false;
+    const casas = this.areaDaMagia(m, { shape: 'square', areaFt: a.ladoFt, level: 0 }, ponto) ?? [];
+    if (!casas.length) return false;
+    const zona = { id: 'espinhosDoChao', name: a.nome, level: 0, damageType: a.tipoDano,
+      zona: { noChao: true, em: 'nos', rodadas: 2, quando: 'nunca', aoEntrar: false, danoPorPasso: a.dano, semTeste: true } };
+    this.criarZona(m, zona, casas, null);
+    this.say('magia', `${m.name} faz o chão brotar espinhos de cristal em ${casas.length} casas (${a.nome}).`);
+    return true;
+  }
+
   morrer(target, motivo = null) {
+    // a ALMA PRESA do devorador: quem morre dentro dele o cura e vira morto-vivo
+    Livro.almaMorreuPresa(this, target);
     // FÚRIA ALÉM DA MORTE: as três falhas só matam quando a Fúria acabar (o dano maciço mata na hora, com motivo).
     if (!motivo && Sub.adiaAMorte(this, target)) return;
     // SURTO "reencarnar": quem morre dentro do minuto volta à vida (com metade dos PV), sem rolar a raça nova.
@@ -7407,7 +7749,9 @@ export class Encounter {
     this.soltarAgarroesDe(target);
     Livro.libertarEngolidos(this, target, { caido: true, motivo: 'pelo corpo morto' });
     Livro.zumbiDoCone(this, target);
-    if (target.traits?.includes('chaoAberrante')) this.atualizarTerrenoDasZonas();
+    // a GAIOLA DE ALMAS: quem tem a magia pronta prende a alma do humanoide que morre perto (reação)
+    Livro.gaiolaDeAlmas(this, target);
+    if (Livro.mexeNoChao(target)) this.atualizarTerrenoDasZonas();
     this.onEvent({ type: 'died', target });
     this.checkEnd();
   }
@@ -7484,6 +7828,8 @@ export class Encounter {
   inicioDoTurnoDoBloco(c) {
     if (c.dead) return;
     c.posNoInicioDoTurno = c.pos ? { ...c.pos } : null;
+    // o Corpo Espinhoso e o Sobrevivente (`livro-motor.js inicioDoTurnoDoDono`)
+    Livro.inicioDoTurnoDoDono(this, c);
     // A REGENERAÇÃO DO LIVRO (o troll, o vampiro, o slaad): +pv no começo do turno com 1 PV ou mais, menos depois de levar
     // o dano que a bloqueia. O troll caído (`naoMorreA0`) só morre se começar o turno a 0 PV sem regenerar.
     if (c.regeneracao) {
@@ -7494,6 +7840,8 @@ export class Encounter {
           c.caidoRegenerando = false;
           this.say('morte', `${c.name} não se levanta: o ${c.regeneracao.bloqueia.join(' e o ')} não deixaram a carne voltar.`);
           this.morrer(c, 'sem regenerar');
+          // a MALDIÇÃO MORTAL do fensir devorador: quem está perto quando ele morre de vez
+          Livro.maldicaoMortal(this, c);
           return;
         }
         c.hp = Math.min(c.maxHp, c.regeneracao.pv);
@@ -8007,7 +8355,7 @@ export class Encounter {
     if (!e || m.explodiuPoeira) return;
     m.explodiuPoeira = true;
     const pegos = this.combatants.filter((c) => c !== m && !c.dead && c.hp > 0 && c.pos && distanceFt(m.pos, c.pos) <= (e.pes ?? 5));
-    this.say('acao', e.dano ? `${m.name} explode ao morrer.` : `${m.name} se desfaz numa nuvem de poeira.`);
+    this.say('acao', e.frase ? `${m.name} ${e.frase}.` : e.dano ? `${m.name} explode ao morrer.` : `${m.name} se desfaz numa nuvem de poeira.`);
     for (const t of pegos) {
       // a explosão que FERE (os mefites de gelo, de magma; o esporo de gás)
       if (e.dano) {
@@ -8258,7 +8606,8 @@ export class Encounter {
   empurraoTelecinetico(m, alvo, { cd = 13 } = {}) {
     if (m.bonusUsed || !alvo || alvo.dead || distanceFt(m.pos, alvo.pos) > 30) return false;
     m.bonusUsed = true;
-    const save = this.resistencia(alvo, 'str', cd, { contra: { condicao: 'caido' } });
+    let save = this.resistencia(alvo, 'str', cd, { contra: { condicao: 'caido' } });
+    if (!save.success && Livro.inabalavel(this, alvo)) save = { ...save, success: true };
     const r = this.explicarResistencia(alvo, 'str', cd, save, { contra: 'Empurrão Telecinético', seSucesso: 'fica de pé' });
     if (save.success) {
       this.say('condicao', `${m.name} empurra ${alvo.name} com a mente, e ${alvo.name} se segura.`, r.conta, { rolagem: r });
@@ -8307,6 +8656,8 @@ export class Encounter {
 
   heal(target, amount, source = null) {
     if (target.dead || amount <= 0) return 0;
+    // o nilbog não se cura, nem por magia (só pela Reviravolta da Sorte, que não passa por aqui)
+    if (target.motorDoLivro?.nilbogismo) return 0;
     if (target.pos && Livro.noConeNegativo(this, target)) {
       this.say('aviso', `${target.name} não recupera PV: o cone de energia negativa não deixa.`);
       return 0;
@@ -8321,6 +8672,7 @@ export class Encounter {
     // `Math.max` porque `hp` pode estar acima do teto efetivo (exaustão nova):
     // curar jamais pode BAIXAR a vida de alguém.
     target.hp = Math.max(target.hp, Math.min(maxHpEfetivo(target), target.hp + amount));
+    if (target.hp > was) Livro.aoCurar(this, target);
     // FÚRIA ALÉM DA MORTE: curado acima de 0, as falhas somem e a morte adiada também.
     if (target.furiaAlemDaMorte && target.hp > 0) {
       target.furiaAlemDaMorte = false;
@@ -8527,6 +8879,8 @@ export class Encounter {
     }
     // A teia some, e quem ela prendia fica livre.
     if (conc.zona) this.desfazerZona(conc.zona);
+    // o PORTAL ARCANO: os dois anéis se fecham
+    if (conc.portal) Livro.fecharPortal(this, conc.portal);
     if (conc.aura) this.auras = this.auras.filter((a) => a !== conc.aura);
     if (actor.magiasAtivas?.[conc.spellId]) delete actor.magiasAtivas[conc.spellId];
   }
@@ -8580,12 +8934,15 @@ export class Encounter {
    */
   porqueNaoAlvo(actor, spell, alvo) {
     if (!alvo) return 'sem alvo';
+    if (Livro.barreiraBloqueia(this, actor, alvo)) return `${alvo.name} está atrás da barreira do pergaminho`;
+    if (Livro.cuboBloqueia(this, actor, alvo, 'magia')) return 'a barreira do cubo de força não deixa a magia passar';
     if (alvo.pos && Livro.noConeAntimagia(this, alvo.pos)) return `${alvo.name} está no cone antimágico`;
     if (spell.kind === 'teleporte') return 'escolha uma casa vazia';
     // Revivificar é a única que mira um morto — e só um morto recente.
     if (spell.kind === 'reviver') {
       if (alvo.side !== actor.side) return 'escolha um aliado';
       if (alvo.invocado) return 'criaturas invocadas não voltam à vida';
+      if (alvo.almaNaGaiola) return `a alma de ${alvo.name} está presa numa Gaiola de Almas`;
       if (!alvo.dead) return `${alvo.name} não está morto`;
       if (this.round - (alvo.morreuNaRodada ?? -Infinity) > spell.janelaRodadas) return `${alvo.name} morreu há mais de 1 minuto`;
       if (distanceFt(actor.pos, alvo.pos) > spell.rangeFt) return 'é de toque: chegue ao lado';
@@ -8636,6 +8993,7 @@ export class Encounter {
       return null;
     }
     if (spell.intMinima && (alvo.abilities?.int ?? 10) < spell.intMinima) return 'inteligência baixa demais para ser afetado';
+    if (spell.intMaxima && (alvo.abilities?.int ?? 10) > spell.intMaxima) return 'inteligente demais para ser afetado';
     // Raio de Bruxa já ativo: o arco está preso num alvo só.
     // Raio de Bruxa e Calor no Metal ativos: presos a um alvo só.
     const raio = spell.reusoAuto || spell.kind === 'calor' ? actor.magiasAtivas?.[spell.id] : null;
@@ -8952,7 +9310,11 @@ export class Encounter {
     // Zona inofensiva (Luz do Dia, Ilusão Menor, Crescimento de Plantas, Névoa, Escuridão): ninguém é "afetado".
     if (spell.soZona && spell.zona?.semTeste && !spell.dano && !spell.fimDano && !spell.danoPorPasso) return [];
     const vistos = [...new Set((casas ?? []).map((s) => this.at(s.x, s.y)))]
-      .filter((c) => c && !c.dead && !(spell.centradoEmSi && c === actor));
+      .filter((c) => c && !c.dead && !(spell.centradoEmSi && c === actor))
+      // a área que só pega um tipo (o Medo do anel de influência animal: fera de Inteligência 3 ou menos)
+      .filter((c) => (!spell.soTipo || (c.tipo ?? 'humanoide') === spell.soTipo) && (!spell.intMaxima || (c.abilities?.int ?? 10) <= spell.intMaxima))
+      // o CUBO DE FORÇA com a face da magia: a área não atravessa a barreira
+      .filter((c) => !Livro.cuboBloqueia(this, actor, c, 'magia'));
     if (spell.kind === 'sleep') {
       // Borrifo de Cores cega em vez de pôr para dormir: elfo não escapa,
       // quem já está cego ou inconsciente não gasta a reserva.
@@ -8992,7 +9354,34 @@ export class Encounter {
    * Checa TUDO antes de a magia sair: preparada, espaço, ação, alvo, alcance e
    * visão. Nenhum recurso é gasto aqui — é só a pergunta "dá para conjurar?".
    */
-  canCast(actor, spellId, { target = null, point = null, circulo = null, escalas = null, opcao = null } = {}) {
+  // A MENTE MANIFESTA (mago dos Escribas, 6º): com o interruptor ligado, a magia de mago do turno sai do lugar da mente
+  // espectral, e não do de quem conjura. O motor inteiro lê `actor.pos`, então a conta troca a posição durante a
+  // pergunta e a conjuração, e devolve no fim (`naMente`). Fica de fora o que move quem conjura (o teleporte) e a reação.
+  usaMente(actor, spellId) {
+    if (this._naMente || !actor?.conjurarDaMente || !actor.menteManifesta || !((actor.resources?.manifestMind ?? 0) > 0)) return false;
+    if (actor.classe !== 'mago' || this.side !== actor.side) return false;
+    if (distanceFt(actor.pos, actor.menteManifesta) > 300) { Livro.dispersarMente(this, actor); return false; }
+    const s = getSpell(spellId);
+    if (!s || s.interna || s.kind === 'teleporte' || s.castTime === 'reaction') return false;
+    const sc = actor.spellcasting ?? {};
+    return [...(sc.prepared ?? []), ...(sc.cantrips ?? []), ...(sc.livro ?? [])].includes(spellId);
+  }
+  naMente(actor, spellId, fn) {
+    if (!this.usaMente(actor, spellId)) return fn();
+    const real = actor.pos;
+    const daMente = { x: actor.menteManifesta.x, y: actor.menteManifesta.y, f: real.f ?? 1 };
+    actor.pos = daMente;
+    this._naMente = true;
+    try { return fn(); } finally {
+      this._naMente = false;
+      // a magia que moveu quem conjura (empurrão, queda) deixa a posição nova; senão, ele volta ao lugar dele
+      if (actor.pos === daMente) actor.pos = real;
+    }
+  }
+
+  canCast(actor, spellId, opcoesDoCanCast = {}) {
+    if (this.usaMente(actor, spellId)) return this.naMente(actor, spellId, () => this.canCast(actor, spellId, opcoesDoCanCast));
+    const { target = null, point = null, circulo = null, escalas = null, opcao = null } = opcoesDoCanCast;
     // ATIRADOR ARCANO (talento): a magia que pede jogada de ataque tem o dobro do alcance (o toque fica toque).
     const spell = this.comAlcanceDoTalento(actor, getSpell(spellId));
     // A AÇÃO QUE UMA MAGIA CONCEDE (`magias-concedidas.js`) não pede conjuração: o guerreiro tocado pelo Sopro do Dragão sopra.
@@ -9005,8 +9394,21 @@ export class Encounter {
     if (hasCondition(actor, 'transformacaoDeTenser') && !concedida) return { ok: false, why: 'na Transformação de Tenser não se conjura' };
     if (conditionEffects(actor).incapacitated) return { ok: false, why: 'incapacitado não conjura' };
     if (spell?.semMotor) return { ok: false, why: `${spell.name} ainda não tem efeito no jogo` };
+    // o DESEJO que custou caro: um terço de chance de nunca mais
+    if (spellId === 'desejo' && actor.semDesejo) return { ok: false, why: 'o esforço do último Desejo tirou essa magia para sempre' };
     // a magia que pega numa CHAMA do mapa (Controlar Chamas, Pirotecnia): só numa casa com chama acesa
     if (spell?.exigeChama && point && !chamaNaCasa(this.field, point)) return { ok: false, why: 'não há chama acesa nessa casa' };
+    // a MURALHA PRISMÁTICA não passa pelo espaço de ninguém: no livro a magia falha e o espaço se perde; aqui a mira recusa antes
+    if (spell?.zona?.prismatica && point) {
+      const casas = this.areaDaMagia(actor, spell, point, null, { opcao, escalas }) ?? [];
+      if (casas.some((t) => this.at(t.x, t.y))) return { ok: false, why: 'a muralha passaria pelo espaço de alguém (no livro, a magia falha)' };
+    }
+    // a CASA MIRADA das magias de tabuleiro dos livros (a parede da Criar Passagem, a porta da Tranca Arcana, o portal...)
+    if (spell?.kind === 'livro' && spell.mira === 'casa') { const casa = Livro.casaDoLivro(this, actor, spell, point, escalas); if (casa && !casa.ok) return casa; }
+    // e a OPÇÃO que custa (a face do cubo de força)
+    if (spell?.kind === 'livro') { const o = Livro.opcaoDoLivro(this, actor, spell, opcao); if (o && !o.ok) return o; }
+    // e o ALVO das que pedem algo da criatura (a fera do Vínculo Bestial, o alvo dentro da Fúria da Natureza)
+    if (spell?.kind === 'livro' && target) { const alvo = Livro.alvoDoLivro(this, actor, spell, target, opcao); if (alvo && !alvo.ok) return alvo; }
     // a AÇÃO DA RAÇA que é um golpe (as Mandíbulas Famintas): sem alvo ao alcance da arma, não sai
     if (spell?.exigeGolpe) {
       const pode = target ? this.canAttack(actor, target, spell.exigeGolpe) : { ok: false, why: 'escolha quem morder' };
@@ -9016,7 +9418,8 @@ export class Encounter {
     // O CONE ANTIMÁGICO do observador: dentro dele, magia não sai
     if (Livro.noConeAntimagia(this, actor.pos)) return { ok: false, why: 'dentro do cone antimágico, a magia não sai' };
     // Dentro da pedra e no Plano Etéreo não se conjura para fora.
-    if (conditionEffects(actor).inalcancavel) {
+    // (a volta da Forma Etérea é a exceção: é dali que ela sai)
+    if (conditionEffects(actor).inalcancavel && !spell?.doEtereo) {
       return { ok: false, why: `quem ${conditionEffects(actor).motivoInalcancavel ?? 'está fora de alcance'} não conjura` };
     }
     // Forma Gasosa: a névoa não conjura — nem para desfazer a própria magia,
@@ -9043,6 +9446,7 @@ export class Encounter {
         dano: 'alguém fere você', acerto: 'um ataque ia acertar você', queda: 'você ou um aliado cai',
         conjuracao: 'um inimigo conjura uma magia',
         elemento: 'você sofre ácido, frio, fogo, elétrico ou trovejante',
+        morteHumanoide: 'um humanoide que você vê morre a até 18 m (e você não tem alma presa)',
       };
       return { ok: false, why: `${spell.name} é reação: sai sozinha quando ${QUANDO[spell.gatilho] ?? 'chega a hora'}` };
     }
@@ -9221,7 +9625,9 @@ export class Encounter {
     if (point && spell.zona?.ilusao && this.field.blocksMove(point.x, point.y)) return { ok: false, why: 'a casa está bloqueada' };
     // Cone e cubo saem do próprio conjurador (alcance 0): não há distância a
     // checar.
-    if (dest && spell.rangeFt > 0) {
+    // (a casa mirada das magias de tabuleiro dos livros já foi conferida pela conta dela, `Livro.casaDoLivro`: a árvore de
+    // chegada não pede vista, e a volta do etéreo atravessa parede)
+    if (dest && spell.rangeFt > 0 && !(spell.kind === 'livro' && Livro.CASA_PROPRIA.has(spell.efeito))) {
       const d = distanceFt(actor.pos, dest);
       if (d > spell.rangeFt) {
         return { ok: false, why: `fora de alcance — ${d} pés, a magia chega a ${spell.rangeFt}` };
@@ -9239,6 +9645,14 @@ export class Encounter {
    * três, e só uma ganha).
    */
   castSpell(actor, spellId, opcoes = {}) {
+    if (this.usaMente(actor, spellId)) {
+      const r = this.naMente(actor, spellId, () => this.castSpell(actor, spellId, opcoes));
+      if (r?.ok) {
+        actor.resources.manifestMind -= 1;
+        this.say('recurso', `${actor.name} conjura ${getSpell(spellId)?.name ?? 'a magia'} do lugar da mente espectral (Mente Manifesta).`);
+      }
+      return r;
+    }
     this.bonusDeMagia = bonusDeDanoPorTraco(actor, SPELLS[spellId]);
     const original = SPELLS[spellId];
     // O CRISTAL MENTAL armado (o Obelisco) vale no lugar da metamagia: o livro não deixa os dois na mesma magia.
@@ -9304,6 +9718,10 @@ export class Encounter {
       heightened: ids.has('heightenedSpell'), subtle: ids.has('subtleSpell'),
       empowered: ids.has('empoweredSpell') ? cuidado : 0, empoderou: false,
     } : null;
+    // A QUARTA LEVA DA FILA: o ESCULPIR MAGIAS do evocador e o ARCANO DO EXÉRCITO do devastador hobgoblin poupam os aliados
+    // da magia com teste, como a Cuidadosa do feiticeiro: passam no teste e não levam o dano
+    const esculpe = original?.save && !this.metaAtiva?.careful ? Livro.aliadosPoupados(actor, original) : 0;
+    if (esculpe) this.metaAtiva = { ...(this.metaAtiva ?? { dono: actor, ids: new Set() }), careful: { restantes: esculpe, zera: true } };
     const antesDeAcao = { acao: actor.actionUsed, bonus: actor.bonusUsed };
     const slotsAntes = actor.spellcasting?.slots?.slice();
     const mortosAntes = new Set(this.combatants.filter((c) => c.dead).map((c) => c.id));
@@ -9319,6 +9737,11 @@ export class Encounter {
       if (r?.ok && desvDoSurto) delete actor.surtoDesvSaveAte;
       if (r?.ok && actor.surtoMaximoAte >= this.round && (original?.damage || original?.damage2)) delete actor.surtoMaximoAte;
       if (r?.ok) {
+        // a MAGIA ECOADA (a Pendragon) lembra a magia do turno; o MIMETISMO DE MAGIA (o gargantua) tenta copiá-la
+        Livro.lembrarMagia(this, actor, spellId, opcoes);
+        // o DESGASTE DO DESEJO: cada magia até o descanso longo custa 1d10 necrótico por círculo
+        Livro.estresseDoDesejo(this, actor, original, spellId);
+        if (!this.reagindo) Livro.mimetismoDeMagia(this, actor, spellId, opcoes);
         // O círculo do espaço que a magia gastou (0 se foi truque ou uso livre).
         const gasto = slotsAntes ? slotsAntes.findIndex((n, i) => i >= 1 && n > (actor.spellcasting.slots[i] ?? 0)) : -1;
         this.depoisDaMagia(actor, original, r, { slotGasto: gasto > 0 ? gasto : (original?.level ?? 0), mortosAntes, gastouEspaco: gasto > 0 });
@@ -9734,8 +10157,8 @@ export class Encounter {
     switch (spell.kind) {
       // AS MAGIAS DOS LIVROS que nenhum tipo do motor conjurava (`livro-motor.js conjurarDoLivro`, pelo `efeito`)
       case 'livro': {
-        Livro.conjurarDoLivro(this, actor, spell, { target, targets, point, slot, dc, acima, opcao },
-          { vestirFera, MONSTERS, spellAttackBonus, spellMod, skillBonus });
+        Livro.conjurarDoLivro(this, actor, spell, { target, targets, point, slot, dc, acima, opcao, escalas },
+          { vestirFera, MONSTERS, spellAttackBonus, spellMod, skillBonus, attackRoll });
         break;
       }
       case 'attack': {
@@ -9745,6 +10168,7 @@ export class Encounter {
           ? { ...spell, damageType: [...spell.tiposAEscolher].sort((a, b) => this.danoPorTipo(target, 10, b, true) - this.danoPorTipo(target, 10, a, true))[0] }
           : spell;
         const causado = this.ataqueMagico(actor, target, comoSai, dano, dc, { slot });
+        if (causado > 0) Livro.vantagemArcana(this, actor, target, comoSai.damageType);
         // Flecha Ácida: errou, metade do dano inicial; acertou, mais ácido no
         // fim do próximo turno do alvo.
         if (spell.danoAtrasado && !target.dead) {
@@ -10118,6 +10542,8 @@ export class Encounter {
       case 'raios': {
         const alvos = (targets?.length ? targets : target ? [target] : []).filter((t) => !this.porqueNaoAlvo(actor, spell, t));
         const n = this.alvosDaMagia(spell, slot, actor);
+        // o MÍSSIL MÁGICO DE JIM: as jogadas todas antes do dano, o crítico de 5d4 e o 1 que estoura tudo (`livro-motor.js`)
+        if (spell.dardosDeJim) { Livro.dardosDeJim(this, actor, spell, alvos, n, { spellAttackBonus, attackRoll }); break; }
         // Explosão Agonizante (invocação do bruxo): soma CAR em cada raio da Rajada.
         const agonizante = spell.id === 'rajadaMistica' && actor.features?.includes('agonizingBlast') ? mod : 0;
         for (let i = 0; i < n && alvos.length; i++) {
@@ -10515,6 +10941,7 @@ export class Encounter {
     const dmg2 = spell.damage2 ? damageRoll(this.rng, spell.damage2) : null;
     // A teia nasce antes dos testes: quem fica contido fica preso A ELA.
     const zona = !reuso && spell.zona && areaTiles ? this.criarZona(actor, spell, areaTiles, dc, { opcao, centro: point ?? target?.pos, circulo: slot, tipo: spell.escolheTipoDoGlifo ? this.tipoDoGlifo(opcao, actor) : spell.escolheTipoDoCirculo ? this.tipoDoCirculo(opcao, actor) : null }) : null;
+    if (zona?.prismatica) Livro.muralhaPrismaticaSurge(this, actor, zona);
     // Raio Lunar e Esfera Flamejante: a zona anda com a ação (ou bônus).
     if (zona && spell.zona.movel) (actor.magiasAtivas ??= {})[spell.id] = { circulo: slot, rodadas: null, zona };
     const presos = [];
@@ -10663,6 +11090,8 @@ export class Encounter {
    */
   teleportarPelaMagia(actor, spell, point, dc, dano) {
     const de = { ...actor.pos };
+    // a TRANCA DIMENSIONAL do canoloth: a magia se gasta e ninguém sai do lugar
+    if (Livro.trancaDimensional(this, actor, de, point)) return;
     // ANDARILHO NEBULOSO (Andarilho Feérico, 15º): o Passo Nebuloso leva um aliado colado
     const junto = spell.levaUmAliado || Sub.levaAliadoNoPasso(actor, spell)
       ? this.alliesOf(actor).filter((a) => a.hp > 0 && isAdjacent(a.pos, actor.pos)).sort((a, b) => a.hp / a.maxHp - b.hp / b.maxHp)[0] ?? null
@@ -10964,7 +11393,8 @@ export class Encounter {
       this.say('aviso', `${actor.name} tenta se esconder e é notado (Furtividade ${t.total} contra ${cd}).`);
       return false;
     }
-    addCondition(actor, 'invisivel', { rounds: Infinity, source: actor.id, data: { escondido: true } });
+    // (a Furtividade fica guardada: o OLHO PARA DETALHES do ladino Inquisitivo procura contra ela)
+    addCondition(actor, 'invisivel', { rounds: Infinity, source: actor.id, data: { escondido: true, furtividade: t.total } });
     this.say('recurso', `${actor.name} se esconde (Furtividade ${t.total} contra ${cd}).`);
     return true;
   }
@@ -11458,7 +11888,9 @@ export class Encounter {
     const atkBonus = doItem ? doItem.ataque : (spellAttackBonus(actor) ?? 0);
     // Infligir Ferimentos é de toque: ataque corpo a corpo, sem a
     // desvantagem de "inimigo adjacente" e sem cobertura.
-    const mods = this.attackModifiers(actor, target, { ranged: !spell.melee });
+    const mods = this.attackModifiers(actor, target, { ranged: !spell.melee, deMagia: true });
+    // a EXPERIÊNCIA EMPRESTADA da Gaiola de Almas: gasta-se aqui, na jogada de verdade (a prévia não a consome)
+    if (Livro.gastarExperiencia(actor)) fonte(mods, 'vantagem', 'experiência emprestada');
     Sub.ajustarModsTce4(this, actor, target, mods);
     Sub.modsDosLivros2(this, actor, target, mods);
     // Toque Chocante: vantagem contra armadura de metal.
@@ -11520,6 +11952,15 @@ export class Encounter {
       conta: contaAtaque,
     };
     this.onEvent({ type: 'rolagem', ...rolagem });
+    if (!atk.hit) Livro.veloAbsorvente(this, target, actor);
+    // a REFLEXÃO DE MAGIA do morkoth: a magia de ataque que erra vai para outra criatura que ele escolhe
+    if (!atk.hit && !this.espelhando) {
+      const outro = Livro.espelharMagia(this, target, actor);
+      if (outro) {
+        this.espelhando = true;
+        try { return this.ataqueMagico(actor, outro, spell, dano, dc, { bonusDano, slot }); } finally { this.espelhando = false; }
+      }
+    }
     if (!atk.hit) {
       const nota = atk.fumble
         ? ' — 1 natural, erra por regra'
@@ -11610,6 +12051,7 @@ export class Encounter {
    * parede, borda ou outra criatura.
    */
   empurrar(alvo, origem, pes) {
+    if (Livro.inabalavel(this, alvo)) return;
     const dx = Math.sign(alvo.pos.x - origem.x);
     const dy = Math.sign(alvo.pos.y - origem.y);
     if (!dx && !dy) return;
@@ -11667,6 +12109,7 @@ export class Encounter {
    */
   resistencia(actor, hab, dc, { vantagem = false, desvantagem = false, contra = null } = {}) {
     const fx = conditionEffects(actor);
+    if (Livro.gastarExperiencia(actor)) vantagem = true;
     // MAGIA CUIDADOSA: até CAR criaturas escolhidas passam sozinhas na resistência da magia (e não sofrem o efeito, nem o dano).
     const meta = this.metaAtiva;
     if (meta?.careful?.restantes > 0 && actor.side === meta.dono.side) {
@@ -11688,6 +12131,7 @@ export class Encounter {
     // EXPLORADOR DE MASMORRAS (talento): vantagem na resistência contra armadilha.
     if (contra?.armadilha && temTalento(actor, 'exploradorDeMasmorras')) vantagem = true;
     if (Livro.vantagemDeAura(this, actor, contra)) vantagem = true;
+    if (Livro.vantagemDoMestre(this, actor)) vantagem = true;
     // MARÉS DO CAOS: vantagem nesta resistência, e o uso se gasta.
     if (hasCondition(actor, 'maresDoCaos') && !this.surtando) { vantagem = true; removeCondition(actor, 'maresDoCaos'); }
     // SENTIDO DE PERIGO: o bárbaro esquiva do que consegue ver. Aqui, de
@@ -11704,6 +12148,10 @@ export class Encounter {
         || fx.saveDisadvantage.includes(hab) || fx.desvantagemTeste.includes(hab),
     };
     if (desvantagem) opts.disadvantage = true;
+    // O FARDO DO TEMPO, o DESESPERO INFERNAL, a AURA DA LOUCURA: quem está perto do dono resiste com desvantagem
+    if (Livro.desvantagemDeAura(this, actor)) opts.disadvantage = true;
+    // a MAGIA ELEVADA do feiticeiro escamado kobold
+    if (Livro.magiaElevada(this, actor)) opts.disadvantage = true;
     // COROA DE LUZ (clérigo da Luz, 17º): quem está a até 18 m do clérigo tem desvantagem contra as magias dele de fogo ou radiantes.
     if (contra?.magico && ['fogo', 'radiante'].includes(contra?.tipoDano) && this.combatants.some((c) => !c.dead && hasCondition(c, 'coroaDeLuz')
       && distanceFt(c.pos, actor.pos) <= 60)) opts.disadvantage = true;
@@ -11863,6 +12311,15 @@ export class Encounter {
       this.say('recurso', `${actor.name} falharia, e escolhe passar (Resistência Lendária, restam ${actor.resources.resistenciaLendaria}).`);
     }
     // Só conta como "por traço" se a vantagem sobreviveu (uma desvantagem na mesma rolagem a cancela).
+    // o PRESSÁGIO do adivinho troca a jogada de quem ele vê
+    rolado = Livro.pressagioNaResistencia(this, actor, rolado, dc);
+    if (!rolado.success) {
+      // a SEXTA LEVA DA FILA: o dado depois da jogada (a sorte do bruxo do corruptor, a instrução do senhor da guerra)
+      const soma = Livro.dadoDepoisDaJogada(this, actor, rolado.total, dc);
+      if (soma) { rolado.total += soma; rolado.success = rolado.total >= dc; partes.push({ rotulo: 'dado depois da jogada', valor: soma }); }
+    }
+    if (!rolado.success) Livro.aoFalharResistencia(this, actor);
+    else if (this.magiaEmCurso && this.conjuradorEmCurso && this.conjuradorEmCurso !== actor) Livro.veloAbsorvente(this, actor, this.conjuradorEmCurso);
     return { ...rolado, partes, vantagemPor: rolado.mode === 'vantagem' ? porTraco : [] };
   }
 
@@ -12098,6 +12555,11 @@ export class Encounter {
         if (dados.curaDoenca) tiradas.push(...curarDoencas(target));
         const quem = target === actor ? 'bebe' : `dá ${dados.name.toLowerCase()} a ${target.name}:`;
         this.say('cura', `${actor.name} ${quem} ${dados.name.toLowerCase()}${tiradas.length ? `: sai ${tiradas.map((id) => CONDITIONS[id]?.name.toLowerCase() ?? id).join(', ')}` : ', e nada muda'}.`);
+        break;
+      }
+      // o PERGAMINHO DE PROTEÇÃO: a barreira contra um tipo de criatura, em volta de quem o leu
+      case 'pergaminhoDeProtecao': {
+        Livro.lerPergaminhoDeProtecao(this, actor, dados.tipoBarrado);
         break;
       }
       case 'condicao': {
@@ -12381,8 +12843,20 @@ export class Encounter {
   useFeature(actor, featureId, { target = null, modo = null, valor = null } = {}) {
     // Incapacitado não faz ação, ação bônus nem reação; o interruptor do Ataque
     // Descuidado é de graça (uma escolha, não uma ação).
-    if (actor.dead || (featureId !== 'recklessAttack' && featureId !== 'desviarOlhar' && conditionEffects(actor).incapacitated)) return false;
+    if (actor.dead || (featureId !== 'recklessAttack' && featureId !== 'desviarOlhar' && featureId !== 'mirarPreso' && conditionEffects(actor).incapacitated)) return false;
     switch (featureId) {
+      case 'conjurarDaMente': {
+        // a MENTE MANIFESTA (Escribas): interruptor de graça; ligado, a próxima magia de mago sai do lugar da mente
+        actor.conjurarDaMente = modo === 'ligar' ? true : modo === 'desligar' ? false : !actor.conjurarDaMente;
+        this.say('recurso', actor.conjurarDaMente ? `${actor.name} vai conjurar do lugar da mente espectral.` : `${actor.name} volta a conjurar do próprio lugar.`);
+        return true;
+      }
+      case 'mirarPreso': {
+        // o MOTOR DA DOR: interruptor de graça; ligado, o golpe no martelador mira o duergar preso dentro dele
+        actor.mirarPreso = modo === 'ligar' ? true : modo === 'desligar' ? false : !actor.mirarPreso;
+        this.say('recurso', actor.mirarPreso ? `${actor.name} vai mirar o duergar preso na máquina.` : `${actor.name} volta a bater na máquina.`);
+        return true;
+      }
       case 'desviarOlhar': {
         // DESVIAR OS OLHOS da medusa: interruptor de graça. Ligado, no começo de cada turno ele não olha para ela
         // (`olharPetrificante`); desligar no meio do turno tira os olhos desviados na hora (ele volta a olhar).
@@ -12496,6 +12970,89 @@ export class Encounter {
         actor.resources.layOnHands -= quanto;
         this.heal(alvo, quanto, actor);
         this.say('recurso', `${actor.name} impõe as mãos sobre ${alvo.name}: ${quanto} PV (restam ${actor.resources.layOnHands} na reserva).`);
+        return true;
+      }
+      // OLHOS DA SEPULTURA (clérigo da Sepultura): os mortos-vivos a até 18 m que não estão atrás de cobertura total
+      case 'eyesOfTheGrave': {
+        if (actor.actionUsed || !(actor.resources?.eyesOfTheGrave > 0)) return false;
+        actor.actionUsed = true;
+        actor.resources.eyesOfTheGrave -= 1;
+        const achados = this.combatants.filter((c) => !c.dead && c !== actor && !c.semDeteccao && (c.auraMagica ?? c.tipo) === 'morto-vivo'
+          && distanceFt(actor.pos, c.pos) <= 60 && this.field.hasLineOfSight(actor.pos, c.pos));
+        this.say('recurso', achados.length
+          ? `${actor.name} sente a morte que anda: ${achados.length} morto(s)-vivo(s) a até 18 m${achados.some((c) => hasCondition(c, 'invisivel')) ? ', um deles escondido' : ''} (${achados.map((c) => c.name).join(', ')}).`
+          : `${actor.name} procura a morte que anda e não sente nenhum morto-vivo a 18 m.`);
+        for (const c of achados) if (getCondition(c, 'invisivel')?.data?.escondido) removeCondition(c, 'invisivel');
+        return true;
+      }
+      // CONSCIÊNCIA MÁGICA (bárbaro da Magia Selvagem): as magias e os itens mágicos a até 18 m, com a escola de cada magia
+      case 'magicAwareness': {
+        if (actor.actionUsed || !(actor.resources?.magicAwareness > 0)) return false;
+        actor.actionUsed = true;
+        actor.resources.magicAwareness -= 1;
+        const perto = (p) => p && distanceFt(actor.pos, p) <= 60 && this.field.hasLineOfSight(actor.pos, p);
+        const achados = [];
+        for (const c of this.combatants) {
+          if (c.dead || !perto(c.pos)) continue;
+          const conc = c.concentrating?.spellId ? getSpell(c.concentrating.spellId) : null;
+          if (conc) achados.push(`${c.name} mantém ${conc.name} (${conc.school})`);
+          const magicos = idsCarregados(c).map((id) => itemDeId(id)?.dados ?? WEAPONS[id]).filter((d) => d?.raridade && d.raridade !== 'comum');
+          if (magicos.length && c !== actor) achados.push(`${c.name} leva ${magicos.length} item(ns) mágico(s)`);
+        }
+        for (const z of this.zonas ?? []) if (z.centro && perto(z.centro) && z.spellId && getSpell(z.spellId)) achados.push(`${getSpell(z.spellId).name} (${getSpell(z.spellId).school})`);
+        this.say('recurso', achados.length ? `${actor.name} sente a magia em volta: ${[...new Set(achados)].join('; ')}.` : `${actor.name} não sente magia nenhuma a 18 m.`);
+        return true;
+      }
+      // OLHAR INFALÍVEL (ladino Inquisitivo, 13º): as ilusões e quem não está na forma de verdade a até 9 m, sem desfazer nada
+      // DETECTAR PORTAL (Andarilho do Horizonte): a distância e a direção do portal planar mais perto, a até 1,6 km
+      // (o tabuleiro inteiro cabe nisso). São os portais do mapa (`field.portais`) e os do Portal Arcano.
+      case 'detectPortal': {
+        if (actor.actionUsed || !(actor.resources?.detectPortal > 0)) return false;
+        actor.actionUsed = true; actor.resources.detectPortal -= 1;
+        const portais = [...(this.field.portais ?? [])];
+        for (const r of this.field.regioes ?? []) {
+          if (!r.portalArcano || r.ligada === false) continue;
+          const [x, y] = [...r.casas][0].split(',').map(Number);
+          portais.push({ x, y, nome: 'o Portal Arcano' });
+        }
+        const perto = portais.filter((p) => !(p.x === actor.pos.x && p.y === actor.pos.y))
+          .sort((a, b) => distanceFt(actor.pos, a) - distanceFt(actor.pos, b))[0];
+        if (!perto) { this.say('recurso', `${actor.name} procura com os sentidos de quem anda entre os planos e não sente portal nenhum por perto.`); return true; }
+        const dx = perto.x - actor.pos.x, dy = perto.y - actor.pos.y;
+        const ang = (Math.atan2(-dy, dx) * 180) / Math.PI;
+        const rumos = ['leste', 'nordeste', 'norte', 'noroeste', 'oeste', 'sudoeste', 'sul', 'sudeste'];
+        const rumo = rumos[((Math.round(ang / 45) % 8) + 8) % 8];
+        const m = Math.round(distanceFt(actor.pos, perto) * 0.3);
+        this.say('recurso', `${actor.name} sente um portal planar a ${m} m, para o ${rumo}${perto.nome ? ` (${perto.nome})` : ''}.`);
+        return true;
+      }
+      case 'unerringEye': {
+        if (actor.actionUsed || !(actor.resources?.unerringEye > 0) || hasCondition(actor, 'cego') || hasCondition(actor, 'surdo')) return false;
+        actor.actionUsed = true;
+        actor.resources.unerringEye -= 1;
+        const perto = (p) => p && distanceFt(actor.pos, p) <= 30;
+        const achados = [];
+        for (const c of this.combatants) {
+          if (c.dead || c === actor || !perto(c.pos)) continue;
+          if (c.formaSelvagem) achados.push(`${c.name} não está na forma de verdade`);
+          else if (c.traits?.includes('metamorfo')) achados.push(`${c.name} é um metamorfo`);
+          if (getCondition(c, 'imagens')) achados.push(`as cópias em volta de ${c.name} são ilusão`);
+          if (hasCondition(c, 'borrado') || hasCondition(c, 'duplicidade')) achados.push(`${c.name} engana os olhos com magia`);
+          if (getCondition(c, 'invisivel') && !getCondition(c, 'invisivel').data?.escondido) achados.push('há alguém invisível por perto');
+        }
+        for (const z of this.zonas ?? []) if (z.ilusao && z.centro && perto(z.centro)) achados.push(`${z.nome ?? 'a imagem'} é ilusão`);
+        this.say('recurso', achados.length ? `${actor.name} vê através do engano: ${[...new Set(achados)].join('; ')}.` : `${actor.name} olha com atenção e não vê engano nenhum a 9 m.`);
+        return true;
+      }
+      // OLHO PARA DETALHES (ladino Inquisitivo): ação bônus, Percepção contra a Furtividade de quem se escondeu
+      case 'eyeForDetail': {
+        if (actor.bonusUsed) return false;
+        actor.bonusUsed = true;
+        const t = this.testeDeAtributo(actor, 'wis', skillBonus(actor, 'percepcao'), 'Percepção', { pericia: 'percepcao' });
+        const achados = this.combatants.filter((c) => !c.dead && c.side !== actor.side && getCondition(c, 'invisivel')?.data?.escondido
+          && this.field.hasLineOfSight(actor.pos, c.pos) && t.total >= (getCondition(c, 'invisivel').data.furtividade ?? 10));
+        for (const c of achados) removeCondition(c, 'invisivel');
+        this.say('recurso', achados.length ? `${actor.name} repara no que ninguém via (Percepção ${t.total}): ${achados.map((c) => c.name).join(', ')}.` : `${actor.name} procura com cuidado (Percepção ${t.total}) e não acha ninguém escondido.`);
         return true;
       }
       case 'divineSense': {
@@ -13059,7 +13616,7 @@ export class Encounter {
         const cdN = spellSaveDc(actor);
         const hab = saveBonus(alvoN, 'str') >= saveBonus(alvoN, 'dex') ? 'str' : 'dex';
         const svN = this.resistencia(alvoN, hab, cdN);
-        this.explicarResistencia(alvoN, hab, cdN, svN, { contra: `Ira da Natureza de ${actor.name}`, seSucesso: 'se solta das vinhas' });
+        this.explicarResistencia(alvoN, hab, cdN, svN, { contra: `Fúria da Natureza de ${actor.name}`, seSucesso: 'se solta das vinhas' });
         if (!svN.success && this.aplicarCondicao(alvoN, 'contido', { rounds: 10, source: actor.id, data: { save: hab, dc: cdN, repete: true } })) {
           this.say('condicao', `Vinhas espectrais prendem ${alvoN.name}.`);
         }

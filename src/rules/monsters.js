@@ -287,6 +287,12 @@ export function makeMonster(id, pos, { rng = null, nameSuffix = '', tatica = nul
     ...(def.peleVenenosa ? { peleVenenosa: { ...def.peleVenenosa } } : {}),
     ...(def.usosIndomavel ? { usosIndomavel: def.usosIndomavel } : {}),
     ...(def.nomeOriginal ? { nomeOriginal: def.nomeOriginal } : {}),
+    // a TERCEIRA FILA DOS BESTIÁRIOS (`livro-motor.js`): tudo o que o importador leu da frase num campo só; a vantagem
+    // contra condições (as Seis Cabeças do anátema), no formato da vantagem racial do herói; e as marcas do tipo
+    // ("demon", "yugoloth"), que dizem quem obedece a um comando
+    ...(def.motorDoLivro ? { motorDoLivro: structuredClone(def.motorDoLivro) } : {}),
+    ...(def.vantagemRacial ? { vantagemRacial: def.vantagemRacial.map((v) => ({ ...v })) } : {}),
+    ...(def.marcas ? { marcas: [...def.marcas] } : {}),
     // o obelisco da Ânima (o capítulo 8): o dano nele volta sobre os fanáticos, e a arte dele é a do mapa
     ...(def.contragolpe ? { contragolpe: { ...def.contragolpe } } : {}),
     ...(def.pintadoNoMapa ? { pintadoNoMapa: true } : {}),

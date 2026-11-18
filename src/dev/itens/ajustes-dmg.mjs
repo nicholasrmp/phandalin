@@ -21,7 +21,11 @@ const VULNERAVEL = (resiste, vulneravel) => ({
   noJogo: `sintonizada, resistência a ${resiste} e vulnerabilidade a ${vulneravel.join(' e ')}. No livro a maldição fica mesmo sem a armadura; aqui, ela sai quando se desfaz a sintonia.`,
 });
 
-const ARMA = 'arma mágica do livro com poder que o motor ainda não faz (as runas da lâmina lunar, os relâmpagos e o gigante do martelo)';
+// os ANÉIS DE COMANDO: os elementais do plano de cada um, contra os quais o anel dá vantagem (e eles têm desvantagem)
+const FLAGELO = {
+  ar: ['elementalDoAr', 'djinni', 'perseguidorInvisivel'], terra: ['elementalDaTerra', 'dao', 'xorn'],
+  fogo: ['elementalDoFogo', 'efreeti', 'salamandra'], agua: ['elementalDaAgua', 'marid'],
+};
 // AS NOVE ESPADAS DA RESPOSTA: o mesmo revide, um nome e uma gema cada (o livro pede um alinhamento para a sintonia; o jogo não
 // tem alinhamento, e qualquer um se sintoniza)
 const RESPOSTA = (en, id, nome) => [`Sword of Answering (${en})`, {
@@ -39,7 +43,31 @@ const ARTEFATO = 'artefato: fica de fora, como os outros oito do livro';
 const CONVOCA = 'convoca criatura (sorteada ou elemental): o herói ainda não convoca por item';
 const MONTARIA = 'é de montaria, e o jogo não tem montaria';
 const NARRA = 'o efeito só se narra (viagem, vidência, recado, construção): não há o que fazer dele numa luta nem na exploração';
-const PROTECAO = 'pergaminho de proteção: a barreira que um tipo de criatura não atravessa ainda não existe no motor';
+// OS PERGAMINHOS DE PROTEÇÃO: a barreira do Círculo Mágico contra o tipo, em volta de quem leu, por 5 minutos (`livro-motor.js
+// lerPergaminhoDeProtecao`)
+const PERGAMINHO = (en, id, tipo, nome) => [`Scroll of Protection from ${en}`, {
+  id, tipo: 'pergaminho', art: 'arcano', pilha: true, consumivel: 'pergaminhoDeProtecao', tipoBarrado: tipo, acao: 'acao',
+  noJogo: `ler gasta a ação: por 5 minutos, um cilindro de 1,5 m em volta de quem leu, que anda com ele, onde ${nome} não entra nem ataca ou mira quem está dentro. Se o leitor andar até pôr um deles dentro, a barreira acaba; e cada um pode gastar a ação num Carisma CD 15 para passar a atravessá-la.`,
+}];
+const PERGAMINHOS = Object.fromEntries([
+  PERGAMINHO('Aberrations', 'pergaminhoDeProtecaoContraAberracoes', 'aberração', 'aberração'),
+  PERGAMINHO('Beasts', 'pergaminhoDeProtecaoContraFeras', 'fera', 'fera'),
+  PERGAMINHO('Celestials', 'pergaminhoDeProtecaoContraCelestiais', 'celestial', 'celestial'),
+  PERGAMINHO('Elementals', 'pergaminhoDeProtecaoContraElementais', 'elemental', 'elemental'),
+  PERGAMINHO('Fey', 'pergaminhoDeProtecaoContraFadas', 'feérico', 'fada'),
+  PERGAMINHO('Fiends', 'pergaminhoDeProtecaoContraCorruptores', 'corruptor', 'corruptor'),
+  PERGAMINHO('Plants', 'pergaminhoDeProtecaoContraPlantas', 'planta', 'planta'),
+  PERGAMINHO('Undead', 'pergaminhoDeProtecaoContraMortosVivos', 'morto-vivo', 'morto-vivo'),
+]);
+// AS BOLSAS DE TRUQUES e OS VASOS DE ELEMENTAL: conjuram as magias internas de `rules/magias-de-itens.js`
+const BOLSA = (magia, cor) => ({
+  id: magia, tipo: 'maravilhoso', art: 'arcano', conjura: { cargas: 3, recarga: null, magias: { [magia]: { custo: 1 } } },
+  noJogo: `com a ação, três vezes por dia: a bolinha jogada a até 6 m vira a fera do d8 da bolsa ${cor}, que luta do seu lado (age sozinha ou com as suas ordens, como as outras invocações) e some no fim da luta.`,
+});
+const VASO = (id, magia, elemental, falta) => ({
+  id, tipo: 'maravilhoso', art: 'arcano', conjura: { cargas: 1, recarga: null, magias: { [magia]: { custo: 1 } } },
+  noJogo: `com a ação, uma vez por dia: um elemental ${elemental} obedece enquanto durar a concentração (até 1 hora); se ela cair antes, ele fica, hostil a todos. ${falta.charAt(0).toUpperCase() + falta.slice(1)} não entra.`,
+});
 
 export const AJUSTES = {
   // ------------------------------------------------------------------------------------------- entram ----
@@ -80,9 +108,9 @@ export const AJUSTES = {
     noJogo: 'conjura o Raio Ardente uma vez por dia, com +5 de ataque, mesmo na mão de quem não é conjurador.',
   },
   'Ring of Fire Elemental Command': {
-    id: 'anelDeComandoDoFogo', tipo: 'anel', art: 'arcano', passivo: { resiste: ['fogo'] },
+    id: 'anelDeComandoDoFogo', tipo: 'anel', art: 'arcano', passivo: { resiste: ['fogo'], flagelo: FLAGELO.fogo },
     nome: 'Anel de comando dos elementais do fogo',
-    noJogo: 'sintonizado, resistência a fogo; o domínio sobre os elementais e as magias que vêm depois de matar um ainda não.',
+    noJogo: 'sintonizado, resistência a fogo, e vantagem contra os elementais do fogo (o elemental do fogo, o efreeti, a salamandra), que atacam você com desvantagem. Falar ignan e as magias que vêm depois de matar um não entram.',
   },
   'Ring of Evasion': {
     id: 'anelDeEvasao', tipo: 'anel', art: 'arcano', recarregavel: { cargas: 3, recarga: '1d3' }, passivo: { evasao: true },
@@ -142,39 +170,120 @@ export const AJUSTES = {
   },
 
   // ------------------------------------------------------------------------------------- ficam de fora ----
-  'Moonblade': { fora: ARMA }, 'Hammer of Thunderbolts': { fora: ARMA },
+  'Moonblade': {
+    id: 'laminaLunar', tipo: 'arma mágica', art: 'espada', base: 'espadaLonga', bonusAtaque: 2, bonusDano: 2, poder: 'laminaLunar', sintoniaElfo: true,
+    noJogo: 'só um elfo ou meio-elfo se sintoniza (o alinhamento não entra: o jogo não tem). O livro deixa o mestre escolher as runas, e esta tem três: +2 de ataque e dano, crítico com 19 ou 20, e 1d6 cortante a mais em todo acerto. Recusar o portador com desvantagem por um dia não entra.',
+  },
+  'Hammer of Thunderbolts': {
+    id: 'marteloDosRaios', tipo: 'arma mágica', art: 'martelo', base: 'malho', bonusAtaque: 1, bonusDano: 1, poder: 'martelo',
+    noJogo: 'um malho +1; levando também um cinto de força de gigante e as manoplas de força de ogro, o gigante acertado faz Constituição CD 17 ou morre. A Força +4, o arremesso com trovão e as cargas não entram.',
+  },
   'Sword of Kas': { fora: ARTEFATO }, 'Book of Exalted Deeds': { fora: ARTEFATO }, 'Book of Vile Darkness': { fora: ARTEFATO },
   'Axe of the Dwarvish Lords': { fora: ARTEFATO }, 'Hand of Vecna': { fora: ARTEFATO }, 'Eye of Vecna': { fora: ARTEFATO },
   'Wand of Orcus': { fora: ARTEFATO }, 'Orb of Dragonkind': { fora: ARTEFATO },
-  'Scroll of Protection from Aberrations': { fora: PROTECAO }, 'Scroll of Protection from Beasts': { fora: PROTECAO },
-  'Scroll of Protection from Celestials': { fora: PROTECAO }, 'Scroll of Protection from Elementals': { fora: PROTECAO },
-  'Scroll of Protection from Fey': { fora: PROTECAO }, 'Scroll of Protection from Fiends': { fora: PROTECAO },
-  'Scroll of Protection from Plants': { fora: PROTECAO }, 'Scroll of Protection from Undead': { fora: PROTECAO },
-  'Bag of Tricks, Rust': { fora: CONVOCA }, 'Bag of Tricks, Tan': { fora: CONVOCA }, 'Bag of Tricks, Gray': { fora: CONVOCA },
-  'Bowl of Commanding Water Elementals': { fora: CONVOCA }, 'Censer of Controlling Air Elementals': { fora: CONVOCA },
-  'Brazier of Commanding Fire Elementals': { fora: CONVOCA }, 'Efreeti Bottle': { fora: CONVOCA }, 'Ring of Djinni Summoning': { fora: CONVOCA },
-  'Candle of Invocation': { fora: CONVOCA }, 'Iron Flask': { fora: 'prende uma criatura de outro plano num frasco: o motor não guarda criatura em item' },
+  ...PERGAMINHOS,
+  'Bag of Tricks, Rust': BOLSA('bolsaDeTruquesFerrugem', 'ferrugem'), 'Bag of Tricks, Tan': BOLSA('bolsaDeTruquesCastanha', 'castanha'),
+  'Bag of Tricks, Gray': BOLSA('bolsaDeTruquesCinza', 'cinza'),
+  'Bowl of Commanding Water Elementals': VASO('tigelaDeComandoDaAgua', 'elementalDaTigela', 'da água', 'a fonte de água que o livro pede'),
+  'Censer of Controlling Air Elementals': VASO('incensarioDeControleDoAr', 'elementalDoIncensario', 'do ar', 'o incenso aceso que o livro pede'),
+  'Brazier of Commanding Fire Elementals': VASO('braseiroDeComandoDoFogo', 'elementalDoBraseiro', 'do fogo', 'o braseiro aceso e o fogo que ele conjura'),
+  'Efreeti Bottle': {
+    id: 'garrafaDoEfreeti', tipo: 'maravilhoso', art: 'arcano', conjura: { cargas: 1, recarga: null, magias: { garrafaDoEfreeti: { custo: 1 } } },
+    noJogo: 'com a ação, uma vez por dia, o efreeti sai e o d100 decide: 1 a 10 ele ataca (e a garrafa perde a magia), 11 a 90 serve por uma hora, 91 a 100 deve três desejos (o Desejo do jogo, sem o desgaste). A conta das três vezes que serve antes de fugir não entra.',
+  },
+  'Ring of Djinni Summoning': {
+    id: 'anelDeConvocacaoDoDjinni', tipo: 'anel', art: 'arcano', conjura: { cargas: 1, recarga: null, magias: { djinniDoAnel: { custo: 1 } } },
+    nome: 'Anel de convocação do djinni',
+    noJogo: 'sintonizado, com a ação e uma vez por dia: o djinni obedece enquanto durar a concentração (até 1 hora) e volta ao anel quando ela acaba.',
+  },
+  'Candle of Invocation': { fora: 'tudo nela depende de alinhamento (quem ganha vantagem, quem conjura de graça, quem o portal traz), e o jogo não tem alinhamento' },
+  'Iron Flask': {
+    id: 'frascoDeFerro', tipo: 'maravilhoso', art: 'arcano', conjura: { cargas: null, recarga: null, magias: { prenderNoFrasco: { custo: 0 }, soltarDoFrasco: { custo: 0 } } },
+    noJogo: 'com a ação, uma criatura de outro plano (celestial, corruptor, elemental, fada) a até 18 m faz Sabedoria CD 17 ou vai para dentro do frasco; com outra ação, ela sai a até 9 m e obedece por uma hora. A criatura que o livro diz já estar no frasco, e as perguntas que ela responde, não entram.',
+  },
   'Horseshoes of Speed': { fora: MONTARIA }, 'Horseshoes of a Zephyr': { fora: MONTARIA }, 'Saddle of the Cavalier': { fora: MONTARIA },
-  'Crystal Ball': { fora: NARRA }, 'Crystal Ball of True Seeing': { fora: NARRA }, 'Crystal Ball of Telepathy': { fora: NARRA },
-  'Crystal Ball of Mind Reading': { fora: NARRA }, 'Amulet of the Planes': { fora: NARRA }, 'Cubic Gate': { fora: NARRA },
+  // AS BOLAS DE CRISTAL: a Vidência (que entrou com o Livro do Jogador) à vontade, no menu de magia fora da luta
+  'Crystal Ball': {
+    id: 'bolaDeCristal', tipo: 'maravilhoso', art: 'arcano', conjura: { cargas: null, recarga: null, cd: 17, magias: { videncia: { custo: 0 } } },
+    noJogo: 'sintonizada, conjura a Vidência à vontade, fora da luta, com CD 17, mesmo para quem não é conjurador.',
+  },
+  'Crystal Ball of True Seeing': {
+    id: 'bolaDeCristalDaVisaoDaVerdade', tipo: 'maravilhoso', art: 'arcano', conjura: { cargas: null, recarga: null, cd: 17, magias: { videncia: { custo: 0 } } },
+    noJogo: 'sintonizada, conjura a Vidência à vontade, fora da luta, com CD 17. A visão verdadeira em volta do sensor não entra: a Vidência do jogo não tem sensor no mapa.',
+  },
+  'Crystal Ball of Mind Reading': {
+    id: 'bolaDeCristalDaLeituraMental', tipo: 'maravilhoso', art: 'arcano', conjura: { cargas: null, recarga: null, cd: 17, magias: { videncia: { custo: 0 }, detectarPensamentos: { custo: 0 } } },
+    noJogo: 'sintonizada, conjura a Vidência e o Detectar Pensamentos à vontade, fora da luta, com CD 17. O livro só deixa ler a mente de quem está perto do sensor da vidência; aqui o Detectar Pensamentos é o de sempre, em quem está perto do herói.',
+  },
+  'Crystal Ball of Telepathy': {
+    id: 'bolaDeCristalDaTelepatia', tipo: 'maravilhoso', art: 'arcano', conjura: { cargas: 1, recarga: null, cd: 17, magias: { videncia: { custo: 0 }, sugestao: { custo: 1 } } },
+    noJogo: 'sintonizada, conjura a Vidência à vontade, fora da luta, com CD 17, e a Sugestão uma vez por dia. A conversa telepática pelo sensor não entra; a Sugestão vale em quem está perto do herói.',
+  },
+  'Amulet of the Planes': { fora: NARRA }, 'Cubic Gate': { fora: NARRA },
   'Sending Stones': { fora: NARRA }, 'Folding Boat': { fora: NARRA }, "Daern's Instant Fortress": { fora: NARRA },
   "Nolzur's Marvelous Pigments": { fora: NARRA }, 'Apparatus of Kwalish': { fora: NARRA }, 'Tome of the Stilled Tongue': { fora: NARRA },
-  'Helm of Teleportation': { fora: 'o Teletransporte não existe como magia no jogo' },
-  'Ring of Air Elemental Command': { fora: 'o que vale antes de matar um elemental (cair devagar, falar auran) não tem efeito na luta, e as magias vêm só depois' },
-  'Ring of Earth Elemental Command': { fora: 'o que vale antes de matar um elemental (o terreno de pedra, falar terran) não tem efeito na luta, e as magias vêm só depois' },
-  'Ring of Water Elemental Command': { fora: 'andar sobre a água e falar aquan, antes de matar um elemental; as magias vêm só depois' },
-  'Ring of Animal Influence': { fora: 'o Medo do anel só pega fera de Inteligência 3 ou menos, e a magia do jogo não tem esse filtro' },
-  'Cloak of Invisibility': { fora: 'a invisibilidade de duas horas que se gasta por minuto e se liga com uma ação ainda não tem interruptor' },
-  'Cube of Force': { fora: 'as seis faces e as cargas gastas pelo que atravessa a barreira não existem no motor' },
-  'Tentacle Rod': { fora: 'os três tentáculos que atacam com a ação e prendem pedem um ataque de item que o herói ainda não tem' },
-  'Staff of the Adder': { fora: 'o cajado que vira cobra e morde pede um ataque de item que o herói ainda não tem' },
-  'Talisman of the Sphere': { fora: 'controla a Esfera da Aniquilação, que fica de fora' },
-  'Sphere of Annihilation': { fora: 'a esfera que se move pela vontade e apaga o que toca não existe no motor' },
+  'Helm of Teleportation': {
+    id: 'elmoDoTeletransporte', tipo: 'maravilhoso', art: 'arcano', conjura: { cargas: 3, recarga: '1d3', magias: { teletransporte: { custo: 1 } } },
+    noJogo: 'sintonizado, conjura o Teletransporte na tela da região, uma carga cada (1d3 voltam ao amanhecer), mesmo para quem não é conjurador.',
+  },
+  'Ring of Air Elemental Command': {
+    id: 'anelDeComandoDoAr', tipo: 'anel', art: 'arcano', passivo: { flagelo: FLAGELO.ar, semDanoDeQueda: true }, nome: 'Anel de comando dos elementais do ar',
+    noJogo: 'sintonizado, vantagem contra os elementais do ar (o elemental do ar, o djinni, o perseguidor invisível), que atacam você com desvantagem; e você cai sem sofrer dano. Falar auran e as magias que vêm depois de matar um elemental do ar não entram.',
+  },
+  'Ring of Earth Elemental Command': {
+    id: 'anelDeComandoDaTerra', tipo: 'anel', art: 'arcano', passivo: { flagelo: FLAGELO.terra }, nome: 'Anel de comando dos elementais da terra',
+    noJogo: 'sintonizado, vantagem contra os elementais da terra (o elemental da terra, o dao, o xorn), que atacam você com desvantagem. O terreno de pedra que não custa, falar terran e as magias que vêm depois não entram.',
+  },
+  'Ring of Water Elemental Command': {
+    id: 'anelDeComandoDaAgua', tipo: 'anel', art: 'arcano', passivo: { flagelo: FLAGELO.agua, sobreAgua: true }, nome: 'Anel de comando dos elementais da água',
+    noJogo: 'sintonizado, vantagem contra os elementais da água (o elemental da água, o marid), que atacam você com desvantagem; e você anda sobre a água como sobre o chão. Falar aquan e as magias que vêm depois não entram.',
+  },
+  'Ring of Animal Influence': {
+    id: 'anelDeInfluenciaAnimal', tipo: 'anel', art: 'arcano',
+    conjura: { cargas: 3, recarga: '1d3', cd: 13, magias: { amizadeAnimal: { custo: 1 }, medoDoAnel: { custo: 1 }, falarComAnimais: { custo: 1 } } },
+    noJogo: 'três cargas (1d3 voltam ao amanhecer), CD 13: Amizade Animal, Falar com Animais e o Medo que só pega fera de Inteligência 3 ou menos.',
+  },
+  'Cloak of Invisibility': {
+    id: 'mantoDaInvisibilidade', tipo: 'maravilhoso', art: 'arcano', conjura: { cargas: 1, recarga: null, magias: { capuzDoManto: { custo: 1 } } },
+    noJogo: 'sintonizado, Erguer o capuz (a ação) deixa invisível até Baixar o capuz (outra ação), uma vez por dia e por até 2 horas; atacar não desfaz. O livro gasta as duas horas aos minutos, em vários usos.',
+  },
+  'Cube of Force': {
+    id: 'cuboDeForca', tipo: 'maravilhoso', art: 'arcano', conjura: { cargas: 36, recarga: '1d20', magias: { cuboDeForca: { custo: 0 } } },
+    noJogo: 'sintonizado, apertar uma face gasta a ação e as cargas dela: a barreira de 4,5 m em volta de você, que anda com você, por 1 minuto. 1 barra gás e névoa; 2, o projétil; 3, a criatura (quem não estava dentro) e o golpe de perto; 4, a magia; 5, tudo; 6 desliga. As cargas que as magias e o chifre arrancam da barreira, e o "não chego mais perto da parede", não entram.',
+  },
+  'Tentacle Rod': {
+    id: 'bastaoDeTentaculos', tipo: 'bastão', art: 'arcano', conjura: { cargas: null, recarga: null, magias: { tentaculosDoBastao: { custo: 0 } } },
+    noJogo: 'sintonizado, com a ação: três golpes de +9 a até 4,5 m, 1d6 de concussão cada; acertando os três, Constituição CD 15 ou fica apertado por 1 minuto (metade do deslocamento, desvantagem em Destreza, sem reações, a ação ou a ação bônus).',
+  },
+  'Staff of the Adder': {
+    id: 'cajadoDaVibora', tipo: 'arma mágica', art: 'lanca', base: 'bordao', poder: 'vibora',
+    noJogo: 'sintonizado, é um bordão cuja ponta morde como víbora: cada acerto pede Constituição CD 15, ou 3d6 de veneno a mais. Virar a cabeça em cobra com a ação bônus e a cabeça que se fere e se desfaz não entram: a mordida vale sempre.',
+  },
+  'Talisman of the Sphere': {
+    id: 'talismaDaEsfera', tipo: 'maravilhoso', art: 'arcano', conjura: { cargas: null, recarga: null, magias: { controlarAEsfera: { custo: 0 } } },
+    noJogo: 'sintonizado, dobra a proficiência no Arcanismo de controlar a esfera da aniquilação, e deixa tentar mesmo sem carregá-la. O voo maior de quem começa o turno no controle não entra.',
+  },
+  'Sphere of Annihilation': {
+    id: 'esferaDaAniquilacao', tipo: 'maravilhoso', art: 'arcano', conjura: { cargas: null, recarga: null, magias: { soltarAEsfera: { custo: 0 }, controlarAEsfera: { custo: 0 } } },
+    noJogo: 'no jogo ela se carrega: com a ação, sai numa casa ao lado e fica parada; quem a toca faz Destreza CD 13 ou sofre 4d10 de energia. Controlá-la, a até 18 m, é Inteligência (Arcanismo) CD 25, e ela vai até 5 × o modificador de Inteligência; falhando, anda 3 m na direção de quem tentou. A disputa pelo controle e o portal que ela atravessa não entram.',
+  },
   'Bag of Devouring': { fora: 'a bolsa que engole o que se põe nela não tem efeito numa luta' },
-  'Bead of Force': { fora: 'a esfera de força que prende quem a conta pega não existe no motor' },
-  'Chime of Opening': { fora: 'abrir fechadura de longe: o menu de porta (`portas.js`) ainda não tem a magia de abrir' },
-  'Eversmoking Bottle': { fora: 'a fumaça que cresce por minuto e esconde uma área grande pede uma zona que não para de crescer' },
-  'Driftglobe': { fora: 'a luz que segue o dono: a luz que anda com o herói é a tocha, e o globo não tem a peça' },
+  'Bead of Force': {
+    id: 'contaDeForca', nome: 'Conta de força', tipo: 'maravilhoso', art: 'arcano', conjura: { cargas: 1, recarga: 0, magias: { contaDeForca: { custo: 1 } } },
+    noJogo: 'jogada com a ação a até 18 m, uma vez: quem está a 3 m faz Destreza CD 15; quem falha sofre 5d4 de energia e fica preso numa esfera de força por 1 minuto, onde nada entra nem sai. Empurrar a esfera e empurrar para fora quem passou não entram.',
+  },
+  'Chime of Opening': {
+    id: 'sinoDaAbertura', tipo: 'maravilhoso', art: 'arcano', recarregavel: { cargas: 10, recarga: 0 },
+    noJogo: 'no menu de qualquer porta trancada a até 36 m que se vê: tocar o sino destranca e abre, uma das dez cargas (que não voltam). Vale também contra a Tranca Arcana, que o livro só suprime por 10 minutos.',
+  },
+  'Eversmoking Bottle': {
+    id: 'garrafaDaFumacaEterna', tipo: 'maravilhoso', art: 'arcano', conjura: { cargas: null, recarga: null, magias: { garrafaDaFumaca: { custo: 0 } } },
+    noJogo: 'aberta com a ação, uma fumaça que tapa a vista enche 18 m em volta e cresce 3 m por minuto, até 36 m; tampada com outra ação, para de crescer e se desfaz em 10 minutos. O vento que a dispersa não entra.',
+  },
+  'Driftglobe': {
+    id: 'globoFlutuante', tipo: 'maravilhoso', art: 'arcano', conjura: { cargas: null, recarga: null, magias: { luzDoGlobo: { custo: 0 } } },
+    noJogo: 'com a ação, acende como a magia Luz e flutua junto de quem o leva, por uma hora; de novo, apaga. A Luz do Dia uma vez por dia não entra.',
+  },
   'Bag of Beans': { fora: 'o feijão plantado dá um efeito sorteado numa tabela que se narra' },
   'Deck of Many Things': { fora: 'o baralho é uma tabela de destinos que se narra' },
 };

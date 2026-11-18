@@ -45,7 +45,14 @@ export const LIVRO_BGG = {
     "bonus": 12,
     "damage": "3d12+8",
     "type": "perfurante",
-    "reachFt": 10
+    "reachFt": 10,
+    "onHit": {
+     "semResistencia": true,
+     "dc": 18,
+     "escape": 18,
+     "condition": "contido",
+     "note": "é agarrado"
+    }
    },
    {
     "name": "Garras",
@@ -84,6 +91,9 @@ export const LIVRO_BGG = {
   ],
   "traits": [
    "resistenciaAMagia"
+  ],
+  "marcas": [
+   "dinosaur"
   ],
   "blurb": "Pterossauro gigantesco que mergulha do céu, prende a presa no bico e a dilacera com as garras. Suas rajadas de asas derrubam e arremessam quem estiver por perto.",
   "lore": "O aerossauro é um réptil voador colossal, parente dos dinossauros, cujas asas cobrem o céu como uma tempestade. Vive em penhascos altos e picos isolados, de onde vigia vastas planícies em busca de caça. Age por instinto, sem malícia, mas trata qualquer coisa do tamanho de um cavalo, ou até maior, como alimento. Sua resistência natural à magia o torna um alvo difícil para conjuradores que tentam afastá-lo."
@@ -155,6 +165,9 @@ export const LIVRO_BGG = {
   "traits": [
    "resistenciaAMagia"
   ],
+  "marcas": [
+   "dinosaur"
+  ],
   "blurb": "Um dinossauro colossal que esmaga com as patas e varre o campo com a cauda, derrubando e arremessando quem estiver perto. Seus golpes causam dano enorme, e a magia tem dificuldade em detê-lo.",
   "lore": "O altissauro é um saurópode gigantesco, tão alto que sua cabeça alcança as copas das árvores mais antigas. Vive em planícies e florestas primitivas, onde se alimenta da vegetação e caminha em passos lentos que fazem o chão tremer. Apesar de pouco inteligente, tem sentidos aguçados e percebe ameaças de longe. Quando provocado, defende-se com fúria esmagadora, e poucas criaturas sobrevivem a uma pisada sua."
  },
@@ -203,7 +216,14 @@ export const LIVRO_BGG = {
     "bonus": 3,
     "damage": "2d6+1",
     "type": "ácido",
-    "reachFt": 5
+    "reachFt": 5,
+    "onHit": {
+     "semResistencia": true,
+     "dc": 11,
+     "escape": 11,
+     "condition": "agarrado",
+     "note": "é agarrado"
+    }
    }
   ],
   "multiattack": {
@@ -292,6 +312,20 @@ export const LIVRO_BGG = {
    "dc": 16,
    "condition": "envenenado",
    "imunizaAoPassar": true
+  },
+  "repreensao": {
+   "nome": "Ferida Nociva",
+   "alcanceFt": 5,
+   "save": "dex",
+   "dc": 16,
+   "damage": "3d6",
+   "damageType": "veneno",
+   "metade": true,
+   "soTipos": [
+    "perfurante",
+    "cortante"
+   ],
+   "raioFt": 5
   },
   "traits": [
    "aura",
@@ -473,6 +507,9 @@ export const LIVRO_BGG = {
   },
   "traits": [
    "resistenciaAMagia"
+  ],
+  "marcas": [
+   "dinosaur"
   ],
   "blurb": "Um colosso de chifres que investe em linha reta para empalar e arremessar quem estiver no caminho, depois pisoteia o que caiu. Cada golpe tira quase 30 PV, e magia tem dificuldade em detê-lo.",
   "lore": "O ceratops é um dinossauro gigantesco com couraça óssea e chifres enormes, parente monstruoso dos tricerátopos. Vive em planícies selvagens e vales primitivos, pastando em manadas. Apesar de herbívoro, é extremamente territorial e reage a qualquer ameaça com uma carga devastadora. Sua resistência natural à magia faz dele um alvo cobiçado e perigoso para caçadores e domadores."
@@ -685,8 +722,9 @@ export const LIVRO_BGG = {
    {
     "nome": "Palmas Trovejantes",
     "tipo": "area",
-    "shape": "raio",
-    "areaFt": 60,
+    "shape": "sphere",
+    "areaFt": 30,
+    "alcanceFt": 60,
     "save": "con",
     "dc": 20,
     "damage": "8d12",
@@ -694,13 +732,20 @@ export const LIVRO_BGG = {
     "halfOnSave": true,
     "condition": "caido",
     "rounds": 1,
-    "repete": false,
-    "ateFimDoTurnoDele": true
+    "repete": false
    }
   ],
+  "negarMagia": {
+   "usos": 3,
+   "circuloMax": 3,
+   "alcanceFt": 60
+  },
   "traits": [
    "t_runaDasNuvens",
    "t_anularMagia"
+  ],
+  "marcas": [
+   "bard"
   ],
   "blurb": "Arremessa e golpeia com um cajado que volta à mão, causando concussão e trovão, e invoca nuvens trovejantes que derrubam grupos inteiros. Enquanto tiver a máscara rúnica, enxerga através de ilusões e anula magias lançadas perto dele.",
   "lore": "Entre os gigantes das nuvens, a posição na hierarquia sobe com a riqueza acumulada, e muitos a conquistam em jogos de azar. O apostador do destino é aquele que venceu desafios cada vez mais arriscados contra gigantes, povos menores e até criaturas de outros planos. Usa uma meia-máscara rúnica sobre os olhos que revela invisibilidade, escuridão e truques mágicos. Tão confiante que deixa o rival escolher os termos da aposta, ele costuma punir com magia devastadora quem prefere o combate."
@@ -962,6 +1007,9 @@ export const LIVRO_BGG = {
    "damage": "4d8",
    "damageType": "trovejante",
    "metade": false,
+   "condition": "surdo",
+   "rounds": 10,
+   "repete": false,
    "raioFt": 30
   },
   "traits": [
@@ -1084,6 +1132,19 @@ export const LIVRO_BGG = {
     "condition": "envenenado",
     "rounds": 10,
     "repete": false
+   },
+   {
+    "nome": "Gêiser de Lava",
+    "tipo": "area",
+    "shape": "sphere",
+    "areaFt": 20,
+    "alcanceFt": 120,
+    "save": "dex",
+    "dc": 21,
+    "damage": "4d6",
+    "damageType": "fogo",
+    "halfOnSave": false,
+    "bonus": true
    }
   ],
   "traits": [
@@ -1219,6 +1280,19 @@ export const LIVRO_BGG = {
     "rounds": 1,
     "repete": false,
     "ateFimDoTurnoDele": true
+   },
+   {
+    "nome": "Névoa Gélida",
+    "tipo": "area",
+    "shape": "sphere",
+    "areaFt": 30,
+    "alcanceFt": 90,
+    "save": "con",
+    "dc": 19,
+    "damage": "8d6",
+    "damageType": "frio",
+    "halfOnSave": false,
+    "bonus": true
    }
   ],
   "traits": [
@@ -1310,7 +1384,14 @@ export const LIVRO_BGG = {
     "bonus": 14,
     "damage": "4d10+7",
     "type": "concussão",
-    "reachFt": 30
+    "reachFt": 30,
+    "onHit": {
+     "semResistencia": true,
+     "dc": 17,
+     "escape": 17,
+     "condition": "agarrado",
+     "note": "é agarrado"
+    }
    }
   ],
   "multiattack": {
@@ -1476,6 +1557,31 @@ export const LIVRO_BGG = {
     "rounds": 1,
     "repete": false,
     "ateFimDoTurnoDele": true
+   },
+   {
+    "nome": "Clarão de Cristal",
+    "tipo": "area",
+    "shape": "raio",
+    "areaFt": 30,
+    "save": "con",
+    "dc": 22,
+    "damage": "6d6",
+    "damageType": "radiante",
+    "halfOnSave": false,
+    "condition": "cego",
+    "rounds": 1,
+    "repete": false,
+    "ateFimDoTurnoDele": true,
+    "bonus": true
+   },
+   {
+    "nome": "Espinhos de Pedra",
+    "tipo": "espinhosDoChao",
+    "ladoFt": 20,
+    "alcanceFt": 90,
+    "dano": "3d6",
+    "tipoDano": "perfurante",
+    "bonus": true
    }
   ],
   "traits": [
@@ -1718,6 +1824,24 @@ export const LIVRO_BGG = {
     ]
    ]
   },
+  "acoesEspeciais": [
+   {
+    "nome": "Teleporte Aterrador",
+    "recharge": [
+     4,
+     5,
+     6
+    ],
+    "tipo": "teleporte",
+    "alcanceFt": 40,
+    "medoAoSair": {
+     "raioFt": 10,
+     "dc": 16,
+     "save": "wis"
+    },
+    "bonus": true
+   }
+  ],
   "traits": [],
   "blurb": "Ceifa inimigos a 4,5 m com uma foice que soma dano necrótico, ou dispara raios de alma à distância que o curam quando o alvo está amedrontado. Teleporta-se espalhando terror por onde passa.",
   "lore": "Gigantes da morte são gigantes que trocaram a vida comum por um pacto com as forças do fim e da sombra. Os ceifadores são os guerreiros dessa linhagem, encarregados de colher almas e caçar quem foge do destino. Vestem armadura pesada e empunham foices enormes, surgindo e sumindo em meio ao medo que provocam. São astutos, estudiosos de magia e de história antiga, e não conhecem o pavor."
@@ -1819,8 +1943,44 @@ export const LIVRO_BGG = {
     "armaduraArcana"
    ]
   },
+  "acoesEspeciais": [
+   {
+    "nome": "Teleporte Aterrador",
+    "recharge": [
+     4,
+     5,
+     6
+    ],
+    "tipo": "teleporte",
+    "alcanceFt": 40,
+    "medoAoSair": {
+     "raioFt": 10,
+     "dc": 19,
+     "save": "wis"
+    },
+    "bonus": true
+   },
+   {
+    "nome": "Mortalha de Almas",
+    "tipo": "postura",
+    "condicao": "mortalhaDeAlmas",
+    "rounds": 10,
+    "data": {
+     "auraNoInicio": {
+      "raioFt": 5,
+      "dc": 19,
+      "save": "wis",
+      "condition": "almasNaMortalha"
+     }
+    },
+    "bonus": true
+   }
+  ],
   "traits": [
    "t_runaDaMorte"
+  ],
+  "marcas": [
+   "wizard"
   ],
   "blurb": "Mago gigante que dispara rajadas de almas à distância e, com sua runa da morte, ceifa inimigos com uma foice necrótica que impede cura. Teleporta-se espalhando medo e se envolve em almas que enfraquecem as resistências de quem chega perto.",
   "lore": "Gigantes da morte amortalhados são estudiosos da magia que se dedicam aos segredos do fim da vida. Carregam um crânio de gigante gravado com uma runa da morte, fonte de seus poderes mais temidos. Falam com os mortos para extrair conhecimento e tratam o medo alheio como alimento. Costumam agir com frieza calculada, mantendo distância e atacando de longe antes de se aproximar para a colheita."
@@ -1888,6 +2048,21 @@ export const LIVRO_BGG = {
     "Pancada"
    ]
   },
+  "acoesEspeciais": [
+   {
+    "nome": "Poeira Ardente",
+    "tipo": "alvo",
+    "alcanceFt": 5,
+    "save": "con",
+    "dc": 14,
+    "damage": "3d6",
+    "damageType": "concussão",
+    "halfOnSave": true,
+    "condition": "cego",
+    "rounds": 1,
+    "ateFimDoTurnoDoAlvo": true
+   }
+  ],
   "explosaoAoMorrer": {
    "pes": 10,
    "save": "con",
@@ -1896,7 +2071,6 @@ export const LIVRO_BGG = {
    "rounds": 10
   },
   "traits": [
-   "t_poeiraArdente",
    "formaFluida",
    "explosaoAoMorrer"
   ],
@@ -1969,9 +2143,25 @@ export const LIVRO_BGG = {
     "Tentáculo"
    ]
   },
+  "acoesEspeciais": [
+   {
+    "nome": "Gritos Dissonantes",
+    "tipo": "alvo",
+    "alcanceFt": 60,
+    "save": "wis",
+    "dc": 13,
+    "damage": "2d12",
+    "damageType": "psíquico",
+    "halfOnSave": false,
+    "bonus": true
+   }
+  ],
   "traits": [
    "resistenciaAMagia",
    "sempreAlerta"
+  ],
+  "marcas": [
+   "demon"
   ],
   "blurb": "Golpeia duas vezes com tentáculos de 3 m de alcance que causam dano necrótico extra, e seus gritos dissonantes podem ferir a mente de um alvo ou forçá-lo a atacar os próprios aliados.",
   "lore": "Ettins que se dedicam ao Príncipe dos Demônios, vendo nele uma alma gêmea de duas cabeças, às vezes recebem de Demogorgon uma suposta recompensa por seus serviços no Plano Material. Essa dádiva os deforma: os braços viram tentáculos e as cabeças ganham feições animalescas. A mudança os mergulha numa fúria constante, e as duas cabeças vivem berrando e mordendo uma à outra. Esses uivos carregam magia demoníaca, espalhando dor psíquica e caos entre quem está por perto."
@@ -2037,11 +2227,11 @@ export const LIVRO_BGG = {
     "type": "psíquico",
     "reachFt": 10,
     "onHit": {
-     "save": "int",
-     "dc": 15,
+     "semResistencia": true,
+     "dc": 14,
+     "escape": 14,
      "condition": "agarrado",
-     "rounds": 1,
-     "repete": false
+     "note": "é agarrado"
     }
    },
    {
@@ -2147,6 +2337,13 @@ export const LIVRO_BGG = {
   ],
   "multiattack": {
    "count": 2
+  },
+  "motorDoLivro": {
+   "maldicaoMortal": {
+    "nome": "Maldição da Morte",
+    "raioFt": 30,
+    "dc": 13
+   }
   },
   "regeneracao": {
    "pv": 10,
@@ -2263,6 +2460,26 @@ export const LIVRO_BGG = {
     "passosSemPegadas": 1
    }
   },
+  "acoesEspeciais": [
+   {
+    "nome": "Lama em Pedra",
+    "recharge": [
+     6
+    ],
+    "tipo": "area",
+    "shape": "sphere",
+    "areaFt": 30,
+    "alcanceFt": 60,
+    "save": "dex",
+    "dc": 13,
+    "damage": "3d8",
+    "damageType": "concussão",
+    "halfOnSave": false,
+    "condition": "contido",
+    "rounds": 1,
+    "repete": true
+   }
+  ],
   "regeneracao": {
    "pv": 10,
    "bloqueia": [
@@ -2272,7 +2489,6 @@ export const LIVRO_BGG = {
    "naoMorreA0": true
   },
   "traits": [
-   "t_lamaEmPedra",
    "regeneracaoDoLivro",
    "sunlightSensitivity"
   ],
@@ -2389,7 +2605,18 @@ export const LIVRO_BGG = {
     "falarComPlantas": 13
    }
   },
+  "acoesEspeciais": [
+   {
+    "nome": "Passo Oculto",
+    "porDia": 2,
+    "tipo": "sumir",
+    "bonus": true
+   }
+  ],
   "traits": [],
+  "marcas": [
+   "druid"
+  ],
   "blurb": "Combate com lança envolta em chamas ou dispara lanças de fogo a longa distância, e pode sumir invisível para se reposicionar. Também prende inimigos com vinhas mágicas.",
   "lore": "Os guardiões primordiais são druidas firbolg que zelam pelas florestas antigas e seus segredos. Costumam viver isolados em bosques remotos, conversando com plantas e animais para saber o que se passa em seus domínios. Preferem evitar conflitos e se escondem dos forasteiros, mas defendem a natureza com fogo e magia quando ela é ameaçada."
  },
@@ -2499,7 +2726,19 @@ export const LIVRO_BGG = {
     "risoHisterico": 14
    }
   },
+  "acoesEspeciais": [
+   {
+    "nome": "Movimento Dúplice",
+    "porDia": 1,
+    "tipo": "teleporte",
+    "alcanceFt": 30,
+    "bonus": true
+   }
+  ],
   "traits": [],
+  "marcas": [
+   "cleric"
+  ],
   "blurb": "Combina espada longa e raios psíquicos que enfeitiçam, e usa uma duplicata ilusória para trocar de lugar e confundir os inimigos. Também lança magias como riso histérico e metamorfose.",
   "lore": "Firbolgs andarilhos são viajantes solitários que percorrem florestas e estradas, guardando a natureza e ajudando quem encontram. Servem como clérigos de divindades ligadas aos bosques. Preferem truques e ilusões à violência direta, disfarçando-se para observar os povos que visitam. Quando provocados, lutam com firmeza e magia que perturba a mente."
  },
@@ -2618,10 +2857,20 @@ export const LIVRO_BGG = {
     "condition": "contido",
     "rounds": 10,
     "repete": false
+   },
+   {
+    "nome": "Armadura de Fornalha",
+    "tipo": "postura",
+    "condicao": "armaduraDeFornalha",
+    "rounds": 10,
+    "bonus": true
    }
   ],
   "traits": [
    "t_runaDeFogo"
+  ],
+  "marcas": [
+   "cleric"
   ],
   "blurb": "Esmaga com um martelo que superaquece todo metal ao redor e arremessa rochas incandescentes que derrubam. Com sua runa de fogo, solta ondas de magma que prendem grupos inteiros e se envolve em fumaça para ganhar cobertura.",
   "lore": "É um gigante de fogo que dominou a antiga magia das runas e consegue comandar o calor dos vulcões, o fogo e o magma. Nas comunidades de sua raça, cuida das forjas e da defesa, muitas vezes em nome de Surtur. Alguns preferem a solidão e buscam o coração dos vulcões ou o Plano Elemental do Fogo para aperfeiçoar seu ofício. Sua armadura parece mal conter o calor e a fumaça que vazam dela, e ele voa impulsionado por jatos de chamas mágicas."
@@ -2791,8 +3040,9 @@ export const LIVRO_BGG = {
    {
     "nome": "Orbe Infernal",
     "tipo": "area",
-    "shape": "raio",
-    "areaFt": 120,
+    "shape": "sphere",
+    "areaFt": 20,
+    "alcanceFt": 120,
     "save": "dex",
     "dc": 17,
     "damage": "4d8",
@@ -2803,6 +3053,9 @@ export const LIVRO_BGG = {
   "traits": [
    "resistenciaAMagia",
    "t_tomadorDeAlmas"
+  ],
+  "marcas": [
+   "devil"
   ],
   "blurb": "Gigante corrompido que esmaga com uma maça-estrela flamejante de longo alcance, impedindo a cura de quem atinge, e lança esferas de fogo infernal à distância. Quem cai diante dele tem a alma arrastada para Avernus.",
   "lore": "É um gigante de fogo que, obcecado pela Guerra Sangrenta, firmou pacto com um diabo poderoso em troca de táticas e dons mágicos. Com o tempo, o acordo o transformou em um corruptor, com chifres, cascos fendidos e cauda bifurcada. O diabo lhe ensinou a forjar ferro infernal com fogo dos Nove Infernos, criando armas que enviam as almas dos mortos para Avernus. Assim, o mestre recebe almas sem parar, e o gigante promete servi-lo como ferreiro após a morte."
@@ -2896,6 +3149,11 @@ export const LIVRO_BGG = {
     6
    ]
   },
+  "corpoQuente": {
+   "damage": "1d10",
+   "type": "fogo",
+   "soCortaOuFura": true
+  },
   "traits": [
    "t_sangueDeFogo"
   ],
@@ -2955,7 +3213,14 @@ export const LIVRO_BGG = {
     "bonus": 13,
     "damage": "3d6+7",
     "type": "concussão",
-    "reachFt": 20
+    "reachFt": 20,
+    "onHit": {
+     "semResistencia": true,
+     "dc": 17,
+     "escape": 17,
+     "condition": "contido",
+     "note": "é agarrado"
+    }
    }
   ],
   "multiattack": {
@@ -2980,6 +3245,29 @@ export const LIVRO_BGG = {
     "damage": "9d8",
     "damageType": "energético",
     "halfOnSave": true
+   },
+   {
+    "nome": "Mordida",
+    "tipo": "engolir",
+    "tamanhoMax": "large",
+    "golpe": {
+     "name": "Mordida",
+     "bonus": 13,
+     "damage": "3d8+7",
+     "type": "concussão",
+     "reachFt": 5,
+     "engole": {
+      "tamanhoMax": "medium",
+      "dano": "3d6",
+      "tipoDano": "energético",
+      "soAgarrado": true
+     },
+     "nomeEn": "Bite"
+    },
+    "dano": "3d6",
+    "tipoDano": "energético",
+    "max": 2,
+    "bonus": true
    }
   ],
   "traits": [
@@ -3064,6 +3352,11 @@ export const LIVRO_BGG = {
     "repete": false
    }
   ],
+  "motorDoLivro": {
+   "posturaRastejante": {
+    "nome": "Postura Rastejante"
+   }
+  },
   "traits": [
    "t_contorcionista",
    "t_posturaRastejante",
@@ -3174,7 +3467,23 @@ export const LIVRO_BGG = {
     "prestidigitacao": 17
    }
   },
+  "acoesEspeciais": [
+   {
+    "nome": "Presença Sedutora",
+    "tipo": "alvo",
+    "alcanceFt": 60,
+    "save": "wis",
+    "dc": 17,
+    "condition": "enfeiticado",
+    "rounds": 10,
+    "repete": true,
+    "bonus": true
+   }
+  ],
   "traits": [],
+  "marcas": [
+   "wizard"
+  ],
   "blurb": "Gigante conjurador que golpeia com um bastão de alcance longo e lança relâmpagos, fogo e gelo em área. Sua presença sedutora pode enfeitiçar inimigos como ação bônus.",
   "lore": "Os nobres fomorianos são gigantes deformados que dominam magia arcana e se veem como a aristocracia de sua espécie. Costumam habitar o Subterrâneo ou recantos feéricos sombrios, cercados de servos enfeitiçados. Cruéis e vaidosos, usam o charme para manipular e a magia para punir quem os desafia. Quando a luta vira contra eles, preferem fugir para outro plano a morrer."
  },
@@ -3290,16 +3599,37 @@ export const LIVRO_BGG = {
    {
     "nome": "Explosão Sobrenatural",
     "tipo": "area",
-    "shape": "raio",
-    "areaFt": 120,
+    "shape": "sphere",
+    "areaFt": 20,
+    "alcanceFt": 120,
     "save": "dex",
     "dc": 16,
     "damage": "5d12",
     "damageType": "energético",
     "halfOnSave": true,
     "condition": "caido",
-    "rounds": 10,
+    "rounds": 1,
     "repete": false
+   },
+   {
+    "nome": "Treva Rastejante",
+    "recharge": [
+     6
+    ],
+    "tipo": "area",
+    "shape": "sphere",
+    "areaFt": 30,
+    "alcanceFt": 120,
+    "save": "con",
+    "dc": 16,
+    "damage": "2d10",
+    "damageType": "necrótico",
+    "halfOnSave": false,
+    "condition": "cego",
+    "rounds": 1,
+    "repete": false,
+    "ateFimDoTurnoDoAlvo": true,
+    "bonus": true
    }
   ],
   "features": [
@@ -3396,12 +3726,28 @@ export const LIVRO_BGG = {
   "recursos": {
    "resistenciaLendaria": 3
   },
+  "acoesEspeciais": [
+   {
+    "nome": "Lobos de Gelo",
+    "tipo": "invocar",
+    "opcoes": [
+     {
+      "id": "loboDoInverno",
+      "dados": "1d4",
+      "nome": "Lobo de Gelo"
+     }
+    ],
+    "porDia": 1
+   }
+  ],
   "apararBonus": 6,
   "apararTudo": true,
   "traits": [
-   "t_lobosDeGelo",
    "t_runaDoGelo",
    "aparar"
+  ],
+  "marcas": [
+   "cleric"
   ],
   "blurb": "Combina golpes de machado gélido com raios congelantes que prendem alvos à distância, enquanto lobos de gelo invocados cercam os inimigos. Sua armadura de gelo reativa explode em estilhaços contra quem estiver colado nele.",
   "lore": "Entre os gigantes do gelo, os que dominam a magia das runas recebem o título de moldadores de gelo e sobem depressa na hierarquia do ordning. Costumam virar jarls ou conselheiros que, na prática, governam por trás do trono. Quase sempre são fiéis a Thrym. Moldam a energia elemental do ar e da água para criar lobos de gelo, vestir couraças congeladas e lançar chuvas de lascas cortantes."
@@ -3473,6 +3819,13 @@ export const LIVRO_BGG = {
     "danoExtra": {
      "damage": "1d10",
      "type": "cortante"
+    },
+    "onHit": {
+     "semResistencia": true,
+     "dc": 16,
+     "escape": 16,
+     "condition": "agarrado",
+     "note": "é agarrado"
     }
    }
   ],
@@ -3484,6 +3837,14 @@ export const LIVRO_BGG = {
     "Arpão"
    ]
   },
+  "acoesEspeciais": [
+   {
+    "nome": "Recolher o Arpão",
+    "tipo": "puxarAgarrados",
+    "pes": 20,
+    "bonus": true
+   }
+  ],
   "traits": [],
   "blurb": "Fisga o alvo com um arpão à distância, puxa-o para perto com a ação bônus e o retalha com um machado de batalha gélido. Quem tenta se soltar do arpão se fere.",
   "lore": "São gigantes do gelo que abandonaram os deuses do Ordning para cultuar Olhydra, a Princesa da Água Maligna. Para eles, a água é uma força cruel que atinge sua forma mais pura no gelo. Costumam esconder sua fé enquanto empurram suas comunidades para a violência, e quando descobertos e banidos acabam liderando cultos em terras frias. Olhydra lhes concede a capacidade de respirar sob a água, e suas armaduras trazem bestas enormes que disparam arpões farpados para arrastar inimigos para dentro d'água."
@@ -3582,6 +3943,12 @@ export const LIVRO_BGG = {
     "Machado de Gelo"
    ]
   },
+  "motorDoLivro": {
+   "fugaNaNevasca": {
+    "nome": "Fuga na Nevasca",
+    "alcanceFt": 30
+   }
+  },
   "traits": [
    "t_fugaNaNevasca"
   ],
@@ -3673,6 +4040,15 @@ export const LIVRO_BGG = {
     ]
    ]
   },
+  "acoesEspeciais": [
+   {
+    "nome": "Investida",
+    "tipo": "disparada",
+    "doDeslocamento": true,
+    "provoca": true,
+    "bonus": true
+   }
+  ],
   "aura": {
    "raioFt": 10,
    "quando": "inicioDoAlvo",
@@ -3684,6 +4060,9 @@ export const LIVRO_BGG = {
   "traits": [
    "aura",
    "resistenciaAMagia"
+  ],
+  "marcas": [
+   "demon"
   ],
   "blurb": "Gigante demoníaco que avança em investida e esmaga com punhos gélidos, causando ainda mais frio em quem já sofreu com sua aura congelante. De longe, arremessa rochas devastadoras.",
   "lore": "Gigantes do gelo frustrados com sua posição no ordning, ou que renegam Annam, às vezes passam a cultuar o lorde demônio Kostchtchie, que segundo suas lendas foi um gigante do gelo capaz de matar um lorde demônio e tomar seu domínio no Abismo. Quando ele atende a essas preces, o devoto ganha força sobrenatural, braços que ultrapassam os joelhos e um frio cortante ao seu redor. O preço é a própria alma, consumida aos poucos para alimentar o poder. A queimação no peito cresce até virar frenesi, e só a batalha consegue aliviá-la."
@@ -3761,6 +4140,26 @@ export const LIVRO_BGG = {
     ]
    ]
   },
+  "acoesEspeciais": [
+   {
+    "nome": "Maldição Funesta",
+    "tipo": "alvo",
+    "alcanceFt": 120,
+    "save": "wis",
+    "dc": 19,
+    "condition": "incapacitado",
+    "rounds": 1,
+    "repete": false,
+    "ateFimDoTurnoDele": true,
+    "bonus": true
+   },
+   {
+    "nome": "Teletransporte",
+    "tipo": "teleporte",
+    "alcanceFt": 120,
+    "bonus": true
+   }
+  ],
   "aura": {
    "raioFt": 30,
    "quando": "inicioDoDono",
@@ -3781,6 +4180,16 @@ export const LIVRO_BGG = {
    "damage": "3d6+8",
    "damageType": "concussão",
    "metade": false
+  },
+  "motorDoLivro": {
+   "mimetismo": {
+    "nome": "Imitação de Magia",
+    "circuloMax": 5,
+    "dc": 19,
+    "ataque": 11,
+    "cd": 19,
+    "usos": 1
+   }
   },
   "traits": [
    "aura",
@@ -3901,9 +4310,28 @@ export const LIVRO_BGG = {
     "Asa"
    ]
   },
-  "traits": [
-   "t_grasnadoTrovejante"
+  "acoesEspeciais": [
+   {
+    "nome": "Grasnado Trovejante",
+    "recharge": [
+     5,
+     6
+    ],
+    "tipo": "area",
+    "shape": "raio",
+    "areaFt": 30,
+    "save": "con",
+    "dc": 12,
+    "damage": "3d10",
+    "damageType": "trovejante",
+    "halfOnSave": true,
+    "condition": "surdo",
+    "rounds": 1,
+    "repete": false,
+    "ateFimDoTurnoDele": true
+   }
   ],
+  "traits": [],
   "blurb": "Ataca com bicadas de longo alcance e asas que derrubam os inimigos, e seu grasnado ensurdecedor causa dano trovejante em todos ao redor. Cuidado ao se aproximar em grupo.",
   "lore": "Gansos gigantes descendem de linhagens feéricas e são criados por gigantes como animais de fazenda e vigias. Seus sentidos aguçados e sua voz estrondosa alertam os donos sobre qualquer invasor. Sob o comando de quem cuida dele, o ganso pode botar um ovo oco de ouro puro, valioso e às vezes com um pequeno objeto ou item mágico dentro. Depois disso, precisa esperar um ano e um dia para botar outro."
  },
@@ -4092,6 +4520,13 @@ export const LIVRO_BGG = {
     "longRangeFt": 30
    }
   ],
+  "motorDoLivro": {
+   "veloAbsorvente": {
+    "nome": "Velo Absorvente",
+    "arma": "Disparo de Energia",
+    "recarga": true
+   }
+  },
   "traits": [
    "resistenciaAMagia",
    "t_veloAbsorvente"
@@ -4135,9 +4570,19 @@ export const LIVRO_BGG = {
     "bonus": 5,
     "damage": "2d6+3",
     "type": "perfurante",
-    "reachFt": 5
+    "reachFt": 5,
+    "gruda": true
    }
   ],
+  "motorDoLivro": {
+   "grude": {
+    "nome": "Drenar Sangue",
+    "dano": "2d6+3",
+    "tipo": "necrótico",
+    "curaIgual": true,
+    "semLimite": true
+   }
+  },
   "traits": [
    "t_drenarSangue"
   ],
@@ -4195,6 +4640,13 @@ export const LIVRO_BGG = {
     "danoExtra": {
      "damage": "4d6+7",
      "type": "cortante"
+    },
+    "onHit": {
+     "semResistencia": true,
+     "dc": 17,
+     "escape": 17,
+     "condition": "agarrado",
+     "note": "é agarrado"
     }
    },
    {
@@ -4229,6 +4681,24 @@ export const LIVRO_BGG = {
     6
    ]
   },
+  "acoesEspeciais": [
+   {
+    "nome": "Zumbido",
+    "tipo": "area",
+    "shape": "raio",
+    "areaFt": 10,
+    "save": "con",
+    "dc": 19,
+    "damage": "3d6",
+    "damageType": "trovejante",
+    "halfOnSave": false,
+    "condition": "incapacitado",
+    "rounds": 1,
+    "repete": false,
+    "ateFimDoTurnoDele": true,
+    "bonus": true
+   }
+  ],
   "traits": [
    "resistenciaAMagia"
   ],
@@ -4294,6 +4764,23 @@ export const LIVRO_BGG = {
     "Lança"
    ]
   },
+  "acoesEspeciais": [
+   {
+    "nome": "Golpes de Gigante",
+    "recharge": [
+     5,
+     6
+    ],
+    "tipo": "postura",
+    "condicao": "golpesDeGigante",
+    "ateFimDoTurno": true,
+    "data": {
+     "dadosNoAcerto": "2d6",
+     "tipo": "energético"
+    },
+    "bonus": true
+   }
+  ],
   "traits": [],
   "blurb": "Guerreiro robusto que golpeia duas vezes com a lança, corpo a corpo ou arremessando. Quando canaliza a magia dos gigantes, cada golpe corpo a corpo ganha dano extra do elemento do seu clã.",
   "lore": "Golias são humanoides de parentesco distante com os gigantes, fortalecidos pela essência das montanhas onde seus ancestrais viveram. Algumas comunidades convivem tão de perto com os gigantes que estes as aceitam como família, e seus membros servem de ponte entre os clãs gigantes e os povos menores. Mesmo sem passar de uns 2,4 m, enfrentam ogros em disputas de força. Veneram os ancestrais divinos dos gigantes, sobretudo as filhas de Annam, e adotam os valores do clã com que vivem: os vizinhos dos gigantes do gelo exaltam a força, os dos gigantes de pedra prezam a arte."
@@ -4359,9 +4846,21 @@ export const LIVRO_BGG = {
     }
    }
   ],
+  "acoesEspeciais": [
+   {
+    "nome": "Desvanecer",
+    "tipo": "sumir"
+   },
+   {
+    "nome": "Passo Sorridente",
+    "tipo": "teleporte",
+    "alcanceFt": 60,
+    "bonus": true
+   }
+  ],
   "traits": [
-   "t_desvanecer",
-   "resistenciaAMagia"
+   "resistenciaAMagia",
+   "t_reaparecer"
   ],
   "blurb": "Some no ar e reaparece de surpresa: atacando invisível, suas garras podem derrubar o alvo, e ele morde quem estiver no chão. Teletransporta-se como ação bônus e resiste bem à magia.",
   "lore": "Fadas travessas com aparência de gatos domésticos enormes, garras finas como agulhas e um sorriso largo cheio de dentes. Costumam viver perto de enclaves de gigantes, descansando invisíveis em galhos à espera de presas ou de alguém para conversar. Adoram charadas e provocações, e mostram só o sorriso, a cauda ou a cabeça para confundir ou intimidar. Um bigode do gato, dado como presente ou tirado de um morto, permite conjurar passo nebuloso uma vez antes de virar fumaça."
@@ -4470,8 +4969,9 @@ export const LIVRO_BGG = {
    {
     "nome": "Avalanche de Pedras",
     "tipo": "area",
-    "shape": "raio",
-    "areaFt": 120,
+    "shape": "sphere",
+    "areaFt": 20,
+    "alcanceFt": 120,
     "save": "dex",
     "dc": 16,
     "damage": "8d6",
@@ -4479,8 +4979,7 @@ export const LIVRO_BGG = {
     "halfOnSave": true,
     "condition": "caido",
     "rounds": 1,
-    "repete": false,
-    "ateFimDoTurnoDele": true
+    "repete": false
    }
   ],
   "repreensao": {
@@ -4496,6 +4995,9 @@ export const LIVRO_BGG = {
   "traits": [
    "t_runaDaColina",
    "t_repulsaoDaColina"
+  ],
+  "marcas": [
+   "druid"
   ],
   "blurb": "Esmaga com o tacape de longo alcance enquanto arremessa boleadeiras de pedra que prendem e explodem em trovão. Com a runa da colina, faz chover rochas numa grande área e repele quem o fere de perto.",
   "lore": "Alguns gigantes da colina aprendem a magia das runas e descobrem um laço profundo com a terra e a pedra. Esse poder, somado ao tamanho e à força, costuma colocá-los no comando de seus clãs. Andam cobertos de pedras amarradas em correntes e cordas, que usam para derrubar e golpear os inimigos. Os outros gigantes os chamam de avalanches pela rapidez com que abatem e devoram suas presas, como rochas despencando de uma encosta."
@@ -4585,9 +5087,11 @@ export const LIVRO_BGG = {
    "claro": 20,
    "penumbra": 20
   },
-  "traits": [
-   "t_formaDeRelampago"
-  ],
+  "corpoQuente": {
+   "damage": "2d6",
+   "type": "elétrico"
+  },
+  "traits": [],
   "blurb": "Um raio vivo que voa a 27 m, atravessa o espaço dos inimigos eletrocutando-os e dispara arcos elétricos que saltam para um segundo alvo. Tocá-lo ou golpeá-lo de perto também causa choque.",
   "lore": "Esses seres descendem de gigantes das tempestades que se afastaram do mundo há eras e deixaram que sua essência elemental, alimentada pelos Planos Elementais, consumisse a carne. Hoje são pouco mais que um relâmpago consciente, com um rosto difuso na ponta da descarga. Às vezes assumem por um instante a silhueta de um gigante, e perto de metal ou de terra firme parecem prestes a se dissipar. A mente acompanha o corpo: vagam de um lugar a outro sem propósito claro, longe da reflexão de seus parentes gigantes."
  },
@@ -4659,15 +5163,38 @@ export const LIVRO_BGG = {
     ]
    ]
   },
+  "acoesEspeciais": [
+   {
+    "nome": "Investida Voraz",
+    "recharge": [
+     5,
+     6
+    ],
+    "tipo": "atropelar",
+    "tamanhoMax": "large",
+    "save": "str",
+    "dc": 18,
+    "damage": "3d12+6",
+    "damageType": "perfurante",
+    "halfOnSave": false,
+    "agarra": {
+     "escape": 16,
+     "contido": true,
+     "caiSeJaPreso": true
+    }
+   }
+  ],
   "revide": {
    "nome": "Revide Dentado",
    "arma": "Mordida",
    "aoAcaso": true
   },
   "traits": [
-   "t_investidaVoraz",
    "resistenciaAMagia",
    "t_revideDentado"
+  ],
+  "marcas": [
+   "demon"
   ],
   "blurb": "Gigante demoníaco que avança de boca escancarada, abocanhando quem estiver no caminho e prendendo uma vítima entre os dentes. Quando ferido, revida mordendo ao acaso ou cuspindo presas à distância.",
   "lore": "Um gigante da colina cuja fome chamou a atenção de Yeenoghu, o Senhor Demônio da Carnificina, seja por pacto, por devorar um artefato maligno ou por sonhos sussurrados pelo próprio demônio. Transformado, ganha juba, postura curvada de gnoll e uma mandíbula enorme repleta de fileiras de dentes. Esses dentes não param de crescer, e a criatura morde e mastiga tudo o que alcança. As mais espertas arrancam as presas e as arremessam contra os inimigos. Investe de quatro sobre a presa, rasgando o chão como um arado."
@@ -4845,6 +5372,12 @@ export const LIVRO_BGG = {
    "halfOnSave": true,
    "origem": "sopro"
   },
+  "motorDoLivro": {
+   "chaoDificil": {
+    "nome": "Lama Pegajosa",
+    "raioFt": 15
+   }
+  },
   "traits": [
    "amorfo",
    "t_lamaPegajosa"
@@ -4888,7 +5421,14 @@ export const LIVRO_BGG = {
     "bonus": 13,
     "damage": "6d12+8",
     "type": "perfurante",
-    "reachFt": 10
+    "reachFt": 10,
+    "onHit": {
+     "semResistencia": true,
+     "dc": 18,
+     "escape": 18,
+     "condition": "contido",
+     "note": "é agarrado"
+    }
    },
    {
     "name": "Cauda",
@@ -4905,8 +5445,36 @@ export const LIVRO_BGG = {
     "Cauda"
    ]
   },
+  "acoesEspeciais": [
+   {
+    "nome": "Engolir",
+    "tipo": "engolir",
+    "tamanhoMax": "huge",
+    "golpe": {
+     "name": "Engolir",
+     "bonus": 13,
+     "damage": 0,
+     "type": "ácido",
+     "reachFt": 5,
+     "engole": {
+      "tamanhoMax": "medium",
+      "dano": "2d6",
+      "tipoDano": "ácido",
+      "soAgarrado": true
+     },
+     "nomeEn": "Swallow"
+    },
+    "dano": "2d6",
+    "tipoDano": "ácido",
+    "max": 2,
+    "bonus": true
+   }
+  ],
   "traits": [
    "resistenciaAMagia"
+  ],
+  "marcas": [
+   "dinosaur"
   ],
   "blurb": "Um dinossauro colossal que morde com força brutal, prende a vítima entre as mandíbulas e a engole viva, enquanto a cauda atinge alvos a até 6 m. Resiste bem à magia.",
   "lore": "O regissauro é um predador gigantesco, uma fera de couro grosso que domina os territórios onde caça. Tem pouca inteligência, mas instinto de sobra: avança sobre a presa mais próxima e só para quando ela some em sua garganta. Feitiços parecem escorregar pela sua pele, o que o torna temido até por conjuradores experientes. Onde ele passa, as outras criaturas fogem ou se escondem."
@@ -4968,6 +5536,23 @@ export const LIVRO_BGG = {
     "Pancada"
    ]
   },
+  "acoesEspeciais": [
+   {
+    "nome": "Rastro de Geada",
+    "recharge": [
+     5,
+     6
+    ],
+    "tipo": "atropelar",
+    "tamanhoMax": "medium",
+    "save": "con",
+    "dc": 15,
+    "damage": "4d10",
+    "damageType": "frio",
+    "halfOnSave": true,
+    "lento": true
+   }
+  ],
   "explosaoAoMorrer": {
    "pes": 10,
    "save": "con",
@@ -4977,7 +5562,6 @@ export const LIVRO_BGG = {
    "metade": false
   },
   "traits": [
-   "t_rastroDeGeada",
    "explosaoAoMorrer"
   ],
   "blurb": "Golpeia duas vezes com punhos gelados de longo alcance e atravessa as fileiras inimigas deixando um rastro de gelo que fere e retarda. Ao morrer, explode em geada — não fique colado nele.",
@@ -5081,6 +5665,19 @@ export const LIVRO_BGG = {
     5,
     6
    ]
+  },
+  "motorDoLivro": {
+   "reflexaoRunica": {
+    "nome": "Reflexão de Magia",
+    "bonus": 14,
+    "alcanceFt": 120,
+    "circuloMax": 5,
+    "dano": "4d12",
+    "tipo": "energético",
+    "dc": 15,
+    "save": "int",
+    "usos": 2
+   }
   },
   "traits": [
    "formaImutavel",
@@ -5208,12 +5805,30 @@ export const LIVRO_BGG = {
     "condition": "contido",
     "rounds": 10,
     "repete": false
+   },
+   {
+    "nome": "Movimento Sísmico",
+    "tipo": "tremor",
+    "raioFt": 60,
+    "dc": 23,
+    "anda": true,
+    "bonus": true
    }
   ],
+  "motorDoLivro": {
+   "alimentarDoEngolido": {
+    "nome": "Alimentar-se",
+    "dados": "3d6",
+    "cura": 10
+   }
+  },
   "traits": [
    "resistenciaAMagia",
    "monstroDeCerco",
    "t_alimentarSe"
+  ],
+  "marcas": [
+   "titan"
   ],
   "blurb": "Titã colossal que esmaga com um tronco de árvore, arremessa inimigos para longe e suga criaturas para dentro do estômago com uma inalação devastadora. Cada passo seu faz o chão tremer e quebra a concentração dos conjuradores.",
   "lore": "Os rebentos de Grolantor são titãs nascidos da essência do deus gigante da fome e da brutalidade. Movidos por um apetite que nunca se sacia, vagam por terras selvagens devorando tudo o que encontram. Desprezam a ordem e as hierarquias dos outros gigantes e preferem a força bruta a qualquer acordo. Onde passam, ficam aldeias arrasadas e florestas arrancadas pela raiz."
@@ -5332,8 +5947,9 @@ export const LIVRO_BGG = {
      6
     ],
     "tipo": "area",
-    "shape": "raio",
-    "areaFt": 120,
+    "shape": "sphere",
+    "areaFt": 60,
+    "alcanceFt": 120,
     "save": "str",
     "dc": 24,
     "damage": "8d12",
@@ -5342,13 +5958,30 @@ export const LIVRO_BGG = {
     "condition": "atordoado",
     "rounds": 1,
     "repete": false,
-    "ateFimDoTurnoDele": true
+    "ateFimDoTurnoDoAlvo": true
+   },
+   {
+    "nome": "Névoa do Engano",
+    "tipo": "area",
+    "shape": "sphere",
+    "areaFt": 30,
+    "alcanceFt": 90,
+    "save": "wis",
+    "dc": 24,
+    "condition": "enfeiticado",
+    "rounds": 1,
+    "repete": false,
+    "ateFimDoTurnoDoAlvo": true,
+    "bonus": true
    }
   ],
   "traits": [
    "voaSemProvocar",
    "resistenciaAMagia",
    "monstroDeCerco"
+  ],
+  "marcas": [
+   "titan"
   ],
   "blurb": "Titã voador que ataca de longe com dardos de vento e de perto com uma maça-estrela de nuvem, além de puxar grupos inteiros para um vórtice trovejante que atordoa. Sua névoa enganosa faz os heróis atacarem os próprios aliados.",
   "lore": "Os rebentos de Memnor são titãs nascidos da essência do ardiloso deus dos gigantes das nuvens. Pairam entre as nuvens e manipulam o vento, o trovão e a névoa com uma inteligência fria. Preferem enganar e semear discórdia a lutar de frente, mas quando entram em combate são devastadores. Mortais costumam encontrá-los em fortalezas celestes ou em tempestades que parecem ter vontade própria."
@@ -5468,10 +6101,39 @@ export const LIVRO_BGG = {
   "recursos": {
    "resistenciaLendaria": 6
   },
+  "acoesEspeciais": [
+   {
+    "nome": "Aperto Sepulcral",
+    "recharge": [
+     6
+    ],
+    "tipo": "alvo",
+    "alcanceFt": 20,
+    "tamanhoMax": "huge",
+    "save": "dex",
+    "dc": 24,
+    "damage": "8d6",
+    "damageType": "energético",
+    "prende": {
+     "escape": 19,
+     "petrificaNoInicio": true
+    }
+   },
+   {
+    "nome": "Movimento Sísmico",
+    "tipo": "tremor",
+    "raioFt": 60,
+    "dc": 24,
+    "anda": true,
+    "bonus": true
+   }
+  ],
   "traits": [
-   "t_apertoSepulcral",
    "resistenciaAMagia",
    "monstroDeCerco"
+  ],
+  "marcas": [
+   "titan"
   ],
   "blurb": "Titã colossal que esmaga com clava de cristal e punhos de longo alcance, arremessa pedras rúnicas explosivas e pode petrificar quem agarra. Seus passos abalam o chão e quebram a concentração de conjuradores.",
   "lore": "Os rebentos de Skoraeus são titãs nascidos da essência do deus gigante da pedra e das profundezas. Habitam cavernas imensas e domínios subterrâneos, onde guardam segredos da terra e cristais antigos. Costumam ser reservados e pacientes, mas reagem com fúria esmagadora a quem profana seus salões. Sua magia rúnica transforma inimigos em estátuas que passam a fazer parte da rocha."
@@ -5590,10 +6252,26 @@ export const LIVRO_BGG = {
   "recursos": {
    "resistenciaLendaria": 6
   },
+  "acoesEspeciais": [
+   {
+    "nome": "Tempestade Vingativa",
+    "recharge": [
+     6
+    ],
+    "tipo": "tempestadeVingativa",
+    "raioFt": 30,
+    "alcanceFt": 120,
+    "dc": 25,
+    "bonus": true
+   }
+  ],
   "traits": [
    "voaSemProvocar",
    "resistenciaAMagia",
    "monstroDeCerco"
+  ],
+  "marcas": [
+   "titan"
   ],
   "blurb": "Titã colossal que voa veloz golpeando com uma espada de relâmpagos a até 9 m e arremessando granizo a longa distância. Sua nuvem de tempestade alterna chuva ácida, gelo que imobiliza e raios que atordoam.",
   "lore": "Este titã descende de Stronmaus, o deus dos gigantes ligado às tempestades e ao céu. Carrega em si a fúria e a alegria das tormentas, e costuma habitar nuvens altas, picos e mares revoltos. Embora tenda ao bem, é imprevisível como o clima e reage com violência a quem ameaça seus domínios. Sábio e versado em magia e história antiga, raramente se envolve em assuntos mortais sem motivo grandioso."
@@ -5721,11 +6399,38 @@ export const LIVRO_BGG = {
     "condition": "contido",
     "rounds": 10,
     "repete": false
+   },
+   {
+    "nome": "Movimento Sísmico",
+    "tipo": "tremor",
+    "raioFt": 60,
+    "dc": 26,
+    "anda": true,
+    "bonus": true
+   },
+   {
+    "nome": "Fumaça Incendiária",
+    "tipo": "postura",
+    "condicao": "fumacaIncendiaria",
+    "rounds": 10,
+    "data": {
+     "auraNoInicio": {
+      "raioFt": 30,
+      "dc": 25,
+      "save": "con",
+      "dano": "4d6",
+      "tipo": "fogo"
+     }
+    },
+    "bonus": true
    }
   ],
   "traits": [
    "resistenciaAMagia",
    "monstroDeCerco"
+  ],
+  "marcas": [
+   "titan"
   ],
   "blurb": "Titã de fogo colossal que golpeia com uma lâmina de lava de longo alcance, arremessa bolas de magma e sufoca o campo com fumaça incandescente. Sua onda de lava queima e prende grupos inteiros em rocha endurecida.",
   "lore": "Este titã é um descendente direto de Surtur, o lorde dos gigantes de fogo, e carrega em si o calor das forjas primordiais. Costuma surgir em regiões vulcânicas, fortalezas de basalto e lugares onde a terra se abre em rios de magma. Arrogante e disciplinado, ele se vê como herdeiro legítimo de uma ordem antiga e trata as raças menores como combustível para suas ambições. Onde caminha, o chão treme e o ar se enche de cinzas."
@@ -5853,11 +6558,22 @@ export const LIVRO_BGG = {
     "damage": "8d8",
     "damageType": "concussão",
     "halfOnSave": true
+   },
+   {
+    "nome": "Movimento Sísmico",
+    "tipo": "tremor",
+    "raioFt": 60,
+    "dc": 25,
+    "anda": true,
+    "bonus": true
    }
   ],
   "traits": [
    "resistenciaAMagia",
    "monstroDeCerco"
+  ],
+  "marcas": [
+   "titan"
   ],
   "blurb": "Titã gélido que esmaga com machado de gelo e socos de alcance enorme, arremessa geleiras à distância e lança grupos inteiros ao ar com erupções de gelo. Ainda quebra a concentração de conjuradores só de se mover.",
   "lore": "Os rebentos de Thrym são titãs nascidos da essência do deus dos gigantes do gelo, encarnações vivas do inverno que não termina. Vagam por tundras, geleiras e picos congelados, onde o próprio chão parece obedecer à sua vontade. Costumam se impor sobre gigantes do gelo como líderes ou campeões divinos. São orgulhosos, implacáveis e enxergam o mundo como algo a ser soterrado sob o gelo."
@@ -5970,6 +6686,12 @@ export const LIVRO_BGG = {
     "imunizaAoPassar": true
    }
   ],
+  "motorDoLivro": {
+   "desvantagemContraEle": {
+    "nome": "Forma Borrada",
+    "salvoPerto": 15
+   }
+  },
   "traits": [
    "t_formaBorrada",
    "incorporealMovement"
@@ -6163,6 +6885,9 @@ export const LIVRO_BGG = {
    "t_memoriaLabirintica",
    "resistenciaAMagia"
   ],
+  "marcas": [
+   "demon"
+  ],
   "blurb": "Gigante demoníaco que golpeia com uma glaive de alcance longo e arremessa rochas que derrubam. Faz brotar chifres de pedra do chão que perfuram e lançam os inimigos para o alto.",
   "lore": "Gigantes de pedra raramente cultuam demônios, mas alguns se encantam com os labirintos que Baphomet, o Rei Chifrudo, ergue como campos de caça. Ao servi-lo, continuam esculpindo labirintos e saciam a sede de sangue caçando dentro deles. Os mais devotos são transformados em perseguidores, ganhando uma coroa de seis chifres. O Príncipe das Feras também lhes concede uma glaive mágica e o poder de arrancar chifres de pedra da terra."
  },
@@ -6248,6 +6973,11 @@ export const LIVRO_BGG = {
     ]
    ]
   },
+  "motorDoLivro": {
+   "inabalavel": {
+    "nome": "Inabalável"
+   }
+  },
   "traits": [
    "t_inabalavel"
   ],
@@ -6324,25 +7054,64 @@ export const LIVRO_BGG = {
    {
     "nome": "Geodo Explosivo",
     "tipo": "area",
-    "shape": "raio",
-    "areaFt": 60,
+    "shape": "sphere",
+    "areaFt": 20,
+    "alcanceFt": 60,
     "save": "dex",
     "dc": 17,
     "damage": "3d8",
     "damageType": "perfurante",
     "halfOnSave": true,
+    "damage2": "3d8",
+    "damageType2": "radiante",
     "condition": "cego",
     "rounds": 1,
     "repete": false,
-    "ateFimDoTurnoDele": true
+    "ateFimDoTurnoDoAlvo": true
+   },
+   {
+    "nome": "Raios Prismáticos",
+    "tipo": "area",
+    "shape": "cone",
+    "areaFt": 60,
+    "save": "dex",
+    "dc": 17,
+    "halfOnSave": true,
+    "sorteio": [
+     {
+      "de": 1,
+      "ate": 2,
+      "nome": "Vermelho Ardente",
+      "damage": "10d6",
+      "damageType": "radiante",
+      "condition": "cego"
+     },
+     {
+      "de": 3,
+      "ate": 4,
+      "nome": "Azul Aterrador",
+      "damage": "10d6",
+      "damageType": "necrótico",
+      "condition": "amedrontado"
+     },
+     {
+      "de": 5,
+      "ate": 6,
+      "nome": "Verde Drenante",
+      "damage": "10d6",
+      "damageType": "energético",
+      "condition": "incapacitado"
+     }
+    ],
+    "damage": "10d6",
+    "damageType": "radiante"
    }
   ],
   "traits": [
-   "t_raiosPrismaticos",
-   "t_12VermelhoArdente",
-   "t_34AzulAterrador",
-   "t_56VerdeDrenante",
    "t_runaDePedra"
+  ],
+  "marcas": [
+   "wizard"
   ],
   "blurb": "Golpeia com um cajado prismático de 3 m de alcance e arremessa geodos que explodem em clarões cegantes. Enquanto mantém sua runa de pedra, dispara um cone de raios coloridos que cegam, amedrontam ou incapacitam.",
   "lore": "Entre os gigantes de pedra, a magia rúnica é mais comum que em outras linhagens, talvez pelo talento que têm para esculpir rocha. Os falarrochas unem essa magia a uma habilidade artística excepcional e servem às suas comunidades como líderes e oráculos. Costumam costurar cristais nas roupas e incrustá-los na própria pele, transformando-os em obras cintilantes com o poder das runas. Na batalha, fazem esses mesmos cristais lançarem feixes de luz intensa capazes de queimar e paralisar inimigos."
@@ -6397,7 +7166,14 @@ export const LIVRO_BGG = {
     "bonus": 10,
     "damage": "3d8+6",
     "type": "concussão",
-    "reachFt": 15
+    "reachFt": 15,
+    "onHit": {
+     "semResistencia": true,
+     "dc": 16,
+     "escape": 16,
+     "condition": "agarrado",
+     "note": "é agarrado"
+    }
    },
    {
     "name": "Stinger",
@@ -6576,11 +7352,26 @@ export const LIVRO_BGG = {
   "recursos": {
    "resistenciaLendaria": 3
   },
+  "acoesEspeciais": [
+   {
+    "nome": "Chamado da Tormenta (Requer Runa da Tempestade)",
+    "tipo": "area",
+    "shape": "raio",
+    "areaFt": 60,
+    "save": "dex",
+    "dc": 21,
+    "damage": "8d8+7",
+    "damageType": "frio",
+    "halfOnSave": true
+   }
+  ],
   "traits": [
-   "t_chamadoDaTormentaRequerRunaDaTempestade",
    "sempreAlerta",
    "t_videnciaRequerRunaDaTempestade",
    "t_runaDaTempestade"
+  ],
+  "marcas": [
+   "sorcerer"
   ],
   "blurb": "Combate corpo a corpo com uma lâmina de relâmpagos ou arremessa lanças elétricas a centenas de metros, e pode envolver todos ao redor num vórtice elemental devastador. Destruir o cristal rúnico embutido no corpo dele anula seus poderes de runa.",
   "lore": "Esses gigantes das tempestades se colocam no topo do ordning, e poucos ousam contestar essa posição. Além da magia inata de sua raça, dominam a magia das runas e são tratados com enorme respeito entre os gigantes. Encaixam uma bola de cristal gravada com a runa da tempestade na testa ou na órbita do olho, o que lhes permite enxergar através de ilusões e espionar à distância. Dizem que, se algum gigante for capaz de atrair o olhar de Annam de volta ao mundo, será um deles."
@@ -6654,6 +7445,14 @@ export const LIVRO_BGG = {
     "danoExtra": {
      "damage": "3d10",
      "type": "psíquico"
+    },
+    "onHit": {
+     "semResistencia": true,
+     "dc": 18,
+     "escape": 18,
+     "condition": "contido",
+     "note": "é agarrado",
+     "maxAgarrados": 1
     }
    },
    {
@@ -6849,6 +7648,31 @@ export const LIVRO_BGG = {
   "recursos": {
    "resistenciaLendaria": 3
   },
+  "acoesEspeciais": [
+   {
+    "nome": "Tempestade de Granizo",
+    "recharge": [
+     4,
+     5,
+     6
+    ],
+    "tipo": "area",
+    "shape": "sphere",
+    "areaFt": 20,
+    "alcanceFt": 120,
+    "save": "dex",
+    "dc": 17,
+    "damage": "3d6",
+    "damageType": "concussão",
+    "halfOnSave": true,
+    "damage2": "3d6",
+    "damageType2": "frio",
+    "condition": "caido",
+    "rounds": 1,
+    "repete": false,
+    "bonus": true
+   }
+  ],
   "traits": [
    "incorporealMovement"
   ],
@@ -6981,6 +7805,36 @@ export const LIVRO_BGG = {
   "recursos": {
    "resistenciaLendaria": 3
   },
+  "acoesEspeciais": [
+   {
+    "nome": "Arremessar Membro",
+    "tipo": "golpeBonus",
+    "bonus": true,
+    "golpe": {
+     "name": "Arremessar Membro",
+     "bonus": 13,
+     "damage": "1d8+7",
+     "type": "concussão",
+     "reachFt": 5,
+     "ranged": true,
+     "rangeFt": 60,
+     "longRangeFt": 240,
+     "danoExtra": {
+      "damage": "4d8+7",
+      "type": "cortante"
+     },
+     "onHit": {
+      "semResistencia": true,
+      "dc": 17,
+      "escape": 17,
+      "condition": "contido",
+      "note": "é agarrado"
+     },
+     "nomeEn": "Fling Limb"
+    },
+    "porDia": 3
+   }
+  ],
   "regeneracao": {
    "pv": 15,
    "bloqueia": []
@@ -7072,6 +7926,16 @@ export const LIVRO_BGG = {
     "halfOnSave": true
    }
   ],
+  "motorDoLivro": {
+   "aoSerFerido": {
+    "nome": "Repreensão Psíquica (só Espelho Psiônico)",
+    "raioFt": 20,
+    "dano": "oMesmo",
+    "so": [
+     "psíquico"
+    ]
+   }
+  },
   "regeneracao": {
    "pv": 10,
    "bloqueia": [
@@ -7117,17 +7981,9 @@ export const TRACOS_BGG = {
   "name": "Runa da Morte",
   "desc": "Enquanto segura ou usa o crânio com a runa, pode usar Foice Ceifadora e Mortalha de Almas. O crânio tem CA 18, 35 PV, imunidade a necrótico, veneno e psíquico, recupera todos os PV ao fim de cada turno e vira pó se chegar a 0 PV ou se o gigante morrer; ele pode gravar outra runa num crânio após um descanso curto ou longo."
  },
- "t_poeiraArdente": {
-  "name": "Poeira Ardente",
-  "desc": "Uma criatura dentro do seu espaço faz teste de resistência de Constituição CD 14. Se falhar, sofre 10 (3d6) de dano de concussão e fica cega até o fim do próximo turno dela; se passar, sofre só metade do dano."
- },
  "t_maldicaoDaMorte": {
   "name": "Maldição da Morte",
   "desc": "Quando o fensir morre, cada criatura a até 9 m faz teste de resistência de Carisma CD 13 ou fica amaldiçoada por 24 horas. Amaldiçoada, não recupera nada com descansos e, ao fim de cada hora, repete o teste CD 13 ou sofre 11 (2d10) de dano psíquico."
- },
- "t_lamaEmPedra": {
-  "name": "Lama em Pedra",
-  "desc": "Recarga 5–6. Esfera de 9 m de raio a até 18 m: cada criatura que não seja fensir faz teste de resistência de Destreza CD 13 ou sofre 13 (3d8) de concussão e fica contida. No fim do próximo turno repete o teste: sucesso encerra o efeito, falha deixa petrificada por 24 horas."
  },
  "t_runaDeFogo": {
   "name": "Runa de Fogo",
@@ -7157,10 +8013,6 @@ export const TRACOS_BGG = {
   "name": "Repreensão Venenosa",
   "desc": "Quando sofre dano de uma criatura visível a até 18 m, ela faz teste de resistência de Constituição CD 16 ou fica envenenada até o fim do próximo turno dela. Requer a runa de sangue."
  },
- "t_lobosDeGelo": {
-  "name": "Lobos de Gelo",
-  "desc": "Requer a Runa do Gelo. Invoca 1d4 lobos do inverno elementais a até 9 m, que agem logo após o gigante e obedecem a ele, recebendo +6 em ataque e dano enquanto estiverem a até 9 m dele. Somem após 1 minuto, se o gigante morrer ou se ele usar a ação de novo."
- },
  "t_runaDoGelo": {
   "name": "Runa do Gelo",
   "desc": "Enquanto porta o objeto com a runa, pode usar Lobos de Gelo e Armadura de Gelo. O objeto tem CA 16, 40 PV, imunidade a necrótico, veneno e psíquico, recupera todos os PV ao fim de cada turno e vira pó se chegar a 0 PV ou se o gigante morrer; ele pode gravar outra runa após um descanso curto ou longo."
@@ -7176,10 +8028,6 @@ export const TRACOS_BGG = {
  "t_imitacaoDeMagia": {
   "name": "Imitação de Magia",
   "desc": "Uma vez por dia, quando uma criatura visível lança magia de 5º nível ou menor, ela faz teste de resistência de Carisma CD 19. Se falhar, a gargântua lança a mesma magia no mesmo nível na hora, sem componentes materiais e escolhendo os alvos (+11 em ataques mágicos, CD 19)."
- },
- "t_grasnadoTrovejante": {
-  "name": "Grasnado Trovejante",
-  "desc": "Recarga 5–6. Todas as outras criaturas a até 9 m fazem teste de resistência de Constituição CD 12: na falha sofrem 16 (3d10) de dano trovejante e ficam surdas até o início do próximo turno do ganso; no sucesso, metade do dano. O som é ouvido a até 90 m."
  },
  "t_visaoDoLince": {
   "name": "Visão do Lince",
@@ -7197,9 +8045,9 @@ export const TRACOS_BGG = {
   "name": "Drenar Sangue",
   "desc": "Causa 10 (2d6 + 3) de dano necrótico a uma criatura à qual esteja preso (17, ou 4d6 + 3, se for um gigante), recuperando PV iguais ao dano. Não funciona contra constructos ou mortos-vivos."
  },
- "t_desvanecer": {
-  "name": "Desvanecer",
-  "desc": "Fica invisível, junto com o equipamento, por 1 hora ou até atacar. Pode manter visível uma parte do corpo, como o sorriso, a cabeça ou a cauda."
+ "t_reaparecer": {
+  "name": "Reaparecer",
+  "desc": "Com a ação bônus, volta a ficar visível, inteiro ou em parte. No jogo, só o nome."
  },
  "t_runaDaColina": {
   "name": "Runa da Colina",
@@ -7209,14 +8057,6 @@ export const TRACOS_BGG = {
   "name": "Repulsão da Colina",
   "desc": "Requer a runa. Quando sofre dano de uma criatura visível a até 3 m, ela faz teste de resistência de Constituição CD 16 ou sofre 10 (3d6) de dano energético e é empurrada 3 m para longe."
  },
- "t_formaDeRelampago": {
-  "name": "Forma de Relâmpago",
-  "desc": "Pode entrar e parar no espaço de criaturas hostis. A criatura sofre 2d6 (7) de dano elétrico na primeira vez por turno em que ele entra no espaço dela ou se ele começa o turno ali. Passa por frestas de 2,5 cm sem se espremer, e quem o toca ou o acerta com ataque corpo a corpo a até 1,5 m sofre 2d6 (7) de dano elétrico."
- },
- "t_investidaVoraz": {
-  "name": "Investida Voraz",
-  "desc": "Recarga 5–6. Move-se até seu deslocamento sem provocar ataques de oportunidade, atravessando criaturas Grandes ou menores; cada uma faz teste de resistência de Força CD 18 ou sofre 25 (3d12 + 6) de dano perfurante e fica agarrada (CD 16 para escapar) e contida enquanto durar; quem já estiver agarrado assim fica caído. Só agarra uma criatura por vez."
- },
  "t_revideDentado": {
   "name": "Revide Dentado",
   "desc": "Ao sofrer dano, morde uma criatura aleatória a até 3 m. Se não houver ninguém ao alcance, pode fazer dois Arremessos de Presas."
@@ -7225,10 +8065,6 @@ export const TRACOS_BGG = {
   "name": "Lama Pegajosa",
   "desc": "O chão num raio de 4,5 m ao redor dele é terreno difícil para as outras criaturas."
  },
- "t_rastroDeGeada": {
-  "name": "Rastro de Geada",
-  "desc": "Recarga 5–6. Move-se até seu deslocamento sem provocar ataques de oportunidade, podendo atravessar criaturas Médias ou menores. Cada criatura cujo espaço ele entra pela primeira vez faz teste de resistência de Constituição CD 15: na falha sofre 22 (4d10) de dano de frio e tem o deslocamento reduzido em 3 m até o início do próximo turno dele; no sucesso, sofre metade do dano."
- },
  "t_reflexaoDeMagia": {
   "name": "Reflexão de Magia",
   "desc": "2/dia. Quando uma criatura a até 36 m conjura magia de 5º círculo ou menor, faz ataque mágico à distância (+14): 26 (4d12) de dano energético, e o alvo deve passar em teste de resistência de Inteligência CD 15 ou a magia falha sem efeito."
@@ -7236,10 +8072,6 @@ export const TRACOS_BGG = {
  "t_alimentarSe": {
   "name": "Alimentar-se",
   "desc": "Logo após sofrer dano, se tiver alguém engolido, causa 10 (3d6) de dano energético a cada criatura engolida e recupera 10 PV."
- },
- "t_apertoSepulcral": {
-  "name": "Aperto Sepulcral",
-  "desc": "Recarga 5–6. Toca uma criatura Enorme ou menor a até 6 m: teste de Destreza CD 24 ou sofre 28 (8d6) energético e fica agarrada (fuga CD 19). Se ainda estiver agarrada no início do próximo turno do rebento, fica petrificada."
  },
  "t_formaBorrada": {
   "name": "Forma Borrada",
@@ -7253,29 +8085,9 @@ export const TRACOS_BGG = {
   "name": "Inabalável",
   "desc": "Quando falha em um teste de resistência para não ser movido ou não ficar caído, considera que obteve sucesso."
  },
- "t_raiosPrismaticos": {
-  "name": "Raios Prismáticos",
-  "desc": "Exige a Runa de Pedra. Cone de 18 m; cada criatura faz teste de resistência de Destreza CD 17 e rola 1d6 para saber qual raio a atinge."
- },
- "t_12VermelhoArdente": {
-  "name": "1-2: Vermelho Ardente",
-  "desc": "Na falha, 35 (10d6) de dano radiante e fica cega até o fim do próximo turno do gigante; no sucesso, metade do dano."
- },
- "t_34AzulAterrador": {
-  "name": "3-4: Azul Aterrador",
-  "desc": "Na falha, 35 (10d6) de dano necrótico e fica amedrontada até o fim do próximo turno do gigante; no sucesso, metade do dano."
- },
- "t_56VerdeDrenante": {
-  "name": "5-6: Verde Drenante",
-  "desc": "Na falha, 35 (10d6) de dano energético e fica incapacitada até o fim do próximo turno do gigante; no sucesso, metade do dano."
- },
  "t_runaDePedra": {
   "name": "Runa de Pedra",
   "desc": "Enquanto segura ou veste o objeto mineral com a runa, pode usar Raios Prismáticos. O objeto tem CA 18, 30 PV, imunidade a dano necrótico, veneno e psíquico, recupera todos os PV ao fim de cada turno e vira pó se chegar a 0 PV ou se o gigante morrer; ele pode gravar outra runa após um descanso curto ou longo."
- },
- "t_chamadoDaTormentaRequerRunaDaTempestade": {
-  "name": "Chamado da Tormenta (Requer Runa da Tempestade)",
-  "desc": "Vórtice numa esfera de 18 m de raio centrada nele: os demais fazem teste de resistência de Destreza CD 21, sofrendo 43 (8d8+7) de dano de frio, elétrico ou trovejante (à escolha dele) na falha, ou metade no sucesso."
  },
  "t_videnciaRequerRunaDaTempestade": {
   "name": "Vidência (Requer Runa da Tempestade)",

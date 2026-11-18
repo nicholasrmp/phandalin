@@ -307,6 +307,19 @@ export const barraVisaoAlemDoTraco = (codigo) => BARRA_VISAO_ALEM_DO_TRACO.has(c
  */
 export const segmentoBarra = (seg, tipo = 'visao') => restricao(seg.codigo ?? ARESTA.parede, tipo) === BARRA;
 
+/** Quanto a ponta de um traço de parede se estica na geometria da visão, em casas (ver `indiceDosTracos`). */
+const FIO_DA_PONTA = 0.06;
+/** A ponta a menos disto de outra parede (sem encostar) é fresta de importação, e ganha o fio. */
+const FRESTA_MAX = 0.12;
+/** O segmento a→b com `da` casas a mais antes de `a` e `db` depois de `b`. */
+function esticar(a, b, da, db) {
+  const vx = b[0] - a[0];
+  const vy = b[1] - a[1];
+  const L = Math.hypot(vx, vy);
+  if (!L) return [a, b];
+  return [[a[0] - (vx / L) * da, a[1] - (vy / L) * da], [b[0] + (vx / L) * db, b[1] + (vy / L) * db]];
+}
+
 export class Battlefield {
   /**
    * @param {number} w largura em quadrados
@@ -721,24 +734,59 @@ export class Battlefield {
   indiceDosTracos() {
     if (this._indiceTracos) return this._indiceTracos;
     const idx = new Map();
+    const guardar = (seg) => {
+      const x0 = Math.floor(Math.min(seg[0][0], seg[1][0])) - 1;
+      const x1 = Math.ceil(Math.max(seg[0][0], seg[1][0]));
+      const y0 = Math.floor(Math.min(seg[0][1], seg[1][1])) - 1;
+      const y1 = Math.ceil(Math.max(seg[0][1], seg[1][1]));
+      for (let y = y0; y <= y1; y++) {
+        for (let x = x0; x <= x1; x++) {
+          const k = `${x},${y}`;
+          const lista = idx.get(k);
+          if (lista) lista.push(seg); else idx.set(k, [seg]);
+        }
+      }
+    };
+    const crus = [];
     for (const [t, pts] of (this.tracos ?? []).entries()) {
       // o TIPO do traço (`tracosTipo`, glifo da aresta): cada segmento leva o código, para a geometria perguntar
       const codigo = ARESTA_DO_CHAR[this.tracosTipo?.[t] ?? '#'] ?? ARESTA.parede;
       for (let i = 0; i + 1 < pts.length; i++) {
         const seg = [pts[i], pts[i + 1]];
         seg.codigo = codigo;
-        const x0 = Math.floor(Math.min(seg[0][0], seg[1][0])) - 1;
-        const x1 = Math.ceil(Math.max(seg[0][0], seg[1][0]));
-        const y0 = Math.floor(Math.min(seg[0][1], seg[1][1])) - 1;
-        const y1 = Math.ceil(Math.max(seg[0][1], seg[1][1]));
-        for (let y = y0; y <= y1; y++) {
-          for (let x = x0; x <= x1; x++) {
-            const k = `${x},${y}`;
-            const lista = idx.get(k);
-            if (lista) lista.push(seg); else idx.set(k, [seg]);
-          }
-        }
+        seg.traco = t;
+        crus.push(seg);
+        guardar(seg);
       }
+    }
+    // A PONTA QUE QUASE ENCOSTA GANHA UM FIO (revisão de 2026-11-13): o traço importado do Foundry nem sempre fecha a quina
+    // — a ponta de uma parede para a centésimos de casa de outra, e o raio passava pela fresta em risco fino de luz
+    // (`src/dev/medir-vazamento-luz.mjs`). Só a ponta a menos de `FRESTA_MAX` de OUTRA parede estica; a ponta solta, a da
+    // parede que termina no meio da sala, fica onde está, senão a cobertura em volta dela (`coberturaPorTracos`) mudaria.
+    // Só a GEOMETRIA da visão estica: o desenho e a aresta derivada usam o traço.
+    const barraParede = (sg) => sg.codigo === ARESTA.parede || sg.codigo === ARESTA.eterea;
+    const perto = (p, sg) => {
+      const vx = sg[1][0] - sg[0][0];
+      const vy = sg[1][1] - sg[0][1];
+      const L2 = vx * vx + vy * vy || 1e-12;
+      const u = Math.max(0, Math.min(1, ((p[0] - sg[0][0]) * vx + (p[1] - sg[0][1]) * vy) / L2));
+      return Math.hypot(sg[0][0] + u * vx - p[0], sg[0][1] + u * vy - p[1]);
+    };
+    // a distância da ponta `p` à parede mais perto que não seja a dona (0 = encosta, como na quina que fecha)
+    const vizinha = (p, dono) => Math.min(Infinity, ...(idx.get(`${Math.floor(p[0])},${Math.floor(p[1])}`) ?? [])
+      .filter((o) => o !== dono && barraParede(o)).map((o) => perto(p, o)));
+    for (const seg of crus) {
+      if (!barraParede(seg)) continue;
+      const dA = vizinha(seg[0], seg);
+      const dB = vizinha(seg[1], seg);
+      // a ponta SOLTA (nenhuma parede perto): a reta que só a raspa segue o passo em volta (`tracoBarraNoCruzamento`)
+      seg.solta = [dA >= FRESTA_MAX, dB >= FRESTA_MAX];
+      const fioA = dA > 1e-4 && dA < FRESTA_MAX ? FIO_DA_PONTA : 0;
+      const fioB = dB > 1e-4 && dB < FRESTA_MAX ? FIO_DA_PONTA : 0;
+      if (!fioA && !fioB) continue;
+      const [a, b] = esticar(seg[0], seg[1], fioA, fioB);
+      seg[0] = a;
+      seg[1] = b;
     }
     this._indiceTracos = idx;
     return idx;
@@ -793,12 +841,42 @@ export class Battlefield {
         const e = 0.02 / Math.max(1e-6, comprimento);
         const antes = { x: Math.floor(A[0] + (u - e) * dx), y: Math.floor(A[1] + (u - e) * dy) };
         const depois = { x: Math.floor(A[0] + (u + e) * dx), y: Math.floor(A[1] + (u + e) * dy) };
-        // cruzamento no meio de uma casa (parede atravessando o quadrado): não há aresta para consultar, barra
-        if (antes.x === depois.x && antes.y === depois.y) return true;
-        if (!this.passa(antes.x, antes.y, depois.x, depois.y, tipo)) return true;
+        const px = A[0] + u * dx - c[0];
+        const py = A[1] + u * dy - c[1];
+        const sx = d[0] - c[0];
+        const sy = d[1] - c[1];
+        const Ls = Math.hypot(sx, sy) || 1e-12;
+        const s = (px * sx + py * sy) / Ls;
+        const ponta = s < 0.01 ? 0 : s > Ls - 0.01 ? 1 : -1;
+        if (this.tracoBarraNoCruzamento(seg, antes, depois, tipo, ponta)) return true;
       }
     }
     return false;
+  }
+
+  /**
+   * O traço `seg`, cruzado entre a casa `antes` e a casa `depois`, barra a reta? Uma decisão só, para a regra
+   * (`cortadoPorTraco`) e para o desenho (`view/raios.js`).
+   * - A PORTA traçada responde pelo estado dela: aberta (alguma aresta dela aberta) deixa ver, fechada barra.
+   * - A PAREDE e a etérea barram, a não ser que caiam numa aresta ABERTA: o arco, a passagem que o roteiro abriu (a
+   *   secreta, a boca do Nematódeo). Antes a exceção valia para qualquer aresta que deixasse ver — a VAZIA, e a da janela
+   *   ao lado de um pilar —, e a ponta de parede que não derivou aresta nenhuma deixava a luz passar (revisão de
+   *   2026-11-13, `src/dev/medir-vazamento-luz.mjs`: 4.222 raios vazando em quatro cenas, nenhum depois).
+   * - Cruzar no meio da casa, ou no meio do traço exatamente na quina, barra: não há aresta para consultar.
+   * - A reta que só RASPA a ponta SOLTA do traço (`ponta`, 0 ou 1) segue o passo em volta, como antes.
+   */
+  tracoBarraNoCruzamento(seg, antes, depois, tipo = 'visao', ponta = -1) {
+    if (seg.codigo === ARESTA.porta && this.portaDoTracoAberta && seg.traco != null) return !this.portaDoTracoAberta(seg.traco);
+    if (antes.x === depois.x && antes.y === depois.y) return true;
+    // a reta que só RASPA a ponta SOLTA do traço (passa exatamente pelo fim de uma parede que termina no meio da sala)
+    // segue o passo em volta, como sempre: é o degradê de cobertura em volta da ponta (`coberturaPorTracos`, o SRD). A
+    // ponta que encontra outra parede (a quina fechada) não é solta: lá a reta que passa pelo vértice está na parede.
+    if (ponta >= 0 && (seg.solta?.[ponta] ?? true)) return !this.passa(antes.x, antes.y, depois.x, depois.y, tipo);
+    // na quina (a reta cruza o MEIO do traço exatamente num ponto da grade): é parede, barra
+    if (antes.x !== depois.x && antes.y !== depois.y) return true;
+    const codigo = this.aresta(antes.x, antes.y, depois.x, depois.y);
+    if (seg.codigo !== ARESTA.porta) return codigo !== ARESTA.aberta;
+    return !this.passa(antes.x, antes.y, depois.x, depois.y, tipo);
   }
 
   /** O traço corta a reta que vai do centro de `a` ao centro de `b`? É a visão medida na geometria, não na grade. */

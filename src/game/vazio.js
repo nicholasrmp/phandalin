@@ -364,15 +364,10 @@ export function criarIlhaDoVazio(app, config = {}) {
     if (r !== 'vagar') return;
     const n = enc.rng.die(6);
     const lider = herois()[0];
-    const ardis = [];
-    for (let i = 0; i < n; i++) {
-      const m = makeMonster('armadilhaDeIntelecto', { ...lider.pos });
+    const ardis = enc.espalharFora(Array.from({ length: n }, () => makeMonster('armadilhaDeIntelecto', { ...lider.pos })), (i) => {
       const ang = (i / n) * Math.PI * 2;
-      const q = enc.casaLivreMaisProxima({ x: Math.round(lider.pos.x + Math.cos(ang) * 5), y: Math.round(lider.pos.y + Math.sin(ang) * 5) });
-      if (!q) continue;
-      m.pos = { ...m.pos, x: q.x, y: q.y };
-      ardis.push(m);
-    }
+      return { x: Math.round(lider.pos.x + Math.cos(ang) * 5), y: Math.round(lider.pos.y + Math.sin(ang) * 5) };
+    });
     estado.depoisDaDeriva = true;
     await painel([`Uma hora de deriva na névoa colorida. Aí, de todos os lados ao mesmo tempo, ${n > 1 ? `${n} coisas` : 'uma coisa'} de pele cinzenta, com fios de nervo pendurados, ${n > 1 ? 'se fecham' : 'se fecha'} em volta de vocês: ardis do intelecto, com fome.`], [{ rotulo: 'Às armas!', valor: 'luta', primaria: true }]);
     luta(ardis);
@@ -416,13 +411,11 @@ export function criarIlhaDoVazio(app, config = {}) {
     // OS PERSEGUIDORES que caçam quem levou a língua: vêm atrás de ilha em ilha
     if (v.feito.perseguidoresSoltos && !v.feito.perseguidoresVieram?.includes(ilha) && v.perseguidoresVivos > 0 && ilha !== 'miasma') {
       (v.feito.perseguidoresVieram ??= []).push(ilha);
-      const bando = Array.from({ length: v.perseguidoresVivos }, (_, i) => {
+      const bando = enc.espalharFora(Array.from({ length: v.perseguidoresVivos }, (_, i) => {
         const m = makeMonster('perseguidorInvisivel', { ...hs[0].pos });
-        const q = enc.casaLivreMaisProxima({ x: hs[0].pos.x + 3, y: hs[0].pos.y + 3 });
-        if (q) m.pos = { ...m.pos, x: q.x, y: q.y };
         m.chaveDoVazio = `perseguidor:${i}`;
         return m;
-      });
+      }), { x: hs[0].pos.x + 3, y: hs[0].pos.y + 3 });
       await painel('Um vento que não é vento chega pelas costas, repetindo numa língua de ar a mesma frase: a língua tem de ficar escondida. Os perseguidores vieram atrás.', [{ rotulo: 'Às armas!', valor: 'luta', primaria: true }]);
       return luta(bando);
     }
@@ -726,6 +719,18 @@ export function criarIlhaDoVazio(app, config = {}) {
     return luta(bando, { furtividade: r === 'ardil' ? bando.map((m) => rolarPericia(enc.rng, m, 'furtividade').total) : null });
   }
 
+  /** A luz de dentro da boca: 0 (o breu da boca fechada) ou 2 (a claridade do Vazio, como a grade do mapa a traz). */
+  function luzPorDentro(nivel) {
+    const fl = enc.field;
+    if (!fl.luz) fl.luz = new Uint8Array(fl.w * fl.h).fill(2);
+    for (const q of [...P.dentroDaBoca, ...P.garganta, ...(P.bolsa ?? [])]) {
+      fl.luz[q.y * fl.w + q.x] = nivel;
+      if (fl.luzDoMapa) fl.luzDoMapa[q.y * fl.w + q.x] = nivel;
+    }
+    fl.versao = (fl.versao ?? 0) + 1;
+  }
+  const escurecerPorDentro = () => luzPorDentro(0);
+
   async function fecharABoca() {
     f.bocaFechou = true;
     const linhas = ['A tenda de osso no fundo da caverna se abre como uma flor, e atrás dela há uma garganta. No mesmo instante, dentes de pedra sobem do chão e do teto, e a boca começa a fechar.'];
@@ -738,8 +743,23 @@ export function criarIlhaDoVazio(app, config = {}) {
         linhas.push(`${h.name} (Destreza ${sv.total}) é empurrado para a garganta.`);
       } else linhas.push(`${h.name} (Destreza ${sv.total}) se segura entre os dentes.`);
     }
+    // TODOS PARA DENTRO (decisão do dono, 2026-11-12): quem do grupo ficou do lado de fora corre para dentro antes de os
+    // dentes se fecharem — os heróis, os caídos e quem vem com eles. Sem isto, o grupo se partia: só quem chegou à tenda
+    // lutava com as armadilhas, os outros ficavam fora sem caminho até elas, e com ele no chão a luta não acabava nunca
+    // (achado de `testes-cenas-navegador.mjs`). Os que entram assim não testam Destreza: não estavam entre os dentes.
+    const dentro = (p) => aqui(P.dentroDaBoca, p) || aqui(P.garganta, p);
+    const fora = enc.combatants.filter((c) => c.side === 'party' && !c.dead && c.pos && !dentro(c.pos));
+    for (const c of fora) {
+      const casa = P.dentroDaBoca.filter((q) => !enc.field.blocksMove(q.x, q.y) && !enc.occupied(q.x, q.y))
+        .sort((a, b) => distanceFt(a, c.pos) - distanceFt(b, c.pos))[0];
+      if (casa) c.pos = { ...c.pos, x: casa.x, y: casa.y };
+    }
+    if (fora.length) linhas.push(`${fora.map((c) => c.name).join(', ')} ${fora.length > 1 ? 'correm' : 'corre'} para dentro antes que os dentes se fechem.`);
     for (const e of P.arestasDaBoca) enc.field.porAresta(e.a.x, e.a.y, e.b.x, e.b.y, ARESTA.parede);
     for (const e of P.arestasDaTenda) enc.field.porAresta(e.a.x, e.a.y, e.b.x, e.b.y, ARESTA.aberta);
+    // O ESCURO DE DENTRO: o texto diz breu, e a grade de luz seguia clara como o céu do Vazio (revisão de 2026-11-13). A boca,
+    // a garganta e a bolsa caem no breu; quem enxerga é quem tem visão no escuro ou traz luz.
+    escurecerPorDentro();
     linhas.push('A boca se fecha. Lá dentro fica escuro como o fundo de um poço. Da garganta, duas coisas de tentáculos sobem flutuando.');
     await painel(linhas, [{ rotulo: 'Às armas!', valor: 'luta', primaria: true }]);
     return luta(grupoDe('ardil'));
@@ -748,6 +768,7 @@ export function criarIlhaDoVazio(app, config = {}) {
   function abrirABoca(porque) {
     f.bocaAberta = true;
     for (const e of P.arestasDaBoca) enc.field.porAresta(e.a.x, e.a.y, e.b.x, e.b.y, ARESTA.aberta);
+    luzPorDentro(2);
     enc.say('acao', porque);
     app.refresh();
   }
@@ -800,6 +821,13 @@ export function criarIlhaDoVazio(app, config = {}) {
     if (ilha === 'campo' && elenco.nellik?.dead && !v.feito.nellikMorta) {
       v.feito.nellikMorta = true;
       pista('A Nellik está morta. A Ashripask, no labirinto, queria isso; os mezzoloths da pirâmide, se ouvirem, vão embora.');
+      // O MACHADO DELA: o Matador de Devoradores existia no catálogo e ninguém o entregava (revisão de 2026-11-13)
+      const quem = herois()[0];
+      if (quem && !v.feito.machadoDaNellik) {
+        v.feito.machadoDaNellik = true;
+        guardar(quem, 'matadorDeDevoradores', 1);
+        await painel(`Ao lado da Nellik, o machado grande dela: na lâmina, uma fileira de devoradores de mentes entalhados, todos sem cabeça. ${quem.name} o leva.`);
+      }
     }
     if (ilha === 'nematodeo' && f.bocaFechou && !f.bocaAberta) enc.say('acao', 'A boca continua fechada. Só a membrana, lá no fundo da garganta, a abre.');
     if (ilha === 'anima') {
@@ -1143,6 +1171,7 @@ export function criarIlhaDoVazio(app, config = {}) {
         // a boca nasce aberta (a FA a desenha fechada); fechada pela armadilha, só a membrana a reabre
         if (!f.bocaFechou || f.bocaAberta) for (const e of P.arestasDaBoca) enc.field.porAresta(e.a.x, e.a.y, e.b.x, e.b.y, ARESTA.aberta);
         if (f.bocaFechou) for (const e of P.arestasDaTenda) enc.field.porAresta(e.a.x, e.a.y, e.b.x, e.b.y, ARESTA.aberta);
+        if (f.bocaFechou && !f.bocaAberta) escurecerPorDentro();
       }
       if (ilha === 'estatua' && f.baseAberta) for (const q of P.porta) enc.field.porAresta(q.a.x, q.a.y, q.b.x, q.b.y, ARESTA.aberta);
       if (ilha === 'anima' && f.obeliscoEmPo) enc.field.alternarSobreposicao?.('obeliscoQuebrado', true);

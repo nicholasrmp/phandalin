@@ -119,6 +119,10 @@ function scoreTarget(enc, monster, target) {
 }
 
 export function takeMonsterTurn(enc, monster) {
+  // INCITAR COBIÇA: o encantado só anda até a gema (e o encanto o deixa incapacitado, então vem antes do resto)
+  if (Livro.turnoDaCobica(enc, monster)) { enc.endTurn(monster); return; }
+  // o PERGAMINHO DE PROTEÇÃO: barrado de todos os inimigos à vista, gasta a ação tentando romper a barreira
+  if (!conditionEffects(monster).incapacitated && !monster.dead && Livro.romperBarreira(enc, monster)) { enc.endTurn(monster); return; }
   // Incapacitado (atordoado, paralisado) não faz nada no turno.
   if (monster.dead || hasCondition(monster, 'inconsciente') || conditionEffects(monster).incapacitated) {
     enc.endTurn(monster);
@@ -181,6 +185,9 @@ export function takeMonsterTurn(enc, monster) {
     enc.endTurn(monster);
     return;
   }
+
+  // a BOCA DA LOUCURA (o gigante de Grolantor): o d10 decide o turno, e ele vai atrás de quem estiver mais perto
+  if (Livro.turnoDaLoucura(enc, monster)) { enc.endTurn(monster); return; }
 
   // A PRESENÇA ATERRADORA sai junto do multiataque, de graça, enquanto houver quem ainda não resistiu a ela.
   if (monster.presencaAterradora) enc.presencaAterradoraDe(monster);
@@ -371,6 +378,8 @@ export function takeMonsterTurn(enc, monster) {
   // O CONJURADOR DO SRD (o mago, o acólito, o sacerdote): `conjuraNoTurno: 'geral'` usa o que tem preparado — cura,
   // Bênção, a magia de dano que mais rende, e o truque.
   if (monster.spellcasting?.conjuraNoTurno === 'geral' && conjuracaoGeral(enc, monster, enemies)) {
+    // a MAGIA DE GUERRA (o gish githyanki): conjurou com a ação, golpeia com a ação bônus quem estiver ao alcance
+    Livro.magiaDeGuerra(enc, monster);
     enc.endTurn(monster);
     return;
   }
@@ -633,8 +642,14 @@ export function takeMonsterTurn(enc, monster) {
   // CAMINHO até o alvo, não a da linha reta: pela linha reta, quem está numa
   // caverna fica colado na parede do fundo mais perto do alvo, e nunca sai
   // pela boca (o bando do Cume da Wyvern ficou assim, parado).
+  // E é a distância de quem VOA, se ele voa: a busca crua da grade trata o degrau de mais de um nível como parede, e na
+  // Ânima (todos voam no Vazio) o profeta parava no pé da borda de 3 m, o ponto mais perto em linha reta, para sempre.
+  // `reachableFor` liga o voo do mesmo jeito (`field.voando`) só enquanto busca.
   const closest = ordered[0];
-  const ateOAlvo = enc.field.reachable(closest.pos, 2000, () => false, () => true, monster.pos.f ?? 1);
+  const voavaAntes = enc.field.voando;
+  enc.field.voando = Boolean(enc.voaAgora?.(monster) || enc.voaPelaFicha?.(monster));
+  let ateOAlvo;
+  try { ateOAlvo = enc.field.reachable(closest.pos, 2000, () => false, () => true, monster.pos.f ?? 1); } finally { enc.field.voando = voavaAntes; }
   const passo = comDesvio(enc, monster, (reached) => {
     let best = null;
     for (const node of reached.values()) {
@@ -1024,6 +1039,10 @@ function conjuracaoGeral(enc, m, enemies) {
     const alvos = aliados.filter((a) => distanceFt(a.pos, m.pos) <= 30).slice(0, 3);
     if (tenta(bencao, { target: alvos[0], targets: alvos, point: alvos[0].pos })) return true;
   }
+  // 2a. o INCITAR COBIÇA (o Jim Darkmagic): com dois ou mais inimigos a 9 m que o vejam e ainda não estejam presos à gema
+  const cobica = prontas.find((x) => x.efeito === 'incitarCobica');
+  if (cobica && !m.concentrating && vivos.filter((e) => distanceFt(e.pos, m.pos) <= 30 && !hasCondition(e, 'cobicaIncitada')
+    && enc.field.hasLineOfSight(e.pos, m.pos)).length >= 2 && tenta(cobica, {})) return true;
   // 2b. a magia que TIRA ALGUÉM DA LUTA sem dano (Dominar, Palavra de Poder, Imobilizar): no inimigo mais forte que
   // ela pega, uma tentativa por alvo e por magia
   m.tentouCondicao ??= new Set();
@@ -1282,7 +1301,104 @@ function acaoEspecialNoTurno(enc, m, enemies) {
       if (m.hp <= m.maxHp / 3 && colados >= 2 && enc.usarAcaoEspecial(m, a, null)) return true;
       continue;
     }
+    // A TERCEIRA FILA DOS BESTIÁRIOS
+    // o COMANDO de ação (o Comando de Ilneval, o Chamado ao Ataque): com dois aliados que golpeiam de onde estão, ou um,
+    // quando ele mesmo não tem a quem golpear
+    if (a.tipo === 'comandar') {
+      const n = Livro.comandaveis(enc, m, a).length;
+      if ((n >= Math.min(2, a.max ?? 1) || (n >= 1 && semGolpe)) && enc.usarAcaoEspecial(m, a, null)) return true;
+      continue;
+    }
+    // o GOLPE REFORÇADO: o multiataque reforçado marca o turno e segue para os golpes (não gasta a ação aqui); o golpe só
+    // anda até o inimigo e bate nele, de preferência em quem ainda não tem a condição
+    if (a.tipo === 'golpeReforcado') {
+      if (a.multi) {
+        if (pickReachableTarget(enc, m, vivos) || planApproach(enc, m, vivos, { meleeOnly: true })) enc.usarAcaoEspecial(m, a, null);
+        continue;
+      }
+      const alcanca = () => vivos.filter((e) => enc.canAttack(m, e, a.arma).ok).sort((x, y) => (hasCondition(x, a.condition) - hasCondition(y, a.condition)) || x.hp - y.hp)[0];
+      if (!alcanca()) {
+        const plano = planApproach(enc, m, vivos, { meleeOnly: true });
+        if (plano?.path?.length > 1) enc.moveAlong(m, plano.path);
+      }
+      const alvo = !m.dead && alcanca();
+      if (alvo && enc.usarAcaoEspecial(m, a, alvo)) return true;
+      continue;
+    }
+    // SUMIR com a ação (o gato sorridente, o duergar cavaleiro): sem ninguém ao alcance, anda e some, para chegar invisível
+    if (a.tipo === 'sumir') {
+      if (hasCondition(m, 'invisivel') || !semGolpe || !vivos.some((e) => distanceFt(m.pos, e.pos) <= 120)) continue;
+      const plano = planApproach(enc, m, vivos, { meleeOnly: true });
+      if (plano?.path?.length > 1) enc.moveAlong(m, plano.path);
+      if (!m.dead && enc.usarAcaoEspecial(m, a, null)) return true;
+      continue;
+    }
+    // ANIMAR OS ALIADOS de ação (o Comando Infernal, a Incitar o Fanatismo): com dois aliados ou mais no raio, perto da luta
+    if (a.tipo === 'animarAliados') {
+      const n = enc.combatants.filter((c) => c !== m && c.side === m.side && !c.dead && c.hp > 0 && c.pos && distanceFt(c.pos, m.pos) <= a.raioFt).length;
+      const medo = enc.combatants.some((c) => c.side === m.side && !c.dead && (hasCondition(c, 'amedrontado') || hasCondition(c, 'enfeiticado')) && distanceFt(c.pos, m.pos) <= a.raioFt);
+      if ((n >= 2 || medo) && vivos.some((e) => distanceFt(m.pos, e.pos) <= 60) && enc.usarAcaoEspecial(m, a, null)) return true;
+      continue;
+    }
+    // a DISPARADA (o gnoll roedor de carne): ninguém ao alcance andando, alguém ao alcance com os 18 m a mais
+    if (a.tipo === 'disparada') {
+      const passo = enc.speedOf(m);
+      const longe = vivos.filter((e) => distanceFt(m.pos, e.pos) > passo + 5 && distanceFt(m.pos, e.pos) <= passo + (a.pes ?? 60) + 5);
+      if (semGolpe && longe.length && enc.usarAcaoEspecial(m, a, null)) {
+        const plano = planApproach(enc, m, vivos, { meleeOnly: true });
+        if (plano?.path?.length > 1) enc.moveAlong(m, plano.path);
+        return true;
+      }
+      continue;
+    }
     if (['etereo', 'nevoa', 'engolir', 'engolfar', 'puxarAgarrados', 'arremessar', 'aumentar', 'escuridao', 'gritoDeGuerra', 'telecinese', 'corroerArmadura', 'invocar', 'estagios', 'golpeBonus'].includes(a.tipo) || a.soDepoisDeSaltar) continue;
+    // ATROPELAR: a reta que passa por mais inimigos; um basta se ninguém está colado nele
+    if (a.tipo === 'atropelar') {
+      const colado = vivos.some((e) => enc.field.vizinhos(e.pos, m.pos));
+      const melhor = vivos.map((e) => ({ e, t: Livro.trajetoDoAtropelo(enc, m, a, e.pos) })).filter((x) => x.t?.vitimas.length)
+        .sort((x, y) => y.t.vitimas.length - x.t.vitimas.length)[0];
+      if (melhor && (melhor.t.vitimas.length >= 2 || !colado) && enc.usarAcaoEspecial(m, a, melhor.e)) return true;
+      continue;
+    }
+    // a POSTURA (o Bloquear o Caminho): com dois inimigos colados, ou ferido com um colado
+    if (a.tipo === 'postura') {
+      const colados = vivos.filter((e) => enc.field.vizinhos(e.pos, m.pos)).length;
+      if ((colados >= 2 || (colados >= 1 && m.hp <= m.maxHp / 2)) && enc.usarAcaoEspecial(m, a, null)) return true;
+      continue;
+    }
+    // a CURA CORROMPIDA: no aliado (ou nele mesmo) a até 1,5 m com um quarto da vida ou menos
+    if (a.tipo === 'curaCorrompida') {
+      const ferido = enc.combatants.filter((c) => c.side === m.side && !c.dead && c.hp > 0 && c.pos && distanceFt(c.pos, m.pos) <= (a.alcanceFt ?? 5) && c.hp <= c.maxHp / 4)
+        .sort((x, y) => x.hp / x.maxHp - y.hp / y.maxHp)[0];
+      if (ferido && enc.usarAcaoEspecial(m, a, ferido)) return true;
+      continue;
+    }
+    // a RAJADA DE GARRAS: num inimigo colado, o mais ferido
+    if (a.tipo === 'golpes') {
+      const alvo = vivos.filter((e) => enc.field.vizinhos(e.pos, m.pos)).sort((x, y) => x.hp - y.hp)[0];
+      if (alvo && enc.usarAcaoEspecial(m, a, alvo)) return true;
+      continue;
+    }
+    // o ERGUER CARNIÇAL: há um aliado do tipo morto por perto
+    if (a.tipo === 'reviver') {
+      if (enc.usarAcaoEspecial(m, a, null)) return true;
+      continue;
+    }
+    // a LÍNGUA do sapomoth: ninguém colado, e alguém ao alcance dela
+    if (a.tipo === 'puxarAlvo') {
+      if (vivos.some((e) => enc.field.vizinhos(e.pos, m.pos))) continue;
+      const alvo = vivos.filter((e) => distanceFt(e.pos, m.pos) <= a.alcanceFt && enc.field.hasLineOfSight(m.pos, e.pos) && (!a.soAgarrado || Livro.presoPor(e, m)))
+        .sort((x, y) => distanceFt(m.pos, x.pos) - distanceFt(m.pos, y.pos))[0];
+      if (alvo && enc.usarAcaoEspecial(m, a, alvo)) return true;
+      continue;
+    }
+    // a VINGANÇA CORROMPIDA: com dois inimigos ou mais no raio da explosão, ou um só e ele quase morto
+    if (a.tipo === 'sacrificio') {
+      const pes = m.explosaoAoMorrer?.pes ?? 10;
+      const pegos = vivos.filter((e) => distanceFt(e.pos, m.pos) <= pes).length;
+      if ((pegos >= 2 || (pegos >= 1 && m.hp <= m.maxHp / 4)) && enc.usarAcaoEspecial(m, a, null)) return true;
+      continue;
+    }
     if (a.tipo === 'teleporte') {
       const colados = vivos.filter((e) => enc.field.vizinhos(e.pos, m.pos));
       if (!colados.length || m.hp > m.maxHp / 2) continue;
@@ -1351,9 +1467,67 @@ function bonusEspecialNoTurno(enc, m, vivos) {
       if (m.hp <= m.maxHp / 2 && enc.usarAcaoEspecial(m, a, m)) return;
       continue;
     }
+    // SUMIR com a ação bônus (o mastim das sombras, o orthon): antes de golpear, para golpear invisível
+    if (a.tipo === 'sumir') {
+      if (!hasCondition(m, 'invisivel') && vivos.some((e) => distanceFt(m.pos, e.pos) <= 60) && enc.usarAcaoEspecial(m, a, null)) return;
+      continue;
+    }
+    // REUNIR AS TROPAS: um aliado (ou ele) amedrontado ou enfeitiçado no raio; o FAVOR DE LOLTH: um aliado colado num inimigo
+    if (a.tipo === 'animarAliados') {
+      const precisa = a.remove ? enc.combatants.some((c) => c.side === m.side && !c.dead && c.pos && distanceFt(c.pos, m.pos) <= a.raioFt && a.remove.some((id) => hasCondition(c, id)))
+        : enc.combatants.some((c) => c !== m && c.side === m.side && !c.dead && c.hp > (c.maxHp / 2) && c.pos && distanceFt(c.pos, m.pos) <= a.raioFt && vivos.some((e) => enc.field.vizinhos(e.pos, c.pos)));
+      if (precisa && enc.usarAcaoEspecial(m, a, null)) return;
+      continue;
+    }
+    // o COMANDO DE BATALHA (o capitão drow): um aliado que golpeia de onde está
+    if (a.tipo === 'comandar') {
+      if (Livro.comandaveis(enc, m, a).length && enc.usarAcaoEspecial(m, a, null)) return;
+      continue;
+    }
+    // a TEMPESTADE VINGATIVA: a nuvem de pé, um efeito por turno (a primeira vez com a recarga); no inimigo que junta mais gente
+    if (a.tipo === 'tempestadeVingativa') {
+      const ativa = m.tempestade?.rodadaFim >= enc.round;
+      if (!ativa && !enc.acaoEspecialPronta(m, a)) continue;
+      const alvo = vivos.filter((e) => distanceFt(m.pos, e.pos) <= a.alcanceFt)
+        .sort((x, y) => vivos.filter((o) => distanceFt(o.pos, y.pos) <= a.raioFt).length - vivos.filter((o) => distanceFt(o.pos, x.pos) <= a.raioFt).length)[0];
+      if (!alvo) continue;
+      if (ativa) { if (Livro.tempestadeVingativa(enc, m, a, alvo)) { m.bonusUsed = true; return; } continue; }
+      if (enc.usarAcaoEspecial(m, a, alvo)) return;
+      continue;
+    }
+    // a MAGIA ECOADA: a magia do turno passado
+    if (a.tipo === 'magiaEcoada') { if (enc.usarAcaoEspecial(m, a, null)) return; continue; }
+    // a FORMA SELVAGEM da Walnut: com inimigo a até 18 m e ainda de pé
+    if (a.tipo === 'formaSelvagem') {
+      if (!m.formaSelvagem && vivos.some((e) => distanceFt(m.pos, e.pos) <= 60) && enc.usarAcaoEspecial(m, a, null)) return;
+      continue;
+    }
+    // os ESPINHOS DE PEDRA (ação bônus): debaixo do inimigo mais perto
+    if (a.tipo === 'espinhosDoChao') {
+      const alvo = vivos.filter((e) => distanceFt(m.pos, e.pos) <= a.alcanceFt).sort((x, y) => distanceFt(m.pos, x.pos) - distanceFt(m.pos, y.pos))[0];
+      if (alvo && enc.usarAcaoEspecial(m, a, alvo)) return;
+      continue;
+    }
+    // os CADÁVERES da flor: digere ferida, ergue um zumbi com inimigo perto
+    if (a.tipo === 'digerir') { if (m.hp <= m.maxHp / 2 && enc.usarAcaoEspecial(m, a, null)) return; continue; }
+    if (a.tipo === 'animarCadaver') { if (vivos.some((e) => distanceFt(m.pos, e.pos) <= 30) && enc.usarAcaoEspecial(m, a, null)) return; continue; }
+    // a DUPLICATA ESPECTRAL: ninguém colado no corpo, e um inimigo a até 18 m
+    if (a.tipo === 'duplicata') {
+      if (!vivos.some((e) => enc.field.vizinhos(e.pos, m.pos)) && vivos.some((e) => distanceFt(m.pos, e.pos) <= a.alcanceFt) && enc.usarAcaoEspecial(m, a, null)) return;
+      continue;
+    }
+    // INVOCAR com a ação bônus (os espectros do coletor de cadáveres): com inimigo a até 18 m
+    if (a.tipo === 'invocar') {
+      if (vivos.some((e) => distanceFt(m.pos, e.pos) <= 60) && enc.usarAcaoEspecial(m, a, null)) return;
+      continue;
+    }
     // a FÚRIA MARCIAL: o golpe a mais no inimigo colado mais ferido
     if (a.tipo === 'golpeBonus') {
-      const alvo = vivos.filter((e) => enc.field.vizinhos(e.pos, m.pos)).sort((x, y) => x.hp - y.hp)[0];
+      // o golpe próprio à distância (o Arremessar Membro): o inimigo à vista ao alcance, o mais ferido
+      const alcance = a.golpe?.ranged ? (a.golpe.rangeFt ?? 30) : (a.golpe?.reachFt ?? 5);
+      const alvo = (a.golpe?.ranged
+        ? vivos.filter((e) => distanceFt(m.pos, e.pos) <= alcance && enc.field.hasLineOfSight(m.pos, e.pos))
+        : a.golpe ? vivos.filter((e) => distanceFt(m.pos, e.pos) <= alcance) : vivos.filter((e) => enc.field.vizinhos(e.pos, m.pos))).sort((x, y) => x.hp - y.hp)[0];
       if (alvo && enc.usarAcaoEspecial(m, a, alvo)) return;
       continue;
     }
@@ -1363,7 +1537,31 @@ function bonusEspecialNoTurno(enc, m, vivos) {
     }
     if (a.tipo === 'engolir') {
       const alvo = vivos.find((e) => Livro.presoPor(e, m) && Livro.cabeNoTamanho(e, a.tamanhoMax) && distanceFt(m.pos, e.pos) <= 5);
-      if (alvo && !Livro.engolidosDe(enc, m).length && enc.usarAcaoEspecial(m, a, alvo)) return;
+      if (alvo && Livro.engolidosDe(enc, m).length < (a.max ?? 1) && enc.usarAcaoEspecial(m, a, alvo)) return;
+      continue;
+    }
+    // CORRER (o filhote caçador de ovos, a investida da fúria): ninguém ao alcance, alguém além do passo dele
+    if (a.tipo === 'disparada') {
+      const passo = enc.speedOf(m);
+      if (!vivos.some((e) => distanceFt(m.pos, e.pos) <= 5) && vivos.some((e) => distanceFt(m.pos, e.pos) > passo + 5) && enc.usarAcaoEspecial(m, a, null)) return;
+      continue;
+    }
+    // o MOVIMENTO SÍSMICO: há quem se concentre no raio, depois de andar até o mais perto
+    if (a.tipo === 'tremor') {
+      const perto = vivos.slice().sort((x, y) => distanceFt(m.pos, x.pos) - distanceFt(m.pos, y.pos))[0];
+      if (perto && vivos.some((e) => e.concentrating && distanceFt(m.pos, e.pos) <= a.raioFt + enc.speedOf(m)) && enc.usarAcaoEspecial(m, a, perto)) return;
+      continue;
+    }
+    // a POSTURA de ação bônus: os Golpes de Gigante com alguém colado; a Armadura de Fornalha uma vez, com inimigo à vista
+    if (a.tipo === 'postura') {
+      const quer = a.condicao === 'golpesDeGigante' ? vivos.some((e) => enc.field.vizinhos(e.pos, m.pos))
+        : !hasCondition(m, a.condicao) && vivos.some((e) => distanceFt(m.pos, e.pos) <= 60);
+      if (quer && enc.usarAcaoEspecial(m, a, null)) return;
+      continue;
+    }
+    // RECOLHER O ARPÃO: o preso longe vem para perto
+    if (a.tipo === 'puxarAgarrados') {
+      if (vivos.some((e) => Livro.presoPor(e, m) && distanceFt(m.pos, e.pos) > 5) && enc.usarAcaoEspecial(m, a, null)) return;
       continue;
     }
     if (a.tipo === 'vazio') {
@@ -1432,6 +1630,22 @@ function especialDoLivro(enc, m, a, vivos, semGolpe) {
       return perto(30).length > 0 && enc.alliesOf(m).filter((c) => c !== m && !c.dead && distanceFt(c.pos, m.pos) <= 30).length >= 2 && enc.usarAcaoEspecial(m, a, null);
     case 'invocar':
       return perto(60).length > 0 && enc.usarAcaoEspecial(m, a, null);
+    case 'possuirCadaver':
+      return !m.formaSelvagem && enc.usarAcaoEspecial(m, a, null);
+    case 'aprisionarAlma':
+      return enc.usarAcaoEspecial(m, a, null);
+    case 'espinhosDoChao': {
+      const alvo = vivos.filter((e) => distanceFt(m.pos, e.pos) <= a.alcanceFt).sort((x, y) => x.hp - y.hp)[0];
+      return !!alvo && enc.usarAcaoEspecial(m, a, alvo);
+    }
+    case 'colherMorto':
+      return !vivos.some((e) => enc.field.vizinhos(e.pos, m.pos)) && enc.usarAcaoEspecial(m, a, null);
+    case 'golpeEspecial': {
+      // as invenções do kobold: o golpe no inimigo ao alcance dele, o mais ferido
+      const alcance = a.golpe.ranged ? (a.golpe.rangeFt ?? 20) : (a.golpe.reachFt ?? 5);
+      const alvo = vivos.filter((e) => distanceFt(m.pos, e.pos) <= alcance && enc.field.hasLineOfSight(m.pos, e.pos)).sort((x, y) => x.hp - y.hp)[0];
+      return !!alvo && enc.usarAcaoEspecial(m, a, alvo);
+    }
     case 'telecinese': {
       const alvo = perto(30).filter((e) => !enc.field.vizinhos(m.pos, e.pos) && Livro.cabeNoTamanho(e, 'medium'))[0];
       return !!alvo && semGolpe && enc.usarAcaoEspecial(m, a, alvo);

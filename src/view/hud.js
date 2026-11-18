@@ -1116,11 +1116,31 @@ export class Hud {
    * olhar no campo que não seja do grupo. Aparece também EXPLORANDO, com o dono ainda neutro: o primeiro olhar vem no
    * começo da luta, antes de qualquer turno, e só escapa dele quem desviou os olhos antes de entrar. Sem tecla.
    */
+  /** O MOTOR DA DOR (o duergar martelador e o gritador): mirar o duergar preso na máquina. Interruptor de graça, só com uma no campo. */
+  tileDoMotorDaDor(c) {
+    const maquina = this.enc?.combatants?.find((o) => !o.dead && o.side !== c.side && o.motorDoLivro?.motorDaDor);
+    if (!maquina) return null;
+    const ligado = Boolean(c.mirarPreso);
+    return this.tile(iconeDeAcao('mirandoOPreso'), {
+      ativo: ligado,
+      classe: 'interruptor',
+      onClick: () => this.handlers.onAction?.({ kind: 'feature', featureId: 'mirarPreso', modo: ligado ? 'desligar' : 'ligar' }),
+      selo: ligado ? 'LIG' : 'DESL',
+      dica: {
+        nome: 'Mirar o duergar preso',
+        texto: `Interruptor: ligado, o primeiro golpe do turno em ${maquina.name} mira o duergar preso dentro dela. Ataca com desvantagem; acertando, fere ${maquina.motorDoLivro.motorDaDor.extra} a mais, e a máquina responde com todos os golpes.`,
+        custo: 'Livre',
+        linhas: [['Estado', ligado ? 'mirando o preso' : 'batendo na máquina']],
+      },
+    });
+  }
+
   tileDoOlhar(c) {
     const doOlhar = this.enc?.combatants?.find((o) => !o.dead && o.side !== c.side && (o.traits?.includes('olharPetrificante') || o.aura?.olhar));
     if (!doOlhar) return null;
     const ligado = Boolean(c.desviaOlhar);
-    return this.tile(iconeDeAcao('ardilosaEsconder'), {
+    // o desenho da condição dos olhos desviados (antes pedia o de Esconder-se, que nem existia: o botão saía em branco)
+    return this.tile(iconeDeAcao('olhosDesviados'), {
       ativo: ligado,
       classe: 'interruptor',
       onClick: () => this.handlers.onAction?.({ kind: 'feature', featureId: 'desviarOlhar', modo: ligado ? 'desligar' : 'ligar' }),
@@ -1299,6 +1319,17 @@ export class Hud {
       divineSmite: ['smite', 'Destruição Divina',
         'Gasta um espaço de 1º círculo e carrega o próximo golpe de arma corpo a corpo deste turno com 2d8 radiantes — 3d8 contra morto-vivo.',
         'Livre', () => !c.smitePronto && (c.spellcasting?.slots?.[1] ?? 0) > 0],
+      // os sentidos das subclasses dos livros (2026-11-17): o Sentido Divino é o molde
+      eyesOfTheGrave: ['eyesOfTheGrave', 'Olhos da Sepultura', 'Sente os mortos-vivos a até 18 m que não estejam atrás de cobertura total; o escondido deixa de estar.',
+        'Ação', () => !c.actionUsed && c.resources?.eyesOfTheGrave > 0, 'eyesOfTheGrave'],
+      magicAwareness: ['magicAwareness', 'Consciência Mágica', 'Sente as magias e os itens mágicos a até 18 m, com a escola de cada magia.',
+        'Ação', () => !c.actionUsed && c.resources?.magicAwareness > 0, 'magicAwareness'],
+      detectPortal: ['detectPortal', 'Detectar Portal', 'Sente a distância e a direção do portal planar mais perto.',
+        'Ação', () => !c.actionUsed && c.resources?.detectPortal > 0, 'detectPortal'],
+      unerringEye: ['unerringEye', 'Olhar Infalível', 'Sente as ilusões e quem não está na forma de verdade a até 9 m, sem desfazer nada.',
+        'Ação', () => !c.actionUsed && c.resources?.unerringEye > 0, 'unerringEye'],
+      eyeForDetail: ['eyeForDetail', 'Olho para Detalhes', 'Percepção contra a Furtividade de quem se escondeu: quem você acha deixa de estar escondido.',
+        'Ação bônus', () => !c.bonusUsed],
       divineSense: ['sentidoDivino', 'Sentido Divino',
         'Sente mortos-vivos, corruptores e celestiais a até 18 m — inclusive os que ninguém está vendo.',
         'Ação', () => !c.actionUsed && c.resources?.divineSense > 0, 'divineSense'],
@@ -1382,6 +1413,24 @@ export class Hud {
     };
     const olhar = this.tileDoOlhar(c);
     if (olhar) tiles.push(olhar);
+    const preso = this.tileDoMotorDaDor(c);
+    if (preso) tiles.push(preso);
+    // A MENTE MANIFESTA (Escribas): o interruptor só aparece com a mente no tabuleiro
+    if (c.menteManifesta) {
+      const ligado = Boolean(c.conjurarDaMente);
+      tiles.push(this.tile(iconeDeAcao('manifestMind'), {
+        ativo: ligado,
+        classe: 'interruptor',
+        onClick: () => this.handlers.onAction?.({ kind: 'feature', featureId: 'conjurarDaMente', modo: ligado ? 'desligar' : 'ligar' }),
+        selo: ligado ? 'LIG' : 'DESL',
+        dica: {
+          nome: 'Conjurar da mente',
+          texto: 'Interruptor: ligado, a magia de mago do turno sai do lugar da mente espectral — o alcance, a vista e a área se contam de lá.',
+          custo: 'Livre',
+          linhas: [['Usos', String(c.resources?.manifestMind ?? 0)], ['Estado', ligado ? 'da mente' : 'do próprio lugar']],
+        },
+      }));
+    }
     // A BÊNÇÃO DE DUMATHOIN (Cripta dos Talhund): visão verdadeira por um minuto, uma vez por descanso longo.
     if (c.bencaoDeDumathoin) {
       const semCarga = c.actionUsed || !(c.resources?.visaoDeDumathoin > 0);

@@ -68,7 +68,7 @@ export const MAPA_CASA_MARTHUNGRIM = {
   interativos: [
     {"x": 4, "y": 9, "id": "esqueleto", "rotulo": "Olhar o esqueleto", "texto": "Os ossos de um anão, deitados ao pé da laje do santuário, ainda de cota de malha. A mão direita segura um martelo pequeno. A esquerda, um caderno de capa de couro."},
     {"x": 3, "y": 10, "id": "santuarioDumathoin", "rotulo": "Olhar o santuário", "texto": "Uma laje de pedra entalhada com uma montanha que guarda uma gema no coração: o símbolo de Dumathoin, o guardião dos segredos debaixo da montanha. Velas de sebo derretidas há muito.", "pista": {"verbo": "lembrar", "cd": 12, "achado": "Dumathoin é o deus anão das coisas escondidas na pedra e do descanso dos mortos. Paladinos dele juram devolver ao sono os mortos que não descansam.", "titulo": "Dumathoin"}, "olhar": true},
-    {"x": 2, "y": 6, "id": "grade", "rotulo": "Olhar a grade", "texto": "Uma grade de ferro caída por cima do entulho, que era a porta de alguma coisa lá em cima. Torta pela queda."},
+    {"x": 2, "y": 5, "id": "grade", "rotulo": "Olhar a grade", "texto": "Uma grade de ferro caída por cima do entulho, que era a porta de alguma coisa lá em cima. Torta pela queda."},
     {"x": 5, "y": 6, "id": "cordas", "rotulo": "Olhar as cordas", "texto": "Cordas e sacos de mineiro, apodrecendo num canto. A corda que vocês trouxeram é bem mais nova."},
     {"x": 6, "y": 2, "id": "mesaDoQuarto", "rotulo": "Olhar a escrivaninha", "texto": "Uma escrivaninha com papéis comidos de traça, um tinteiro seco e um desenho a carvão de uma montanha com um buraco no meio. Embaixo, uma palavra em anão: \"Talhundereth\"."},
     {"x": 7, "y": 7, "id": "caldeirao", "rotulo": "Olhar o caldeirão", "texto": "Um caldeirão de ferro com um resto preto no fundo, e prateleiras de potes vazios. Marthungrim cozinhava para um só."},
@@ -154,10 +154,11 @@ export const MAPA_MINA_HARDYHAMMER = {
   tracos: [[[0, 10.12], [0.37, 10.25], [1, 10.25], [1.37, 10.5], [1.62, 10.5], [2.12, 10.25], [2.87, 10], [3.12, 9.62], [3.62, 9.25], [4.37, 9.25], [4.62, 9.12], [5.5, 9.12], [6, 9.37], [6.62, 9.37], [7, 9.25], [7.62, 9.5], [8.13, 9.25], [7.87, 9], [7.75, 8.87], [7.75, 8.5], [8, 8], [7.87, 7.75], [7.37, 8.12], [6.5, 7.87], [6, 8], [5.75, 8], [5, 7.62], [4.87, 7.5], [4.75, 7.25], [4.75, 6.75], [4.25, 6.87], [3.72, 6.6], [3.38, 5.94], [3.37, 5], [3.5, 4.87], [3.25, 4.62], [2.87, 4.5], [2.75, 4.25], [2.62, 3.75], [2.25, 3.12], [2.37, 2.87], [2.62, 2.75], [3, 2.75], [3.25, 2.87], [3.5, 3.12], [3.75, 3.37], [3.62, 2.87], [3.37, 2.5], [3.5, 1.87], [3.75, 1.62], [4.27, 2.19], [4.75, 2.62], [4.87, 2.12], [5.12, 2], [5.87, 2.37], [6.5, 3.25], [7.12, 3.25], [7.37, 3.5], [7.87, 3.75], [8.12, 4.12], [8.12, 4.37], [8, 4.62], [8, 5.12], [8.12, 5.5], [8.35, 5.59], [8.48, 5.79], [8.37, 6.5], [8.12, 6.87], [8.12, 7.12], [8.37, 7], [8.5, 6.62], [8.62, 6], [9, 5.75], [8.75, 5.25], [8.75, 4.75], [8.87, 4.62], [9, 4.25], [9.25, 3.5], [10.5, 3.5], [10.73, 3.84], [11.03, 3.9], [11.5, 3.5], [11.5, 3], [11.75, 2.75], [12.5, 2.37], [13, 2.12], [13.37, 2.12], [14, 2.87], [14.25, 3.5], [14.37, 4], [14.25, 4.37], [14.5, 5.25], [14.5, 6.12], [14.37, 6.75], [14.37, 7.25], [14.25, 7.5], [13.75, 7.75], [13.5, 7.87], [13, 8], [12.75, 8.62], [12.37, 8.87], [12.12, 9], [11.25, 9.25], [11.13, 9.5], [11.37, 9.75], [11.5, 10], [12.25, 9.62], [12.62, 9.37], [13, 9.5], [13.5, 10], [14, 10.12], [14.25, 10], [14.87, 9.87], [15.62, 10.25], [15.75, 10.37], [15.75, 10.87], [16.25, 11.62], [16.5, 11.62], [16.87, 11.25], [17.25, 11.12], [17.5, 11.12], [18.12, 10.87], [19.12, 11], [19.5, 11], [19.75, 10.75], [20.12, 10.87], [20.5, 10.87], [21, 10.62]], [[21, 0], [21, 15], [0, 15], [0, 0], [21, 0]]],
   tracosTipo: [null, null],
   interativos: [
-    {"x": 9, "y": 9, "id": "vagonete", "rotulo": "Olhar o vagonete", "texto": "Um vagonete de mina com a roda solta, tombado na boca do túnel. Lá dentro, uma picareta e um lampião sem óleo."},
+    {"x": 10, "y": 9, "id": "vagonete", "rotulo": "Olhar o vagonete", "texto": "Um vagonete de mina com a roda solta, tombado na boca do túnel. Lá dentro, uma picareta e um lampião sem óleo."},
     {"x": 9, "y": 5, "id": "carrinho", "rotulo": "Olhar o carrinho", "texto": "Um carrinho de mão de madeira, com terra fresca: alguém trabalhava aqui há pouco tempo."},
     {"x": 3, "y": 3, "id": "veioDePrata", "rotulo": "Olhar a parede do fundo", "texto": "A parede do fundo da câmara oeste brilha em fios finos quando a luz bate nela. Prata.", "pista": {"verbo": "investigar", "cd": 10, "achado": "É um veio de verdade, largo e raso: dá para tirar prata daqui por anos, com um bom par de braços.", "titulo": "O veio de prata"}, "olhar": true},
     {"x": 12, "y": 12, "id": "entulho", "rotulo": "Olhar as pedras", "texto": "Pedras caídas e mato alto tapando metade da boca da mina. Quem não soubesse que ela estava aqui passaria reto."},
+    {"x": 12, "y": 6, "id": "covilDoMonte", "rotulo": "Olhar o chão", "texto": "Folhas podres, lodo e ossos pequenos, tudo amassado num leito só. Por cima, uma roupa de couro de goblin, inteira, como se o dono tivesse sido tirado de dentro dela."},
   ],
   fundo: {"nome": "mina-hardyhammer.jpg", "url": "/mapas/fa/mina-hardyhammer.jpg", "escala": 100, "x0": 0, "y0": 0, "giro": 0, "opacidade": 1},
 };
@@ -218,7 +219,7 @@ export const MAPA_LARGO_DA_VACA = {
       "............J..",
       "......JJ.....JJ",
       "JJ....JJ.......",
-      "......###......",
+      "......W##......",
       ".....#...#.....",
       ".....#.........",
       "JJ..#.....#....",
@@ -241,7 +242,7 @@ export const MAPA_LARGO_DA_VACA = {
       "......J.J.....J",
       "..J.....#......",
       "..J...#..#.....",
-      "..J..+....#....",
+      "..J..+....+....",
       "..J..#....#....",
       ".....#....#....",
       ".....#...#.....",
@@ -255,9 +256,10 @@ export const MAPA_LARGO_DA_VACA = {
   },
   folhas: [
     [{"x": 4, "y": 10}, {"x": 5, "y": 10}],
+    [{"x": 9, "y": 10}, {"x": 10, "y": 10}],
   ],
-  tracos: [[[10.25, 11.25], [10.75, 12], [9.87, 12.62], [9.5, 12.87], [7.91, 14], [7.51, 14.29], [6.36, 15.1], [5.5, 13.87], [4.21, 12.03], [5.8, 10.91]], [[5.23, 10.14], [6.37, 9.37], [6.75, 9.09], [7.83, 8.34], [8.42, 9.14], [8.69, 8.96], [9.06, 9.53], [9.34, 9.9], [9.75, 10.5]], [[15, 0], [15, 20], [0, 20], [0, 0], [15, 0]], [[9.75, 10.5], [10.25, 11.25]], [[5.8, 10.91], [5.23, 10.14]], [[3, 0], [3, 2], [7, 2], [7, 0]], [[10.75, 3.25], [9.5, 2.37], [10.5, 1.25], [11.6, 2.15], [10.75, 3.25]], [[15, 2.5], [14.37, 2.87], [14.12, 2.5], [12.62, 3.5], [12.87, 3.87], [11.75, 4.87], [13.62, 7.5], [15, 6.5]], [[0, 12], [2, 12], [1.87, 8.12], [0, 8.12]], [[6.87, 8.12], [6.37, 7.5], [7.37, 6.75], [7.87, 7.37], [6.87, 8.12]]],
-  tracosTipo: [null, null, null, "+", "+", "J", "J", "J", "J", "J"],
+  tracos: [[[7.51, 14.29], [6.36, 15.1], [5.5, 13.87], [4.21, 12.03], [5.8, 10.91]], [[5.23, 10.14], [6.37, 9.37]], [[6.75, 9.09], [7.83, 8.34], [8.42, 9.14], [8.69, 8.96], [9.06, 9.53]], [[9.34, 9.9], [9.75, 10.5]], [[10.25, 11.25], [10.75, 12], [9.87, 12.62]], [[9.5, 12.87], [7.91, 14]], [[15, 0], [15, 20], [0, 20], [0, 0], [15, 0]], [[9.75, 10.5], [10.25, 11.25]], [[5.8, 10.91], [5.23, 10.14]], [[9.06, 9.53], [9.34, 9.9]], [[9.87, 12.62], [9.5, 12.87]], [[7.91, 14], [7.51, 14.29]], [[6.75, 9.09], [6.37, 9.37]], [[3, 0], [3, 2], [7, 2], [7, 0]], [[10.75, 3.25], [9.5, 2.37], [10.5, 1.25], [11.6, 2.15], [10.75, 3.25]], [[15, 2.5], [14.37, 2.87], [14.12, 2.5], [12.62, 3.5], [12.87, 3.87], [11.75, 4.87], [13.62, 7.5], [15, 6.5]], [[0, 12], [2, 12], [1.87, 8.12], [0, 8.12]], [[6.87, 8.12], [6.37, 7.5], [7.37, 6.75], [7.87, 7.37], [6.87, 8.12]]],
+  tracosTipo: [null, null, null, null, null, null, null, "+", "+", "W", "W", "W", "W", "J", "J", "J", "J", "J"],
   interativos: [
     {"x": 4, "y": 17, "id": "pocoVelho", "rotulo": "Olhar o círculo de pedras", "texto": "As pedras de uma fonte velha que secou, em roda. Crianças fizeram dela um forte, e há um graveto espetado no meio como bandeira."},
     {"x": 8, "y": 1, "id": "horta", "rotulo": "Olhar a horta", "texto": "Repolhos enfileirados e um espantalho sem cabeça. A cabeça está na pilha de saque dos goblins, mas ninguém aqui sabe disso."},

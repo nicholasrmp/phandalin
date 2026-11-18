@@ -52,6 +52,8 @@ const COM_VISUAL = new Set(['salto', 'alarme', 'detectarBemMal', 'encontrarArmad
   'alterarAparencia', 'cativar', 'amizadeAnimal', 'sentidosDaFera', 'fingirDeMorto', 'falarComPlantas', 'encontrarFamiliar']);
 import { itemDeId } from '../rules/equipment.js';
 import { garantirInventario } from '../rules/equipment.js';
+import { periciasParaAprimorar } from '../rules/livro-motor.js';
+import { SKILL_NAME } from '../rules/abilities.js';
 
 const NOME_HAB = { str: 'Força', dex: 'Destreza', con: 'Constituição', int: 'Inteligência', wis: 'Sabedoria', cha: 'Carisma' };
 
@@ -472,6 +474,15 @@ export async function escolherEConjurar(app, c, spellId) {
     if (!o) return null;
     opts.opcao = o;
   }
+  // APRIMORAR PERÍCIA: entre as perícias treinadas do alvo que ainda não dobram a proficiência
+  if (u.escolhe === 'pericia') {
+    const quem = opts.alvo ?? c;
+    const lista = periciasParaAprimorar(quem);
+    if (!lista.length) { app.refuse?.(c, `${quem.name} não tem perícia treinada sem especialização`); return null; }
+    const o = await escolher(app, spell.name, 'Qual perícia?', lista.map((k) => ({ rotulo: SKILL_NAME[k] ?? k, valor: k })));
+    if (!o) return null;
+    opts.opcao = o;
+  }
   if (u.escolhe === 'perguntas') {
     // Até três, uma por vez: o livro dá três perguntas de sim ou não (a Adivinhação, uma; o Contatar Outro Plano, cinco).
     const todas = perguntasDaComunhao(app, x.estado, herois);
@@ -547,7 +558,8 @@ const icone = (s) => iconeDeMagia(s);
  * que há nela: { occ, tile, sup }. Devolve opções no formato de `interacoes.js`.
  */
 export function opcoesDeMagia(app, c, { occ = null, tile = null } = {}) {
-  if (!c || !c.spellcasting || !app.capitulo?.explorando) return [];
+  // (quem não conjura também abre o menu se um item ou uma característica lhe dá magia fora da luta: o elmo, o Consultar os Espíritos)
+  if (!c || !app.capitulo?.explorando || (!c.spellcasting && !magiasForaDoHeroi(c).length)) return [];
   const x = ctxDe(app);
   const ops = [];
   const lista = magiasForaDoHeroi(c);
@@ -592,6 +604,13 @@ export function opcoesDeMagia(app, c, { occ = null, tile = null } = {}) {
           }
           if (u.escolhe === 'atributo') {
             const o = await escolher(app, s.name, 'Qual atributo?', Object.entries(APRIMORAR).map(([id, k]) => ({ rotulo: k.nome, detalhe: `vantagem em ${NOME_HAB[k.hab]}`, valor: id })));
+            if (o) await abre(o);
+            return;
+          }
+          if (u.escolhe === 'pericia') {
+            const lista = periciasParaAprimorar(occ);
+            if (!lista.length) { app.refuse?.(c, `${occ.name} não tem perícia treinada sem especialização`); return; }
+            const o = await escolher(app, s.name, 'Qual perícia?', lista.map((k) => ({ rotulo: SKILL_NAME[k] ?? k, valor: k })));
             if (o) await abre(o);
             return;
           }

@@ -196,6 +196,11 @@ export function fontesDeLuz(enc) {
   for (const f of enc.field.luzes ?? []) if (!f.apagada && acesaNaEscuridao(f, enc.field)) fontes.push(f);
   // Luz do Dia: uma esfera de luz plena e mais uma de penumbra, num ponto.
   for (const z of enc.zonas ?? []) if (z.luz && z.centro) fontes.push({ pos: z.centro, claro: z.luz.claro, penumbra: z.luz.penumbra, tipo: 'magica', cor: '#fff6dc' });
+  // a MOEDA BRILHANTE DE JIM acende onde cai (a luz da Luz, enquanto a magia dura), e o PORTAL ARCANO é um anel que brilha
+  for (const l of enc.luzesDeMagia ?? []) if (l.ateRodada == null || (enc.round ?? 0) < l.ateRodada) fontes.push(l);
+  for (const p of enc.portais ?? []) for (const pos of p.casas) fontes.push({ pos, claro: 0, penumbra: 10, tipo: 'magica', cor: '#a9d8ff' });
+  // as SOMBRAS DEMONÍACAS do nabassu: em volta dele só penumbra, e só a luz mágica acende
+  fontes.sombras = enc.combatants.filter((c) => !c.dead && c.pos && c.motorDoLivro?.sombrasDemoniacas).map((c) => ({ pos: c.pos, raioFt: c.motorDoLivro.sombrasDemoniacas.raioFt }));
   return fontes;
 }
 
@@ -209,8 +214,11 @@ export function fontesDeLuz(enc) {
  */
 export function nivelDeLuz(field, x, y, fontes) {
   let nivel = field.luz ? field.luz[y * field.w + x] : CLARO;
+  const naSombra = fontes.sombras?.some((s) => distanceFt(s.pos, { x, y }) <= s.raioFt);
+  if (naSombra) nivel = Math.min(nivel, PENUMBRA);
   for (const f of fontes) {
     if (nivel === CLARO) break;
+    if (naSombra && f.tipo !== 'magica') continue;
     const d = distanceFt(f.pos, { x, y });
     if (d > f.claro + f.penumbra) continue;
     if (!dentroDoCone(f, { x, y })) continue;
@@ -231,7 +239,7 @@ export function nivelDeLuz(field, x, y, fontes) {
 export function comoVe(enc, obs, pos, fontes = null) {
   const field = enc.field;
   const zonas = casasEscondidas(enc);
-  if (!temEscuridao(field) && !zonas) return CLARO;
+  if (!temEscuridao(field) && !zonas && !enc.combatants.some((c) => !c.dead && c.motorDoLivro?.sombrasDemoniacas)) return CLARO;
   if (obs.pos.x === pos.x && obs.pos.y === pos.y) return CLARO;
   // Só uma Ilusão Menor num mapa claro: nada é escuro, só o que fica atrás da imagem.
   if (zonas && !temEscuridao(field) && !zonas.pesada.size && !zonas.magica.size) {

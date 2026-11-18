@@ -349,7 +349,8 @@ export function criarCriptaTalhund(app, config = {}) {
     const primeiros = bando.slice(0, 4);
     let fila = bando.slice(4);
     await painel('Da porta dos mortos valentes saem quatro guerreiros anões de osso, de machado em punho, em passo de marcha. Atrás deles, mais vêm.');
-    for (const [i, m] of primeiros.entries()) m.pos = { ...m.pos, ...(enc.casaLivreMaisProxima({ x: 15, y: 11 + (i % 2) }) ?? m.pos) };
+    // espalhados juntos: calculada um a um, a casa saía repetida (os quatro em duas casas, `espalharFora`)
+    enc.espalharFora(primeiros, (i) => ({ x: 15, y: 11 + (i % 2) }));
     return luta(primeiros, {
       sala: 'P11',
       // a primeira leva é a de quem entrou; as outras, no COMEÇO de cada rodada seguinte

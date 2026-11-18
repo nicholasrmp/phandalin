@@ -24,7 +24,7 @@ import { opcoesDeMagia, opcoesDoHeroi, ctxDe } from './magias-fora.js';
 import { falaPorMensagem } from '../rules/utilidade.js';
 import { chaveDoTesouro, porqueNaoSaquear } from './saque.js';
 import { opcoesDeClasse } from './interacoes-classe.js';
-import { opcoesDeAtencao, opcaoDeExaminarCorpo, opcaoDeLembrarCriatura, opcaoDoDiario } from './investigar.js';
+import { opcoesDeAtencao, opcaoDeExaminarCorpo, opcaoDeLembrarCriatura, opcaoDoDiario, opcoesDoManipulador } from './investigar.js';
 import { opcaoDeFogo, opcoesDeControlarChamas } from './fogo.js';
 import { opcoesDePorta } from './portas.js';
 
@@ -241,6 +241,8 @@ export function opcoesDaCasa(app, tile) {
         motivo: longe ? `longe demais para conversar — chegue a 30 pés (está a ${distanceFt(c.pos, occ.pos)})` : null,
         fazer: () => app.conversar(occ),
       });
+      // MANIPULADOR PERSPICAZ (ladino Mentor): um minuto de conversa diz como a mente e a presença dele se comparam
+      opcoes.push(...opcoesDoManipulador(app, c, occ, { fora: explorando }));
     }
 
     // A FICHA DA CRIATURA (`view/ficha-criatura.js`): a figura inteira e o que o grupo sabe dela. De graça, como olhar.

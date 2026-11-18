@@ -219,6 +219,10 @@ def terreo():
     # baixo da parede oeste, de y 10 a 11, sai do traço e da grade.
     assert paredes['o'][10][9] == '#', 'a parede da cozinha mudou de lugar na cena do Foundry'
     paredes['o'][10][9] = '.'
+    # A PORTA LESTE DA CASA DO SUL (a Door5 da FA, de (11.79,21.5) a (12.12,20.5)): a parede que só encosta a ponta no batente
+    # ganha dela pela prioridade e a porta virava parede (revisão de 2026-11-13). Fica numa aresta só, a da peça Door5.
+    assert paredes['o'][20][12] == '#', 'a porta da casa do sul mudou de lugar na cena do Foundry'
+    paredes['o'][20][12] = '+'
     cortados = []
     for t, tipo in zip(tracos, tipos):
         if t == [[9, 8], [9, 11], [9.5, 11]]:
@@ -231,12 +235,18 @@ def terreo():
     for y in range(h):
         terreno.append(''.join('.' if (x, y) in SALAO else ':' for x in range(w)))
     terreno = trocar(terreno, BALCAO_QUEBRADO, 'x')
+    # O QUINTAL TEM AS MESMAS COISAS DO TELHADO, vistas de baixo: a carroça, os barris e os fardos barram o passo e dão
+    # cobertura. Antes o térreo não tinha nenhuma casa bloqueada (revisão de 2026-11-13) e a carroça se atravessava.
+    terreno = trocar(terreno, [(x, y) for y in range(h) for x in range(w) if (x, y) not in SALAO and dentro(CARROCA, x + 0.5, y + 0.5)], 'C')
+    terreno = trocar(terreno, [c for c in COBERTURA if c not in SALAO], 'o')
+    # o canto entre a carroça e a parede da casa do sudeste: com a carroça barrando, as três casas ficavam ilhadas
+    terreno = trocar(terreno, [(15, 11), (16, 11), (16, 12)], 'C')
     luzes = [
         {'pos': {'x': 3, 'y': 10}, 'claro': 10, 'penumbra': 20, 'tipo': 'fogueira'},                 # a lareira do salão
         {'pos': {'x': 6, 'y': 8}, 'claro': 10, 'penumbra': 15, 'tipo': 'lanterna', 'soNoEscuro': True},
         {'pos': {'x': 9, 'y': 11}, 'claro': 10, 'penumbra': 15, 'tipo': 'lanterna', 'soNoEscuro': True},
         {'pos': {'x': 7, 'y': 16}, 'claro': 15, 'penumbra': 25, 'tipo': 'lanterna', 'soNoEscuro': True},
-        {'pos': {'x': 15, 'y': 11}, 'claro': 15, 'penumbra': 25, 'tipo': 'lanterna', 'soNoEscuro': True},
+        {'pos': {'x': 14, 'y': 11}, 'claro': 15, 'penumbra': 25, 'tipo': 'lanterna', 'soNoEscuro': True},
     ]
     sobre = [
         {'id': 'revirado', 'url': '/mapas/fa/Ransacked.webp', 'x': 3, 'y': 7, 'w': 8, 'h': 9, 'ligada': True},

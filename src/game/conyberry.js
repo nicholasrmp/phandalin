@@ -14,7 +14,7 @@
 //   - convencida, ela responde UMA pergunta, e a resposta é verdadeira:
 //       o grimório de Arco Suave — trocado com um necromante chamado
 //       Tsernoth, em Iriaebor, há mais de cem anos (é o que a Garaele quer);
-//       o nome do mago que ergueu a torre do Poço da Coruja Velha — Arthindol
+//       o nome da maga que ergueu a torre do Poço da Coruja Velha — Dresina (no Obelisco; a Mina dizia Arthindol)
 //       (é o que o Hamun Kost quer);
 //       ou qualquer outra coisa da aventura: o Castelo Dentefino, a Caverna
 //       Onda Eco, quem é o Aranha Negra;
@@ -159,8 +159,8 @@ export async function visitarConyberry(app, grupo) {
     },
     torre: () => {
       feitos.agathaTorre = true;
-      pista('Agatha disse o nome do mago que ergueu a torre do Poço da Coruja Velha: Arthindol. É o que o Hamun Kost queria saber.');
-      return 'Arthindol. Era um homem vaidoso, e a torre dele caiu antes da vaidade.';
+      pista('Agatha disse o nome da maga que ergueu a torre do Poço da Coruja Velha: Dresina. É o que o Hamun Kost queria saber.');
+      return 'Dresina. Era uma mulher vaidosa, e a torre dela caiu antes da vaidade.';
     },
     castelo: () => {
       feitos.sabeOCastelo = true;

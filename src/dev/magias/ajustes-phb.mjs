@@ -173,6 +173,41 @@ export const AJUSTES_PHB = {
   'True Polymorph': { kind: 'livro', efeito: 'metamorfose', alvo: 'criatura', concentration: true, duracaoRodadas: 600, nota: 'O inimigo vira rã e o aliado, fera; virar objeto, ou outra criatura qualquer, não existe no jogo.' },
   'Animal Shapes': { kind: 'livro', efeito: 'metamorfose', raioFt: 30, crMax: 4, concentration: true, duracaoRodadas: 14400, nota: 'Todo aliado a 9 m vira a mesma fera de ND 4 ou menos.' },
   Shapechange: { kind: 'livro', efeito: 'metamorfose', soSi: true, crMax: 'nivel', concentration: true, duracaoRodadas: 600, nota: 'A forma é escolhida pelo jogo: o dragão ou a fera mais forte que o nível permite.' },
+  // ---------------------------------------------------------------- o tabuleiro (a parede, a porta, o portal, a árvore)
+  Passwall: {
+    kind: 'livro', efeito: 'criarPassagem', mira: 'casa', rangeFt: 30, familiaSonora: 'utilidade',
+    nota: 'A passagem segue a direção de quem conjura até a parede mirada, numa fileira de casas, e fica aberta pela cena: uma hora passa de qualquer luta.',
+  },
+  'Arcane Lock': {
+    kind: 'livro', efeito: 'trancaArcana', mira: 'casa', rangeFt: 5, familiaSonora: 'utilidade',
+    nota: 'O grupo inteiro abre a porta normalmente; a senha não existe no jogo. Também se conjura pelo menu da porta, explorando.',
+  },
+  'Arcane Gate': {
+    kind: 'livro', efeito: 'portalArcano', mira: 'casa', rangeFt: 500, concentration: true, duracaoRodadas: 100, familiaSonora: 'utilidade',
+    nota: 'Cada anel ocupa uma casa; o primeiro nasce na casa livre mais perto de quem conjura. Os dois lados funcionam, e a névoa não tapa a vista.',
+  },
+  'Tree Stride': {
+    kind: 'livro', efeito: 'caminharEmArvores', concentration: true, duracaoRodadas: 10, familiaSonora: 'utilidade',
+    nota: 'A travessia é a ação Atravessar a árvore, uma vez por rodada, nas árvores do mapa; a espécie e o tamanho da árvore não contam.',
+  },
+  Etherealness: {
+    kind: 'livro', efeito: 'formaEterea', duracaoRodadas: 4800, familiaSonora: 'utilidade',
+    nota: 'Só quem conjura vai para o etéreo, em qualquer círculo. Lá ninguém o vê nem o toca, e ele não ataca nem conjura; a ação Voltar do Plano Etéreo o traz de volta numa casa livre a até o deslocamento dele, por cima de parede.',
+  },
+  'Prismatic Wall': {
+    kind: 'save', save: 'dex', soZona: true, shape: 'muralha', areaFt: 90, rangeFt: 60, duracaoRodadas: 100,
+    zona: { rodadas: 100, quando: 'nunca', aoEntrar: true, dificil: false, semTeste: true, barraVisao: true, prismatica: true, luz: { claro: 100, penumbra: 100 } },
+    nota: 'Só a parede reta, de 27 m; a esfera não existe no jogo. Quem conjurou e o lado dele passam sem nada. O brilho cega quem começa o turno a até 6 m (e quem está perto quando ela surge), não quem chega andando; e as camadas não se destroem uma a uma.',
+  },
+  Wish: {
+    kind: 'livro', efeito: 'desejo', familiaSonora: 'utilidade',
+    opcoes: [
+      { id: 'cura', rotulo: 'Curar o grupo', detalhe: 'até vinte aliados à vista: todos os PV e o que a Restauração Maior tira' },
+      ...['ácido', 'concussão', 'cortante', 'elétrico', 'energético', 'fogo', 'frio', 'necrótico', 'perfurante', 'psíquico', 'radiante', 'trovejante', 'veneno']
+        .map((t) => ({ id: `res:${t}`, rotulo: `Resistência a ${t}`, detalhe: 'até dez aliados à vista, para sempre' })),
+    ],
+    nota: 'Só a cura do grupo e a resistência a um tipo de dano. Duplicar outra magia, criar um objeto, a imunidade a uma magia e desfazer uma jogada não existem no jogo. O desgaste vale: 1d10 necrótico por círculo de cada magia até o descanso longo, e um terço de chance de nunca mais conjurar o Desejo; a Força 3 por dias não existe.',
+  },
   // ---------------------------------------------------------------- dano e controle
   'Prismatic Spray': { kind: 'livro', efeito: 'prismatico', shape: 'cone', areaFt: 60, nota: 'O raio anil começa a petrificar como o olhar da medusa, e o violeta só cega; o livro leva três testes a cada um.' },
   'Divine Word': { kind: 'livro', efeito: 'palavraDivina', raioFt: 30 },

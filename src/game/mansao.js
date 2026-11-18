@@ -226,6 +226,33 @@ export const MAPA_MANSAO = {
       "w": 12,
       "h": 12,
       "ligada": true
+    },
+    {
+      "id": "ponteNorteCaida",
+      "url": "/mapas/fa/mansao-ponteNorteCaida.webp",
+      "x": 10,
+      "y": 7,
+      "w": 3,
+      "h": 3,
+      "ligada": false
+    },
+    {
+      "id": "ponteSulCaida",
+      "url": "/mapas/fa/mansao-ponteSulCaida.webp",
+      "x": 10,
+      "y": 13,
+      "w": 3,
+      "h": 3,
+      "ligada": false
+    },
+    {
+      "id": "fossoAberto",
+      "url": "/mapas/fa/mansao-fossoAberto.webp",
+      "x": 21,
+      "y": 9,
+      "w": 4,
+      "h": 2,
+      "ligada": false
     }
   ],
   "terreno": [

@@ -72,7 +72,7 @@ export function usoDoItem(c, spell, pedido = null) {
     c.resources[chave(id)] = tem;
     return {
       tipo: 'item', item: id, circulo, recurso: chave(id), custo,
-      rotulo: `${dados.name}, ${custo} ${custo === 1 ? 'carga' : 'cargas'}`,
+      rotulo: custo === 0 ? `${dados.name}, à vontade` : `${dados.name}, ${custo} ${custo === 1 ? 'carga' : 'cargas'}`,
       ...(conjura.cd != null ? { cd: conjura.cd } : {}),
       ...(conjura.ataque != null ? { ataque: conjura.ataque } : {}),
     };
@@ -118,6 +118,8 @@ export function sintonizar(c, id) {
   if (c.sintonizados.includes(id)) return null;
   if (c.sintonizados.length >= MAX_SINTONIA) return `já está sintonizado com ${MAX_SINTONIA} itens`;
   if (dados.conjura?.exigeConjurador && !c.spellcasting) return 'só um conjurador se sintoniza com ele';
+  // a LÂMINA LUNAR: só um elfo ou meio-elfo (o alinhamento do livro não entra: o jogo não tem alinhamento)
+  if (dados.sintoniaElfo && !/elf/i.test(`${c.racaId ?? ''} ${c.raca ?? ''} ${c.ancestry ?? ''}`)) return 'a lâmina lunar só aceita um elfo ou meio-elfo';
   c.sintonizados.push(id);
   atualizarItensPassivos(c);
   return null;

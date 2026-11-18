@@ -764,6 +764,36 @@ for (_x, _y, _tipo, _claro, _pen) in ((26, 27, 'braseiro', 30, 30), (9, 9, 'fogu
 for (_x, _y, _tipo, _claro, _pen) in _APAGADAS_NA_FA:
     LUZES.append({'pos': {'x': _x, 'y': _y}, 'claro': _claro, 'penumbra': _pen, 'tipo': _tipo, 'apagada': True})
 
+# A CHAMA MEXE NO DESENHO (revisão de 2026-11-13). O desenho base da FA pinta o templo e o alojamento norte ACESOS e os
+# outros quatro cômodos com fogo APAGADOS, e apagar ou acender a chama mudava a regra e deixava a pintura como estava. A FA
+# dá uma peça por cômodo: a APAGADA dos dois que a base pinta acesos (vai em `sobreposicaoApagada`, que liga quando o fogo
+# apaga) e a ACESA dos outros quatro (`sobreposicao`). O lugar de cada uma foi MEDIDO casando a peça com a arte base casa a
+# casa, em tons de cinza a 20 px por casa: a melhor posição de cada uma dá metade ou menos da diferença da segunda, e a peça
+# do alojamento norte ACESO bate com a base a 0,6 de 255 — a base está mesmo acesa ali.
+# Os nomes do pacote não são os da cena do Foundry (lá `TempleLight` é 6x6; aqui o templo apagado é 10x12), por isso a medida.
+_PECAS_DA_FA = RAIZ / 'mapas' / 'WaveEchoCave' / 'FA_Battlemaps' / 'WaveEchoCave' / 'WaveEchoCave_73x90' / 'Webp' / 'Overlays' / 'Gridless'
+_PECAS_DE_LUZ = (
+    # (a chama, id, arquivo do pacote, x, y, w, h, de quê)
+    ((9, 9), 'temploApagado', 'Room20_TempleCampfireOff_10x12', 4, 3, 10, 12, 'apagada'),
+    ((26, 27), 'alojamentoNorteApagado', 'Room11_NorthBarracksBrazier_10x8', 22, 23, 10, 8, 'apagada'),
+    ((16, 7), 'sacerdoteAceso', 'Room20_PriestLight_6x6', 14, 3, 6, 6, 'acesa'),
+    ((36, 57), 'alojamentoSulAceso', 'Room6_SouthBarracksLight_6x12', 34, 51, 6, 12, 'acesa'),
+    ((33, 38), 'braseiroNorteAceso', 'Room9_BrazierNorthLit_7x7', 30, 35, 7, 7, 'acesa'),
+    ((41, 47), 'braseiroSulAceso', 'Room9_BrazierSouthLit_7x7', 38, 44, 7, 7, 'acesa'),
+)
+SOBREPOSICOES = []
+for ((_cx, _cy), _id, _arq, _x, _y, _w, _h, _de) in _PECAS_DE_LUZ:
+    _destino = RAIZ / 'public' / 'mapas' / 'fa' / f'ondaeco-{_id}.webp'
+    if not _destino.exists() and (_PECAS_DA_FA / f'{_arq}.webp').exists():
+        _destino.write_bytes((_PECAS_DA_FA / f'{_arq}.webp').read_bytes())
+    if not _destino.exists():
+        continue
+    _chama = next(l for l in LUZES if (l['pos']['x'], l['pos']['y']) == (_cx, _cy))
+    _apagada = bool(_chama.get('apagada'))
+    _chama['sobreposicaoApagada' if _de == 'apagada' else 'sobreposicao'] = _id
+    SOBREPOSICOES.append({'id': _id, 'url': f'/mapas/fa/ondaeco-{_id}.webp', 'x': _x, 'y': _y, 'w': _w, 'h': _h,
+                          'ligada': _apagada if _de == 'apagada' else not _apagada})
+
 # A ROCHA TEM VOLUME: as casas de rocha junto de chao sobem UM nivel acima do chao mais alto que tocam (um paredao, com a
 # face de penhasco), em vez de um piso azul chapado; o resto da rocha, que ninguem ve, fica no nivel 0.
 ALTURA = []
@@ -823,12 +853,53 @@ for (_x, _y) in _MURADAS:
     T[_y][_x] = 'R'
 print('bolsoes fechados que viraram rocha:', len(_MURADAS), _MURADAS[:12])
 
+# AS PORTAS PINTADAS E O QUE O ROTEIRO MUDA (a revisão de 2026-11-13). A arte base tem as portas FECHADAS, e o pacote da FA
+# traz cada uma ABERTA; a peça leva as arestas de porta que caem nela (`arestas`), e o campo a acende quando alguma abre
+# (`campo.js`), por qualquer caminho — o menu, o roteiro ou o save. As outras três são do roteiro: os mortos desenhados na
+# guarita (4) e na fundição (12) são os que LEVANTAM, e saem da pintura quando a luta começa; e o tesouro da Forja (15) sai
+# quando o grupo o pega. Posições da cena do Foundry (a origem do desenho é 1900,2300 px).
+_PECAS_DO_ROTEIRO = (
+    # (id, arquivo, x, y, w, h, é porta)
+    ('portaGuarita', 'Room4_OldGuardroomDoor_2x2', 35, 81, 2, 2, True),
+    ('portaEnsaiador', 'Room5_AssayersOfficeDoor_3x2', 41, 81, 3, 2, True),
+    ('portaAlojNorteOeste', 'Room11_LeftDoor_3x3', 21, 26, 3, 3, True),
+    ('portaAlojNorteLeste', 'Room11_BarricadeOpen_3x4', 30, 26, 3, 4, True),
+    ('portaTemplo', 'Room19_Doors_4x3', 7, 13, 4, 3, True),
+    ('portaAlojSulNorte', 'Room6_BarracksNorthDoor_3x3', 33, 54, 3, 3, True),
+    ('portaAlojSulSul', 'Room6_BarracksSouthDoor_3x3', 36, 61, 3, 3, True),
+    ('portaDeposito', 'Room7_StorageRoomDoor_3x3', 47, 55, 3, 3, True),
+    ('portaMagos', 'Room14_WizardQuarterDoors_4x4', 63, 50, 4, 4, True),
+    ('portaForja', 'Room15_SpellForgeDoors_3x4', 61, 36, 3, 4, True),
+    ('portaOficina', 'Room15_WorkshopDoor_2x2', 65, 31, 2, 2, True),
+    ('portaOficinaForja', 'Room15_SpellForgeWorkshpDoor_3x3', 67, 33, 3, 3, True),
+    ('portaSacerdote', 'Room20_PriestDoor_3x3', 15, 7, 3, 3, True),
+    ('guaritaSemMortos', 'Room4_OldGuardroom_NoSkeletons_10x7', 26, 78, 10, 7, False),
+    ('fundicaoSemCorpos', 'Room12_NoCorpses_12x12', 37.75, 25, 12.5, 12, False),
+    ('forjaSemItens', 'Room15_SpellForgeRemovedTreasure_2x1', 68, 40, 2, 1, False),
+)
+for (_id, _arq, _x, _y, _w, _h, _porta) in _PECAS_DO_ROTEIRO:
+    _destino = RAIZ / 'public' / 'mapas' / 'fa' / f'ondaeco-{_id}.webp'
+    if not _destino.exists() and (_PECAS_DA_FA / f'{_arq}.webp').exists():
+        _destino.write_bytes((_PECAS_DA_FA / f'{_arq}.webp').read_bytes())
+    _peca = {'id': _id, 'url': f'/mapas/fa/ondaeco-{_id}.webp', 'x': _x, 'y': _y, 'w': _w, 'h': _h, 'ligada': False}
+    if _porta:
+        _dentro = lambda cx, cy: _x <= cx < _x + _w and _y <= cy < _y + _h
+        _arestas = [f'{x},{y},N' for y in range(1, H) for x in range(W) if PN[y][x] in '+/' and (_dentro(x, y) or _dentro(x, y - 1))]
+        _arestas += [f'{x},{y},O' for y in range(H) for x in range(1, W) if PO[y][x] in '+/' and (_dentro(x, y) or _dentro(x - 1, y))]
+        if not _arestas:
+            # a planta nossa não tem porta ali (a oficina da forja, 65,31): a peça ficaria acesa ou apagada à toa
+            print(f'aviso: a peça de porta {_id} não cobre porta nenhuma da planta, e fica de fora')
+            continue
+        _peca['arestas'] = _arestas
+    SOBREPOSICOES.append(_peca)
+
 dados = {
     'paredes': {'n': [''.join(l) for l in PN], 'o': [''.join(l) for l in PO]},
     'terreno': [''.join(l) for l in T],
     'altura': ALTURA,
     'luz': [''.join(str(v) for v in l) for l in L],
     'luzes': LUZES,
+    'sobreposicoes': SOBREPOSICOES,
 }
 extra = {
     'chegada': {'x': CHEGADA[0], 'y': CHEGADA[1]},

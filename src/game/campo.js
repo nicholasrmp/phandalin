@@ -27,8 +27,14 @@ export function montarCampo(mapa) {
   // numa destas casas tem desvantagem, salvo de quem não depende da vista (percepção às cegas) ou vê através da ilusão
   // (visão verdadeira). `combat.js` pergunta.
   if (mapa.embacado?.length) field.embacado = new Set(mapa.embacado.map((c) => `${c.x},${c.y}`));
+  // OS PORTAIS PLANARES do mapa (`{ x, y, nome }`): quem os sente é o Detectar Portal do Andarilho do Horizonte. A cena que
+  // abre um portal no meio do jogo o põe em `field.portais` ela mesma.
+  if (mapa.portais?.length) field.portais = mapa.portais.map((p) => ({ ...p }));
   // O mapa PINTADO por baixo e como ele se encaixa na grade (ver `mapa-editor.js`): quem desenha é a vista de cima.
   if (mapa.fundo) field.fundo = mapa.fundo;
+  // A PORTA ONDE A ARTE A PINTA (`{'x,y,N': 0.45}`, em casas, + para o sul ou o leste): a regra só tem a aresta, e o
+  // portão pintado pode cair no meio da casa. É só desenho e clique, e só sobre o mapa pintado (`vista-topo.js`).
+  if (mapa.portasNaArte) field.portasNaArte = mapa.portasNaArte;
   // AS SOBREPOSIÇÕES: pedaços de arte com nome que o roteiro acende e apaga (a fogueira, a ponte que cede, o
   // baú aberto). Vão COPIADAS, porque `ligada` muda durante a partida e o mapa da cena é compartilhado — sem a
   // cópia, acender a fogueira numa partida a deixava acesa na próxima.
@@ -43,6 +49,22 @@ export function montarCampo(mapa) {
       o.ligada = novo;
       return true;
     };
+    // A PORTA PINTADA (`arestas` na peça): a arte base tem a porta fechada e a peça a mostra aberta, e ela acende quando
+    // QUALQUER das arestas dela está aberta — pelo menu de porta, pelo roteiro ou pelo save, porque todo caminho que
+    // abre ou fecha aresta passa por `porAresta`.
+    const comPorta = field.sobreposicoes.filter((o) => o.arestas?.length);
+    if (comPorta.length) {
+      const aberta = (chave) => {
+        const [x, y, lado] = chave.split(',');
+        const ax = Number(x); const ay = Number(y);
+        const cod = lado === 'N' ? field.paredeN[ay * field.w + ax] : field.paredeO[ay * field.w + ax];
+        return cod === ARESTA.aberta;
+      };
+      const sincronizar = () => { for (const o of comPorta) o.ligada = o.arestas.some(aberta); };
+      const porAresta = field.porAresta.bind(field);
+      field.porAresta = (...args) => { porAresta(...args); sincronizar(); };
+      sincronizar();
+    }
   }
   // AS REGIÕES (`rules/regioes.js`): a área que faz algo quando alguém entra, sai, ou começa e termina o turno nela.
   // Copiadas pelo mesmo motivo das sobreposições: `vezes`, `desligada` e `descoberta` mudam durante a partida.

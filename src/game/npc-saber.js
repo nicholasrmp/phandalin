@@ -19,6 +19,8 @@
 import { apertado, flagDeApertado } from './npc-saber-comum.js';
 import { FICHAS_DA_VILA, IDS_DA_VILA } from './npc-saber-vila.js';
 import { FICHAS_DAS_CENAS } from './npc-saber-cenas.js';
+import { FICHAS_OBELISCO_5A6, somarFatosDoObelisco } from './npc-saber-obelisco-vila.js';
+import { FICHAS_OBELISCO_7A8 } from './npc-saber-obelisco-reino.js';
 
 export { flagDeApertado };
 
@@ -138,6 +140,39 @@ export const FICHAS = {
 };
 
 Object.assign(FICHAS, FICHAS_DA_VILA, FICHAS_DAS_CENAS);
+// O OBELISCO (capítulos 5 a 8): as fichas dos NPCs novos, e o que os moradores passam a saber em cada capítulo (os fatos esperam o
+// capítulo por `e.estagio`, `perguntar.js estadoDoObelisco`).
+Object.assign(FICHAS, FICHAS_OBELISCO_5A6, FICHAS_OBELISCO_7A8);
+somarFatosDoObelisco(FICHAS);
+
+/**
+ * QUEM DO OBELISCO SE RECONHECE PELO NOME. Vem ANTES do bloco: o Jomlus é um `spectator`, que o bloco daria à ficha do espectador
+ * da Onda Eco, e os reféns, os presos e os mineiros são todos `plebeu`. O nome é o que a cena dá ao combatente.
+ */
+const POR_NOME = {
+  // capítulos 5 e 6
+  Greska: 'grista', 'Wheel-of-Fortune': 'wheel', 'Gwyn Oresong': 'gwyn', Gwyn: 'gwyn',
+  Ander: 'ander', 'Tamara Stonehill': 'tamara',
+  'Wallin Kreeve': 'wallin', 'Elise Kreeve': 'elise', 'Karthim Humblepick': 'karthim',
+  'Dareth Taggert': 'dareth', 'Paulina Previne': 'paulina', 'Tumblewick Rollins': 'tumblewick',
+  'Hjoldak Hollowhelm': 'hjoldak', 'Ruxithid, o Escolhido': 'ruxithid',
+  'Nythalyn Henlifel': 'nythalyn', 'Yanthdel Henlifel': 'yanthdel', 'Ontharyx Henlifel': 'ontharyx',
+  'Erdan Vosselth': 'drowT14', 'Thiala Sharne': 'drowT14', 'Vellios Keethe': 'drowT14',
+  Rivibiddel: 'rivibiddel', Zoklork: 'zoklork',
+  // capítulos 7 e 8
+  Shalghast: 'devoradoresDaEntrada', Ulthundul: 'devoradoresDaEntrada', 'Duoro Engletor': 'duoro', Ahooshathan: 'ahooshathan',
+  'Oskar Ninebough': 'presosDoTunel', 'Cathlette Camber': 'presosDoTunel', 'Aida Camber': 'presosDoTunel',
+  Naruv: 'naruv', Chalaag: 'chalaag', Golcuus: 'golcuus',
+  'Shalfi Lewin': 'shalfi', Jomlus: 'jomlus', 'Sábio Borblish': 'flumphs', Mublinesh: 'mublinesh', Gossa: 'gossa', Ashripask: 'ashripask',
+  Nouashu: 'zelotes', Groushim: 'zelotes', Chishinix: 'chishinix', Hashutu: 'hashutu', Valsyx: 'nagas', Charnyz: 'nagas',
+  'Thawnia Browne': 'refensCupula', Shansa: 'refensCupula', Wramble: 'refensCupula', Unmiel: 'refensCupula',
+  'Hovnar Tartesh': 'refensEstatua', 'Menvin Tartesh': 'refensEstatua', 'Nalpina Goldstone': 'refensEstatua', 'Mildra Merkel': 'refensEstatua',
+};
+/** E pelo bloco, quando o bloco é do NPC e de mais ninguém. */
+const POR_BLOCO_DO_OBELISCO = {
+  oshundo: 'oshundo', varakkta: 'varakkta', lowarnizel: 'lowarnizel', nellik: 'nellik', behir: 'behir', flumph: 'flumphs', ruxithid: 'ruxithid',
+  goblinPsiComandante: 'goblinSawplee', goblinPsiLutador: 'goblinSawplee',
+};
 
 /** Quem se reconhece pelo bloco. Quem não tem bloco próprio é apontado pela cena, com `npc.ficha`. */
 const POR_BLOCO = {
@@ -149,6 +184,8 @@ const POR_BLOCO = {
 export function idDaFicha(npc) {
   if (!npc) return null;
   if (npc.ficha && Object.hasOwn(FICHAS, npc.ficha)) return npc.ficha;
+  if (npc.name && Object.hasOwn(POR_NOME, npc.name)) return POR_NOME[npc.name];
+  if (Object.hasOwn(POR_BLOCO_DO_OBELISCO, npc.defId ?? '')) return POR_BLOCO_DO_OBELISCO[npc.defId];
   // `makeNpc` guarda a pessoa em `npcId`; a vila cria a sua só com `id`.
   const pessoa = npc.npcId ?? npc.id;
   if (IDS_DA_VILA.includes(pessoa)) return pessoa;

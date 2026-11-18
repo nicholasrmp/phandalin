@@ -396,13 +396,17 @@ export const MORTOS_VIVOS = {
 // zumbi do SRD, bloco por bloco, com a Brisa das Cinzas a mais. Mora aqui, e não
 // no meio do dicionário, para sair da mesma definição do zumbi e nunca divergir
 // dela.
+// O ZUMBI DAS CINZAS É O DO OBELISCO (os capítulos 1 a 4 são os dele, por ordem do dono): o bloco do zumbi do SRD, e ao
+// morrer uma nuvem de cinza que dura cinco minutos e NÃO tapa a vista — enfeite, sem regra. Na Mina ele tinha a Brisa
+// das Cinzas, que dava desvantagem em tudo a quem estivesse colado; o traço continua no motor (`combat.js
+// brisaDasCinzas`), sem bloco que o use.
 MORTOS_VIVOS.zumbiDasCinzas = {
   ...MORTOS_VIVOS.zumbi,
   id: 'zumbiDasCinzas',
   name: 'Zumbi das Cinzas',
   fonte: 'livro',
-  traits: [...MORTOS_VIVOS.zumbi.traits, 'brisaDasCinzas'],
-  blurb: 'Um zumbi comum de cinza: quando leva o primeiro golpe, a cinza solta do corpo cega e entorpece quem está colado nele.',
+  explosaoAoMorrer: { frase: 'se desfaz numa nuvem de cinza, que fica pairando sem tapar a vista de ninguém' },
+  blurb: 'Um zumbi comum, feito de quem a erupção do Hotenow pegou em Árvore-Trovão. Quando cai, vira uma nuvem de cinza que demora a assentar.',
 };
 
 /** Traços novos desta família, somados ao dicionário geral. */

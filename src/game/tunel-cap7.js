@@ -253,15 +253,20 @@ export function criarTunel7(app, config = {}) {
       }
       return true;
     };
+    // DEGRAUS: a casa de sempre (6 a 14 m, à vista); senão, qualquer casa alcançável a 3 m ou mais; senão, a livre mais perto. O
+    // último recurso antigo era a primeira candidata, livre ou não: o fomoriano (3x3) nascia na rocha, e o bando, empilhado.
+    const todas = [...alc.values()].map((n) => ({ x: n.x, y: n.y, d: distanceFt(de, n) })).sort((a, b) => a.d - b.d);
+    const longe = todas.filter((q) => q.d >= 10);
     return elencoIds.map((id) => {
       const f = makeMonster(id, { x: 0, y: 0 });
       const lado = f.pos?.f ?? 1;
-      const q = cands.find((c) => livre(c.x, c.y, lado)) ?? cands[0] ?? de;
+      const q = cands.find((c) => livre(c.x, c.y, lado)) ?? longe.find((c) => livre(c.x, c.y, lado)) ?? todas.find((c) => livre(c.x, c.y, lado));
+      if (!q) return null;
       for (let dy = 0; dy < lado; dy++) for (let dx = 0; dx < lado; dx++) usadas.push(`${q.x + dx},${q.y + dy}`);
       f.pos = { ...f.pos, x: q.x, y: q.y };
       f.facingVec = { dx: Math.sign(de.x - q.x), dy: Math.sign(de.y - q.y) };
       return f;
-    });
+    }).filter(Boolean);
   }
 
   /** O próximo encontro da viagem, se houver. Devolve true se uma luta começou. */

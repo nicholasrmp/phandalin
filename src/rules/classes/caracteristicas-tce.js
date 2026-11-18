@@ -48,7 +48,7 @@ export const TEXTO_TCE = {
  },
  "magicAwareness": {
   "nome": "Consciência Mágica",
-  "desc": "Com uma ação, até o fim do seu próximo turno você sabe onde estão magias e itens mágicos a até 18 m que não estejam sob cobertura total, e descobre a escola de cada magia percebida. Usos iguais ao seu bônus de proficiência, recuperados em descanso longo."
+  "desc": "Com uma ação, até o fim do seu próximo turno você sabe onde estão magias e itens mágicos a até 18 m que não estejam sob cobertura total, e descobre a escola de cada magia percebida. Usos iguais ao seu bônus de proficiência, recuperados em descanso longo. O registro diz quem mantém que magia (com a escola), quem leva item mágico e que zona de magia está perto."
  },
  "barbarianWildSurge": {
   "nome": "Surto Selvagem",
@@ -180,7 +180,7 @@ export const TEXTO_TCE = {
  },
  "telekineticMovement": {
   "nome": "Movimento Telecinético",
-  "desc": "Ação: desloque até 9 m, em qualquer direção, um objeto solto Grande ou menor ou uma criatura voluntária (não você) visível a até 9 m, para um espaço livre que você veja; objetos Miúdos podem ir para sua mão ou sair dela. Uma vez por descanso curto ou longo; usos extras custam 1 dado de Energia Psiônica."
+  "desc": "Ação: desloque até 9 m, em qualquer direção, um objeto solto Grande ou menor ou uma criatura voluntária (não você) visível a até 9 m, para um espaço livre que você veja; objetos Miúdos podem ir para sua mão ou sair dela. Uma vez por descanso curto ou longo; usos extras custam 1 dado de Energia Psiônica. Ctrl+clique marca a criatura aliada, e o clique escolhe a casa de chegada. O objeto solto e o objeto Miúdo que vai para a mão não entram: o tabuleiro não tem objeto solto."
  },
  "telekineticAdept": {
   "nome": "Adepto Telecinético",
@@ -448,7 +448,7 @@ export const TEXTO_TCE = {
  },
  "psiBolsteredKnack": {
   "nome": "Talento Psi-Reforçado",
-  "desc": "Ao falhar num teste de habilidade com perícia ou ferramenta em que tem proficiência, role um dado de Energia Psiônica e some ao resultado. O dado só é gasto se o teste passar a ser um sucesso."
+  "desc": "Ao falhar num teste de habilidade com perícia ou ferramenta em que tem proficiência, role um dado de Energia Psiônica e some ao resultado. O dado só é gasto se o teste passar a ser um sucesso. Só nos testes com CD de fora da luta (a conversa, a exploração): na luta o teste não tem CD sabida."
  },
  "psychicWhispers": {
   "nome": "Sussurros Psíquicos",
@@ -596,7 +596,7 @@ export const TEXTO_TCE = {
  },
  "manifestMind": {
   "nome": "Mente Manifesta",
-  "desc": "Com uma ação bônus, com o grimório consigo, você manifesta a mente dele como um objeto espectral intangível a até 18 m, que emite penumbra em 3 m, vê, ouve, tem visão no escuro de 18 m e compartilha seus sentidos telepaticamente; com ação bônus ela se move até 9 m. Bônus de proficiência vezes por descanso longo, você conjura magias de mago a partir do espaço dela. Ela some se ficar a mais de 90 m, sofrer dissipar magia ou for dispensada (ação bônus); invocar de novo exige descanso longo ou um espaço de magia."
+  "desc": "Com uma ação bônus, com o grimório consigo, você manifesta a mente dele como um objeto espectral intangível a até 18 m, que emite penumbra em 3 m, vê, ouve, tem visão no escuro de 18 m e compartilha seus sentidos telepaticamente; com ação bônus ela se move até 9 m. Bônus de proficiência vezes por descanso longo, você conjura magias de mago a partir do espaço dela. Ela some se ficar a mais de 90 m, sofrer dissipar magia ou for dispensada (ação bônus); invocar de novo exige descanso longo ou um espaço de magia. A ação bônus concedida põe a mente numa casa a até 18 m (ou a move 9 m), e o interruptor na barra faz a magia de mago do turno sair do lugar dela: o alcance, a vista e a área se contam de lá. A mente some a mais de 90 m. Gastar um espaço para pôr a mente de novo e ver e ouvir por ela fora da luta não entram."
  },
  "masterScrivener": {
   "nome": "Escrivão Mestre",

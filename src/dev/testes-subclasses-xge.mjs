@@ -107,7 +107,7 @@ await teste('as oito subclasses entram nas classes, com nome em pt-br, e todo re
     }
   }
   assert.equal(CLASSES.barbaro.subclasse.opcoes.fanatico.nome, 'Caminho do Fanático');
-  assert.ok(CARACTERISTICAS.eyesOfTheGrave.semEfeito, 'o que o jogo não faz diz por quê');
+  assert.ok(CARACTERISTICAS.windSpeaker.semEfeito, 'o que o jogo não faz diz por quê');
   assert.ok(SUBCLASSES_1.clerigo.opcoes.some((o) => o.motor === 'sepultura') && SUBCLASSES_1.clerigo.opcoes.some((o) => o.motor === 'forja'));
   assert.equal(Object.keys(CLASSES.barbaro.subclasse.opcoes)[0], 'berserker', 'a do SRD continua sendo a primeira (o padrão)');
 });
@@ -1167,6 +1167,113 @@ await teste('Magia de Guerra: o Surto de Poder soma energético no dano de magia
   const ca = caEfetiva(h);
   h.concentrating = { spellId: 'x', condition: 'x', targets: [], rounds: 10 };
   assert.equal(caEfetiva(h), ca + 2);
+});
+
+// ---------------------------------------------------------------- os recursos que estavam sem efeito (2026-11-17)
+await teste('Inquisitivo: o Ouvido para Mentiras faz do 7 na Intuição um 8; o Olhar Firme dá vantagem e +5 na passiva; o Olho para Detalhes acha o escondido', async () => {
+  const { passivePerception } = await import(P + 'rules/abilities.js');
+  const sem = heroi('ladino', 9);
+  const h = heroi('ladino', 9, 'inquisitivo');
+  assert.equal(passivePerception(h) - passivePerception(sem), 5, 'Olhar Firme: +5 na passiva');
+  const { enc, foes: [gob] } = montar(h, { foes: [['goblin', { x: 9, y: 5 }]] });
+  const die = enc.rng.die; enc.rng.die = (l) => (l === 20 ? 3 : die(l));
+  const t = enc.testeDeAtributo(h, 'wis', skillBonus(h, 'intuicao'), 'Intuição', { pericia: 'intuicao' });
+  assert.equal(t.natural, 8, 'o 3 virou 8');
+  enc.rng.die = die;
+  addCondition(gob, 'invisivel', { rounds: Infinity, data: { escondido: true, furtividade: 5 } });
+  assert.ok(enc.useFeature(h, 'eyeForDetail'));
+  assert.ok(!hasCondition(gob, 'invisivel'), 'achou o goblin escondido');
+  assert.ok(h.bonusUsed);
+});
+
+await teste('Batedor: o Escaramuçador sai de perto, com a reação e sem ataque de oportunidade, quando o inimigo termina o turno colado e ele está ferido', () => {
+  const h = heroi('ladino', 3, 'batedor');
+  const { enc, foes: [ogro], texto } = montar(h);
+  h.hp = Math.floor(h.maxHp / 3);
+  const antes = { ...h.pos };
+  const hpAntes = h.hp;
+  enc.fimDoTurnoDoLado('party'); enc.beginSide('foes');
+  enc.endTurn(ogro);
+  // (a reação volta no começo do turno do grupo, que o fim do turno do ogro já abre: o registro é a prova de que ela saiu)
+  assert.ok(/Escaramuçador/.test(texto()) && distanceFt(h.pos, ogro.pos) > 5, `${antes.x},${antes.y} -> ${h.pos.x},${h.pos.y}`);
+  assert.equal(h.hp, hpAntes, 'sem ataque de oportunidade');
+});
+
+await teste('Sepultura: os Olhos da Sepultura acham os mortos-vivos a 18 m, e o escondido deixa de estar', () => {
+  const h = heroi('clerigo', 1, 'sepultura');
+  const { enc, foes: [z], texto } = montar(h, { foes: [['zumbi', { x: 12, y: 5 }]] });
+  addCondition(z, 'invisivel', { rounds: Infinity, data: { escondido: true, furtividade: 30 } });
+  assert.ok(h.resources.eyesOfTheGrave >= 1);
+  assert.ok(enc.useFeature(h, 'eyesOfTheGrave'));
+  assert.match(texto(), /Zumbi/);
+  assert.ok(!hasCondition(z, 'invisivel'));
+});
+
+await teste('Guardião Ancestral: Consultar os Espíritos dá o Augúrio e a Clarividência fora da luta, sem espaço, uma vez por descanso', async () => {
+  const { podeConjurarFora, magiasForaDoHeroi } = await import(P + 'rules/utilidade.js');
+  const h = heroi('barbaro', 10, 'guardiaoAncestral');
+  assert.ok(magiasForaDoHeroi(h).some((s) => s.id === 'augurio'));
+  const p = podeConjurarFora(h, 'clarividencia');
+  assert.ok(p.ok && p.item?.recurso === 'consultTheSpirits', JSON.stringify(p));
+  h.resources.consultTheSpirits = 0;
+  assert.equal(podeConjurarFora(h, 'augurio').ok, false);
+});
+
+await teste('Inquisitivo: o Olhar Infalível, no 13º, diz a 9 m quem engana os olhos, sem desfazer o engano', () => {
+  const h = heroi('ladino', 13, 'inquisitivo');
+  const { enc, foes: [gob], texto } = montar(h, { foes: [['goblin', { x: 8, y: 5 }]] });
+  addCondition(gob, 'borrado', { rounds: 10 });
+  assert.ok(h.resources.unerringEye >= 1);
+  assert.ok(enc.useFeature(h, 'unerringEye'));
+  assert.match(texto(), /engana os olhos/);
+  assert.ok(hasCondition(gob, 'borrado'), 'a ilusão continua');
+  assert.ok(!heroi('ladino', 12, 'inquisitivo').resources.unerringEye);
+});
+
+await teste('Andarilho do Horizonte: o Detectar Portal diz a distância e a direção do portal mais perto, uma vez por descanso curto', () => {
+  const h = heroi('patrulheiro', 3, 'andarilhoDoHorizonte');
+  const { enc, texto } = montar(h);
+  enc.field.portais = [{ x: 5, y: 15, nome: 'o portal de teste' }, { x: 19, y: 19 }];
+  assert.equal(h.resources.detectPortal, 1);
+  assert.ok(enc.useFeature(h, 'detectPortal'));
+  assert.match(texto(), /portal planar a 15 m, para o sul \(o portal de teste\)/, texto());
+  novoTurno(h);
+  assert.ok(!enc.useFeature(h, 'detectPortal'), 'uma vez por descanso');
+});
+
+await teste('Sonhos: o Andarilho dos Sonhos dá a Vidência sem espaço depois de um descanso curto, uma vez até o longo', async () => {
+  const { podeConjurarFora, magiasForaDoHeroi } = await import(P + 'rules/utilidade.js');
+  const { recuperarNoCurto } = await import(P + 'rules/descanso.js');
+  const h = heroi('druida', 14, 'sonhos');
+  h.spellcasting.prepared = (h.spellcasting.prepared ?? []).filter((id) => id !== 'videncia');
+  assert.ok(!magiasForaDoHeroi(h).some((s) => s.id === 'videncia'), 'antes do descanso curto, não');
+  recuperarNoCurto(h);
+  assert.ok(magiasForaDoHeroi(h).some((s) => s.id === 'videncia'));
+  const r = podeConjurarFora(h, 'videncia');
+  assert.ok(r.ok && r.item?.recurso === 'walkerInDreams', JSON.stringify(r));
+});
+
+await teste('Pastor: a Fala dos Bosques vale como um Falar com Animais que nunca acaba; Zelote: o Guerreiro dos Deuses não deixa motivo', async () => {
+  const { ativaDe, estadoDe } = await import(P + 'rules/utilidade.js');
+  const h = heroi('druida', 2, 'pastor');
+  const outro = heroi('guerreiro', 2);
+  assert.ok(ativaDe(estadoDe({}), [outro, h], 'falarComAnimais'));
+  assert.ok(!ativaDe(estadoDe({}), [outro], 'falarComAnimais'));
+  assert.ok(!ativaDe(estadoDe({}), [outro, h], 'falarComAnimais', { por: outro }), 'é dele, não do grupo inteiro');
+  assert.ok(!CARACTERISTICAS.warriorOfTheGods.semEfeito);
+});
+
+await teste('Mentor: o Manipulador Perspicaz mede a mente e a presença de quem conversa, fora da luta, uma vez por criatura', async () => {
+  const { opcoesDoManipulador } = await import(P + 'game/investigar.js');
+  const h = heroi('ladino', 9, 'mentor');
+  const { enc, foes: [gob] } = montar(h, { foes: [['goblin', { x: 8, y: 5 }]] });
+  gob.side = 'neutro';
+  const app = { enc, root: null, refresh() {} };
+  assert.deepEqual(opcoesDoManipulador(app, h, gob, { fora: false }), [], 'na luta, não');
+  assert.deepEqual(opcoesDoManipulador(app, heroi('ladino', 9), gob, { fora: true }), [], 'só quem tem a característica');
+  const ops = opcoesDoManipulador(app, h, gob, { fora: true });
+  assert.equal(ops.length, 2);
+  assert.ok(ops.every((o) => !o.motivo), JSON.stringify(ops.map((o) => o.motivo)));
 });
 
 console.log(`\n${total - falhas} de ${total} provas passaram`);

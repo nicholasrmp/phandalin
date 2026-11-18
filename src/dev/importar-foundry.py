@@ -59,6 +59,8 @@ RAIZ = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)
 VAZIO = 12
 BLOQUEIA = 20       # CONST.WALL_MOVEMENT_TYPES.NORMAL
 LIMITADA = 10       # CONST.WALL_SENSE_TYPES.LIMITED
+PROXIMIDADE = 30    # CONST.WALL_SENSE_TYPES.PROXIMITY (a janela)
+DISTANCIA = 40      # CONST.WALL_SENSE_TYPES.DISTANCE
 
 
 def tipoDaParede(w):
@@ -78,6 +80,12 @@ def tipoDaParede(w):
         # ("atrás das seteiras, risadinhas") e o mapa não cumpria.
         if visao == LIMITADA:
             return 'J'
+        # A JANELA. O Foundry marca a janela com `sight: PROXIMITY` (30) — vê-se através dela de perto — ou
+        # `DISTANCE` (40), e isto também virava parede cheia: medido na revisão de 2026-11-13, 50 paredes em dez
+        # cenas da FA (a casa do gigante, o largo da vila, o Castelo, a Árvore-Trovão, a Ânima, o Nematódeo...).
+        # O nosso tipo é a janela (`W`): barra o passo e o som, deixa ver e deixa a luz passar.
+        if visao in (PROXIMIDADE, DISTANCIA):
+            return 'W'
         return '#'
     if visao == 0:
         return None

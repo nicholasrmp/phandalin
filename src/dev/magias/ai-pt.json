@@ -1,0 +1,30 @@
+{
+  "Distort Value": {
+    "nome": "Distorcer Valor",
+    "desc": "Ilusão de 1º círculo, um minuto de conjuração: um objeto de até 30 cm de lado parece valer o dobro, com brilho e acabamento que não tem, ou a metade, com riscos e amassados de mentira, por 8 horas. Quem examina o objeto descobre o valor verdadeiro com Inteligência (Investigação) contra a sua CD. Em círculo maior, o objeto pode ter 30 cm a mais de lado por círculo acima do 1º."
+  },
+  "Fast Friends": {
+    "nome": "Amigos Rápidos",
+    "desc": "Encantamento de 3º círculo: um humanoide a até 9 m que veja, ouça e entenda você faz um teste de Sabedoria; se falhar, fica enfeitiçado por você enquanto durar a concentração, até 1 hora, e faz de bom grado o serviço que você pedir. Se a tarefa puder feri-lo ou for contra o que ele quer, ele testa de novo (com vantagem se você ou os seus estiverem lutando com ele); se ela o levar à morte certa, a magia acaba. Ao fim, ele sabe que foi enfeitiçado. Em círculo maior, uma criatura a mais por círculo acima do 3º."
+  },
+  "Gift of Gab": {
+    "nome": "Dom da Palavra",
+    "desc": "Encantamento de 2º círculo, como reação ao falar com alguém: cada criatura que você escolher a até 1,5 m esquece o que você disse nos últimos 6 segundos e se lembra, no lugar, das palavras que você diz ao conjurar."
+  },
+  "Incite Greed": {
+    "nome": "Incitar Cobiça",
+    "desc": "Encantamento de 3º círculo: você mostra uma gema, e cada criatura que escolher a até 9 m e que veja você faz um teste de Sabedoria; quem falha fica enfeitiçado enquanto durar a concentração, até 1 minuto, ou até você ou um companheiro lhe fazer mal. Enfeitiçada assim, ela não faz nada além de usar o deslocamento para chegar perto de você sem se arriscar, e a 1,5 m de você fica parada, de olho na gema. No fim de cada turno dela, repete o teste e, passando, se livra."
+  },
+  "Jim's Glowing Coin": {
+    "nome": "Moeda Brilhante de Jim",
+    "desc": "Encantamento de 2º círculo: você joga a moeda num ponto a até 18 m, e ela acende como a magia Luz. Cada criatura que você escolher e veja a até 9 m da moeda faz um teste de Sabedoria; quem falha fica distraída por 1 minuto, com desvantagem em Sabedoria (Percepção) e na iniciativa."
+  },
+  "Jim's Magic Missile": {
+    "nome": "Míssil Mágico de Jim",
+    "desc": "Evocação de 1º círculo: três dardos de energia, cada um contra uma criatura que você veja a até 36 m, cada um com a sua jogada de ataque à distância de magia; o que acerta causa 2d4 de dano de energia, e o crítico causa 5d4 no lugar de dobrar os dados. Se algum dado de ataque der 1, todos erram e estouram em você, 1 de dano de energia por dardo. Em círculo maior, um dardo a mais por círculo acima do 1º."
+  },
+  "Motivational Speech": {
+    "nome": "Discurso Motivacional",
+    "desc": "Encantamento de 3º círculo, um minuto de conjuração: até cinco criaturas que ouçam você a até 18 m ganham 5 PV temporários e vantagem nos testes de resistência de Sabedoria por 1 hora; atingida por um ataque, a criatura tem vantagem na próxima jogada de ataque. A magia acaba para quem perde esses PV temporários. Em círculo maior, mais 5 PV temporários por círculo acima do 3º."
+  }
+}

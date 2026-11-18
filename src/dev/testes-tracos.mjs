@@ -176,5 +176,38 @@ teste('o polígono que o tabuleiro desenha atravessa a janela e para na parede',
   assert.ok(alcance('E') < 3, `etérea: ${alcance('E')}`);
 });
 
+teste('a PAREDE traçada que não derivou aresta continua barrando a vista; só a passagem ABERTA a deixa ver (revisão de 2026-11-13)', () => {
+  // O vazamento que o revisor de render viu em riscos finos de luz: o traço cruzado numa aresta VAZIA era ignorado, porque
+  // a exceção da porta (a aresta decide) valia para qualquer aresta que deixasse ver. Medido em quatro cenas com
+  // `medir-vazamento-luz.mjs`: 4.222 raios atravessando parede; depois, nenhum.
+  const m = novoMapa(12, 10);
+  tracarParede(m, [[6, 0], [6, 10]], '#');
+  for (let y = 0; y < 10; y++) m.paredes.o[y] = m.paredes.o[y].slice(0, 6) + '.' + m.paredes.o[y].slice(7);   // a aresta some
+  const f = montarCampo(m);
+  assert.equal(anda(f, A, B), true, 'sem aresta, o passo atravessa (é a passagem estreita das cavernas importadas)');
+  assert.equal(f.hasLineOfSight(A, B), false, 'mas a vista para no traço');
+  const pts = poligonoDeVisao(f, A.x + 0.5, A.y + 0.5, 8, 360);
+  assert.ok(Math.abs(pts[0] - 6) < 0.1, `o raio para o leste para no traço (foi a ${pts[0].toFixed(2)})`);
+  // a passagem que o roteiro ABRE (a secreta, a boca do Nematódeo) deixa ver por cima do traço
+  for (let y = 0; y < 10; y++) f.paredeO[y * f.w + 6] = ARESTA.aberta;
+  f.versao = (f.versao ?? 0) + 1;
+  assert.equal(f.hasLineOfSight(A, B), true, 'aberta, vê-se');
+});
+
+teste('a quina que não fecha (as pontas a 6 centésimos uma da outra) não deixa fresta para a luz', () => {
+  // uma sala fechada, com a quina de cima e da direita aberta por uma fresta de importação
+  const m = novoMapa(12, 10);
+  tracarParede(m, [[1, 2], [6, 2]], '#');
+  tracarParede(m, [[6.04, 2.04], [6.04, 8]], '#');
+  tracarParede(m, [[6.04, 8], [1, 8]], '#');
+  tracarParede(m, [[1, 8], [1, 2]], '#');
+  const f = montarCampo(m);
+  const N = 4096;
+  const pts = poligonoDeVisao(f, 4, 5, 12, N);
+  const fora = [];
+  for (let i = 0; i < N; i++) if (pts[i * 2 + 1] < 1.9 || pts[i * 2] > 6.2) fora.push(`${pts[i * 2].toFixed(2)},${pts[i * 2 + 1].toFixed(2)}`);
+  assert.equal(fora.length, 0, `raios vazaram pela quina: ${fora.slice(0, 3).join(' ')}`);
+});
+
 console.log(`\n${total - falhas}/${total} testes passaram`);
 if (falhas) process.exit(1);

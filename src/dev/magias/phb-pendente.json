@@ -3,42 +3,28 @@
   "magia": "antipatiaSimpatia",
   "en": "Antipathy/Sympathy",
   "circulo": 8,
-  "motivo": "o motor ainda não faz o que ela faz",
+  "motivo": "leva 1 minuto ou mais para conjurar: não cabe num turno de luta, e fora da luta o jogo não tem o que ela muda",
   "rascunho": "save"
- },
- {
-  "magia": "portalArcano",
-  "en": "Arcane Gate",
-  "circulo": 6,
-  "motivo": "o motor ainda não faz o que ela faz",
-  "rascunho": null
- },
- {
-  "magia": "trancaArcana",
-  "en": "Arcane Lock",
-  "circulo": 2,
-  "motivo": "o motor ainda não faz o que ela faz",
-  "rascunho": null
  },
  {
   "magia": "projecaoAstral",
   "en": "Astral Projection",
   "circulo": 9,
-  "motivo": "o motor ainda não faz o que ela faz",
+  "motivo": "leva 1 minuto ou mais para conjurar: não cabe num turno de luta, e fora da luta o jogo não tem o que ela muda",
   "rascunho": null
  },
  {
   "magia": "despertar",
   "en": "Awaken",
   "circulo": 5,
-  "motivo": "o motor ainda não faz o que ela faz",
+  "motivo": "leva 1 minuto ou mais para conjurar: não cabe num turno de luta, e fora da luta o jogo não tem o que ela muda",
   "rascunho": null
  },
  {
   "magia": "clone",
   "en": "Clone",
   "circulo": 8,
-  "motivo": "o motor ainda não faz o que ela faz",
+  "motivo": "leva 1 minuto ou mais para conjurar: não cabe num turno de luta, e fora da luta o jogo não tem o que ela muda",
   "rascunho": null
  },
  {
@@ -73,21 +59,21 @@
   "magia": "contingencia",
   "en": "Contingency",
   "circulo": 6,
-  "motivo": "o motor ainda não faz o que ela faz",
+  "motivo": "leva 1 minuto ou mais para conjurar: não cabe num turno de luta, e fora da luta o jogo não tem o que ela muda",
   "rascunho": null
  },
  {
   "magia": "controlarAAgua",
   "en": "Control Water",
   "circulo": 4,
-  "motivo": "o motor ainda não faz o que ela faz",
+  "motivo": "só se narraria: o tabuleiro ainda não guarda o que ela muda",
   "rascunho": "save"
  },
  {
   "magia": "controlarOClima",
   "en": "Control Weather",
   "circulo": 8,
-  "motivo": "o motor ainda não faz o que ela faz",
+  "motivo": "só se narraria: o tabuleiro ainda não guarda o que ela muda",
   "rascunho": null
  },
  {
@@ -101,63 +87,56 @@
   "magia": "criacao",
   "en": "Creation",
   "circulo": 5,
-  "motivo": "o motor ainda não faz o que ela faz",
+  "motivo": "só se narraria: o tabuleiro ainda não guarda o que ela muda",
   "rascunho": null
  },
  {
   "magia": "semiplano",
   "en": "Demiplane",
   "circulo": 8,
-  "motivo": "o motor ainda não faz o que ela faz",
+  "motivo": "só se narraria: o tabuleiro ainda não guarda o que ela muda",
   "rascunho": null
  },
  {
   "magia": "convocacaoInstantaneaDeDrawmij",
   "en": "Drawmij's Instant Summons",
   "circulo": 6,
-  "motivo": "o motor ainda não faz o que ela faz",
+  "motivo": "leva 1 minuto ou mais para conjurar: não cabe num turno de luta, e fora da luta o jogo não tem o que ela muda",
   "rascunho": null
  },
  {
   "magia": "sonho",
   "en": "Dream",
   "circulo": 5,
-  "motivo": "o motor ainda não faz o que ela faz",
+  "motivo": "só se narraria: o tabuleiro ainda não guarda o que ela muda",
   "rascunho": "save"
- },
- {
-  "magia": "formaEterea",
-  "en": "Etherealness",
-  "circulo": 7,
-  "motivo": "o motor ainda não faz o que ela faz",
-  "rascunho": null
  },
  {
   "magia": "fabricar",
   "en": "Fabricate",
   "circulo": 4,
-  "motivo": "o motor ainda não faz o que ela faz",
+  "motivo": "leva 1 minuto ou mais para conjurar: não cabe num turno de luta, e fora da luta o jogo não tem o que ela muda",
   "rascunho": null
  },
  {
   "magia": "encontrarOCaminho",
   "en": "Find the Path",
   "circulo": 6,
-  "motivo": "o motor ainda não faz o que ela faz",
+  "motivo": "leva 1 minuto ou mais para conjurar: não cabe num turno de luta, e fora da luta o jogo não tem o que ela muda",
   "rascunho": null
  },
  {
   "magia": "portal",
   "en": "Gate",
   "circulo": 9,
-  "motivo": "o motor ainda não faz o que ela faz",
+  "motivo": "só se narraria: o tabuleiro ainda não guarda o que ela muda",
   "rascunho": null
  },
  {
   "magia": "terrenoAlucinogeno",
   "en": "Hallucinatory Terrain",
   "circulo": 4,
-  "motivo": "o motor ainda não faz o que ela faz",
+  "motivo": "só se narraria: o tabuleiro ainda não guarda o que ela muda",
   "rascunho": null
  },
  {
@@ -171,112 +150,91 @@
   "magia": "bauSecretoDeLeomund",
   "en": "Leomund's Secret Chest",
   "circulo": 4,
-  "motivo": "o motor ainda não faz o que ela faz",
+  "motivo": "só se narraria: o tabuleiro ainda não guarda o que ela muda",
   "rascunho": null
  },
  {
   "magia": "recipienteArcano",
   "en": "Magic Jar",
   "circulo": 6,
-  "motivo": "o motor ainda não faz o que ela faz",
+  "motivo": "leva 1 minuto ou mais para conjurar: não cabe num turno de luta, e fora da luta o jogo não tem o que ela muda",
   "rascunho": null
  },
  {
   "magia": "miragemArcana",
   "en": "Mirage Arcane",
   "circulo": 7,
-  "motivo": "o motor ainda não faz o que ela faz",
+  "motivo": "só se narraria: o tabuleiro ainda não guarda o que ela muda",
   "rascunho": null
  },
  {
   "magia": "moverATerra",
   "en": "Move Earth",
   "circulo": 6,
-  "motivo": "o motor ainda não faz o que ela faz",
-  "rascunho": null
- },
- {
-  "magia": "criarPassagem",
-  "en": "Passwall",
-  "circulo": 5,
-  "motivo": "o motor ainda não faz o que ela faz",
+  "motivo": "só se narraria: o tabuleiro ainda não guarda o que ela muda",
   "rascunho": null
  },
  {
   "magia": "aliadoPlanar",
   "en": "Planar Ally",
   "circulo": 6,
-  "motivo": "o motor ainda não faz o que ela faz",
+  "motivo": "leva 1 minuto ou mais para conjurar: não cabe num turno de luta, e fora da luta o jogo não tem o que ela muda",
   "rascunho": null
  },
  {
   "magia": "vinculoPlanar",
   "en": "Planar Binding",
   "circulo": 5,
-  "motivo": "o motor ainda não faz o que ela faz",
+  "motivo": "leva 1 minuto ou mais para conjurar: não cabe num turno de luta, e fora da luta o jogo não tem o que ela muda",
   "rascunho": null
- },
- {
-  "magia": "muralhaPrismatica",
-  "en": "Prismatic Wall",
-  "circulo": 9,
-  "motivo": "o motor ainda não faz o que ela faz",
-  "rascunho": "save"
  },
  {
   "magia": "ilusaoProgramada",
   "en": "Programmed Illusion",
   "circulo": 6,
-  "motivo": "o motor ainda não faz o que ela faz",
+  "motivo": "só se narraria: o tabuleiro ainda não guarda o que ela muda",
   "rascunho": null
  },
  {
   "magia": "projetarImagem",
   "en": "Project Image",
   "circulo": 7,
-  "motivo": "o motor ainda não faz o que ela faz",
+  "motivo": "só se narraria: o tabuleiro ainda não guarda o que ela muda",
   "rascunho": null
  },
  {
   "magia": "sequestro",
   "en": "Sequester",
   "circulo": 7,
-  "motivo": "o motor ainda não faz o que ela faz",
+  "motivo": "só se narraria: o tabuleiro ainda não guarda o que ela muda",
   "rascunho": null
  },
  {
   "magia": "simulacro",
   "en": "Simulacrum",
   "circulo": 7,
-  "motivo": "o motor ainda não faz o que ela faz",
+  "motivo": "leva 1 minuto ou mais para conjurar: não cabe num turno de luta, e fora da luta o jogo não tem o que ela muda",
   "rascunho": null
  },
  {
   "magia": "moldarRochas",
   "en": "Stone Shape",
   "circulo": 4,
-  "motivo": "o motor ainda não faz o que ela faz",
+  "motivo": "só se narraria: o tabuleiro ainda não guarda o que ela muda",
   "rascunho": null
  },
  {
   "magia": "simbolo",
   "en": "Symbol",
   "circulo": 7,
-  "motivo": "o motor ainda não faz o que ela faz",
+  "motivo": "leva 1 minuto ou mais para conjurar: não cabe num turno de luta, e fora da luta o jogo não tem o que ela muda",
   "rascunho": "save"
  },
  {
   "magia": "circuloDeTeletransporte",
   "en": "Teleportation Circle",
   "circulo": 5,
-  "motivo": "o motor ainda não faz o que ela faz",
-  "rascunho": null
- },
- {
-  "magia": "caminharEmArvores",
-  "en": "Tree Stride",
-  "circulo": 5,
-  "motivo": "o motor ainda não faz o que ela faz",
+  "motivo": "leva 1 minuto ou mais para conjurar: não cabe num turno de luta, e fora da luta o jogo não tem o que ela muda",
   "rascunho": null
  },
  {
@@ -285,12 +243,5 @@
   "circulo": 8,
   "motivo": "a mecânica está na tabela; leva 1 minuto ou mais para conjurar, e espera a preparação fora da luta",
   "rascunho": "save"
- },
- {
-  "magia": "desejo",
-  "en": "Wish",
-  "circulo": 9,
-  "motivo": "o motor ainda não faz o que ela faz",
-  "rascunho": null
  }
 ]

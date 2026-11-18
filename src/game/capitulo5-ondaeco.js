@@ -230,6 +230,8 @@ export function criarOndaEco(app) {
   }
   async function acordarGuarita() {
     salvo.esqueletos = 'luta';
+    // os mortos desenhados no chão da guarita são os que levantam: saem da pintura (a peça da FA sem eles)
+    enc.field.alternarSobreposicao?.('guaritaSemMortos', true);
     await painel(TEXTOS.guarita, { escolhas: [{ rotulo: 'Às armas!', valor: 'luta', primaria: true }] });
     // O livro: os mortos só se levantam na rodada DEPOIS da entrada, então o grupo age primeiro (eles perdem a rodada 1).
     luta(mortosDaGuarita.filter((f) => !f.dead), 'nossa');
@@ -321,6 +323,7 @@ export function criarOndaEco(app) {
   }
   async function acordarZumbis() {
     salvo.zumbis = 'luta';
+    enc.field.alternarSobreposicao?.('fundicaoSemCorpos', true);
     await painel(TEXTOS.zumbis, { escolhas: [{ rotulo: 'Às armas!', valor: 'luta', primaria: true }] });
     const b = zumbis.filter((f) => !f.dead);
     deitados(b);
@@ -1063,6 +1066,8 @@ export function criarOndaEco(app) {
             const r = teste(c, 'atletismo', 10);
             if (!r.passou) { await painel(TEXTOS.estatuaEscorrega, { teste: r }); return; }
             salvo.olhosArrancados = (salvo.olhosArrancados ?? 0) + 1;
+            // a esmeralda sai na mão de quem subiu, caia o teto ou não (revisão de 2026-11-13: antes não se ganhava nada)
+            guardar(c, 'olhoDeDumathoin', 1);
             // O OBELISCO: QUALQUER olho arrancado pede Destreza CD 12 de quem arrancou; falhou, os seis pilares
             // cedem (a Mina só derrubava no segundo olho). O teto cai em cada criatura da sala — Destreza CD 15,
             // 2d10 de pedra, metade no sucesso — e quem ainda estiver lá uma rodada depois é soterrado.
@@ -1134,6 +1139,7 @@ export function criarOndaEco(app) {
             return;
           }
           salvo.itensForja = true;
+          enc.field.alternarSobreposicao?.('forjaSemItens', true);
           (c.weapons ??= []).push('lightbringer');
           garantirInventario(c).bag.push({ id: 'dragonguard', tipo: 'armadura', qtd: 1 });
           feitos.temLightbringer = true;
@@ -1395,6 +1401,10 @@ export function criarOndaEco(app) {
     textoDoDescanso: () => ['Um descanso encostado numa parede de pedra lavrada, com o som das ondas ao longe.'],
     async iniciar() {
       prepararExploracao();
+      // o que o grupo já mudou numa visita anterior fica mudado no desenho
+      if (salvo.esqueletos) enc.field.alternarSobreposicao?.('guaritaSemMortos', true);
+      if (salvo.zumbis) enc.field.alternarSobreposicao?.('fundicaoSemCorpos', true);
+      if (salvo.itensForja) enc.field.alternarSobreposicao?.('forjaSemItens', true);
       await painel(TEXTOS.chegada);
       // quem sai e volta à mina deixou passar mais de uma hora: a caveira não tratada já reacendeu
       if (salvo.caveiraRestos && !salvo.caveiraApagada) salvo.caveiraVolta = true;

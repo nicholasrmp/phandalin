@@ -32,6 +32,8 @@ export const SUBCLASSES_XGE = {
       fonte: 'xge',
       niveis: { 3: ['ancestralProtectors'], 6: ['spiritShield'], 10: ['consultTheSpirits'], 14: ['vengefulAncestors'] },
       escalas: { dadosDoEscudoEspiritual: ate([[1, '2d6'], [10, '3d6'], [14, '4d6']]) },
+      recursos: { consultTheSpirits: (n) => (n >= 10 ? 1 : 0) },
+      voltamNoCurto: ['consultTheSpirits'],
     },
     arautoDaTempestade: {
       chave: 'Barbarian|Path of the Storm Herald',
@@ -139,6 +141,7 @@ export const SUBCLASSES_XGE = {
       chave: 'Rogue|Inquisitive',
       fonte: 'xge',
       niveis: { 3: ['earForDeceit', 'eyeForDetail', 'insightfulFighting'], 9: ['steadyEye'], 13: ['unerringEye'], 17: ['eyeForWeakness'] },
+      recursos: { unerringEye: (n, c) => (n >= 13 ? Math.max(1, abilityMod(c.abilities.wis)) : 0) },
     },
     mentor: {
       chave: 'Rogue|Mastermind',
@@ -215,8 +218,8 @@ export const SUBCLASSES_XGE = {
       chave: 'Ranger|Horizon Walker',
       fonte: 'xge',
       niveis: { 3: ['detectPortal', 'planarWarrior'], 7: ['etherealStep'], 11: ['distantStrike'], 15: ['spectralDefense'] },
-      recursos: { etherealStep: (n) => (n >= 7 ? 1 : 0) },
-      voltamNoCurto: ['etherealStep'],
+      recursos: { etherealStep: (n) => (n >= 7 ? 1 : 0), detectPortal: () => 1 },
+      voltamNoCurto: ['etherealStep', 'detectPortal'],
       escalas: { dadosDoGuerreiroPlanar: (n) => (n >= 11 ? '2d8' : '1d8') },
       // O Círculo de Teletransporte do 17º não existe no jogo.
       magiasDoDominio: { 3: ['protecaoBemMal'], 5: ['passoNebuloso'], 9: ['velocidade'], 13: ['banimento'] },
@@ -241,6 +244,7 @@ export const SUBCLASSES_XGE = {
       recursos: {
         balmOfTheSummerCourt: (n) => n,
         hiddenPaths: (n, c) => (n >= 10 ? Math.max(1, abilityMod(c.abilities.wis)) : 0),
+        walkerInDreams: (n) => (n >= 14 ? 1 : 0),
       },
     },
     pastor: {
@@ -325,7 +329,7 @@ export const SUBCLASSES_XGE = {
       chave: 'Cleric|Grave Domain',
       fonte: 'xge',
       niveis: { 1: ['circleOfMortality', 'eyesOfTheGrave'], 2: ['pathToTheGrave'], 6: ['sentinelAtDeathsDoor'], 8: ['potentSpellcasting'], 17: ['keeperOfSouls'] },
-      recursos: { sentinelAtDeathsDoor: (n, c) => (n >= 6 ? Math.max(1, abilityMod(c.abilities.wis)) : 0) },
+      recursos: { sentinelAtDeathsDoor: (n, c) => (n >= 6 ? Math.max(1, abilityMod(c.abilities.wis)) : 0), eyesOfTheGrave: (n, c) => Math.max(1, abilityMod(c.abilities.wis)) },
       magiasDoDominio: {
         1: ['perdicao', 'vidaFalsa'],
         3: ['repousoTranquilo', 'raioDoEnfraquecimento'],
@@ -346,7 +350,7 @@ export const RECURSOS_XGE = {
   // ---- Caminho do Guardião Ancestral
   ancestralProtectors: M('Ancestral Protectors', 'passiva'),
   spiritShield: M('Spirit Shield', 'reacao', { nota: 'No jogo a reação sai sozinha, no aliado que leva 5 ou mais de dano (ou que cairia).' }),
-  consultTheSpirits: S('Consult the Spirits', 'fora', 'o jogo não tem Clarividência, e o Augúrio é magia de ritual fora da luta'),
+  consultTheSpirits: M('Consult the Spirits', 'fora', { nota: 'O Augúrio e a Clarividência aparecem no menu de magia fora da luta, sem espaço; o sensor ser um espírito é só aparência.' }),
   vengefulAncestors: M('Vengeful Ancestors', 'passiva'),
   // ---- Caminho do Arauto da Tempestade
   stormAura: M('Storm Aura', 'bonus', { junta: ['Desert', 'Sea', 'Tundra'], nota: 'O ambiente se escolhe uma vez, no 3º nível.' }),
@@ -355,7 +359,7 @@ export const RECURSOS_XGE = {
   ragingStorm: M('Raging Storm', 'reacao', { junta: ['Desert', 'Sea', 'Tundra'] }),
   // ---- Caminho do Fanático
   divineFury: M('Divine Fury', 'passiva'),
-  warriorOfTheGods: S('Warrior of the Gods', 'fora', 'o jogo não cobra o componente material das magias que trazem de volta à vida'),
+  warriorOfTheGods: M('Warrior of the Gods', 'fora', { nota: 'O jogo não cobra componente material de magia nenhuma (o diamante do Revivificar inclusive), então quem traz o Zelote de volta à vida já não paga nada, como o livro dá.' }),
   fanaticalFocus: M('Fanatical Focus', 'passiva', { nota: 'No jogo o novo teste sai sozinho, no primeiro que falhar.' }),
   zealousPresence: M('Zealous Presence', 'bonus', { nota: 'Vale para todos os aliados a até 18 m, até dez.' }),
   rageBeyondDeath: M('Rage beyond Death', 'passiva'),
@@ -398,7 +402,7 @@ export const RECURSOS_XGE = {
   elegantCourtier: M('Elegant Courtier', 'passiva'),
   tirelessSpirit: M('Tireless Spirit', 'passiva'),
   rapidStrike: M('Rapid Strike', 'passiva', { nota: 'No jogo sai sozinho, no primeiro ataque com vantagem da ação de Atacar.' }),
-  strengthBeforeDeath: S('Strength before Death', 'reacao', 'o jogo não tem turno fora da ordem'),
+  strengthBeforeDeath: S('Strength before Death', 'reacao', 'o jogo não tem turno fora da ordem: a vez do herói só vem na do lado dele'),
   // ---- Espadachim
   fancyFootwork: M('Fancy Footwork', 'passiva'),
   rakishAudacity: M('Rakish Audacity', 'passiva'),
@@ -406,22 +410,22 @@ export const RECURSOS_XGE = {
   elegantManeuver: M('Elegant Maneuver', 'bonus'),
   masterDuelist: M('Master Duelist', 'passiva', { nota: 'No jogo sai sozinho, no primeiro ataque que erra.' }),
   // ---- Batedor
-  skirmisher: S('Skirmisher', 'reacao', 'o jogo não tem movimento fora do turno'),
+  skirmisher: M('Skirmisher', 'reacao', { nota: 'A reação sai sozinha, e só quando o batedor está com metade dos PV ou menos: ele vai para a casa mais longe dos inimigos.' }),
   survivalist: M('Survivalist', 'passiva'),
   superiorMobility: M('Superior Mobility', 'passiva'),
   ambushMaster: M('Ambush Master', 'passiva', { nota: 'O jogo rola uma iniciativa por lado: a vantagem vale para o lado do ladino.' }),
   suddenStrike: M('Sudden Strike', 'bonus'),
   // ---- Inquisitivo
-  earForDeceit: S('Ear for Deceit', 'passiva', 'o jogo não tem teste de Intuição contra mentira'),
-  eyeForDetail: S('Eye for Detail', 'bonus', 'o jogo não tem ação de procurar dentro da luta'),
+  earForDeceit: M('Ear for Deceit', 'passiva', { nota: 'Vale em todo teste de Intuição, não só no de perceber mentira.' }),
+  eyeForDetail: M('Eye for Detail', 'bonus', { nota: 'Na luta, a Percepção acha quem se escondeu; a Investigação de pistas é o verbo Investigar, fora da luta.' }),
   insightfulFighting: M('Insightful Fighting', 'bonus'),
-  steadyEye: S('Steady Eye', 'passiva', 'o jogo não tem ação de procurar dentro da luta'),
-  unerringEye: S('Unerring Eye', 'acao', 'o jogo não marca ilusão sem desfazê-la'),
+  steadyEye: M('Steady Eye', 'passiva', { nota: 'Fora da luta não há turno, e a vantagem vale sempre (também +5 na Percepção passiva).' }),
+  unerringEye: M('Unerring Eye', 'acao', { nota: 'O registro diz o que é ilusão (as cópias, as imagens, o borrão) e quem não está na forma de verdade, sem desfazer nada.' }),
   eyeForWeakness: M('Eye for Weakness', 'passiva'),
   // ---- Mentor
   masterOfIntrigue: S('Master of Intrigue', 'fora', 'o jogo não tem kits de disfarce nem idiomas'),
   masterOfTactics: M('Master of Tactics', 'bonus', { nota: 'No jogo, a ajuda é para o ataque: o próximo ataque de um aliado contra o inimigo escolhido tem vantagem.' }),
-  insightfulManipulator: S('Insightful Manipulator', 'fora', 'o jogo não compara os atributos de duas criaturas'),
+  insightfulManipulator: M('Insightful Manipulator', 'fora', { nota: 'No botão direito sobre quem conversa, fora da luta: "Medir a mente" (Inteligência e Sabedoria) e "Medir a presença" (Carisma e níveis de classe), maior, igual ou menor que as do herói. O livro deixa escolher quaisquer duas; aqui são esses dois pares.' }),
   misdirection: M('Misdirection', 'reacao', { nota: 'No jogo sai sozinho, quando há um inimigo colado em você entre você e quem ataca.' }),
   soulOfDeceit: S('Soul of Deceit', 'fora', 'o jogo não tem telepatia nem magia que obrigue a dizer a verdade'),
   // ---- Caminho do Mestre Bêbado
@@ -461,7 +465,7 @@ export const RECURSOS_XGE = {
   stalkersFlurry: M("Stalker's Flurry", 'passiva'),
   shadowyDodge: M('Shadowy Dodge', 'reacao', { nota: 'No jogo a reação sai sozinha, no primeiro ataque sem vantagem contra ele na rodada.' }),
   // ---- Andarilho do Horizonte
-  detectPortal: S('Detect Portal', 'acao', 'o jogo não tem portais planares'),
+  detectPortal: M('Detect Portal', 'acao', { nota: 'A ação do botão: a distância e a direção do portal planar mais perto (o do mapa, a fenda para o Reino Distante, o Portal Arcano). Uma vez por descanso curto.' }),
   planarWarrior: M('Planar Warrior', 'bonus'),
   etherealStep: M('Ethereal Step', 'bonus', { nota: 'Atravessar parede e objeto no Plano Etéreo não existe no jogo.' }),
   distantStrike: M('Distant Strike', 'livre', { nota: 'No jogo o teleporte é para a casa livre ao lado do alvo, a até 3 m de onde ele está.' }),
@@ -476,9 +480,9 @@ export const RECURSOS_XGE = {
   balmOfTheSummerCourt: M('Balm of the Summer Court', 'bonus'),
   hearthOfMoonlightAndShadow: S('Hearth of Moonlight and Shadow', 'fora', 'o jogo não tem acampamento montado no mapa'),
   hiddenPaths: M('Hidden Paths', 'bonus', { nota: 'No jogo vale o teleporte de si mesmo; levar outra criatura não existe.' }),
-  walkerInDreams: S('Walker in Dreams', 'fora', 'o jogo não tem Sonho, Vidência nem Círculo de Teletransporte'),
+  walkerInDreams: M('Walker in Dreams', 'fora', { nota: 'Depois de um descanso curto, a Vidência no menu de magia fora da luta, sem espaço, uma vez por descanso longo. O Sonho e o Círculo de Teletransporte não estão no jogo.' }),
   // ---- Círculo do Pastor
-  speechOfTheWoods: S('Speech of the Woods', 'fora', 'o jogo não tem idiomas nem conversa com animais'),
+  speechOfTheWoods: M('Speech of the Woods', 'fora', { nota: 'Vale como um Falar com Animais que nunca acaba: o "Falar com o animal" do botão direito e a vantagem em Lidar com Animais. O silvestre não entra: o jogo não tem idiomas.' }),
   spiritTotem: M('Spirit Totem', 'bonus', { nota: 'No jogo o espírito nasce na casa do druida e não muda de lugar.' }),
   mightySummoner: M('Mighty Summoner', 'passiva'),
   guardianSpirit: M('Guardian Spirit', 'passiva'),
@@ -499,7 +503,7 @@ export const RECURSOS_XGE = {
   tempestuousMagic: M('Tempestuous Magic', 'bonus', { nota: 'No jogo é depois da magia: um salto de até 3 m pelo ar.' }),
   windSpeaker: S('Wind Speaker', 'fora', 'o jogo não tem idiomas'),
   heartOfTheStorm: M('Heart of the Storm', 'passiva', { nota: 'No jogo a descarga vai nos inimigos a até 3 m, em dano elétrico.' }),
-  stormGuide: S('Storm Guide', 'acao', 'o jogo não tem chuva nem vento com direção'),
+  stormGuide: S('Storm Guide', 'acao', 'o jogo não tem chuva, e o vento dele (o da Controlar Ventos) não tem direção'),
   stormsFury: M("Storm's Fury", 'reacao'),
   windSoul: M('Wind Soul', 'passiva', { nota: 'Dar voo aos aliados não existe no jogo.' }),
   // ---- O Celestial
@@ -529,7 +533,7 @@ export const RECURSOS_XGE = {
   saintOfForgeAndFire: M('Saint of Forge and Fire', 'passiva'),
   // ---- Domínio da Sepultura
   circleOfMortality: M('Circle of Mortality', 'passiva'),
-  eyesOfTheGrave: S('Eyes of the Grave', 'acao', 'o jogo não tem sentido de mortos-vivos escondidos'),
+  eyesOfTheGrave: M('Eyes of the Grave', 'acao', { nota: 'O registro diz quantos e quem são, e o morto-vivo escondido deixa de estar.' }),
   pathToTheGrave: M('Channel Divinity: Path to the Grave', 'acao'),
   sentinelAtDeathsDoor: M("Sentinel at Death's Door", 'reacao', { nota: 'No jogo a reação sai sozinha, no primeiro crítico que pode desfazer.' }),
   keeperOfSouls: M('Keeper of Souls', 'passiva', { nota: 'No jogo os PV vão para o aliado mais ferido.' }),

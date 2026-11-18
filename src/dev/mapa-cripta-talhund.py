@@ -250,6 +250,18 @@ INTERATIVOS = [
           'Estudando os entalhes, dá para achar toda porta secreta da cripta: há uma em cada uma das três salas que encostam no santuário redondo.'),
     Z.obj(13, 21, 'paredesDeLivros', 'Olhar as paredes', 'Livros abertos entalhados na pedra, de cima a baixo, com letra miúda: a obra do historiador, '
           'copiada pelos alunos. Mais fábula que história.'),
+    # o que o livro descreve e a cena não usa em roteiro (revisão de 2026-11-13: a cripta era magra para olhar)
+    Z.obj(37, 24, 'estatuasDoPatamar', 'Olhar as estátuas', 'Entre cada par de sarcófagos, um guerreiro anão de pedra, de pé, '
+          'rachado do elmo às botas.'),
+    Z.obj(15, 10, 'entalhesDeBatalha', 'Olhar os entalhes', 'Anões lutando por todas as paredes: contra gigantes, contra orcs, '
+          'contra coisas que o entalhador nem sabia desenhar direito. Só a parede leste é lisa, lisa até demais.'),
+    Z.obj(11, 6, 'lajesVazias', 'Olhar as lajes', 'Catorze lajes com o vão de um guerreiro deitado, e nenhuma ocupada. Nas paredes, '
+          'sacerdotes de machado em punho, com um fogo claro saindo das mãos.'),
+    Z.obj(28, 17, 'picosEntalhados', 'Olhar os entalhes', 'Picos de montanha enormes entalhados na parede, cada um em cima de uma '
+          'gema pequena encravada na pedra.'),
+    Z.obj(40, 17, 'mineirosEntalhados', 'Olhar os entalhes', 'Sete mineiros anões de picareta erguida, em tamanho natural.',
+          'investigar', 12, 'Cada entalhe é uma tampa: atrás dele há um nicho, e no nicho um mineiro que virou sacerdote, os mais '
+          'venerados de todos os Talhund.', 'Os sete mineiros'),
 ]
 
 

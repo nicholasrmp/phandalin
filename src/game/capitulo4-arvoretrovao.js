@@ -31,8 +31,9 @@
 //
 // AS ÁREAS DO LIVRO (1, 2, 3, 5, 8, 9, 11, 12), ligadas à construção em que o
 // livro as põe, com as quantidades dele: ramos secos (Galho Infectado, 25 XP)
-// 2 / 6 / 8 / 6 nas áreas 1 / 2 / 5 / 12; zumbis das cinzas (zumbi com a Brisa
-// das Cinzas) 4 / 2 / 5 nas áreas 3 / 8 / 11. Medido no 3º nível (20 lutas):
+// 2 / 6 / 8 / 6 nas áreas 1 / 2 / 5 / 12; zumbis das cinzas (na Mina, zumbi com a
+// Brisa das Cinzas; no Obelisco, desde 2026-11-13, o zumbi comum que vira nuvem de cinza ao morrer) 4 / 2 / 5 nas áreas
+// 3 / 8 / 11 (o Obelisco: 6 / 4 / 5). Medido no 3º nível (20 lutas):
 // Cavalo Pardo 11% dos PV, velha ferraria 6%, cabana com ramos 10% (com os dois
 // da vizinha, 6 viram 8), fazenda de ramos 6% (4 viram 8 na rodada seguinte),
 // tecelagem 6%. Os tesouros do livro: o baú da cabana ocidental e a caixa da
@@ -164,8 +165,8 @@ export function criarArvoreTrovao(app, config) {
   // OS BANDOS DO LIVRO, nas construções e nas quantidades dele (ver o mapa
   // `OBJETOS-ARVORE-TROVAO.md`). RAMOS SECOS são os Galhos Infectados: 25 XP e 4 PV
   // cada, o bloco do livro (2 na cabana ocidental, 6 na cabana com ramos, 8 na
-  // fazenda de ramos, 6 na tecelagem). ZUMBIS DAS CINZAS são o zumbi do SRD com a
-  // Brisa das Cinzas: 4 no Cavalo Pardo, 2 na ferraria, 5 na velha guarnição.
+  // fazenda de ramos, 6 na tecelagem). ZUMBIS DAS CINZAS são o zumbi do SRD (o Obelisco: sem a Brisa das Cinzas da
+  // Mina, só a nuvem de cinza ao morrer, `monsters/mortosvivos.js`): 6 no Cavalo Pardo, 4 na ferraria, 5 na guarnição.
   // O Obelisco pôs DOZE ramos na fazenda: as letras vão até o L. E os ESPETOS INFECTADOS (o arbusto-agulha) entram
   // junto com os ramos do mesmo mato, no mesmo bando — é a mesma luta, e o fim dela conta os dois.
   const ramosDe = (chave) => ninho[chave].map((pos, i) => nasce('galhoInfectado', pos, 'ABCDEFGHIJKL'[i]));
@@ -648,14 +649,15 @@ export function criarArvoreTrovao(app, config) {
   // O FAVOR que Reidoth pede ("que essa vila fique em paz"): qualquer bando da vila resolvido.
   // O dragão saiu da torre (morto ou expulso): é a condição de Reidoth para guiar o grupo.
   const dragaoSaiu = () => ['morto', 'expulso'].includes(salvo.dragao);
-  // No livro, Favric leva uma poção de voo no pescoço. O jogo é 2.5D e não tem voo para o herói: no lugar vai uma poção de invisibilidade.
+  // No livro, Favric leva uma poção de voo no pescoço. Antes o jogo não tinha voo e dava invisibilidade no lugar; hoje a poção de voo
+  // do Livro do Mestre funciona (a condição `voando`), e vai a do livro (revisão de 2026-11-13).
   async function saquearFavric() {
     if (salvo.pocaoDeFavric || !chefeDoCulto) return;
     salvo.pocaoDeFavric = true;
     const quem = herois()[0];
     if (!quem) return;
-    guardar(quem, 'pocaoDeInvisibilidade', 1);
-    await painel(`No pescoço de Favric, num cordão: um frasco de vidro fosco com um líquido que quase não se vê. ${quem.name} guarda.`);
+    guardar(quem, 'pocaoDeVoo', 1);
+    await painel(`No pescoço de Favric, num cordão: um frasco de vidro com um líquido claro em que boia uma pena branca. ${quem.name} guarda.`);
   }
 
   // ------------------------------------------------- o culto do dragão ----

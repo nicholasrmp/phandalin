@@ -865,6 +865,23 @@ def main():
             andaram += 1
         if mapa['luz'][l['pos']['y']][l['pos']['x']] == '2':
             l['soNoEscuro'] = True
+    # AS DUAS PEÇAS ACESAS DA FA (revisão de 2026-11-13): a lareira da cabana (`CottageFireplace`, 13,26, 4x6) e o lampião
+    # da casa do leste (`CottageLantern`, 51,31, 4x4) são o cômodo PINTADO ACESO; a arte base é a apagada. Cada uma vai com a
+    # chama que está dentro dela (`luz.sobreposicao`, que `game/fogo.js` acende e apaga junto). No disco como
+    # `trovao-lareira-acesa.webp` e `trovao-lampiao-aceso.webp` — SEM o prefixo `arvoretrovao-`, que `recortar_frente`
+    # apaga a cada rodada para refazer as copas. Sem o arquivo, a peça não entra.
+    for pid, arquivo, (px, py, pw, ph) in [('lareiraAcesa', 'trovao-lareira-acesa.webp', (13, 26, 4, 6)),
+                                           ('lampiaoAceso', 'trovao-lampiao-aceso.webp', (51, 31, 4, 4))]:
+        if not os.path.exists(os.path.join(RAIZ, 'public', 'mapas', 'fa', arquivo)):
+            continue
+        chama = next((l for l in mapa['luzes'] if px <= l['pos']['x'] < px + pw and py <= l['pos']['y'] < py + ph
+                      and l.get('tipo') in ('fogueira', 'tocha')), None)
+        if not chama:
+            raise SystemExit(f'a peça {pid} ficou sem chama dentro dela: a luz da FA mudou de lugar')
+        print(f'  peça acesa {pid}: com a chama de {chama["pos"]}')
+        chama['sobreposicao'] = pid
+        mapa['sobreposicoes'].append({'id': pid, 'url': f'/mapas/fa/{arquivo}', 'x': px, 'y': py, 'w': pw, 'h': ph,
+                                      'ligada': not chama.get('apagada') and not chama.get('soNoEscuro')})
     # os seis nomes sem construção viram um quadrado de rua em volta da semente, para `naSala` responder
     for nome, (sx, sy) in SEM_PREDIO.items():
         # `vivas` em vez de "não é rocha": desde que a árvore barra o passo, o quadrado de rua pode cair em

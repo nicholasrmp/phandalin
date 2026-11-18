@@ -322,5 +322,70 @@ export const CLASSES_DAS_MAGIAS_XGE = {
   "bardo",
   "feiticeiro",
   "mago"
+ ],
+ "dragaoIlusorio": [
+  "mago"
+ ],
+ "moldarTerra": [
+  "druida",
+  "feiticeiro",
+  "mago"
+ ],
+ "transmutarRocha": [
+  "druida",
+  "mago"
+ ],
+ "esferaAquosa": [
+  "druida",
+  "feiticeiro",
+  "mago"
+ ],
+ "redemoinho": [
+  "druida",
+  "feiticeiro",
+  "mago"
+ ],
+ "vinculoComBesta": [
+  "druida",
+  "patrulheiro"
+ ],
+ "ossosDaTerra": [
+  "druida"
+ ],
+ "metamorfoseEmMassa": [
+  "bardo",
+  "feiticeiro",
+  "mago"
+ ],
+ "dispersar": [
+  "feiticeiro",
+  "bruxo",
+  "mago"
+ ],
+ "invocarDemonioMaior": [
+  "bruxo",
+  "mago"
+ ],
+ "invocarDemoniosMenores": [
+  "bruxo",
+  "mago"
+ ],
+ "furiaDaNatureza": [
+  "druida",
+  "patrulheiro"
+ ],
+ "controlarVentos": [
+  "druida",
+  "feiticeiro",
+  "mago"
+ ],
+ "aprimorarPericia": [
+  "bardo",
+  "feiticeiro",
+  "mago"
+ ],
+ "gaiolaDeAlmas": [
+  "bruxo",
+  "mago"
  ]
 };

@@ -66,6 +66,7 @@ export const LIVRO_VGM = {
     "armaduraArcana",
     "misselMagico",
     "escudoArcano",
+    "trancaArcana",
     "invisibilidade",
     "contramagia",
     "dissiparMagia",
@@ -100,6 +101,7 @@ export const LIVRO_VGM = {
     "armaduraArcana": 16,
     "misselMagico": 16,
     "escudoArcano": 16,
+    "trancaArcana": 16,
     "invisibilidade": 16,
     "contramagia": 16,
     "dissiparMagia": 16,
@@ -116,6 +118,9 @@ export const LIVRO_VGM = {
   "protecaoArcana": 30,
   "traits": [
    "protecaoArcana"
+  ],
+  "marcas": [
+   "any race"
   ],
   "blurb": "Mago defensivo que absorve dano com sua proteção arcana e a recarrega ao lançar abjurações; usa contramágica, banimento e muralha de energia para neutralizar ameaças enquanto ataca com bola de fogo e cone de frio.",
   "lore": "O abjurador é um mago especializado em magias de proteção, que só se sente tranquilo cercado por camadas de barreiras mágicas. Costuma viver em cidades, onde reis, nobres e mercadores ricos pagam bem por seus serviços. Ele protege mansões, cofres e tesouros com alarmes, trancas arcanas e glifos. Em combate, prefere anular a magia inimiga e se manter intocável a partir para o ataque direto."
@@ -423,6 +428,9 @@ export const LIVRO_VGM = {
    }
   },
   "traits": [],
+  "marcas": [
+   "any race"
+  ],
   "blurb": "Conjurador frágil que prefere atacar à distância com raio de fogo e queimar grupos próximos com mãos flamejantes. Usa escudo para se proteger, mas cai rápido se for alcançado.",
   "lore": "O aprendiz é um estudante de magia arcana ainda no começo da jornada. Costuma viver em cidades, ligado a uma academia ou a um mago mais experiente. Em troca das lições, faz tarefas domésticas como cozinhar, limpar e carregar livros. Em combate é inseguro e evita a linha de frente, confiando nos poucos feitiços que domina."
  },
@@ -497,6 +505,7 @@ export const LIVRO_VGM = {
     "muralhaDeFogo",
     "comunhaoComANatureza",
     "curarFerimentosEmMassa",
+    "caminharEmArvores",
     "curaTotal",
     "banqueteDeHerois",
     "raioSolar",
@@ -539,6 +548,7 @@ export const LIVRO_VGM = {
     "muralhaDeFogo": 17,
     "comunhaoComANatureza": 17,
     "curarFerimentosEmMassa": 17,
+    "caminharEmArvores": 17,
     "curaTotal": 17,
     "banqueteDeHerois": 17,
     "raioSolar": 17,
@@ -549,6 +559,9 @@ export const LIVRO_VGM = {
   },
   "traits": [
    "t_mudarDeForma"
+  ],
+  "marcas": [
+   "any race"
   ],
   "blurb": "Conjurador de 18º nível baseado em Sabedoria (CD 17) que controla o campo com tempestade de fogo, raio de sol e muralha de fogo, cura aliados e pode assumir a forma de feras ou elementais poderosos.",
   "lore": "O arquidruida é o guardião das maravilhas naturais de uma região inteira. Evita cidades e povoados, e só se envolve com o mundo civilizado quando algo ameaça seriamente o equilíbrio da natureza. Costuma ter druidas aprendizes sob sua orientação. Seu refúgio, em florestas, montanhas ou pântanos, é protegido por feras leais e criaturas feéricas."
@@ -614,8 +627,17 @@ export const LIVRO_VGM = {
     "Arco Longo"
    ]
   },
+  "motorDoLivro": {
+   "olhoDoArqueiro": {
+    "nome": "Olho do Arqueiro",
+    "usos": 3
+   }
+  },
   "traits": [
    "t_olhoDoArqueiro"
+  ],
+  "marcas": [
+   "any race"
   ],
   "blurb": "Atirador que castiga de longe com dois disparos de arco longo por turno e, algumas vezes ao dia, reforça um tiro com precisão extra. Mantenha distância curta para pressioná-lo.",
   "lore": "Arqueiros são combatentes treinados no uso do arco, encontrados tanto em florestas quanto em cidades. Muitos guarnecem muralhas de castelos ou formam a linha de tiro de exércitos. Outros vivem da caça nas bordas das terras selvagens. Há ainda quem venda a pontaria como guarda de caravanas ou a use no banditismo."
@@ -773,8 +795,21 @@ export const LIVRO_VGM = {
     "levitacao": 11
    }
   },
-  "traits": [
-   "t_olharDebilitante"
+  "acoesEspeciais": [
+   {
+    "nome": "Olhar Debilitante",
+    "tipo": "alvo",
+    "alcanceFt": 20,
+    "save": "con",
+    "dc": 13,
+    "condition": "enfraquecido",
+    "rounds": 10,
+    "repete": true
+   }
+  ],
+  "traits": [],
+  "marcas": [
+   "demon"
   ],
   "blurb": "Demônio furtivo que ataca com garras e lança enquanto seu olhar enfraquece os golpes de força dos inimigos. Conjura escuridão, medo e esquentar metal à vontade, desmontando grupos bem armados.",
   "lore": "O babau é um demônio magro e coberto de couro escuro, com um chifre curvo no alto da cabeça e um olhar que drena o vigor alheio. Vive nas sombras do Subterrâneo e nos becos de grandes cidades, onde caça com paciência de assassino. Costuma servir cultos demoníacos ou senhores do Abismo como batedor e matador. Prefere emboscar vítimas isoladas, cobrindo-se de escuridão mágica antes de atacar."
@@ -843,13 +878,19 @@ export const LIVRO_VGM = {
   ],
   "acoesEspeciais": [
    {
+    "nome": "Engolir",
+    "tipo": "engolir",
+    "tamanhoMax": "medium",
+    "dano": "3d6",
+    "tipoDano": "necrótico"
+   },
+   {
     "nome": "Passo Sombrio",
     "tipo": "teleporte",
     "alcanceFt": 30
    }
   ],
   "traits": [
-   "t_engolir",
    "t_conexaoRessonante",
    "furtividadeNasSombras"
   ],
@@ -970,6 +1011,9 @@ export const LIVRO_VGM = {
    "t_cancaoDeDescanso",
    "t_provocacao2Dia"
   ],
+  "marcas": [
+   "any race"
+  ],
   "blurb": "Apoia os aliados com magia de cura e heroísmo enquanto atrapalha os inimigos com zombarias, sono e ondas trovejantes. Sua Provocação pode deixar um alvo com desvantagem em quase tudo por um turno.",
   "lore": "Bardos são artistas itinerantes: poetas, contadores de histórias e músicos que vivem de estrada em estrada. Costumam aparecer em tavernas, nas cortes de mecenas ricos ou acompanhando grupos de aventureiros e mercenários. Lutam com lâmina leve e arco, mas sua verdadeira arma é a voz, capaz de encantar, ferir e inspirar. Podem pertencer a qualquer raça e ter qualquer índole."
  },
@@ -1076,11 +1120,20 @@ export const LIVRO_VGM = {
     "passosSemPegadas": 12
    }
   },
+  "motorDoLivro": {
+   "banidoPeloFogo": {
+    "nome": "Banimento pelo Fogo",
+    "dc": 15
+   }
+  },
   "traits": [
    "metamorfo",
    "t_banimentoPeloFogo",
    "keenSmell",
    "t_devorarAlmas"
+  ],
+  "marcas": [
+   "shapechanger"
   ],
   "blurb": "Cão infernal enorme que morde e dilacera com força, resiste a armas comuns e usa magia para enganar, enfeitiçar e se teleportar. Teme grandes fogueiras, que podem bani-lo para Geena.",
   "lore": "Os barghests nasceram de uma vingança: o General de Geena os criou depois que Maglubiyet, deus dos goblinoides, quebrou um pacto com ele. Eles nascem entre goblins, com aparência de goblin, e só depois descobrem sua verdadeira forma de cão demoníaco. Cada um precisa devorar dezessete almas goblinoides para voltar a Geena e servir nas legiões yugoloth, e prefere caçar chefes e indivíduos poderosos. Vivem disfarçados nas tribos até ficarem fortes, e quando são descobertos os goblins se rebaixam diante deles. Evitam fogueiras grandes, que funcionam como portais de volta ao plano de origem."
@@ -1367,6 +1420,9 @@ export const LIVRO_VGM = {
    }
   ],
   "traits": [],
+  "marcas": [
+   "any race"
+  ],
   "blurb": "Guerreiro blindado que golpeia três vezes por turno com uma glaive de longo alcance e reforça os ataques com destruições divinas. Pode aterrorizar todos os inimigos próximos de uma só vez.",
   "lore": "Cavaleiros negros são antigos paladinos que traíram seus juramentos sagrados e passaram a servir apenas às próprias ambições sombrias. Desprezam tudo o que já defenderam e se aliam de bom grado a demônios e mortos-vivos. Costumam agir em cidades e nas profundezas do Subterrâneo, liderando bandos ou servindo a senhores malignos. Mantêm a disciplina marcial de outrora, mas a usam para oprimir e espalhar medo."
  },
@@ -1508,6 +1564,18 @@ export const LIVRO_VGM = {
     "halfOnSave": true
    }
   ],
+  "motorDoLivro": {
+   "fimDoAlvo": {
+    "nome": "Aura de Aniquilação",
+    "raioFt": 30,
+    "dano": 5,
+    "tipo": "necrótico",
+    "poupaTipos": [
+     "morto-vivo",
+     "corruptor"
+    ]
+   }
+  },
   "aura": {
    "raioFt": 30,
    "quando": "inicioDoAlvo",
@@ -1587,6 +1655,11 @@ export const LIVRO_VGM = {
     "repete": false
    }
   ],
+  "motorDoLivro": {
+   "oleoDoBoggle": {
+    "nome": "Óleo de Boggle"
+   }
+  },
   "traits": [
    "t_oleoDeBoggle",
    "t_fendaDimensional",
@@ -1790,16 +1863,31 @@ export const LIVRO_VGM = {
   "acoesEspeciais": [
    {
     "nome": "Puxar Filamento",
-    "tipo": "alvo",
-    "alcanceFt": 15,
+    "tipo": "puxarAlvo",
     "soAgarrado": true,
+    "alcanceFt": 60,
     "save": "str",
     "dc": 13,
-    "condition": "agarrado",
-    "rounds": 10,
-    "repete": false
+    "mordida": "Garra"
+   },
+   {
+    "nome": "Filamento Adesivo",
+    "tipo": "alvo",
+    "alcanceFt": 60,
+    "save": "dex",
+    "dc": 13,
+    "prende": {
+     "escape": 13
+    },
+    "semPrenderDeNovo": true
    }
   ],
+  "motorDoLivro": {
+   "vulneravelFerido": {
+    "nome": "Sangue Inflamável",
+    "tipo": "fogo"
+   }
+  },
   "traits": [
    "t_filamentoAdesivo",
    "t_sangueInflamavel",
@@ -1900,6 +1988,9 @@ export const LIVRO_VGM = {
   "traits": [
    "indomavelMonstro",
    "t_retomarOFolego"
+  ],
+  "marcas": [
+   "any race"
   ],
   "blurb": "Guerreiro veterano que desfere três golpes por turno com montante ou arco curto, causando dano extra enquanto estiver com mais da metade dos PV. Resiste a efeitos com rolagens repetidas e se recupera no meio da luta.",
   "lore": "Campeões são combatentes de elite forjados em campos de batalha ou em arenas de gladiadores. Entre mercenários, soldados e quem vive da espada, seu nome pesa tanto quanto o de um nobre. Governantes disputam seus serviços, pois ter um campeão ao lado é sinal de prestígio. Podem ser de qualquer povo e costumam ser vistos em cidades e regiões desérticas."
@@ -2204,6 +2295,9 @@ export const LIVRO_VGM = {
    "t_mudarDeForma",
    "keenSmell"
   ],
+  "marcas": [
+   "cloud giant"
+  ],
   "blurb": "Trapaceiro astuto que confunde os inimigos com ilusões, invisibilidade e magias de bardo antes de esmagá-los com a maça-estrela; quando ataca com vantagem, seus golpes causam muito mais dano.",
   "lore": "Os sorridentes são gigantes das nuvens que abraçam a malícia e a enganação como modo de vida. Usam uma máscara de duas faces e vivem nas montanhas e castelos flutuantes de sua gente, armando golpes e brincadeiras cruéis. Mudam de forma para se infiltrar entre povos menores e adoram blefar, roubar e manipular. São imprevisíveis: num momento riem, no outro atacam sem aviso."
  },
@@ -2313,6 +2407,9 @@ export const LIVRO_VGM = {
   ],
   "traits": [
    "t_transporteBenigno"
+  ],
+  "marcas": [
+   "any race"
   ],
   "blurb": "Mago que controla o campo de batalha com teias, nuvens venenosas e tentáculos, além de invocar um elemental. Teleporta-se ou troca de lugar com aliados para escapar do corpo a corpo.",
   "lore": "Conjuradores são magos dedicados à escola de conjuração, capazes de trazer criaturas de outros planos e materializar objetos do nada. Costumam viver em cidades, servindo a quem paga ou perseguindo os próprios estudos. Alguns usam seus poderes para reforçar tropas e esmagar inimigos em batalha. Outros preferem deixar servos invocados vigiando seus covis enquanto estudam em paz."
@@ -2535,6 +2632,19 @@ export const LIVRO_VGM = {
   "multiattack": {
    "count": 2
   },
+  "spellcasting": {
+   "ability": "wis",
+   "cantrips": [],
+   "prepared": [
+    "escuridao"
+   ],
+   "slots": [],
+   "noMotor": true,
+   "conjuraNoTurno": "geral",
+   "porDia": {
+    "escuridao": 1
+   }
+  },
   "explosaoAoMorrer": {
    "pes": 5,
    "save": "con",
@@ -2626,18 +2736,20 @@ export const LIVRO_VGM = {
    {
     "nome": "Dreno de Sangue",
     "tipo": "alvo",
-    "alcanceFt": 15,
+    "alcanceFt": 20,
     "soAgarrado": true,
     "save": "con",
     "dc": 16,
     "damage": "4d10",
     "damageType": "elétrico",
-    "halfOnSave": false,
-    "condition": "agarrado",
-    "rounds": 10,
-    "repete": false
+    "drenaMetade": true
    }
   ],
+  "corpoQuente": {
+   "damage": "1d10",
+   "type": "elétrico",
+   "soCortaOuFura": true
+  },
   "traits": [
    "t_sangueEletrico"
   ],
@@ -2797,6 +2909,9 @@ export const LIVRO_VGM = {
   "traits": [
    "metamorfo"
   ],
+  "marcas": [
+   "shapechanger"
+  ],
   "blurb": "Em forma humana golpeia duas vezes com um machado de batalha; na forma híbrida morde e arranha três vezes. Uma vez por descanso solta um grito psíquico que pode atordoar todos ao redor.",
   "lore": "Era uma pessoa comum, levada da costa ou resgatada de um naufrágio, a quem um poder submarino deu a escolha entre servir ou se afogar. Quem aceita passa por um ritual cruel que a torna metamorfa, capaz de assumir uma forma meio peixe. Volta à superfície como espiã de um senhor como um kraken, fingindo ser quem era ou adotando uma nova identidade para se infiltrar na vida dos alvos. Perdeu toda a empatia e só imita emoções, mas, se morrer na forma aquática, a magia se desfaz e resta apenas o cadáver da pessoa original."
  },
@@ -2942,9 +3057,14 @@ export const LIVRO_VGM = {
     6
    ]
   },
-  "traits": [
-   "t_aprisionarAlma"
+  "acoesEspeciais": [
+   {
+    "nome": "Aprisionar Alma",
+    "tipo": "aprisionarAlma",
+    "alcanceFt": 30
+   }
   ],
+  "traits": [],
   "blurb": "Rasga com garras que drenam vida e prende dentro da própria caixa torácica os humanoides caídos, transformando-os em mortos-vivos. Seu vórtice de energia necrótica fica mais letal a cada vítima moribunda por perto.",
   "lore": "Devoradores são demônios menores que Orcus recompensou, refazendo-os como figuras ressequidas de quase 2,5 m, com o peito oco e uma fome insaciável por almas. Vagam pelo Abismo e pelos planos Astral e Etéreo servindo aos planos do Príncipe dos Mortos-Vivos. No Plano Material, costumam liderar pragas de mortos-vivos, que se sentem atraídos por sua presença. Levam suas presas à beira da morte, prendem-nas entre as costelas e atormentam suas mentes até que morram e renasçam como servos mortos-vivos. Não precisam respirar, comer, beber nem dormir."
  },
@@ -3115,8 +3235,17 @@ export const LIVRO_VGM = {
     "labirinto": 15
    }
   },
+  "motorDoLivro": {
+   "pressagio": {
+    "nome": "Presságio",
+    "n": 2
+   }
+  },
   "traits": [
    "t_pressagio"
+  ],
+  "marcas": [
+   "any race"
   ],
   "blurb": "Conjurador de 15º nível que bombardeia o grupo com bola de fogo, tempestade de gelo e labirinto, enquanto distorce a sorte com Presságio para trocar uma rolagem crucial de aliado ou inimigo.",
   "lore": "O adivinho é um mago especializado em revelar o oculto e acredita que quem sabe mais manda mais. Costuma circular por cidades, oferecendo conselhos, profecias ou segredos a quem lhe for útil. Alguns cultivam um ar enigmático, falando por meias palavras e presságios. Outros adoram exibir o que sabem, espalhando revelações para ganhar fama e influência."
@@ -3273,6 +3402,9 @@ export const LIVRO_VGM = {
   "traits": [
    "ascendenciaFeerica"
   ],
+  "marcas": [
+   "demon"
+  ],
   "blurb": "Brutamontes demoníaco de quatro braços que morde e rasga com garras de alcance longo, causando muito dano por turno. Usa escuridão, confusão e fogo das fadas para desorientar o grupo antes de avançar.",
   "lore": "O draegloth é fruto de um ritual profano em que uma alta sacerdotisa drow gera um filho com um demônio glabrezu. Do tamanho de um ogro, tem pele roxo-escura, cabelos claros, focinho canino, olhos vermelhos e dois pares de braços: um enorme e com garras, outro delicado como o de um drow. Seu nascimento é visto como bênção de Lolth, e a casa que o cria passa a planejar ataques às rivais com ele à frente. Embora valioso, nunca passa de escravo favorito ou consorte, e desconta a frustração nos inimigos da família; alguns acabam fugindo para seguir o próprio caminho no Subterrâneo."
  },
@@ -3371,6 +3503,26 @@ export const LIVRO_VGM = {
   "recursos": {
    "resistenciaLendaria": 3
   },
+  "acoesEspeciais": [
+   {
+    "nome": "Explosão Mental (Recarga 5–6)",
+    "recharge": [
+     5,
+     6
+    ],
+    "tipo": "area",
+    "shape": "raio",
+    "areaFt": 60,
+    "save": "int",
+    "dc": 18,
+    "damage": "5d10+5",
+    "damageType": "psíquico",
+    "halfOnSave": false,
+    "condition": "atordoado",
+    "rounds": 10,
+    "repete": true
+   }
+  ],
   "lendarias": {
    "acoes": 3,
    "opcoes": [
@@ -3379,11 +3531,34 @@ export const LIVRO_VGM = {
      "custo": 1,
      "tipo": "golpe",
      "arma": "Tentáculo"
+    },
+    {
+     "nome": "Quebrar Concentração",
+     "custo": 1,
+     "tipo": "quebrarConcentracao",
+     "alcanceFt": 120,
+     "danoPorCirculo": "1d4"
+    },
+    {
+     "nome": "Pulso Psíquico",
+     "custo": 1,
+     "tipo": "pulso",
+     "alcanceFt": 120,
+     "raioFt": 10,
+     "damage": "3d6",
+     "damageType": "psíquico"
+    },
+    {
+     "nome": "Cortar Elo Psíquico",
+     "custo": 1,
+     "tipo": "alvo",
+     "alcanceFt": 120,
+     "semTeste": true,
+     "condition": "zumbidoNaCabeca"
     }
    ]
   },
   "traits": [
-   "t_explosaoMentalRecarga56",
    "t_eloPsiquico",
    "t_sentirPensamentos",
    "t_sentidoDeCriaturas",
@@ -3494,8 +3669,19 @@ export const LIVRO_VGM = {
     "imobilizarMonstro": 14
    }
   },
+  "motorDoLivro": {
+   "encantoInstintivo": {
+    "nome": "Encanto Instintivo",
+    "alcanceFt": 30,
+    "dc": 14,
+    "usoUnico": true
+   }
+  },
   "traits": [
    "t_encantoInstintivo"
+  ],
+  "marcas": [
+   "any race"
   ],
   "blurb": "Mago frágil que luta por meio de outros: paralisa, enfeitiça e domina inimigos, e ainda desvia ataques contra si para aliados do atacante. Também conta com bola de fogo e acelerar.",
   "lore": "O encantador é um mago especializado em magias que moldam e dominam a mente alheia. Costuma circular por cidades, onde há muita gente para influenciar. Alguns são simpáticos e só recorrem à magia quando a conversa não basta. Outros são arrogantes e se cercam de servos enfeitiçados que obedecem sem questionar."
@@ -3607,8 +3793,16 @@ export const LIVRO_VGM = {
     "muralhaDeGelo": 15
    }
   },
+  "motorDoLivro": {
+   "esculpirMagias": {
+    "nome": "Esculpir Magias"
+   }
+  },
   "traits": [
    "t_esculpirMagias"
+  ],
+  "marcas": [
+   "any race"
   ],
   "blurb": "Mago de artilharia que despeja bolas de fogo, relâmpagos e cones de frio à distância, poupando os aliados presos na área. Pode anular magias inimigas com contramágica e escapar com passo nebuloso.",
   "lore": "Evocadores são magos especializados em canalizar energia arcana e forças elementais com fins destrutivos. Muitos têm pavio curto e partem para o ataque sem hesitar. Outros são frios e calculistas, guardando o golpe certo para o instante em que o inimigo se expõe. Costumam ser encontrados em cidades, a serviço de guildas, governantes ou de suas próprias ambições."
@@ -3683,9 +3877,25 @@ export const LIVRO_VGM = {
     "Escudo Flamejante"
    ]
   },
+  "acoesEspeciais": [
+   {
+    "nome": "Investida de Escudo",
+    "tipo": "atropelar",
+    "pes": 30,
+    "tamanhoMax": "large",
+    "golpe": "Escudo Flamejante",
+    "empurra": {
+     "dc": 21,
+     "dano": "3d6+8",
+     "danoCaido": "6d6+8"
+    }
+   }
+  ],
   "traits": [
-   "t_investidaDeEscudo",
    "t_escudosDuplos"
+  ],
+  "marcas": [
+   "fire giant"
   ],
   "blurb": "Muralha viva de aço em brasa que golpeia duas vezes com escudos cravejados e flamejantes. Sua investida atravessa fileiras inteiras, empurrando e derrubando quem estiver no caminho.",
   "lore": "Entre os gigantes do fogo, a posição no ordning depende tanto da força quanto do talento na forja, e quem tem músculos mas pouco engenho costuma acabar em trabalhos braçais. Os mais fortes, porém, podem ganhar prestígio como couraçados. Eles carregam dois escudos imensos, cheios de espinhos por fora e de carvão em brasa por dentro, formando uma parede de fogo diante dos inimigos. Fora do combate, mantêm a forma empurrando montanhas de minério e carvão pelas fundições, e às vezes escoltam comitivas de guerra ou diplomacia para intimidar."
@@ -3746,8 +3956,17 @@ export const LIVRO_VGM = {
     "armaduraArcana"
    ]
   },
+  "motorDoLivro": {
+   "pvTempAoDerrubar": {
+    "nome": "Bênção de Imix",
+    "pv": 5
+   }
+  },
   "traits": [
    "t_bencaoDeImix"
+  ],
+  "marcas": [
+   "firenewt"
   ],
   "blurb": "Conjurador de fogo que alterna raios ígneos, mãos flamejantes e esferas de chamas com golpes de maça-estrela; ganha PV temporários ao derrubar inimigos.",
   "lore": "Salamandras-de-fogo são humanoides anfíbios que vivem perto de fontes termais, vulcões e cavernas aquecidas do Subterrâneo. Alguns fazem pacto com Imix, o Príncipe do Fogo Elemental Maligno, e recebem dele magia destrutiva. Esses bruxos lideram bandos guerreiros, conduzem ritos em águas ferventes e enxergam até através da escuridão mágica. São fanáticos e tratam a destruição pelas chamas como oferenda ao seu patrono."
@@ -3814,6 +4033,9 @@ export const LIVRO_VGM = {
    }
   ],
   "traits": [],
+  "marcas": [
+   "firenewt"
+  ],
   "blurb": "Combate de perto com dois golpes de cimitarra por turno e, uma vez por descanso, cospe fogo em quem estiver a até 3 m. Fogo não o machuca.",
   "lore": "Os tritões-de-fogo são humanoides anfíbios de pele úmida que vivem perto de fontes termais, vulcões e cavernas aquecidas do Subterrâneo e das montanhas. Formam bandos guerreiros que veneram o fogo e costumam ser agressivos com forasteiros. Os guerreiros são a linha de frente da tribo, protegendo os ninhos e saqueando caravanas. Muitos servem a cultos elementais do fogo."
  },
@@ -3886,6 +4108,13 @@ export const LIVRO_VGM = {
     "ca": 4
    }
   ],
+  "motorDoLivro": {
+   "tentaculosMangual": {
+    "nome": "Tentáculos-Mangual",
+    "n": 5,
+    "limite": 10
+   }
+  },
   "traits": [
    "resistenciaAMagia",
    "t_tentaculosMangual"
@@ -3980,8 +4209,17 @@ export const LIVRO_VGM = {
     "Arco Longo": 3
    }
   },
+  "motorDoLivro": {
+   "sedeDeSangue": {
+    "nome": "Aura de Sede de Sangue",
+    "raioFt": 10
+   }
+  },
   "traits": [
    "t_auraDeSedeDeSangue"
+  ],
+  "marcas": [
+   "gnoll"
   ],
   "blurb": "Líder gnoll que golpeia três vezes por turno com mangais encantados: um causa dor psíquica brutal, outro paralisa e o terceiro faz o alvo atacar a esmo. Perto dele, gnolls mordem com ação bônus.",
   "lore": "Flinds são gnolls raros e excepcionalmente fortes, tidos como abençoados por Yeenoghu, o Senhor Demônio dos gnolls. Costumam assumir o comando de bandos inteiros, que os seguem com fervor quase religioso. Empunham mangais profanos que espalham agonia, loucura e paralisia entre os inimigos. Vagueiam por planícies, florestas, colinas e terras geladas, deixando massacres pelo caminho."
@@ -4071,8 +4309,23 @@ export const LIVRO_VGM = {
     "Tentáculo"
    ]
   },
+  "acoesEspeciais": [
+   {
+    "nome": "Língua",
+    "tipo": "puxarAlvo",
+    "tamanhoMax": "medio",
+    "alcanceFt": 20,
+    "save": "str",
+    "dc": 18,
+    "mordida": "Mordida"
+   }
+  ],
+  "motorDoLivro": {
+   "choqueEletrico": {
+    "nome": "Vulnerável a Choques"
+   }
+  },
   "traits": [
-   "t_lingua",
    "t_vulneravelAChoques"
   ],
   "blurb": "Agarra várias presas de longe com quatro tentáculos de 6 m de alcance enquanto puxa outra com a língua para engoli-la inteira. Dano elétrico o deixa lento e vulnerável.",
@@ -4149,6 +4402,19 @@ export const LIVRO_VGM = {
     "Machado Grande"
    ]
   },
+  "vantagemRacial": [
+   {
+    "nome": "Cabeças Extras",
+    "condicoes": [
+     "cego",
+     "enfeiticado",
+     "surdo",
+     "amedrontado",
+     "atordoado",
+     "inconsciente"
+    ]
+   }
+  ],
   "regeneracao": {
    "pv": 10,
    "bloqueia": [
@@ -4157,10 +4423,18 @@ export const LIVRO_VGM = {
    ],
    "naoMorreA0": true
   },
+  "motorDoLivro": {
+   "furiaDeVaprak": {
+    "nome": "Fúria de Vaprak"
+   }
+  },
   "traits": [
    "t_cabecasExtras",
    "regeneracaoDoLivro",
    "t_furiaDeVaprak"
+  ],
+  "marcas": [
+   "frost giant"
   ],
   "blurb": "Brutamontes de machado que regenera 10 PV por turno e, em fúria, causa dano extra e resiste a golpes físicos. Use fogo ou ácido para impedir a regeneração e conseguir matá-lo.",
   "lore": "Gigantes do gelo desesperados por prestígio no ordning às vezes aceitam o chamado de Vaprak, deus faminto venerado por ogros e trolls. Após visões de glória e canibalismo, o gigante recebe um troll enviado pelo deus e o devora por inteiro. Com isso, ganha força tremenda, temperamento violento e a regeneração dos trolls, o que costuma levá-lo ao posto de jarl. Se negligenciar o deus, porém, suas feridas cicatrizam deformadas, com membros e até cabeças a mais, e o clã o mata ou expulsa. Alguns desses párias formam pequenas comunidades que transmitem a bênção às novas gerações."
@@ -4578,9 +4852,18 @@ export const LIVRO_VGM = {
     "Espada Curta"
    ]
   },
+  "acoesEspeciais": [
+   {
+    "nome": "Investida Súbita",
+    "tipo": "disparada",
+    "pes": 60
+   }
+  ],
   "traits": [
-   "t_investidaSubita",
    "rampage"
+  ],
+  "marcas": [
+   "gnoll"
   ],
   "blurb": "Avança de repente pelo campo, sem provocar ataques de oportunidade, e despedaça alvos isolados com mordida e duas espadas curtas. Cada inimigo que derruba lhe dá mais movimento e outra mordida.",
   "lore": "São os gnolls mais selvagens de seus bandos, avessos a arcos e lanças. Preferem lâminas curtas, que manejam com rapidez assustadora. No meio da batalha disparam entre as linhas para caçar retardatários e acabar com feridos. Quando o bando está enfraquecido, atacam povoados afastados, aleijando os moradores para se alimentar deles enquanto se recuperam."
@@ -4667,6 +4950,9 @@ export const LIVRO_VGM = {
   "traits": [
    "rampage"
   ],
+  "marcas": [
+   "gnoll"
+  ],
   "blurb": "Ataca duas vezes com lança ou arco longo, e suas flechas farpadas deixam o alvo mais lento. Ao derrubar alguém em corpo a corpo, avança e morde de novo.",
   "lore": "Os caçadores são os batedores furtivos dos bandos de guerra gnoll, seguindo à frente do grupo para eliminar inimigos isolados. Dominam o arco longo e usam pontas cruéis com farpas que fazem a presa mancar de dor. Quando já não precisam se esconder, sopram uma trompa de osso cujo uivo agudo lembra o grito de uma banshee. Vivem em campos, florestas, colinas e regiões geladas, sempre atrás de vítimas fáceis."
  },
@@ -4735,6 +5021,13 @@ export const LIVRO_VGM = {
      "Clava"
     ]
    ]
+  },
+  "motorDoLivro": {
+   "vinganca": {
+    "nome": "Golpe Vingativo",
+    "aliado": "gnoll",
+    "raioFt": 30
+   }
   },
   "traits": [
    "rampage",
@@ -4878,6 +5171,9 @@ export const LIVRO_VGM = {
    "peleVenenosa",
    "t_saltoParado"
   ],
+  "marcas": [
+   "grung"
+  ],
   "blurb": "Pequeno anfíbio venenoso que salta longe e ataca com adagas envenenadas; tocá-lo ou agarrá-lo pode deixar você envenenado, com efeitos extras conforme a cor da pele.",
   "lore": "Grungs são pequenos humanoides parecidos com sapos, de pele colorida e tóxica. Vivem em florestas úmidas e selvas, em aldeias erguidas nas árvores perto de água. Formam sociedades rígidas, organizadas em castas definidas pela cor da pele, e são cruéis com estranhos. Costumam capturar intrusos como escravos e defendem seu território com emboscadas a partir das copas."
  },
@@ -4989,6 +5285,9 @@ export const LIVRO_VGM = {
   "traits": [
    "peleVenenosa",
    "t_saltoParado"
+  ],
+  "marcas": [
+   "grung"
   ],
   "blurb": "Pequeno anfíbio venenoso que salta longe, ataca com adaga e arco envenenados e solta um chilreio capaz de atordoar quem estiver perto. Encostar na pele dele pode envenenar.",
   "lore": "Os grungs são homens-rã pequenos e agressivos que habitam florestas tropicais e pântanos, organizados numa rígida hierarquia de castas marcada pela cor da pele. Os guerreiros de elite pertencem às castas superiores e lideram patrulhas e emboscadas contra invasores. Sua pele secreta um veneno cujo efeito extra varia conforme a cor, mas que perde a força pouco depois de sair do corpo ou quando o grung morre. Escalam árvores com facilidade e preferem atacar de cima, de surpresa."
@@ -5111,6 +5410,9 @@ export const LIVRO_VGM = {
   "traits": [
    "peleVenenosa",
    "t_saltoParado"
+  ],
+  "marcas": [
+   "grung"
   ],
   "blurb": "Atirador ágil que alterna adagas e arco curto envenenados com magias de patrulheiro como crescer espinhos e pele de árvore. Tocar sua pele pode envenenar, com efeitos extras conforme a cor do grung.",
   "lore": "Os grungs são pequenos humanoides anfíbios parecidos com sapos, que vivem em florestas úmidas e pântanos tropicais. O selvagem é o explorador e guardião da tribo, ligado à natureza e capaz de lançar magias de patrulheiro. Cruéis e territoriais, os grungs organizam sua sociedade em castas definidas pela cor da pele. Escalam árvores com facilidade e saltam grandes distâncias para emboscar invasores."
@@ -5252,9 +5554,21 @@ export const LIVRO_VGM = {
     "tempestadeDeGelo": 13
    }
   },
+  "motorDoLivro": {
+   "vantagemArcana": {
+    "nome": "Vantagem Arcana",
+    "dados": "2d6"
+   },
+   "arcanoDoExercito": {
+    "nome": "Arcano de Exército"
+   }
+  },
   "traits": [
    "t_vantagemArcana",
    "t_arcanoDeExercito"
+  ],
+  "marcas": [
+   "goblinoid"
   ],
   "blurb": "Mago de batalha que despeja bola de fogo, relâmpago e tempestade de gelo sobre o campo sem ferir os próprios aliados. Ataques mágicos contra alvos colados a seus companheiros causam dano extra.",
   "lore": "Os devastadores são os magos de guerra das legiões hobgoblins, treinados para servir como artilharia arcana. Ficam atrás das fileiras, protegidos pelos soldados, e moldam suas magias para poupar quem marcha ao seu lado. São disciplinados e frios, tratando a magia como mais uma arma da máquina militar. Costumam acompanhar exércitos em campos, florestas e colinas."
@@ -5353,6 +5667,9 @@ export const LIVRO_VGM = {
    }
   ],
   "traits": [],
+  "marcas": [
+   "goblinoid"
+  ],
   "blurb": "Monge ágil que desfere quatro golpes por turno entre socos e dardos, saltando de sombra em sombra para surgir onde menos se espera. Também usa ilusões e enfeitiçamento para confundir os alvos.",
   "lore": "As Sombras de Ferro são monges hobgoblins que atuam como polícia secreta, batedores e assassinos a serviço de Maglubiyet. Seus membros são escolhidos entre os hobgoblins mais ágeis e leais, passam por provas de lealdade que custam a vida a quem falha e só então recebem anos de treino em artes marciais e magia das sombras. Vigiam o próprio povo em busca de traidores e cumprem missões ordenadas pelos clérigos de seu deus. Em serviço, usam máscaras com feições de diabos, que escondem quem são e assustam os inimigos."
  },
@@ -5651,6 +5968,9 @@ export const LIVRO_VGM = {
   "traits": [
    "deslocamento"
   ],
+  "marcas": [
+   "any race"
+  ],
   "blurb": "Mago frágil que se esconde atrás de imagens falsas: o Deslocamento impõe desvantagem a quem o ataca, e magias como Assassino Fantasmagórico e Spray de Cores podem amedrontar ou cegar. Cerque-o e cause dano para quebrar a ilusão.",
   "lore": "Ilusionistas são magos especializados em enganar os sentidos, manipulando luz, som, sombras e a própria mente. Alguns usam esse dom de forma chamativa, como verdadeiros artistas de palco. Outros preferem a discrição, ocultando verdades e criando disfarces. São comuns em cidades, onde servem como espiões, golpistas ou conselheiros."
  },
@@ -5829,11 +6149,19 @@ export const LIVRO_VGM = {
   "multiattack": {
    "count": 2
   },
+  "motorDoLivro": {
+   "coracaoDoDragao": {
+    "nome": "Coração do Dragão"
+   }
+  },
   "traits": [
    "t_resistenciaDraconica",
    "t_coracaoDoDragao",
    "packTactics",
    "sunlightSensitivity"
+  ],
+  "marcas": [
+   "kobold"
   ],
   "blurb": "Guerreiro kobold que ataca duas vezes com a lança e fica mais perigoso cercado de aliados. Resiste a um tipo de dano dracônico e livra a si e aos kobolds próximos de medo e paralisia.",
   "lore": "Kobolds abençoados por um dragão costumam receber parte de seu poder e passam a servir como guardiões escolhidos da tribo. O escudo-dracônico carrega a marca da cor do dragão que o fortaleceu e protege seus parentes com zelo fanático. Vive em túneis, montanhas, florestas e colinas, quase sempre perto do covil de seu senhor dracônico. Nas batalhas, fica na linha de frente e inspira os outros kobolds a não fugir."
@@ -5891,10 +6219,93 @@ export const LIVRO_VGM = {
     "longRangeFt": 120
    }
   ],
+  "acoesEspeciais": [
+   {
+    "nome": "Frasco de Ácido",
+    "tipo": "golpeEspecial",
+    "golpe": {
+     "name": "Frasco de Ácido",
+     "bonus": 4,
+     "damage": "2d6",
+     "type": "ácido",
+     "reachFt": 5,
+     "ranged": true,
+     "rangeFt": 5,
+     "longRangeFt": 20,
+     "nomeEn": "Acid"
+    },
+    "porDia": 1
+   },
+   {
+    "nome": "Fogo de Alquimista",
+    "tipo": "golpeEspecial",
+    "golpe": {
+     "name": "Fogo de Alquimista",
+     "bonus": 4,
+     "damage": "1d4",
+     "type": "fogo",
+     "reachFt": 5,
+     "ranged": true,
+     "rangeFt": 5,
+     "longRangeFt": 20,
+     "nomeEn": "Alchemist's fire"
+    },
+    "porDia": 1
+   },
+   {
+    "nome": "Cesto de Centopeias",
+    "tipo": "invocar",
+    "opcoes": [
+     {
+      "id": "enxameDeCentopeias",
+      "dados": "1"
+     }
+    ],
+    "porDia": 1
+   },
+   {
+    "nome": "Pote de Larvas",
+    "tipo": "invocar",
+    "opcoes": [
+     {
+      "id": "enxameDeLarvasPutrefatas",
+      "dados": "1"
+     }
+    ],
+    "porDia": 1
+   },
+   {
+    "nome": "Escorpião no Bastão",
+    "tipo": "golpeEspecial",
+    "golpe": {
+     "name": "Escorpião no Bastão",
+     "bonus": 4,
+     "damage": "1d8",
+     "type": "veneno",
+     "reachFt": 5,
+     "nomeEn": "Scorpion on a Stick"
+    },
+    "porDia": 1
+   },
+   {
+    "nome": "Ninho de Vespas",
+    "tipo": "invocar",
+    "opcoes": [
+     {
+      "id": "enxameDeVespas",
+      "dados": "1"
+     }
+    ],
+    "porDia": 1
+   }
+  ],
   "traits": [
    "t_invencaoBelica",
    "sunlightSensitivity",
    "packTactics"
+  ],
+  "marcas": [
+   "kobold"
   ],
   "blurb": "Fraco no corpo a corpo, mas imprevisível: arremessa ácido, fogo alquímico, limo verde e enxames de bichos, e ganha vantagem quando aliados cercam o alvo.",
   "lore": "Esses kobolds engenhosos montam armas improvisadas com o que encontram: insetos capturados, gosmas recolhidas em masmorras e o melhor do que foi roubado. Os aparelhos parecem ridículos, mas funcionam bem melhor do que se esperaria. Cada invenção aguenta só um ou dois usos antes de quebrar. Muitas nem precisam matar: basta distrair ou assustar o inimigo enquanto os outros kobolds o derrubam. Num encontro, um inventor costuma carregar uma ou duas dessas engenhocas."
@@ -5976,10 +6387,20 @@ export const LIVRO_VGM = {
     "raioArdente": 12
    }
   },
+  "motorDoLivro": {
+   "magiaElevada": {
+    "nome": "Pontos de Feitiçaria",
+    "pontos": 3,
+    "custo": 3
+   }
+  },
   "traits": [
    "t_pontosDeFeiticaria",
    "packTactics",
    "sunlightSensitivity"
+  ],
+  "marcas": [
+   "kobold"
   ],
   "blurb": "Fica atrás dos aliados disparando raios ardentes, orbes cromáticos e jatos de veneno, podendo deixar magias silenciosas ou impor desvantagem na resistência. Ganha vantagem quando um aliado está colado no alvo, mas sofre sob a luz do sol.",
   "lore": "Alguns kobolds nascem com um dom inato para a magia arcana, e a tribo os valoriza como conselheiros e guardiões da memória, já que seu deus aprisionado deixa poucos com poder divino. Em tempos calmos, reforçam e melhoram a toca com feitiços; quando há ameaça, atacam com fogo e veneno, mas sempre guardam um pouco de magia para escapar. Em tribos ligadas a um dragão, servem de porta-voz e intermediário, transmitindo ordens e levando notícias ao mestre. Vivem divididos entre a adoração e o pavor, sabendo que serão os primeiros a morrer se o dragão se irritar."
@@ -6089,6 +6510,22 @@ export const LIVRO_VGM = {
     "fundirSeComPedra": 13
    }
   },
+  "acoesEspeciais": [
+   {
+    "nome": "Comandar Cabelo",
+    "tipo": "alvo",
+    "alcanceFt": 50,
+    "tamanhoMax": "large",
+    "save": "dex",
+    "dc": 13,
+    "prende": {
+     "escape": 13,
+     "contido": true
+    },
+    "semPrenderDeNovo": true,
+    "bonus": true
+   }
+  ],
   "traits": [
    "t_comandarCabelo",
    "camuflagemDePedra",
@@ -6182,8 +6619,23 @@ export const LIVRO_VGM = {
     "criarDestruirAgua": 13
    }
   },
-  "traits": [
-   "t_vozDoKraken"
+  "acoesEspeciais": [
+   {
+    "nome": "Voz do Kraken",
+    "tipo": "area",
+    "shape": "raio",
+    "areaFt": 300,
+    "escolhe": true,
+    "save": "cha",
+    "dc": 14,
+    "condition": "amedrontado",
+    "rounds": 10,
+    "repete": true
+   }
+  ],
+  "traits": [],
+  "marcas": [
+   "any race"
   ],
   "blurb": "Conjurador resistente a armas comuns que golpeia com um toque trovejante de 5d10 e controla o campo com tentáculos negros, relâmpagos e água. A voz do kraken pode amedrontar vários inimigos de uma vez.",
   "lore": "Algumas pessoas que presenciam a fúria de um kraken passam a adorá-lo como um deus, e o monstro às vezes retribui essa devoção concedendo poder. Esses sacerdotes vivem em costas e sob o mar, servindo como olhos, ouvidos e boca do seu senhor. Quando estão no mesmo plano, o kraken pode sentir os pensamentos do servo e até tomar o controle do corpo dele para falar. Cada sacerdote carrega marcas grotescas dessa influência, como olhos negros, línguas de tentáculo ou bocas que escorrem água salgada, e elas se intensificam quando o mestre o possui."
@@ -6246,6 +6698,12 @@ export const LIVRO_VGM = {
     "Mordida",
     "Cascos"
    ]
+  },
+  "motorDoLivro": {
+   "coiceERecua": {
+    "nome": "Retirada aos Coices",
+    "arma": "Cascos"
+   }
   },
   "traits": [
    "keenSmell",
@@ -6324,8 +6782,14 @@ export const LIVRO_VGM = {
     ]
    ]
   },
+  "motorDoLivro": {
+   "desviarProjetil": "1d10+3"
+  },
   "traits": [
    "t_desviarProjetil"
+  ],
+  "marcas": [
+   "any race"
   ],
   "blurb": "Monge veloz que desfere três golpes por turno e pode desarmar, derrubar ou atordoar quem atinge. Também arremessa dardos e desvia projéteis.",
   "lore": "Adeptos de artes marciais são monges disciplinados, moldados por anos de treino no combate corpo a corpo. Alguns guardam mosteiros, enquanto outros percorrem o mundo em busca de iluminação ou de estilos de luta ainda desconhecidos. Há os que se tornam guarda-costas e oferecem lealdade e habilidade em troca de abrigo e comida. São mais comuns em cidades."
@@ -6406,6 +6870,9 @@ export const LIVRO_VGM = {
    "acaoAstuta",
    "esquivaSobrenatural"
   ],
+  "marcas": [
+   "any race"
+  ],
   "blurb": "Ágil e escorregadio, golpeia três vezes com a espada curta e soma 4d6 de dano furtivo quando tem vantagem ou um aliado ao lado do alvo. Usa ação bônus para fugir, se esconder ou se desengajar, e reduz à metade o dano que recebe.",
   "lore": "O mestre ladrão é um criminoso de elite, famoso por golpes ousados que viram lenda nas ruas das cidades. Com o tempo, ganha fama e até admiradores fiéis. Muitos acabam deixando o trabalho de campo para comandar uma guilda de ladrões, liderar operações secretas ou simplesmente desfrutar da fortuna acumulada."
  },
@@ -6463,6 +6930,9 @@ export const LIVRO_VGM = {
   ],
   "traits": [
    "rampage"
+  ],
+  "marcas": [
+   "demon"
   ],
   "blurb": "Um saco de dentes que avança mordendo; sempre que derruba alguém a 0 PV, ganha um deslocamento extra e outra mordida no mesmo turno. Resiste a frio, fogo e elétrico e não pode ser envenenado, enfeitiçado nem amedrontado.",
   "lore": "Demônio menor nascido da fome de Yeenoghu, o Senhor da Selvageria, por carnificina e carne mortal. Costuma surgir junto aos bandos de guerra gnolls, invocado em rituais que oferecem humanoides recém-abatidos ao príncipe demônio. Os gnolls não o controlam, mas ele os segue e ataca qualquer presa que o bando encontre. Depois de descansar 8 horas, tudo o que engoliu vai direto para a barriga de Yeenoghu."
@@ -7010,6 +7480,12 @@ export const LIVRO_VGM = {
     "repete": true
    }
   ],
+  "motorDoLivro": {
+   "espelharMagia": {
+    "nome": "Reflexão de Magia",
+    "alcanceFt": 120
+   }
+  },
   "traits": [
    "t_reflexaoDeMagia"
   ],
@@ -7066,8 +7542,16 @@ export const LIVRO_VGM = {
     "reachFt": 10
    }
   ],
+  "motorDoLivro": {
+   "bocaDaLoucura": {
+    "nome": "Boca da Loucura"
+   }
+  },
   "traits": [
    "t_bocaDaLoucura"
+  ],
+  "marcas": [
+   "hill giant"
   ],
   "blurb": "Gigante faminto e enlouquecido que avança sempre rumo à criatura mais próxima e ataca de forma aleatória a cada turno. Seus socos de 3 m de alcance batem pesado, e a mordida o cura com o dano que causa.",
   "lore": "Quando um gigante da colina adoece e não consegue manter a comida no estômago, seu clã enxerga nisso um recado de Grolantor. Se a doença não passa, o infeliz é preso e mantido em fome até perder a razão, virando um objeto sagrado que encarna a fome eterna do deus. Magro, agitado e cheio de tiques, ele vive acorrentado ou enjaulado, pois mataria os próprios parentes se escapasse. A tribo só o solta em guerras, ataques ou na defesa desesperada do lar, e depois de se fartar com os inimigos ele desmaia entre os restos, o que facilita recapturá-lo."
@@ -7178,8 +7662,16 @@ export const LIVRO_VGM = {
     "circuloDaMorte": 15
    }
   },
+  "motorDoLivro": {
+   "colheitaSinistra": {
+    "nome": "Colheita Sinistra"
+   }
+  },
   "traits": [
    "t_colheitaSinistra"
+  ],
+  "marcas": [
+   "any race"
   ],
   "blurb": "Conjurador de 12º nível que debilita e mata à distância com magias de necromancia, como círculo da morte, nuvem mortal e toque vampírico, e se cura a cada vítima abatida. Mantenha pressão sobre ele antes que levante mortos-vivos ou escape com porta dimensional.",
   "lore": "O necromante é um mago especializado no limite entre a vida, a morte e a não-vida. Muitos profanam túmulos para erguer servos mortos-vivos que obedecem sem questionar. Costumam agir em cidades e desertos, escondidos em criptas ou torres isoladas. Uns poucos, porém, usam esse saber sombrio para caçar mortos-vivos e proteger os vivos."
@@ -7665,10 +8157,23 @@ export const LIVRO_VGM = {
     "zombariaViciosa": 12
    }
   },
+  "motorDoLivro": {
+   "nilbogismo": {
+    "nome": "Nilboguismo",
+    "dc": 12
+   },
+   "reverterSorte": {
+    "nome": "Reviravolta da Sorte",
+    "cura": "1d6"
+   }
+  },
   "traits": [
    "t_nilboguismo",
    "nimbleEscape",
    "t_reviravoltaDaSorte"
+  ],
+  "marcas": [
+   "goblinoid"
   ],
   "blurb": "Quem tenta feri-lo pode acabar enfeitiçado e forçado a elogiá-lo, e o dano que chega até ele pode ser anulado e virar cura. Atormenta à distância com magias de zombaria, riso histérico e confusão.",
   "lore": "O nilbog é o que restou de um deus trapaceiro dos goblins, despedaçado por Maglubiyet, e sobrevive como um espírito invisível que possui goblins quando goblinoides se reúnem em hordas. O goblin possuído vira um piadista atrevido, sem medo de castigo, capaz de fazer os outros agirem contra a própria vontade. Matar o hospedeiro só manda o espírito procurar outro goblin, então a única forma de conter o caos é tratá-lo com respeito e bajulação. Por isso as hordas costumam manter um bobo goblin, livre para fazer o que quiser."
@@ -7745,10 +8250,27 @@ export const LIVRO_VGM = {
     ]
    ]
   },
+  "acoesEspeciais": [
+   {
+    "nome": "Comando de Ilneval",
+    "recharge": [
+     4,
+     5,
+     6
+    ],
+    "tipo": "comandar",
+    "max": 3,
+    "aliado": "orc",
+    "alcanceFt": 120,
+    "corpoACorpo": false
+   }
+  ],
   "traits": [
-   "t_comandoDeIlneval",
    "agressivo",
    "t_golpeadorDeInimigosDeIlneval"
+  ],
+  "marcas": [
+   "orc"
   ],
   "blurb": "Guerreiro orc que avança rápido sobre os inimigos e golpeia duas vezes com a espada longa, causando dano extra. Seu brado de comando permite que até três orcs aliados ataquem fora do turno.",
   "lore": "As Lâminas de Ilneval são campeões devotos do deus orc da guerra e da estratégia, servindo como comandantes de campo nas hordas. Lideram pela frente, coordenando os ataques dos guerreiros ao redor. Habitam montanhas, colinas, florestas, campos e até o Subterrâneo, onde quer que suas tribos saqueiem. São brutais, mas mais disciplinados que um orc comum."
@@ -7854,6 +8376,9 @@ export const LIVRO_VGM = {
   "traits": [
    "agressivo"
   ],
+  "marcas": [
+   "orc"
+  ],
   "blurb": "Sacerdotisa orc que alterna magias de cura e maldição com garras afiadas; quando ferida abaixo da metade dos PV, dobra o número de golpes e fica muito mais letal.",
   "lore": "As Garras de Luthic são clérigas devotas da mãe-caverna dos orcs, a deusa da fertilidade e da proteção do lar. Cuidam dos feridos, das crias e das cavernas onde a tribo se abriga, em montanhas e no Subterrâneo. Deixam as unhas crescer como garras em honra à deusa e as usam como armas. Quando o covil é ameaçado, lutam com ferocidade selvagem para defender os seus."
  },
@@ -7941,6 +8466,9 @@ export const LIVRO_VGM = {
   "traits": [
    "agressivo"
   ],
+  "marcas": [
+   "orc"
+  ],
   "blurb": "Clérigo orc silencioso que avança rápido para tocar o inimigo com energia necrótica e lança magias como perdição, cegueira e silêncio para enfraquecer o grupo.",
   "lore": "As Mãos de Yurtrus são sacerdotes orcs devotados ao deus da morte e da doença, reconhecíveis pelas luvas brancas que usam. Elas cortam a própria língua como sinal de devoção e se comunicam apenas por gestos, embora ainda entendam a fala. Cuidam dos mortos e dos feridos da tribo e são temidas até pelos próprios orcs. Em combate, espalham a podridão de Yurtrus com um simples toque."
  },
@@ -7987,6 +8515,12 @@ export const LIVRO_VGM = {
     }
    }
   ],
+  "acoesEspeciais": [
+   {
+    "nome": "Vingança Corrompida",
+    "tipo": "sacrificio"
+   }
+  ],
   "explosaoAoMorrer": {
    "pes": 10,
    "save": "con",
@@ -7997,11 +8531,19 @@ export const LIVRO_VGM = {
    "tipo": "veneno",
    "metade": true
   },
+  "vantagemRacial": [
+   {
+    "nome": "Nutrido de Yurtrus",
+    "veneno": true
+   }
+  ],
   "traits": [
-   "t_vingancaCorrompida",
    "agressivo",
    "explosaoAoMorrer",
    "t_nutridoDeYurtrus"
+  ],
+  "marcas": [
+   "orc"
   ],
   "blurb": "Avança agressivamente e arranha com garras pútridas, mas o verdadeiro perigo é a explosão venenosa quando cai a 0 PV, algo que ele pode provocar por conta própria. Mantenha distância ao derrubá-lo.",
   "lore": "Esses orcs são devotos de Yurtrus, o deus da morte e da pestilência, e foram expostos a doenças desde jovens até que a podridão se tornasse parte deles. Sua pele é coberta de chagas e eles carregam no corpo uma carga de corrupção pronta para se espalhar. As tribos os usam como armas vivas, lançando-os contra as linhas inimigas. Vivem onde quer que haja orcs, de montanhas e florestas até o Subterrâneo."
@@ -8073,12 +8615,33 @@ export const LIVRO_VGM = {
     ]
    ]
   },
+  "spellcasting": {
+   "ability": "wis",
+   "cantrips": [],
+   "prepared": [
+    "escuridao"
+   ],
+   "slots": [],
+   "noMotor": true,
+   "conjuraNoTurno": "geral",
+   "porDia": {
+    "escuridao": 1
+   }
+  },
+  "motorDoLivro": {
+   "matador": {
+    "nome": "Matador"
+   }
+  },
   "traits": [
    "t_veuDeShargaas",
    "acaoAstuta",
    "t_maoDeShargaas",
    "t_visaoDeShargaas",
    "t_matador"
+  ],
+  "marcas": [
+   "orc"
   ],
   "blurb": "Assassino furtivo que ataca das sombras com cimitarra ou dardos, causando dano extra em cada golpe. No primeiro turno tem vantagem contra quem ainda não agiu, e acertos em alvos surpresos viram críticos; ainda cria escuridão mágica através da qual enxerga.",
   "lore": "Os Presas Vermelhas são orcs devotos de Shargaas, o deus orc da noite e dos segredos. Agem como espiões e matadores da tribo, eliminando sentinelas e líderes inimigos antes de um ataque. Preferem túneis, cavernas e noites sem lua, onde a escuridão é sua aliada. Raramente lutam de frente: golpeiam, somem e voltam a atacar."
@@ -8245,6 +8808,12 @@ export const LIVRO_VGM = {
     "Adaga"
    ]
   },
+  "motorDoLivro": {
+   "desvantagemContraEle": {
+    "nome": "Movimento Borrado",
+    "salvoContido": true
+   }
+  },
   "features": [
    "evasion"
   ],
@@ -8367,10 +8936,23 @@ export const LIVRO_VGM = {
     "Foice Cruel"
    ]
   },
+  "acoesEspeciais": [
+   {
+    "nome": "Perseguição de Ferro",
+    "tipo": "alvo",
+    "anda": true,
+    "alcanceFt": 30,
+    "save": "dex",
+    "dc": 14,
+    "damage": "3d10+4",
+    "damageType": "concussão",
+    "halfOnSave": false,
+    "condition": "caido",
+    "rounds": 99999
+   }
+  ],
   "traits": [
-   "t_perseguicaoDeFerro",
-   "t_botasDeFerro",
-   "t_forcaDesproporcional"
+   "t_botasDeFerro"
   ],
   "blurb": "Pequeno mas brutalmente forte, avança pisando pesado e desfere três golpes de foice por turno. Seu chute de botas de ferro pode derrubar e esmagar quem estiver ao alcance de uma corrida.",
   "lore": "Fada assassina que brota do solo encharcado de sangue onde alguém matou movido por pura sede de violência, no Agrestão das Fadas ou perto de suas passagens. Parece um gnomo velho e corcunda, de gorro de couro, botas de ferro e uma lâmina pesada. Precisa banhar o gorro em sangue fresco a cada três dias, ou desaparece, então matar é sua forma de sobreviver. Não tem sutileza alguma e busca o confronto direto. Às vezes serve bruxas, magos sombrios ou o próprio assassino que o originou, exigindo sempre vítimas como pagamento."
@@ -8464,6 +9046,41 @@ export const LIVRO_VGM = {
     "damage": "1d4+2",
     "type": "concussão",
     "reachFt": 5
+   },
+   {
+    "name": "Mordida",
+    "bonus": 5,
+    "damage": "1d4+2",
+    "type": "perfurante",
+    "reachFt": 5
+   },
+   {
+    "name": "Espinhos Venenosos",
+    "bonus": 5,
+    "damage": "1d6",
+    "type": "veneno",
+    "reachFt": 5,
+    "onHit": {
+     "save": "con",
+     "dc": 12,
+     "condition": "envenenado",
+     "rounds": 10,
+     "repete": true
+    }
+   },
+   {
+    "name": "Tentáculo",
+    "bonus": 5,
+    "damage": "1d6+2",
+    "type": "concussão",
+    "reachFt": 10,
+    "onHit": {
+     "semResistencia": true,
+     "dc": 12,
+     "escape": 12,
+     "condition": "agarrado",
+     "note": "é agarrado"
+    }
    }
   ],
   "multiattack": {
@@ -8535,6 +9152,14 @@ export const LIVRO_VGM = {
      "rounds": 1,
      "repete": false
     }
+   }
+  ],
+  "acoesEspeciais": [
+   {
+    "nome": "Mesclar-se às Sombras",
+    "tipo": "sumir",
+    "soNoEscuro": true,
+    "bonus": true
    }
   ],
   "traits": [
@@ -8630,6 +9255,9 @@ export const LIVRO_VGM = {
   "traits": [
    "rampage"
   ],
+  "marcas": [
+   "demon"
+  ],
   "blurb": "Demônio-hiena que morde com força brutal e usa o ferrão da cauda, com 4,5 m de alcance, para envenenar e paralisar. Quando abate alguém, avança e morde de novo.",
   "lore": "O shoosuva é um demônio em forma de hiena que Yeenoghu concede aos gnolls mais poderosos, em geral a uma presa de Yeenoghu. Ele surge do Abismo numa nuvem de fumaça fétida logo depois de um bando conquistar uma grande vitória. Cada um fica ligado a um gnoll específico e luta ao lado dele. Em combate, prende uma vítima nas mandíbulas enquanto o ferrão paralisa outra, que vira presa fácil para os gnolls por perto. O gnoll que recebe um shoosuva só fica abaixo de um flind na hierarquia do bando."
  },
@@ -8700,8 +9328,25 @@ export const LIVRO_VGM = {
     "reachFt": 5
    }
   ],
+  "acoesEspeciais": [
+   {
+    "nome": "Sanguessuga Vital",
+    "tipo": "alvo",
+    "alcanceFt": 5,
+    "save": "dex",
+    "dc": 13,
+    "aperto": {
+     "tamanhoMax": "large",
+     "escape": 13,
+     "junto": [
+      "contido"
+     ],
+     "dano": "3d10",
+     "tipo": "necrótico"
+    }
+   }
+  ],
   "traits": [
-   "t_sanguessugaVital",
    "emboscador",
    "transfereDano",
    "aparenciaFalsa",
@@ -8980,9 +9625,32 @@ export const LIVRO_VGM = {
     "Clava Grande"
    ]
   },
-  "traits": [
-   "t_toquePetrificante",
-   "t_encantoDoAndarilhoDosSonhos"
+  "acoesEspeciais": [
+   {
+    "nome": "Toque Petrificante",
+    "tipo": "alvo",
+    "alcanceFt": 10,
+    "soComCondicao": "enfeiticado",
+    "save": "con",
+    "dc": 17,
+    "condition": "petrificado",
+    "rounds": 99999,
+    "repete": false
+   }
+  ],
+  "aura": {
+   "raioFt": 30,
+   "quando": "inicioDoAlvo",
+   "save": "cha",
+   "dc": 13,
+   "condition": "enfeiticado",
+   "rounds": 10,
+   "repete": true,
+   "imunizaAoPassar": true
+  },
+  "traits": [],
+  "marcas": [
+   "stone giant"
   ],
   "blurb": "Enfeitiça quem chega perto e depois transforma as vítimas em pedra, grudando-as no próprio corpo; quando não alcança, esmaga com o clava grande ou arremessa rochas que derrubam.",
   "lore": "Para os gigantes das pedras, a superfície é um sonho passageiro onde nada tem peso real. Alguns que vagam por lá, por curiosidade, busca de inspiração ou exílio, acabam se perdendo nesse sonho e se tornam andarilhos. A solidão e a vergonha os enlouquecem, e essa loucura se espalha para quem se aproxima. Agindo sem medo de consequências, colecionam objetos e seres que julgam importantes, que vão se incrustando em pedra sobre seus corpos. Ainda assim, outros gigantes os respeitam como guias valiosos do mundo de cima."
@@ -9058,6 +9726,16 @@ export const LIVRO_VGM = {
     "Espada de Relâmpago"
    ]
   },
+  "acoesEspeciais": [
+   {
+    "nome": "Dardo de Vento",
+    "tipo": "alvo",
+    "alcanceFt": 600,
+    "semTeste": true,
+    "damage": "3d6+9",
+    "damageType": "perfurante"
+   }
+  ],
   "lendarias": {
    "acoes": 3,
    "opcoes": [
@@ -9083,8 +9761,10 @@ export const LIVRO_VGM = {
    ]
   },
   "traits": [
-   "t_dardoDeVento",
    "acoesLendarias"
+  ],
+  "marcas": [
+   "storm giant"
   ],
   "blurb": "Golpeia com espadas de relâmpago de 4,5 m de alcance ou arremessa dardos de vento infalíveis a até 180 m. Com ações lendárias empurra inimigos, dispara trovões e pode se dissolver na tempestade do covil.",
   "lore": "Alguns gigantes das tempestades, perto do fim da vida, recusam a morte e se fundem aos elementos, tornando-se tempestades semiconscientes. Uma nevasca eterna num pico, um redemoinho em volta de uma ilha ou uma tormenta costeira sem fim podem ser um desses gigantes. Eles abandonam armas e armaduras e moldam armas do próprio ar, que somem quando não servem mais. Podem retomar o corpo de gigante por pouco tempo, para conversar com mortais, cumprir uma tarefa ou expulsar invasores. Seu covil é um lugar isolado e marcante, envolto pela tempestade que ele se tornou."
@@ -9226,8 +9906,20 @@ export const LIVRO_VGM = {
    "caido",
    "contido"
   ],
+  "attacks": [
+   {
+    "name": "Mordidas",
+    "bonus": 0,
+    "reachFt": 5,
+    "damage": 0,
+    "type": "perfurante",
+    "infesta": {
+     "larvas": "1d4",
+     "porLarva": "1d6"
+    }
+   }
+  ],
   "traits": [
-   "t_mordidas",
    "enxameDoLivro"
   ],
   "blurb": "Uma massa lenta de larvas que invade o espaço da vítima e se enterra na carne dela, causando dano a cada turno até ser queimada ou curada. Quem cai a 0 PV infestado morre na hora.",
@@ -9299,6 +9991,9 @@ export const LIVRO_VGM = {
   "traits": [
    "acaoAstuta",
    "t_defesaElegante"
+  ],
+  "marcas": [
+   "any race"
   ],
   "blurb": "Duelista ágil que golpeia com rapieira e adaga três vezes por turno e depois se afasta com ação bônus, sem provocar ataques. Difícil de acertar e de prender num lugar.",
   "lore": "Espadachins são aventureiros galantes e pouco confiáveis que seguem apenas o próprio código de honra. Buscam fama, colecionam romances passageiros e costumam ganhar a vida como piratas ou corsários. Raramente ficam muito tempo no mesmo porto, preferindo cidades costeiras e o convés de navios."
@@ -9374,6 +10069,10 @@ export const LIVRO_VGM = {
    "resistenciaAMagia",
    "t_furiaDesenfreada"
   ],
+  "marcas": [
+   "demon",
+   "orc"
+  ],
   "blurb": "Avança furioso como ação bônus e despedaça com mordida e espada grande; quem o golpeia corpo a corpo leva um contra-ataque com vantagem.",
   "lore": "O tanarukk é um orc deformado pela influência demoníaca, geralmente fruto de rituais em que xamãs orcs ofertam suas crias a senhores do Abismo. Tem pele escamosa, presas enormes e uma sede de violência que nem os próprios orcs conseguem conter. Os chefes tribais o usam como arma viva, soltando-o à frente das hordas nas montanhas, colinas e túneis do Subterrâneo. Fora de combate, costuma ficar acorrentado ou isolado, pois ataca até aliados quando não há inimigos por perto."
  },
@@ -9434,6 +10133,12 @@ export const LIVRO_VGM = {
     "necrótico"
    ],
    "naoMorreA0": true
+  },
+  "motorDoLivro": {
+   "feridaQuemAgarra": {
+    "nome": "Corpo Espinhoso",
+    "dano": "1d4"
+   }
   },
   "traits": [
    "camuflagemGeral",
@@ -9643,6 +10348,9 @@ export const LIVRO_VGM = {
   "traits": [
    "t_pedraDoTransmutador"
   ],
+  "marcas": [
+   "any race"
+  ],
   "blurb": "Mago que muda o corpo e o campo de batalha: lentidão, polimorfia, bola de fogo e telecinese. A pedra mágica que carrega adapta suas defesas a cada magia de transmutação lançada.",
   "lore": "Transmutadores são magos especializados na arte de transformar a matéria e os seres vivos. Detestam a estagnação e enxergam na mudança o caminho para fortuna, sabedoria ou até divindade. Costumam viver em cidades, onde encontram recursos, bibliotecas e clientes para seus experimentos. Sempre levam consigo uma pedra encantada que eles mesmos forjaram."
  },
@@ -9683,8 +10391,28 @@ export const LIVRO_VGM = {
   ],
   "expertise": [],
   "conditionImmunities": [],
+  "acoesEspeciais": [
+   {
+    "nome": "Sufocar",
+    "tipo": "alvo",
+    "alcanceFt": 5,
+    "save": "dex",
+    "dc": 14,
+    "aperto": {
+     "tamanhoMax": "large",
+     "escape": 14,
+     "junto": [
+      "contido",
+      "cego"
+     ],
+     "dano": "4d6+3",
+     "tipo": "concussão",
+     "dano2": "1d6",
+     "tipo2": "ácido"
+    }
+   }
+  ],
   "traits": [
-   "t_sufocar",
    "aparenciaFalsa",
    "spiderClimb"
   ],
@@ -9886,6 +10614,20 @@ export const LIVRO_VGM = {
   ],
   "acoesEspeciais": [
    {
+    "nome": "Beijo",
+    "tipo": "alvo",
+    "alcanceFt": 5,
+    "soIncapacitado": true,
+    "soTipos": [
+     "humanoide"
+    ],
+    "save": "cha",
+    "dc": 12,
+    "condition": "beijoDaVargouille",
+    "rounds": null,
+    "repete": false
+   },
+   {
     "nome": "Grito Atordoante",
     "tipo": "area",
     "shape": "raio",
@@ -9898,9 +10640,7 @@ export const LIVRO_VGM = {
     "ateFimDoTurnoDele": true
    }
   ],
-  "traits": [
-   "t_beijo"
-  ],
+  "traits": [],
   "blurb": "Voa em bandos e solta um grito que deixa humanoides e feras amedrontados e atordoados; depois beija as vítimas indefesas com uma maldição que as transforma em novos vargouilles. A mordida também injeta muito veneno.",
   "lore": "É um demônio menor com aparência de cabeça decepada, que voa batendo asas de morcego no lugar das orelhas. Surge em enxames nos céus e cavernas do Abismo, onde os demônios mais fortes mal lhe dão atenção e ele sobrevive lambendo o sangue de outros ínferos. Faminto por presas vivas, tenta escapar para outros planos, muitas vezes agarrado como um carrapato a demônios convocados. No mundo material é uma praga terrível, pois cada vítima amaldiçoada vira mais um da espécie. Por isso evita a luz forte, que retarda a transformação."
  },
@@ -10263,8 +11003,18 @@ export const LIVRO_VGM = {
     "imobilizarMonstro": 15
    }
   },
+  "motorDoLivro": {
+   "golpeGuiado": {
+    "nome": "Golpe Guiado",
+    "bonus": 10,
+    "alcanceFt": 30
+   }
+  },
   "traits": [
    "t_golpeGuiado"
+  ],
+  "marcas": [
+   "any race"
   ],
   "blurb": "Avança com uma marreta pesada, golpeando duas vezes por turno, enquanto usa magias de clérigo para curar aliados, proteger a linha e punir inimigos com fogo e luz sagrada. Uma vez por descanso, pode transformar um golpe errado em acerto com um bônus enorme.",
   "lore": "Devotos de divindades da batalha, estes clérigos vivem entre soldados e campanhas militares. Traçam estratégias, conduzem tropas à frente de combate e cuidam dos feridos quando a poeira baixa. Costumam enfrentar pessoalmente os conjuradores inimigos. Alguns comandam exércitos inteiros; outros servem como braço direito de um senhor da guerra."
@@ -10347,6 +11097,9 @@ export const LIVRO_VGM = {
   },
   "traits": [
    "t_fugaNebulosa"
+  ],
+  "marcas": [
+   "any race"
   ],
   "blurb": "Conjurador traiçoeiro que confunde, enfeitiça e paralisa os inimigos com magia feérica, disparando rajadas místicas à distância. Quando ferido, some invisível e reaparece longe.",
   "lore": "Este bruxo deve seu poder a um pacto firmado com um dos senhores da Agrestia das Fadas. Em troca da magia, serve aos caprichos de um patrono imprevisível e encantador. Costuma andar acompanhado de fadas menores, como sátiros, duendes, barretes vermelhos e velozinhos. Prefere enganar, iludir e fugir a enfrentar um combate franco."
@@ -10446,8 +11199,16 @@ export const LIVRO_VGM = {
     "imagemSilenciosa": 15
    }
   },
+  "motorDoLivro": {
+   "sorteDoSombrio": {
+    "nome": "Sorte do Próprio Sombrio"
+   }
+  },
   "traits": [
    "t_sorteDoProprioSombrio"
+  ],
+  "marcas": [
+   "any race"
   ],
   "blurb": "Conjurador de nível 17 que domina o campo com fogo infernal: rajada mística, coluna de chamas, muralha de fogo e até dedo da morte. Sua sorte sombria o ajuda a resistir no momento decisivo.",
   "lore": "Este bruxo selou um pacto com um arquidemônio ou arquidiabo dos Planos Inferiores e recebeu poder em troca. Costuma andar acompanhado de um diabrete ou de um quasit. Seu comportamento tende ao extremo. Alguns se juntam a cultos que veneram corruptores, e outros passam a vida caçando esses mesmos cultos."
@@ -10507,6 +11268,7 @@ export const LIVRO_VGM = {
    "ability": "cha",
    "cantrips": [],
    "prepared": [
+    "portalArcano",
     "visaoDaVerdade",
     "detectarMagia",
     "salto",
@@ -10518,6 +11280,7 @@ export const LIVRO_VGM = {
    "noMotor": true,
    "conjuraNoTurno": "geral",
    "porDia": {
+    "portalArcano": 1,
     "visaoDaVerdade": 1
    },
    "aVontade": [
@@ -10528,6 +11291,7 @@ export const LIVRO_VGM = {
     "falarComOsMortos"
    ],
    "cdPorMagia": {
+    "portalArcano": 15,
     "visaoDaVerdade": 15,
     "detectarMagia": 15,
     "salto": 15,
@@ -10547,6 +11311,9 @@ export const LIVRO_VGM = {
   },
   "traits": [
    "aura"
+  ],
+  "marcas": [
+   "any race"
   ],
   "blurb": "Conjurador que fica perto dos inimigos para que sua aura de sussurros cause dano psíquico a cada turno, enquanto usa rajada mística, braços de Hadar e coroa da loucura. Pode se teleportar com porta dimensional e atravessar distâncias com portal arcano.",
   "lore": "Este bruxo obteve seu poder por meio de um pacto com uma entidade incompreensível vinda de planos remotos e alienígenas. Muitos se juntam a cultos que adoram esses seres e colaboram com aberrações que têm os mesmos objetivos. Outros fazem o caminho inverso e usam o conhecimento proibido para caçar a loucura que essas criaturas espalham. São encontrados em cidades, desertos, montanhas e nas profundezas do Subterrâneo."
@@ -10613,6 +11380,12 @@ export const LIVRO_VGM = {
    "count": 2
   },
   "usosIndomavel": 3,
+  "motorDoLivro": {
+   "sobrevivente": {
+    "nome": "Sobrevivente",
+    "pv": 10
+   }
+  },
   "lendarias": {
    "acoes": 3,
    "opcoes": [
@@ -10621,6 +11394,15 @@ export const LIVRO_VGM = {
      "custo": 1,
      "tipo": "golpe",
      "arma": "Montante"
+    },
+    {
+     "nome": "Comandar Aliado",
+     "custo": 1,
+     "tipo": "comandar",
+     "max": 1,
+     "alcanceFt": 30,
+     "corpoACorpo": false,
+     "vantagem": true
     },
     {
      "nome": "Amedrontar Inimigo",
@@ -10639,6 +11421,9 @@ export const LIVRO_VGM = {
    "indomavelMonstro",
    "t_sobrevivente",
    "acoesLendarias"
+  ],
+  "marcas": [
+   "any race"
   ],
   "blurb": "Combatente brutal com montante e arco curto, difícil de derrubar: regenera PV quando ferido e rerrola resistências falhas. Fora do seu turno, ainda comanda aliados a atacar e amedronta inimigos.",
   "lore": "Comandantes lendários cujo nome inspira respeito e temor em qualquer campo de batalha. Depois de acumular vitórias marcantes, um senhor da guerra pode facilmente se tornar rei ou general. Seguidores fanáticos se reúnem sob sua bandeira, dispostos a morrer por ele. Costuma ser encontrado em cidades e fortalezas, cercado de tropas leais."
@@ -10843,6 +11628,9 @@ export const LIVRO_VGM = {
    "t_bandoOpressor",
    "t_linguaDeRaxivort"
   ],
+  "marcas": [
+   "xvart"
+  ],
   "blurb": "Pequeno e covarde, o xvart ataca em bando com espada curta ou funda e foge sem sofrer ataques de oportunidade. Em grupo, derruba e empurra inimigos com facilidade.",
   "lore": "Os xvarts são humanoides baixinhos de pele azul e olhos laranja, criados à imagem de Raxivort, um semideus ladrão que fugiu da ira de Graz'zt. Vivem em colinas remotas, florestas e cavernas, lugares esquecidos onde também prosperam ratos e morcegos, que eles domesticam. Gananciosos e invejosos, acumulam objetos de valor e saqueiam fazendas, mas temem humanos, anões e elfos. Quando a sorte vira, capturam vítimas com redes para sacrificá-las ao seu deus, que às vezes aparece apenas para levar todo o tesouro da tribo."
  },
@@ -10902,6 +11690,9 @@ export const LIVRO_VGM = {
    "acaoAstuta",
    "t_bandoOpressor",
    "t_linguaDeRaxivort"
+  ],
+  "marcas": [
+   "xvart"
   ],
   "blurb": "Pequeno e covarde, ataca com espada curta ou funda e foge com facilidade, desengajando como ação bônus. Em bando, empurra os inimigos com vantagem.",
   "lore": "Os xvarts são humanoides pequenos de pele azulada, servos do semideus Raxivort, que os criou por inveja e ambição. Vivem em tocas no Subterrâneo e em colinas, sempre na companhia de ratos e morcegos. Os oradores são os poucos da raça capazes de falar outra língua além do Abissal, e por isso negociam com outras criaturas em nome do bando. São cruéis com os fracos e covardes diante dos fortes."
@@ -10967,6 +11758,9 @@ export const LIVRO_VGM = {
    "acaoAstuta",
    "t_bandoOpressor",
    "t_linguaDeRaxivort"
+  ],
+  "marcas": [
+   "xvart"
   ],
   "blurb": "Pequeno conjurador covarde que dispara rajadas místicas e raios ardentes à distância, some com invisibilidade e se desengaja como ação bônus quando alguém se aproxima.",
   "lore": "Os xvarts são criaturinhas de pele azul e olhos laranja, cópias degeneradas do semideus fugitivo Raxivort, ladrão do tesouro de Graz'zt. Alguns conseguem um pacto entregando ao seu deus um objeto valioso o bastante para fazê-lo aparecer, e recebem em troca magia de bruxo. Esses bruxos são temidos pela tribo, mas preferem vasculhar ruínas e masmorras atrás de riquezas, cercados de xvarts bajuladores. Vivem em cavernas, colinas e cantos esquecidos, acompanhados de ratos e morcegos."
@@ -11044,6 +11838,11 @@ export const LIVRO_VGM = {
     "ateFimDoTurnoDele": true
    }
   ],
+  "motorDoLivro": {
+   "banidoPeloSol": {
+    "nome": "Banimento pela Luz Solar"
+   }
+  },
   "traits": [
    "keenHearingSmell",
    "t_banimentoPelaLuzSolar",
@@ -11197,11 +11996,28 @@ export const LIVRO_VGM = {
    "imunizaAoPassar": true,
    "soInimigos": true
   },
+  "vantagemRacial": [
+   {
+    "nome": "Seis Cabeças",
+    "condicoes": [
+     "cego",
+     "enfeiticado",
+     "surdo",
+     "amedrontado",
+     "atordoado",
+     "inconsciente"
+    ]
+   }
+  ],
   "traits": [
    "resistenciaAMagia",
    "aura",
    "metamorfo",
    "t_seisCabecas"
+  ],
+  "marcas": [
+   "shapechanger",
+   "yuan-ti"
   ],
   "blurb": "Colosso serpentino de seis cabeças que esmaga e corrói com sua constrição enquanto despedaça alvos com garras e mordidas venenosas. Sua aura espalha pavor de serpentes, e ela ainda dispõe de magias poderosas como palavra divina e metamorfose.",
   "lore": "O anátema é o ápice da transformação yuan-ti, um ser que abandonou quase toda a forma humana em busca de se tornar divino. Governa templos e cidades ocultas em selvas, desertos e no Subterrâneo, onde é venerado como encarnação dos deuses-serpente. Os demais yuan-ti o servem com fanatismo, e ele trata todas as outras raças como gado ou escravos. Astuto e paciente, prefere manipular de longe, mas quando entra em combate é uma força devastadora."
@@ -11275,6 +12091,9 @@ export const LIVRO_VGM = {
   "traits": [
    "ascendenciaFeerica",
    "imprudente"
+  ],
+  "marcas": [
+   "yuan-ti"
   ],
   "blurb": "Brutamontes escamoso que ataca com mordida e duas garras por turno, podendo se jogar de forma imprudente para ganhar vantagem em troca de ficar exposto. Imune a veneno e difícil de controlar com magia.",
   "lore": "Os guardas de ninhada são pessoas capturadas pelos yuan-ti e obrigadas a beber uma poção que as deforma, ao longo de alguns dias, em criaturas magras, escamosas e de mente simples. A transformação apaga quem eram e as deixa obedientes a qualquer yuan-ti, além de cheias de fúria contra seres que não sejam répteis. Os yuan-ti os chamam de \"histachii\", os vigias de ovos, e os usam para proteger ninhos e patrulhar contra invasores. Raramente falam, preferindo sibilos e grunhidos, e exalam um leve cheiro de carne podre."
@@ -11379,6 +12198,10 @@ export const LIVRO_VGM = {
    "resistenciaAMagia",
    "t_tipoDeMaldito"
   ],
+  "marcas": [
+   "shapechanger",
+   "yuan-ti"
+  ],
   "blurb": "Combate com cimitarra ou arco longo, atacando duas vezes por turno, e usa sugestão para manipular inimigos. Pode virar serpente para morder com veneno e resiste bem a magia.",
   "lore": "Os malditos são yuan-ti de sangue impuro, mistura de humano e serpente, que formam a casta intermediária da sociedade de seu povo. Este tipo tem corpo humano do qual brotam uma ou mais caudas de cobra. Vivem em templos ocultos em florestas, pântanos e desertos, servindo aos puros-sangues e comandando os servos mais humildes. São astutos e manipuladores, preferindo enganar e dominar antes de recorrer à força."
  },
@@ -11482,6 +12305,10 @@ export const LIVRO_VGM = {
    "resistenciaAMagia",
    "t_tipoDeMaldito"
   ],
+  "marcas": [
+   "shapechanger",
+   "yuan-ti"
+  ],
   "blurb": "Combate com cimitarra ou arco longo atacando duas vezes por turno, manipula inimigos com sugestão e pode virar serpente para morder com veneno. Tem vantagem contra magia e é imune a veneno.",
   "lore": "Os malditos são a casta intermediária dos yuan-ti, mestiços de humano e serpente moldados por rituais sombrios. Os do tipo 5 parecem humanos, mas têm o corpo inteiro coberto de escamas. Vivem em templos e cidades ocultas em florestas, pântanos e desertos, servindo os abomináveis e comandando os sangue-puros. São frios, calculistas e preferem enganar e infiltrar antes de partir para a violência."
  },
@@ -11575,11 +12402,27 @@ export const LIVRO_VGM = {
     "amizadeAnimal": 13
    }
   },
+  "motorDoLivro": {
+   "primeiroAcerto": {
+    "nome": "Presas Mentais",
+    "dados": "3d10",
+    "tipo": "psíquico",
+    "soCorpoACorpo": true
+   },
+   "pvTempAoDerrubar": {
+    "nome": "Bênção de Sseth",
+    "pv": 9
+   }
+  },
   "traits": [
    "metamorfo",
    "resistenciaAMagia",
    "t_presasMentais",
    "t_bencaoDeSseth"
+  ],
+  "marcas": [
+   "shapechanger",
+   "yuan-ti"
   ],
   "blurb": "Conjurador traiçoeiro que combina mordida venenosa e cimitarra com presas psíquicas que causam 3d10 extras, além de rajada mística e magias de encantamento. Resiste a magia e ganha PV temporários ao derrubar inimigos.",
   "lore": "É um malison yuan-ti de corpo humano e cabeça de serpente que firmou um pacto com Sseth, a Morte Sibilante. Usa seus poderes para converter fiéis, acumular poder e confundir a mente dos adversários. Vive nas intrigas, frequentemente servindo a duas facções ao mesmo tempo e escondendo de cada uma seus laços com a outra. Mesmo entre os yuan-ti tem fama de arrogante, ardiloso e de fugir ao primeiro sinal de perigo."
@@ -11692,10 +12535,22 @@ export const LIVRO_VGM = {
     "repete": true
    }
   ],
+  "motorDoLivro": {
+   "primeiroAcerto": {
+    "nome": "Presas da Morte",
+    "dados": "3d10",
+    "tipo": "necrótico",
+    "soCorpoACorpo": true
+   }
+  },
   "traits": [
    "metamorfo",
    "t_presasDaMorte",
    "resistenciaAMagia"
+  ],
+  "marcas": [
+   "shapechanger",
+   "yuan-ti"
   ],
   "blurb": "Sacerdotisa serpentina que constringe com a cauda e golpeia com cimitarra, enquanto conjura magias de bruxo e projeta medos ilusórios que causam dano psíquico. Suas Presas da Morte somam dano necrótico pesado e ela resiste bem a magia.",
   "lore": "Estas yuan-ti malison, com cabeça e torso humanos sobre um corpo de serpente, firmam um pacto com Dendar, a Serpente da Noite. Em troca de poder, alimentam a divindade com o terror e os pesadelos de suas vítimas. Tratam as visões que recebem como profecias e agem para que se realizem. São as mais cruéis de sua raça: preferem aterrorizar a matar, torturam escravos e manipulam comunidades humanoides para conseguir mais presas. Costumam se cercar de mortos-vivos."
@@ -11797,10 +12652,22 @@ export const LIVRO_VGM = {
     "repete": false
    }
   ],
+  "motorDoLivro": {
+   "primeiroAcerto": {
+    "nome": "Discípulo do Veneno",
+    "dados": "3d10",
+    "tipo": "veneno",
+    "soCorpoACorpo": true
+   }
+  },
   "traits": [
    "metamorfo",
    "resistenciaAMagia",
    "t_discipuloDoVeneno"
+  ],
+  "marcas": [
+   "shapechanger",
+   "yuan-ti"
   ],
   "blurb": "Sacerdote-bruxo que morde com os braços de serpente carregados de veneno e controla o combate com magias como contramágica, sugestão e rajada mística. Seu Sono de Merrshaulk pode derrubar inconscientes até cinco inimigos de uma vez.",
   "lore": "Os mestres do fosso são malisons yuan-ti que firmaram um pacto com Merrshaulk, o deus serpente adormecido, e oferecem humanoides em sacrifício na esperança de despertá-lo. Têm cabeça e tronco humanos, mas no lugar dos braços carregam serpentes vivas. Entre os yuan-ti são os mais apegados à tradição e se consideram os mais aptos a guiar seu povo. Defendem paciência e cautela, atuando nos planos de longo prazo para dominar governos humanoides e manter ocultas as cidades yuan-ti em selvas, desertos e no Subterrâneo."
@@ -11815,14 +12682,6 @@ export const TRACOS_VGM = {
  "t_olhoDoArqueiro": {
   "name": "Olho do Arqueiro",
   "desc": "Três vezes por dia, como ação bônus, soma 1d10 à próxima jogada de ataque ou de dano com arco longo ou arco curto."
- },
- "t_olharDebilitante": {
-  "name": "Olhar Debilitante",
-  "desc": "Um alvo visível a até 6 m faz teste de resistência de Constituição CD 13. Se falhar, por 1 minuto causa só metade do dano com ataques de arma baseados em Força, repetindo o teste no fim de cada turno seu para encerrar o efeito."
- },
- "t_engolir": {
-  "name": "Engolir",
-  "desc": "Morde uma criatura Média ou menor que esteja agarrando; se acertar, a engole. A vítima fica cega, contida, com cobertura total e sofre 10 (3d6) de dano necrótico no início de cada turno dele (fica estável ao chegar a 0 PV). Só engole uma por vez e pode regurgitá-la caída a 1,5 m quando quiser ou ao morrer."
  },
  "t_conexaoRessonante": {
   "name": "Conexão Ressonante",
@@ -11900,17 +12759,9 @@ export const TRACOS_VGM = {
   "name": "Sangue Elétrico",
   "desc": "Sempre que uma criatura a até 1,5 m o acerta com ataque corpo a corpo de dano perfurante ou cortante, ela sofre 5 (1d10) de dano elétrico."
  },
- "t_aprisionarAlma": {
-  "name": "Aprisionar Alma",
-  "desc": "Teleporta para sua caixa torácica um humanoide vivo com 0 PV a até 9 m, que passa a ter desvantagem em testes de resistência contra a morte; só prende um por vez. Se a vítima morrer lá dentro, o devorador recupera 25 PV, recarrega Dilacerar Alma e ganha uma ação extra no próximo turno, e no início desse turno a expele como ação bônus em forma de zumbi (até 2 DV), carniçal (3 a 5 DV) ou aparição (6+ DV)."
- },
  "t_pressagio": {
   "name": "Presságio",
   "desc": "Quando ele ou uma criatura que ele veja faz uma jogada de ataque, teste de resistência ou teste de habilidade, o adivinho pode rolar um d20 e usar esse resultado no lugar. Recarrega depois que ele conjura uma magia de adivinhação de 1º nível ou superior."
- },
- "t_explosaoMentalRecarga56": {
-  "name": "Explosão Mental (Recarga 5–6)",
-  "desc": "Criaturas escolhidas a até 18 m fazem teste de resistência de Inteligência CD 18; quem falha sofre 32 (5d10+5) de dano psíquico e fica atordoado por 1 minuto, repetindo o teste ao fim de cada turno."
  },
  "t_eloPsiquico": {
   "name": "Elo Psíquico",
@@ -11936,10 +12787,6 @@ export const TRACOS_VGM = {
   "name": "Esculpir Magias",
   "desc": "Ao lançar uma magia de evocação que exige teste de resistência, escolhe até 1 + o círculo da magia criaturas que vê; elas passam automaticamente no teste. Se o sucesso reduziria o dano à metade, elas não sofrem dano algum."
  },
- "t_investidaDeEscudo": {
-  "name": "Investida de Escudo",
-  "desc": "Avança até 9 m em linha reta, passando pelo espaço de criaturas menores que Enorme, e faz um ataque de escudo flamejante na primeira vez que entra no espaço de cada uma. Se acertar, o alvo faz teste de resistência de Força CD 21 ou é empurrado junto até o fim do movimento; falhando por 5 ou mais, também fica caído e sofre 18 (3d6+8) de concussão, ou 29 (6d6+8) se já estava caído."
- },
  "t_escudosDuplos": {
   "name": "Escudos Duplos",
   "desc": "Os dois escudos já estão incluídos na CA. Para arremessar pedras, o gigante precisa guardar ou largar um deles."
@@ -11956,10 +12803,6 @@ export const TRACOS_VGM = {
   "name": "Aura de Sede de Sangue",
   "desc": "Enquanto o flind não estiver incapacitado, criaturas com o traço Fúria Destrutiva a até 3 m dele podem fazer um ataque de mordida como ação bônus."
  },
- "t_lingua": {
-  "name": "Língua",
-  "desc": "Alvo Médio ou menor visível a até 6 m faz teste de resistência de Força CD 18; se falhar, é puxado para um espaço a 1,5 m do sapomoth, que pode mordê-lo como ação bônus."
- },
  "t_vulneravelAChoques": {
   "name": "Vulnerável a Choques",
   "desc": "Ao sofrer dano elétrico, até o fim do seu próximo turno tem o deslocamento reduzido à metade, -2 na CA e nos testes de resistência de Destreza, não pode usar reações nem Ataques Múltiplos, e só pode usar ação ou ação bônus no turno, não ambas."
@@ -11975,10 +12818,6 @@ export const TRACOS_VGM = {
  "t_imitacao": {
   "name": "Imitação",
   "desc": "Reproduz sons de animais e vozes humanoides. Quem ouve percebe a farsa com um teste de Sabedoria (Intuição) CD 14."
- },
- "t_investidaSubita": {
-  "name": "Investida Súbita",
-  "desc": "Até o fim do turno, seu deslocamento aumenta em 18 m e ele não provoca ataques de oportunidade."
  },
  "t_golpeVingativo": {
   "name": "Golpe Vingativo",
@@ -12024,10 +12863,6 @@ export const TRACOS_VGM = {
   "name": "Força da Pedra",
   "desc": "Enquanto está no chão, seus ataques com arma causam 2 dados extras de dano (já incluídos)."
  },
- "t_vozDoKraken": {
-  "name": "Voz do Kraken",
-  "desc": "Recarrega após descanso curto ou longo. O kraken fala pelo sacerdote, sendo ouvido a até 90 m. Criaturas escolhidas que ouvirem fazem teste de resistência de Carisma CD 14 ou ficam amedrontadas por 1 minuto, repetindo o teste no fim de cada turno delas."
- },
  "t_retiradaAosCoices": {
   "name": "Retirada aos Coices",
   "desc": "Se atacar com os cascos, pode usar Desengajar como ação bônus."
@@ -12064,17 +12899,9 @@ export const TRACOS_VGM = {
   "name": "Reviravolta da Sorte",
   "desc": "Quando outra criatura lhe causa dano, o nilbog reduz esse dano a 0 e recupera 1d6 PV."
  },
- "t_comandoDeIlneval": {
-  "name": "Comando de Ilneval",
-  "desc": "Recarga 4–6. Até três orcs aliados a até 36 m que possam ouvi-lo usam a reação para fazer um ataque com arma cada."
- },
  "t_golpeadorDeInimigosDeIlneval": {
   "name": "Golpeador de Inimigos de Ilneval",
   "desc": "Os acertos com espada longa causam um dado de dano adicional, já somado no ataque."
- },
- "t_vingancaCorrompida": {
-  "name": "Vingança Corrompida",
-  "desc": "O orc reduz os próprios PV a 0, detonando seu Portador Corrompido."
  },
  "t_nutridoDeYurtrus": {
   "name": "Nutrido de Yurtrus",
@@ -12104,17 +12931,9 @@ export const TRACOS_VGM = {
   "name": "Movimento Borrado",
   "desc": "Jogadas de ataque contra o velocino têm desvantagem, a menos que ele esteja incapacitado ou contido."
  },
- "t_perseguicaoDeFerro": {
-  "name": "Perseguição de Ferro",
-  "desc": "Move-se até seu deslocamento em direção a uma criatura visível e a chuta. O alvo faz teste de resistência de Destreza CD 14; se falhar, sofre 20 (3d10 + 4) de dano de concussão e fica caído."
- },
  "t_botasDeFerro": {
   "name": "Botas de Ferro",
   "desc": "Enquanto se move, tem desvantagem em testes de Destreza (Furtividade)."
- },
- "t_forcaDesproporcional": {
-  "name": "Força Desproporcional",
-  "desc": "Conta como Médio para agarrar e não sofre desvantagem ao atacar com armas pesadas."
  },
  "t_anatomiaPisciana": {
   "name": "Anatomia Pisciana",
@@ -12132,10 +12951,6 @@ export const TRACOS_VGM = {
   "name": "Mesclar-se às Sombras",
   "desc": "Em penumbra ou escuridão, pode usar uma ação bônus para ficar invisível junto com o que carrega. O efeito termina se ele atacar, entrar em luz plena, ficar incapacitado ou encerrá-lo com outra ação bônus."
  },
- "t_sanguessugaVital": {
-  "name": "Sanguessuga Vital",
-  "desc": "Uma criatura Grande ou menor a até 1,5 m faz teste de resistência de Destreza CD 13 ou fica agarrada (fuga CD 13), contida e sem conseguir respirar, a menos que respire água. No início de cada turno dela, sofre 16 (3d10) de dano necrótico; só agarra um alvo por vez."
- },
  "t_rastreadorAgucado": {
   "name": "Rastreador Aguçado",
   "desc": "Tem vantagem em testes de Sabedoria para rastrear presas."
@@ -12147,22 +12962,6 @@ export const TRACOS_VGM = {
  "t_vermes": {
   "name": "Vermes",
   "desc": "Se for alvo de um efeito que cure doenças ou remova maldições, seus vermes morrem e ela perde a ação Verme Escavador."
- },
- "t_toquePetrificante": {
-  "name": "Toque Petrificante",
-  "desc": "Uma criatura Média ou menor a até 3 m e enfeitiçada pelo gigante faz teste de resistência de Constituição CD 17; se falhar, fica petrificada e pode ser presa ao corpo dele. Enquanto o gigante viver, restauração maior e magias semelhantes não a libertam."
- },
- "t_encantoDoAndarilhoDosSonhos": {
-  "name": "Encanto do Andarilho dos Sonhos",
-  "desc": "Inimigos que começam o turno a até 9 m do gigante (se ele não estiver incapacitado) fazem teste de resistência de Carisma CD 13 ou ficam enfeitiçados. Repetem o teste no fim de cada turno; ao passar, ficam imunes a este efeito por 24 horas."
- },
- "t_dardoDeVento": {
-  "name": "Dardo de Vento",
-  "desc": "Arremessa um dardo de vento mágico numa criatura visível a até 180 m; acerta automaticamente, causando 19 (3d6 + 9) de dano perfurante, e então desaparece."
- },
- "t_mordidas": {
-  "name": "Mordidas",
-  "desc": "Ataque corpo a corpo +0, alcance 0 m, uma criatura no espaço do enxame: o alvo é infestado por 1d4 larvas, sofrendo 1d6 de dano perfurante por larva no início de cada turno dele. Aplicar fogo à ferida até o fim do próximo turno do alvo causa 1 de dano de fogo e mata essas larvas; depois disso, só efeitos que curem doenças as eliminam. Se o alvo infestado terminar o turno com 0 PV, ele morre."
  },
  "t_defesaElegante": {
   "name": "Defesa Elegante",
@@ -12180,17 +12979,9 @@ export const TRACOS_VGM = {
   "name": "Pedra do Transmutador",
   "desc": "A pedra dá ao portador um efeito: visão no escuro de 18 m, +3 m de deslocamento sem carga, proficiência em resistência de Constituição, ou resistência a ácido, frio, fogo, elétrico ou trovejante. Ao lançar uma magia de transmutação de 1º nível ou mais, o transmutador pode trocar o efeito."
  },
- "t_sufocar": {
-  "name": "Sufocar",
-  "desc": "Uma criatura Grande ou menor a até 1,5 m faz teste de resistência de Destreza CD 14; se falhar, fica agarrada (fuga CD 14), contida, cega e sob risco de sufocar. No início de cada turno dela, sofre 17 (4d6+3) de dano de concussão e 3 (1d6) de ácido. Só sufoca uma criatura por vez."
- },
  "t_nucleoPsionico": {
   "name": "Núcleo Psiônico",
   "desc": "Se estiver ligado a um cérebro ancião, permite que ele se conecte a qualquer criatura que o ulitharid detecte com Sentir Criaturas. A ligação com o cérebro ancião se mantém a qualquer distância no mesmo plano, e o ulitharid pode rompê-la livremente se estiver a mais de 8 km dele."
- },
- "t_beijo": {
-  "name": "Beijo",
-  "desc": "Um humanoide incapacitado a até 1,5 m faz teste de resistência de Carisma CD 12 ou fica amaldiçoado, perdendo 1 de Carisma por hora (a contagem pausa sob luz solar ou da magia luz do dia). Ao chegar a Carisma 2, morre e sua cabeça vira um novo vargouille; remover maldição, restauração maior ou magia similar antes disso desfaz a maldição e seus efeitos."
  },
  "t_golpeGuiado": {
   "name": "Golpe Guiado",

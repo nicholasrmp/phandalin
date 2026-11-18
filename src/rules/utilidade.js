@@ -35,6 +35,7 @@ import { APRIMORAR } from './spells.js';
 import { encherAgua, guardarMagico } from './mantimentos.js';
 import { garantirInventario } from './equipment.js';
 import { UTIL_DOS_LIVROS } from './utilidade-livros.js';
+import { usoDoItem } from './itens-que-conjuram.js';
 
 /**
  * O que cada magia faz FORA do combate. Campos:
@@ -259,10 +260,14 @@ export function ativasDoGrupo(estado, herois) {
 
 /** A magia ativa de um id, filtrada por conjurador, NPC ou alvo. */
 export function ativaDe(estado, herois, spellId, { por = null, npc = null, alvo = null } = {}) {
-  return ativasDoGrupo(estado, herois).find((a) => a.spellId === spellId
+  const ativa = ativasDoGrupo(estado, herois).find((a) => a.spellId === spellId
     && (!por || a.por === (por.id ?? por))
     && (!npc || a.npc === chaveDoNpc(npc))
     && (!alvo || a.alvos.includes(alvo.id ?? alvo))) ?? null;
+  if (ativa || spellId !== 'falarComAnimais' || npc || alvo) return ativa;
+  // A FALA DOS BOSQUES (druida Pastor): o Falar com Animais que nunca acaba, de quem tem a característica
+  const pastor = (herois ?? []).find((h) => h && !h.dead && h.features?.includes('speechOfTheWoods') && (!por || h.id === (por.id ?? por)));
+  return pastor ? { spellId, por: pastor.id, alvos: [], doTraco: 'speechOfTheWoods' } : null;
 }
 
 /** Desfaz uma magia ativa: condições, concentração e o que ela deixa para trás. */
@@ -349,6 +354,22 @@ export function podeConjurarFora(c, spellId, { circulo = null, ritual = false } 
   const spell = SPELLS[spellId];
   const u = UTIL[spellId];
   if (!spell || !u) return { ok: false, why: 'esta magia não tem uso fora do combate' };
+  // CONSULTAR OS ESPÍRITOS (bárbaro do Guardião Ancestral, 6º): Augúrio ou Clarividência sem espaço, uma vez por descanso
+  if (['augurio', 'clarividencia'].includes(spellId) && c.features?.includes('consultTheSpirits') && (c.resources?.consultTheSpirits ?? 0) > 0
+    && !c.dead && c.hp > 0 && !conditionEffects(c).incapacitated) {
+    return { ok: true, spell, circulo: spell.level, item: { recurso: 'consultTheSpirits', custo: 1 } };
+  }
+  // ANDARILHO DOS SONHOS (druida dos Sonhos, 14º): logo depois de um descanso curto, a Vidência sem espaço, uma vez por
+  // descanso longo. O Sonho e o Círculo de Teletransporte, as outras duas do livro, não estão no jogo.
+  if (spellId === 'videncia' && c.andarilhoDosSonhos && (c.resources?.walkerInDreams ?? 0) > 0
+    && !c.dead && c.hp > 0 && !conditionEffects(c).incapacitated) {
+    return { ok: true, spell, circulo: spell.level, item: { recurso: 'walkerInDreams', custo: 1, marca: 'andarilhoDosSonhos' } };
+  }
+  // a magia que sai de um ITEM (o Elmo do Teletransporte): as cargas dele, sem espaço e sem ser conjurador
+  const doItem = !ritual ? usoDoItem(c, spell) : null;
+  if (doItem && !c.dead && c.hp > 0 && !conditionEffects(c).incapacitated && !([...(c.spellcasting?.prepared ?? []), ...(c.spellcasting?.cantrips ?? [])].includes(spellId) && podeComEspaco(c, spell))) {
+    return { ok: true, spell, circulo: doItem.circulo, item: doItem };
+  }
   if (!c.spellcasting) return { ok: false, why: 'não conjura magias' };
   if (c.dead || c.hp <= 0) return { ok: false, why: 'quem está caído não conjura' };
   if (conditionEffects(c).incapacitated) return { ok: false, why: 'incapacitado não conjura' };
@@ -372,6 +393,9 @@ export function podeConjurarFora(c, spellId, { circulo = null, ritual = false } 
   if (usa == null) return { ok: false, why: `sem espaço de ${spell.level}º círculo ou maior` };
   return { ok: true, spell, circulo: usa };
 }
+
+/** O conjurador tem espaço para a magia (então ela sai do espaço dele, e não do item)? */
+const podeComEspaco = (c, spell) => spell.level === 0 || (c.spellcasting?.slots ?? []).some((n, i) => i >= spell.level && n > 0);
 
 /**
  * Larga a concentração de uma magia de COMBATE (Bênção, teia…) quando o herói
@@ -453,6 +477,9 @@ export function conjurarFora(estado, c, spellId, { herois, rng, circulo = null, 
   }
   if (u.alvo === 'aliado' && !alvo) alvo = c;
   if (u.alvo === 'aliado' && (alvo.dead || alvo.side !== 'party')) return { ok: false, why: 'só em aliado' };
+  // APRIMORAR PERÍCIA: a perícia tem de ser treinada e ainda não dobrar a proficiência
+  if (u.escolhe === 'pericia' && !(alvo.skills ?? []).includes(opcao)) return { ok: false, why: `${alvo.name} não é treinado nessa perícia` };
+  if (u.escolhe === 'pericia' && alvo.expertise?.includes(opcao)) return { ok: false, why: `${alvo.name} já dobra a proficiência nessa perícia` };
   if (u.alvo === 'item' && !alvo) return { ok: false, why: 'escolha um item' };
   if (u.alvo === 'morto') {
     if (!alvo?.dead) return { ok: false, why: 'precisa de um cadáver' };
@@ -492,7 +519,8 @@ export function conjurarFora(estado, c, spellId, { herois, rng, circulo = null, 
   }
 
   // Gasta.
-  if (!chk.ritual && spell.level > 0) c.spellcasting.slots[chk.circulo] -= 1;
+  if (chk.item) { c.resources[chk.item.recurso] -= chk.item.custo; if (chk.item.marca) delete c[chk.item.marca]; }
+  else if (!chk.ritual && spell.level > 0) c.spellcasting.slots[chk.circulo] -= 1;
   // PROTEÇÃO ARCANA (Abjuração) e TRANSPOSIÇÃO BENIGNA (Conjuração), fora de combate também: uma abjuração de 1º círculo ou mais cria ou recarrega a proteção.
   if (!chk.ritual && spell.level > 0) {
     if (c.features?.includes('arcaneWard') && spell.school === 'abjuração') {
@@ -503,7 +531,7 @@ export function conjurarFora(estado, c, spellId, { herois, rng, circulo = null, 
     if (c.features?.includes('benignTransposition') && spell.school === 'conjuração' && c.resources) c.resources.benignTransposition = c.resourcesMax?.benignTransposition ?? 1;
   }
   // ADIVINHAÇÃO ESPECIALISTA (mago de Adivinhação, 6º): uma adivinhação de 2º círculo ou mais, fora de combate também, devolve um espaço menor.
-  if (!chk.ritual && c.features?.includes('expertDivination') && ['adivinhação', 'divinação'].includes(spell.school) && chk.circulo >= 2) {
+  if (!chk.ritual && !chk.item && c.features?.includes('expertDivination') && ['adivinhação', 'divinação'].includes(spell.school) && chk.circulo >= 2) {
     for (let i = Math.min(chk.circulo - 1, 5); i >= 1; i -= 1) {
       if ((c.spellcasting.slots[i] ?? 0) < (c.spellcasting.slotsMax?.[i] ?? 0)) {
         c.spellcasting.slots[i] += 1;
@@ -551,6 +579,7 @@ export function conjurarFora(estado, c, spellId, { herois, rng, circulo = null, 
       const rounds = Math.max(1, Math.round(duracao * 10));
       for (const t of alvos) {
         let data = null;
+        if (u.escolhe === 'pericia') data = { pericia: opcao };
         if (u.escolhe === 'atributo') {
           const o = APRIMORAR[opcao ?? 'urso'];
           data = { hab: o.hab, opcao: opcao ?? 'urso', pvTemp: 0 };
@@ -1027,6 +1056,17 @@ export function rolarTeste(estado, herois, rng, quem, pericia, cd, { npc = null,
     }
   }
   let passou = total >= cd;
+  // TALENTO PSI-REFORÇADO (ladino Lâmina da Alma): falhou num teste em que é treinado, rola um dado psiônico e soma; o dado
+  // só se gasta se o teste passar
+  if (!passou && quem.features?.includes('psiBolsteredKnack') && (quem.skills ?? []).includes(pericia) && (quem.resources?.psionicEnergy ?? 0) > 0) {
+    const d = roll(rng, `1${quem.dadoPsionico ?? 'd6'}`);
+    if (total + d.total >= cd) {
+      total += d.total;
+      passou = true;
+      quem.resources.psionicEnergy -= 1;
+      extras.push(`+${d.total} (Talento Psi-Reforçado, um dado psiônico)`);
+    } else extras.push(`+${d.total} não bastou (Talento Psi-Reforçado: o dado fica)`);
+  }
   if (m.auto && !passou) {
     passou = true;
     extras.push('Sugestão: ele cede');
@@ -1148,6 +1188,10 @@ export function magiasForaDoHeroi(c, { regiao = false } = {}) {
   const doLivro = c.classe === 'mago' ? [...(c.spellcasting?.rituais ?? []), ...(c.spellcasting?.livro ?? []).filter((id) => SPELLS[id]?.ritual)] : [];
   // o livro de rituais do CONJURADOR DE RITUAIS (talento)
   doLivro.push(...(c.spellcasting?.livroDeRituais ?? []));
+  // CONSULTAR OS ESPÍRITOS (bárbaro do Guardião Ancestral): o Augúrio e a Clarividência, sem espaço
+  if (c.features?.includes('consultTheSpirits')) doLivro.push('augurio', 'clarividencia');
+  // ANDARILHO DOS SONHOS: a Vidência, depois do descanso curto
+  if (c.andarilhoDosSonhos && (c.resources?.walkerInDreams ?? 0) > 0) doLivro.push('videncia');
   // a VIAGEM (Teletransporte e as outras) se conjura na tela da região, não na cena; e vice-versa
   return [...new Set([...magiasProntas(c), ...doLivro])].filter((id) => UTIL[id] && Boolean(UTIL[id].soNaRegiao) === regiao).map((id) => getSpell(id));
 }

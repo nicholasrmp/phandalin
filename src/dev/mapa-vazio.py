@@ -75,13 +75,13 @@ def cupula():
     m, b = base('cupula', fundo='vazio-cupula-dentro')
     dentro = [P(x, y) for y in range(39) for x in range(32) if ((x + 0.5 - 16) ** 2 + (y + 0.5 - 16.3) ** 2) <= 5.6 ** 2]
     m['interativos'] = [
-        Z.obj(15, 33, 'furoDaCupula', 'Olhar o furo', 'Um ponto de escuridão prateada no chão da plataforma: a estrela sem luz, deste lado.'),
+        Z.obj(15, 34, 'furoDaCupula', 'Olhar o furo', 'Um ponto de escuridão prateada no chão da plataforma: a estrela sem luz, deste lado.'),
         Z.obj(16, 23, 'aberturaDaCupula', 'Olhar a cúpula', 'Uma cúpula de cristal enegrecido no alto da ilha, da largura de uma casa grande, '
               'com uma abertura no pé da passarela. Lá dentro, vultos enormes e imóveis.'),
     ]
     pontos = {
         'grupo': [P(15, 32), P(16, 32), P(15, 31), P(16, 31)], 'olhar': {'dx': 0, 'dy': -1},
-        'furo': P(15, 33),
+        'furo': P(15, 34),
         'guardioes': [P(13, 13), P(18, 13), P(12, 17), P(19, 17), P(15, 14)],
         'refens': [P(12, 14), P(20, 14), P(12, 19), P(20, 19)],
         'dentro': dentro,
@@ -108,9 +108,9 @@ def ponte():
         Z.obj(16, 19, 'meioDaPonte', 'Olhar a ponte', 'Uma ponte de pedra lisa sobre o rio escuro. No meio dela, o chão tem um desenho '
               'que quase não se vê.', 'investigar', 19, 'Um símbolo mágico gravado na pedra, armado. Quem pisa nele se arrisca.'),
         Z.obj(14, 24, 'rioEscuro', 'Olhar o rio', 'Um rio escuro de nove metros de largura, que dá a volta na ilha como um anel. Não se vê '
-              'o fundo.', 'percepcao', 16, 'Alguma coisa grande se mexe lá embaixo, devagar.'),
+              'o fundo.', 'procurar', 16, 'Alguma coisa grande se mexe lá embaixo, devagar.'),
         Z.obj(20, 15, 'escritorioDaTorre', 'Subir a torre', 'Três andares de escada até um escritório aceso por uma chama que não se apaga. '
-              'À mesa, sentado, um homem sem cabeça, numa mesa coberta de sangue velho.', 'medicina', 12, 'O crânio explodiu de dentro '
+              'À mesa, sentado, um homem sem cabeça, numa mesa coberta de sangue velho.', 'examinar', 12, 'O crânio explodiu de dentro '
               'para fora, há meses.'),
     ]
     pontos = {
@@ -132,6 +132,12 @@ def estatua():
               'O toco é uma alavanca. Não mexe sem a parte que falta.'),
         Z.obj(21, 15, 'sorrisoDaBase', 'Olhar a base', 'Um cubo de metal sem enfeite nenhum, só um sorriso humano enorme, sem rosto em volta. '
               'Lá de dentro vêm marteladas fracas.'),
+        # A LORE DA ESTÁTUA (o livro): quem ela é, para quem lembra
+        Z.obj(13, 22, 'corpoDaEstatua', 'Olhar a estátua', 'Oitenta pés de metal tombado: um devorador de mentes de túnica, com um pé '
+              'ainda preso na base, entortando o cubo, e o alto da cabeça enterrado na ilha.', 'lembrar', 15,
+              'É Ablinash. Servia a Ilsensine até mudar de deus, e foi o primeiro a seguir Ilvaash. Debaixo dos tentáculos tinha uma '
+              'boca de gente, e era com ela que comia — preferia as películas que envolvem o cérebro. Os seguidores dele levantaram a '
+              'estátua e a base; ela caiu anos atrás.', 'Ablinash'),
     ]
     pontos = {
         'grupo': [P(23, 25), P(24, 25), P(23, 26), P(24, 26)], 'olhar': {'dx': -1, 'dy': -1},
@@ -169,9 +175,12 @@ def nematodeo():
     # A BOCA E A TENDA: a caverna da boca (o que se alcança de dentro dela) encosta no lado de fora pela boca, e na
     # garganta pela tenda de osso. A FA as desenha fechadas; a cena abre a boca na chegada, e a armadilha a fecha e abre a
     # tenda (`vazio.js`).
-    cave = E.alcancaveis(m, P(22, 7))
-    fora = E.alcancaveis(m, P(30, 18))
-    garganta = E.alcancaveis(m, P(17, 14))
+    # O `alcancaveis` devolve um CONJUNTO de textos, e a ordem de um conjunto de textos muda a cada execução do Python
+    # (a semente do hash): sem ordenar, a membrana e os ardis trocavam de casa e o arquivo inteiro mudava a cada rodada.
+    ordem = lambda s: sorted(s, key=lambda k: (int(k.split(',')[1]), int(k.split(',')[0])))
+    cave = ordem(E.alcancaveis(m, P(22, 7)))
+    fora = set(E.alcancaveis(m, P(30, 18)))
+    garganta = ordem(E.alcancaveis(m, P(17, 14)))
     def arestas_entre(a, b):
         out = []
         for k in a:
@@ -180,7 +189,7 @@ def nematodeo():
                 if f'{x + dx},{y + dy}' in b:
                     out.append({'a': P(x, y), 'b': P(x + dx, y + dy)})
         return out
-    bolsa = E.alcancaveis(m, P(13, 33))
+    bolsa = ordem(E.alcancaveis(m, P(13, 33)))
     # a MEMBRANA se mexe de dentro da garganta, da casa encostada na bolsa do líquido
     junto = sorted((k for k in garganta if any(f'{int(k.split(",")[0]) + dx},{int(k.split(",")[1]) + dy}' in bolsa
                                               for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)))), key=lambda k: int(k.split(',')[1]))
@@ -190,8 +199,14 @@ def nematodeo():
         Z.obj(20, 10, 'tendaDeOsso', 'Olhar a tenda de osso', 'No fundo da caverna, uma tenda de osso duro como pedra fecha a passagem para '
               'uma garganta.'),
         Z.obj(mx, my, 'membrana', 'Olhar a membrana', 'Uma membrana grossa e translúcida segura um líquido que lateja, como um cérebro '
-              'derretido.', 'medicina', 10, 'Rasgá-la toda faria a criatura vomitar tudo o que tem dentro. Um furo pequeno, no ponto certo, '
+              'derretido.', 'examinar', 10, 'Rasgá-la toda faria a criatura vomitar tudo o que tem dentro. Um furo pequeno, no ponto certo, '
               'só a faria abrir a boca.'),
+        # o que o livro descreve e a cena não usava: o musgo do lado de fora e a garganta que pulsa
+        Z.obj(23, 18, 'musgoDeFerrugem', 'Olhar o musgo', 'Montes de musgo cor de ferrugem cobrindo uma "rocha" comprida e '
+              'mole, que cede um pouco sob a bota.', 'lembrar', 12, 'Não é rocha: é couro. A ilha inteira é um bicho deitado, '
+              'em forma de tubo, dormindo um sono de décadas.', 'O Nematódeo'),
+        Z.obj(13, 18, 'paredesDaGarganta', 'Olhar as paredes', 'Carne úmida, da largura de dois homens, que se aperta devagar na '
+              'direção do fundo. Lá longe, um pulso surdo marca o tempo.'),
     ]
     boca = arestas_entre(cave, fora)
     tenda = arestas_entre(cave, garganta)
@@ -214,18 +229,20 @@ def charco():
     # as arestas que o importador derivou da trilha também saem: a trilha só corta a vista
     m['paredes'] = {lado: ['.' * len(m['terreno'][0]) for _ in m['terreno']] for lado in ('n', 'o')}
     m['interativos'] = [
-        Z.obj(23, 26, 'espantalho', 'Olhar a árvore', 'Debaixo da árvore mais perto do píer, um cadáver oco de couro cinzento, de chifres, '
+        Z.obj(23, 28, 'espantalho', 'Olhar a árvore', 'Debaixo da árvore mais perto do píer, um cadáver oco de couro cinzento, de chifres, '
               'escorado com galhos e com o próprio tridente: um espantalho.', 'lembrar', 13, 'Um mezzoloth, um mercenário dos baixos '
               'planos. Isto é um aviso para os outros.', 'Arcanismo'),
-        Z.obj(22, 4, 'pedraDoValsyx', 'Olhar a pedra', 'Uma pedra baixa como altar no fundo da clareira, com um livro encharcado em cima.'),
-        Z.obj(6, 37, 'arbustosEsculpidos', 'Olhar os arbustos', 'Arbustos podados em forma de bichos, cada um com uma pedra leitosa no '
+        Z.obj(7, 37, 'pedraDoValsyx', 'Olhar a pedra', 'Uma pedra baixa como altar no fundo da clareira, com um livro encharcado em cima.'),
+        Z.obj(22, 4, 'arbustosEsculpidos', 'Olhar os arbustos', 'Arbustos podados em forma de bichos, cada um com uma pedra leitosa no '
               'meio da folhagem.'),
     ]
     pontos = {
         'grupo': [P(26, 29), P(27, 29), P(26, 30), P(27, 30)], 'olhar': {'dx': -1, 'dy': -1},
-        'valsyx': P(22, 5), 'charnyz': P(6, 34), 'pedra': P(22, 4), 'arbustos': P(6, 37),
-        'clareira': [P(x, y) for y in range(1, 9) for x in range(17, 28)],
-        'vale': [P(x, y) for y in range(30, 41) for x in range(2, 12)],
+        # A ARTE MANDA: a laje com o livro está no sudoeste e o anel de nove arbustos no nordeste (revisão de 2026-11-13;
+        # antes as duas estavam trocadas, e a naga da pedra falava diante dos arbustos)
+        'valsyx': P(7, 35), 'charnyz': P(22, 6), 'pedra': P(7, 37), 'arbustos': P(22, 4),
+        'clareira': [P(x, y) for y in range(30, 41) for x in range(2, 12)],
+        'vale': [P(x, y) for y in range(1, 9) for x in range(17, 28)],
     }
     return m, pontos
 
@@ -240,6 +257,11 @@ def campo():
               'A fumaça não chega perto dele.'),
         Z.obj(10, 30, 'campoDeOssos', 'Olhar o campo', 'Prédios caídos, árvores secas, crateras, e ossos com lanças e espadas enfiadas. '
               'Os lamentos vêm de todo lado e de lugar nenhum.'),
+        # W1 (o livro): os outros três prisioneiros da pirâmide, mortos quando a estase falhou
+        Z.obj(16, 19, 'prisioneirosSecos', 'Olhar os corpos', 'Nos cantos da pirâmide, três criaturas enormes de carapaça escura e '
+              'mandíbulas de cavar, presas por algemas grossas. Estão secas como couro velho.', 'investigar', 12,
+              'Em volta de cada uma, um círculo de runas apagadas: uma estase, a prisão que para o tempo de quem está dentro. Estas '
+              'falharam há muito, e quem estava preso morreu esperando.', 'A estase da pirâmide'),
     ]
     pontos = {
         'grupo': [P(17, 42), P(18, 42), P(17, 43), P(18, 43)], 'olhar': {'dx': 0, 'dy': -1},

@@ -27,11 +27,14 @@ import { skillBonus, passivePerception } from '../rules/abilities.js';
 import { makeRng } from '../core/rng.js';
 import { takeMonsterTurn } from '../rules/ai.js';
 import { mapaDo, buildFoes } from '../game/encounter.js';
+import { VERBOS } from '../game/investigar.js';
 import { criarBuscas } from '../game/buscas.js';
 import { criarPersonagem } from '../rules/progressao.js';
 import { subirUmNivel } from '../game/nivel.js';
 import { MAPA_ESCONDERIJO, PONTOS_DO_ESCONDERIJO as PE } from '../game/esconderijo.js';
 import { montarCampo } from '../game/campo.js';
+import { mudarFogo, luzDoMovel } from '../game/fogo.js';
+import { MAPA_TALHUNDERETH } from '../game/talhundereth-mapa.js';
 import { existsSync, readFileSync } from 'node:fs';
 import { LOOKS } from '../art/looks.js';
 import { CRIATURAS_COM_FICHA, fichaDe } from '../art/fichas-de-criatura.js';
@@ -642,6 +645,38 @@ teste('o que o mapa declara se pode usar: inimigo, luz, objeto e tranca', () => 
     }
   }
   assert.deepEqual(achados, [], achados.join(' | '));
+});
+
+teste('a chama mexe no desenho: toda peça ligada a uma luz existe, nasce no estado dela e vira junto (revisão de 2026-11-13)', () => {
+  // `luz.sobreposicao` é a peça do cômodo ACESO e `luz.sobreposicaoApagada` a do APAGADO (`game/fogo.js`). A revisão dos
+  // mapas achou o Castelo, o Cume, o Poço, a Árvore-Trovão, a Onda Eco e Talhundereth com a peça no disco e nenhuma
+  // chama a ligando: apagar a tocha punha o cômodo no breu da regra e deixava a pintura brilhando.
+  const mapas = ['esconderijo', 'mansao', 'cume', 'poco', 'castelo', 'arvoreTrovao', 'ondaEco'].map((c) => [c, mapaDo(c)]);
+  mapas.push(['talhundereth', MAPA_TALHUNDERETH]);
+  let ligadas = 0;
+  for (const [cena, m] of mapas) {
+    const f = montarCampo(m);
+    for (const luz of f.luzes ?? []) {
+      for (const [chave, acesaLiga] of [['sobreposicao', true], ['sobreposicaoApagada', false]]) {
+        const id = luz[chave];
+        if (!id) continue;
+        ligadas += 1;
+        const peca = () => f.sobreposicoes?.find((o) => o.id === id);
+        assert.ok(peca(), `${cena}: a luz de ${luz.pos.x},${luz.pos.y} aponta a peça ${id}, que não existe`);
+        const acesa = !luz.apagada && !luz.soNoEscuro;
+        assert.equal(peca().ligada, acesa === acesaLiga, `${cena}: a peça ${id} nasce fora do estado da chama`);
+        if (luz.soNoEscuro) continue;
+        mudarFogo(f, luz, !acesa);
+        assert.equal(peca().ligada, !acesa === acesaLiga, `${cena}: virou a chama e a peça ${id} não virou junto`);
+        mudarFogo(f, luz, acesa);
+      }
+    }
+  }
+  assert.ok(ligadas >= 27, `só ${ligadas} peças ligadas a chama`);
+  // o braseiro da cripta da Mansão: a chama mora em (18,8), o desenho em (19,8), e o clique no desenho acha a chama
+  const fm = montarCampo(mapaDo('mansao'));
+  assert.deepEqual(luzDoMovel(fm, { x: 19, y: 8 })?.pos, { x: 18, y: 8 });
+  assert.equal(luzDoMovel(fm, { x: 20, y: 12 }), null, 'casa sem móvel de fogo não pega a luz do vizinho');
 });
 
 teste('nenhuma luz de mapa é inerte: apagar qualquer uma muda alguma casa', () => {
@@ -1531,6 +1566,31 @@ teste('o Castelo: a porta escorada É a do urso, e o quarto do rei põe a Vyerit
   const ordem = [...CASTELO.postos.rei].sort((p, q) => dist(p) - dist(q));
   assert.ok(dist(ordem[0]) <= 1, `a casa da Vyerith (${ordem[0].x},${ordem[0].y}) encosta na porta`);
   assert.ok(dist(ordem[ordem.length - 1]) >= 3, 'e a do Gundren fica no fundo, longe dela');
+});
+
+teste('a porta pintada da Onda Eco abre no desenho junto com a regra, e os mortos da guarita saem da pintura', () => {
+  const f = montarCampo(mapaDo('ondaEco'));
+  const peca = (id) => f.sobreposicoes.find((o) => o.id === id);
+  const portas = f.sobreposicoes.filter((o) => o.arestas?.length);
+  assert.ok(portas.length >= 10, `${portas.length} portas pintadas`);
+  const sac = peca('portaSacerdote');
+  assert.equal(sac.ligada, false, 'fechada, a arte base basta');
+  f.porAresta(15, 8, 15, 9, ARESTA.aberta);
+  assert.equal(sac.ligada, true, 'aberta, a peça mostra a porta aberta');
+  f.porAresta(15, 8, 15, 9, ARESTA.porta);
+  assert.equal(sac.ligada, false, 'fechada de novo, apaga');
+  for (const id of ['guaritaSemMortos', 'fundicaoSemCorpos', 'forjaSemItens']) assert.equal(peca(id)?.ligada, false, `${id} nasce apagada`);
+});
+
+teste('todo objeto com teste usa um verbo do jogo (um nome errado caía em Investigar calado)', () => {
+  const cenas = ['emboscada', 'covilAgatha', 'cavernaDoPoco', 'acampamentoSawplee', 'telhadoGigante', 'giganteTerreo', 'zorzulaPosto',
+    'zorzulaMinas', 'santuarioIndigo', 'casaMarthungrim', 'minaHardyhammer', 'largoDaVaca', 'santuarioInfectado', 'tunelGrells', 'tunelBehir',
+    'tunelGruta', 'illithinoch', 'fendaTrincheiras', 'fendaOco', 'fendaLabirinto', 'labirintoSalgado', 'covilLowarnizel', 'pocaSalgada',
+    'vazioCupula', 'vazioPonte', 'vazioCharco', 'vazioNematodeo', 'vazioMiasma', 'vazioEstatua', 'vazioCampo', 'vazioAnima', 'talhundereth',
+    'criptaTalhund', 'encruzilhada'];
+  const ruins = [];
+  for (const v of cenas) for (const o of mapaDo(v).interativos ?? []) if (o.pista?.verbo && !VERBOS[o.pista.verbo]) ruins.push(`${v}:${o.id}=${o.pista.verbo}`);
+  assert.deepEqual(ruins, []);
 });
 
 teste('o Castelo: móvel de várias casas sai INTEIRO, e cada sala tem o que o livro lhe dá', async () => {

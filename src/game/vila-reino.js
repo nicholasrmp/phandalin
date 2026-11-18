@@ -5,19 +5,13 @@
 // O livro dá a mudança como descrição para o mestre ler; aqui ela é a primeira coisa que o grupo vê ao chegar em cada
 // capítulo novo (uma vez por capítulo) e o TOM do mapa da vila (`view/vila.js`, a classe `estagio-N`). Texto nosso.
 import { narrar } from '../view/narrativa.js';
+import { estagioDoObelisco } from './npc-saber-comum.js';
 
 /**
  * Em que ponto da transformação a vila está: 0 (antes do capítulo 5, ou curada), 5, 6, 7 ou 8. Os marcos são os de cada
  * capítulo: a Mina Perdida concluída, o contrato do Harbin pago, os três guardiões vencidos e o portal de Illithinoch aberto.
  */
-export function estagioDaVila(camp) {
-  if (!camp || camp.obelisco8?.feito?.refracaoVencida) return 0;
-  if (camp.obelisco7?.portalAberto) return 8;
-  if (camp.obelisco6?.marco9) return 7;
-  if (camp.obelisco5?.feito?.pagoFim) return 6;
-  if (camp.aventuraConcluida) return 5;
-  return 0;
-}
+export const estagioDaVila = (camp) => estagioDoObelisco(camp);
 
 /** O que muda em cada capítulo (soma com o de antes). */
 export const VILA_NO_ESTAGIO = {

@@ -200,12 +200,17 @@ def main():
     for y in range(h):
         luz.append(''.join('0' if (x, y) in interior_cache else '2' for x in range(w)))
     alcance = max(max(abs(x - FOGUEIRA[0]), abs(y - FOGUEIRA[1])) for (x, y) in interior_cache) * 5
-    luzes = [{'pos': {'x': FOGUEIRA[0], 'y': FOGUEIRA[1]}, 'claro': 0, 'penumbra': alcance, 'tipo': 'fogueira'}]
+    # A FOGUEIRA ACESA NO DESENHO: a arte base é a do fogo frio (o anel de pedras com cinza), e a FA dá a chama e o clarão
+    # numa peça de 7x7 casas (`Overlay/Gridless/Fire_7x7.webp`, no disco como `cume-fogo.webp`), que a cena do Foundry põe
+    # em (2,4). Ela vai com a luz: apagar a fogueira apaga o desenho (`game/fogo.js`). Revisão de 2026-11-13.
+    luzes = [{'pos': {'x': FOGUEIRA[0], 'y': FOGUEIRA[1]}, 'claro': 0, 'penumbra': alcance, 'tipo': 'fogueira', 'sobreposicao': 'fogueiraAcesa'}]
+    sobre = [{'id': 'fogueiraAcesa', 'url': '/mapas/fa/cume-fogo.webp', 'x': 2, 'y': 4, 'w': 7, 'h': 7, 'ligada': True}]
 
     mapa = {
         'terreno': terreno,
         'luz': luz,
         'luzes': luzes,
+        'sobreposicoes': sobre,
         'paredes': base['paredes'],
         'tracos': base['tracos'],
         **({'tracosTipo': base['tracosTipo']} if base.get('tracosTipo') else {}),
@@ -250,6 +255,7 @@ def main():
         '  terreno: [\n' + ''.join(f'    {um(l)},\n' for l in terreno) + '  ],\n'
         '  luz: [\n' + ''.join(f'    {um(l)},\n' for l in luz) + '  ],\n'
         '  luzes: [\n' + ''.join(f'    {um(l)},\n' for l in luzes) + '  ],\n'
+        '  sobreposicoes: [\n' + ''.join(f'    {um(o)},\n' for o in mapa['sobreposicoes']) + '  ],\n'
         '  paredes: {\n'
         + ''.join(f'    {lado}: [\n' + ''.join(f'      {um(l)},\n' for l in mapa['paredes'][lado]) + '    ],\n'
                   for lado in ('n', 'o'))

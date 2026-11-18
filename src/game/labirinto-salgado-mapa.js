@@ -449,7 +449,7 @@ export const MAPA_LABIRINTO_SALGADO = {
   ],
   fundo: {"nome": "labirinto-salgado.jpg", "url": "/mapas/fa/labirinto-salgado.jpg", "escala": 100, "x0": 0, "y0": 0, "giro": 0, "opacidade": 1},
   interativos: [
-    {"x": 30, "y": 70, "id": "rastrosDaEntrada", "rotulo": "Olhar o chão", "texto": "O chão de carne guarda marcas, mas se fecha devagar sobre elas, como pele.", "pista": {"verbo": "percepcao", "cd": 15, "achado": "Muitas criaturas saíram daqui para a esquerda, umas arrastadas: o bando dos fanáticos, com os presos. Mais tarde, três pares de botas foram para a direita."}, "olhar": true},
+    {"x": 30, "y": 70, "id": "rastrosDaEntrada", "rotulo": "Olhar o chão", "texto": "O chão de carne guarda marcas, mas se fecha devagar sobre elas, como pele.", "pista": {"verbo": "procurar", "cd": 15, "achado": "Muitas criaturas saíram daqui para a esquerda, umas arrastadas: o bando dos fanáticos, com os presos. Mais tarde, três pares de botas foram para a direita."}, "olhar": true},
     {"x": 14, "y": 58, "id": "duergarMortos", "rotulo": "Olhar os corpos", "texto": "Quatro anões de pele cinzenta, de armadura, mortos de arma há meses.", "pista": {"verbo": "investigar", "cd": 12, "achado": "Todos têm a cabeça aberta, e a ferida é de depois da morte: alguma coisa vem roer."}, "olhar": true},
     {"x": 52, "y": 55, "id": "muroDaSoberba", "rotulo": "Olhar a parede curva", "texto": "Cinco corpos fundidos na parede até o peito, de boca aberta num grito parado. Restos de mantos de mago."},
     {"x": 38, "y": 58, "id": "tumorPregado", "rotulo": "Olhar a bola pregada", "texto": "Uma bola de vísceras do tamanho de um escudo, pregada na parede por uma espada grande de lâmina prateada e serrilhada. Embaixo, uma poça de gosma."},
@@ -556,6 +556,7 @@ export const MAPA_COVIL_LOWARNIZEL = {
   interativos: [
     {"x": 4, "y": 2, "id": "cordaDoCovil", "rotulo": "Olhar a corda", "texto": "A corda com nós sobe seis metros até o buraco no teto, a única saída daqui."},
     {"x": 1, "y": 7, "id": "bastoesDoCovil", "rotulo": "Olhar os bastões", "texto": "Dois bastões de metal saindo da parede, a dois metros um do outro, lisos de tão polidos."},
+    {"x": 7, "y": 8, "id": "mucoDoCovil", "rotulo": "Olhar o chão", "texto": "Muco escorregadio por todo lado, nas paredes e no chão, com um cheiro de gordura que passou do ponto. Quem anda aqui anda devagar."},
   ],
 };
 

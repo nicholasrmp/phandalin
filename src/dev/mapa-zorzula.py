@@ -173,6 +173,9 @@ def posto():
     # fora (aresta norte da casa 3), e a passagem (15,3)-(16,3) é chão.
     for x in (15, 16):
         por_aresta(par, (x, 3), (x, 4), '.')
+    # e a parede que a FA deixa ENTRE as duas folhas, no meio da passagem: no desenho ali é laje, e ela partia o portão
+    # em duas faixas de uma casa (quem entrava por uma não passava para a outra sem sair)
+    por_aresta(par, (15, 3), (16, 3), '.')
     # A PORTA DA FA ENTRE A SUÍTE E A QUINA DO COFRE abriria o cofre sem as runas: vira parede. O cofre é o de três
     # casas (24..26, 7), atrás da secreta (25,8).
     por_aresta(par, (23, 7), (23, 8), '#')
@@ -309,6 +312,9 @@ def posto():
     mapa = {
         'terreno': terreno, 'luz': luz, 'paredes': {k: v for k, v in par.items()}, 'folhas': folhas,
         'trancas': trancas, 'interativos': INTERATIVOS_POSTO + INTERATIVOS_POSTO_MAIS, 'fundo': fundo('zorzula-posto'),
+        # O PORTÃO PINTADO cai no MEIO da casa 3 (a barra vai de 3,40 a 3,58, medida no brilho da arte), e a regra só
+        # tem aresta: a porta fica na de cima, que é a mais perto, e o desenho e o clique vão para onde a arte a pinta.
+        'portasNaArte': {'15,3,N': 0.49, '16,3,N': 0.49},
         # as 18 luzes da cena do Foundry, menos as duas de luar lá fora (de dia não acendem nada); a do fogão da cozinha
         # é fogo (apaga-se), e a do fosso de cristal da forja é cristal (não se apaga)
         'luzes': luzes_da_fa(b, trocas={(20, 7): 'fogueira', (16, 16): 'magica'}, fora={(7, 1), (23, 1)}),
@@ -563,8 +569,9 @@ def santuario():
                 continue
             s_ = 'oeste' if (x <= 4 and y >= 11) else 'leste' if (x >= 16 and y >= 11) else 'elevador' if (9 <= x <= 11 and y >= 17) else 'salao'
             salas.setdefault(s_, []).append({'x': x, 'y': y})
-    # a mesa da sala de guerra (a arte)
-    for x, y in [(18, 15), (18, 16)]:
+    # a mesa da sala de guerra: a laje com os papéis está na coluna 17, de y 15 a 17 (a arte; revisão de 2026-11-13 —
+    # estava uma coluna a leste, e a mesa se atravessava enquanto o chão ao lado barrava)
+    for x, y in [(17, 15), (17, 16), (17, 17)]:
         terreno[y] = terreno[y][:x] + 'm' + terreno[y][x + 1:]
     mapa = {'terreno': terreno, 'luz': luz, 'paredes': par, 'interativos': INTERATIVOS_SANTUARIO + INTERATIVOS_SANTUARIO_MAIS, 'fundo': fundo('santuario-indigo'),
             # as 15 luzes da FA: as cascatas, o brilho do salão e as duas alas
@@ -582,7 +589,7 @@ def santuario():
         'refens': [{'x': 2, 'y': 17}, {'x': 3, 'y': 17}, {'x': 4, 'y': 17}],
         'ruxithid': {'x': 10, 'y': 4},
         'guardiao': {'x': 9, 'y': 7},
-        'mapaDeGuerra': {'x': 18, 'y': 15},
+        'mapaDeGuerra': {'x': 17, 'y': 15},
         'salas': salas,
     }
     return mapa, pontos, {'guardiao': 2}
@@ -607,7 +614,7 @@ INTERATIVOS_SANTUARIO = [
         'antes da conquista, e alguém a pôs para trabalhar.', 'A estátua'),
     obj(6, 13, 'cascata', 'Olhar a cascata', 'Lava azul-arroxeada desce pela parede como água e some num canal, sem respingar. '
         'O calor arde no rosto a três metros.'),
-    obj(18, 15, 'mapaDeGuerra', 'Olhar a mesa', 'Uma mesa de pedra com um mapa tosco da região, cheio de setas a carvão e '
+    obj(17, 15, 'mapaDeGuerra', 'Olhar a mesa', 'Uma mesa de pedra com um mapa tosco da região, cheio de setas a carvão e '
         'três nomes escritos em letra caprichada: Travessia da Forca, Cripta dos Talhund e Talhundereth.',
         'investigar', 15, 'Embaixo do mapa, um esboço de uma coluna de pedra partida em sete pedaços: quatro riscados, '
         'três circulados.', 'O esboço da coluna'),

@@ -80,6 +80,8 @@ export function skillBonus(actor, skill, { contexto = null, bioma = null } = {})
     return base + prof * 2 + rastro + volta;
   }
   if (actor.expertise?.includes(skill)) return base + prof * 2 + rastro + volta;
+  // APRIMORAR PERÍCIA (Xanathar): a perícia treinada escolhida dobra a proficiência enquanto a magia dura
+  if (actor.skills?.includes(skill) && actor.conditions?.some((c) => c.id === 'periciaAprimorada' && c.data?.pericia === skill)) return base + prof * 2 + rastro + volta;
   // EXPLORADOR NATURAL (patrulheiro): num terreno favorito, o teste de INT ou SAB em que é treinado soma o DOBRO da proficiência.
   if (bioma && f?.includes('naturalExplorer') && actor.terrenosFavoritos?.includes(bioma) && ['int', 'wis'].includes(ability) && actor.skills?.includes(skill)) {
     return base + prof * 2 + rastro + volta;
@@ -140,6 +142,8 @@ export function rolarPericia(rng, actor, skill, opts = {}) {
   if (skill === 'arcanismo' && actor?.features?.includes('oneWithTheWord')) d20opts.advantage = true;
   // O ITEM: o manto élfico e as botas élficas (Furtividade), os olhos da águia (Percepção)
   if (actor?.doItem?.vantagemPericia?.includes(skill)) d20opts.advantage = true;
+  // OLHAR FIRME (ladino Inquisitivo): fora da luta não há turno, e quem procura com calma tem a vantagem
+  if (['percepcao', 'investigacao'].includes(skill) && actor?.features?.includes('steadyEye')) d20opts.advantage = true;
   const mare = actor?.conditions?.find((c) => c.id === 'maresDoCaos');
   if (mare) {
     d20opts.advantage = true;
@@ -151,6 +155,8 @@ export function rolarPericia(rng, actor, skill, opts = {}) {
   let r = d20(rng, bonus, d20opts);
   // TRANSE DA ORDEM (Alma Mecânica): 9 ou menos no d20 conta como 10
   if (r.natural < 10 && actor?.conditions?.some((c) => c.id === 'transeDaOrdem')) r = { ...r, natural: 10, total: 10 + bonus };
+  // OUVIDO PARA MENTIRAS (ladino Inquisitivo): na Intuição, 7 ou menos no d20 conta como 8
+  if (skill === 'intuicao' && r.natural < 8 && actor?.features?.includes('earForDeceit')) r = { ...r, natural: 8, total: 8 + bonus };
   return ajustarTeste(rng, actor, r, bonus, { ability: SKILLS[skill], treinada: treinadoEm(actor, skill) });
 }
 
@@ -194,10 +200,12 @@ export function saveBonus(actor, ability) {
 const SENTIDOS_AGUCADOS = ['keenHearingSmell', 'keenSmell', 'keenHearing', 'keenSightSmell', 'audicaoEVisaoApuradas', 'visaoAgucada'];
 
 export const passivePerception = (actor) => 10 + skillBonus(actor, 'percepcao')
-  - (actor.conditions?.some((c) => c.id === 'cativado') ? 5 : 0)
+  - (actor.conditions?.some((c) => c.id === 'cativado' || c.id === 'distraidoPelaMoeda') ? 5 : 0)
   + (actor.traits?.some((t) => SENTIDOS_AGUCADOS.includes(t)) ? 5 : 0)
   + (actor.percepcaoMarcha ?? 0)
   + (actor.conditions?.some((c) => c.id === 'olhoDoCaos') ? 5 : 0)
+  // OLHAR FIRME (ladino Inquisitivo): a vantagem na Percepção é +5 na passiva
+  + (actor.features?.includes('steadyEye') ? 5 : 0)
   // OBSERVADOR (talento): +5 na Percepção passiva (e na Investigação passiva, `investigacaoPassiva`).
   + ((actor.talentos ?? []).includes('observador') ? 5 : 0)
   // o item que dá vantagem em Percepção (os olhos da águia): +5 na passiva

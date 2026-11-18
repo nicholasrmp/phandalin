@@ -205,6 +205,100 @@ export const CONDITIONS = {
     // que uma arma de pancada fizesse.
     resiste: DANOS_FISICOS,
   },
+  reduzidoDuergar: {
+    name: 'Reduzido',
+    desc: 'Miúdo por um minuto: +5 de CA, o golpe de arma fere só 1, e desvantagem no que usa Força.',
+    acBonus: 5,
+    saveDisadvantage: ['str'],
+  },
+  beijoDaVargouille: {
+    name: 'Beijo da Vargouille',
+    desc: 'Amaldiçoado: a cabeça vai tomando a forma de um demônio, e o Carisma cai uma vez por hora longe do sol. Tirar a maldição desfaz.',
+  },
+  maldicaoDoFensir: {
+    name: 'Maldição do Fensir',
+    desc: 'Por 24 horas, descansar não dá nada.',
+  },
+  contornadoDeLuz: {
+    name: 'Contornado de Luz',
+    desc: 'Um contorno de luz azul (o Pó de Escamas): não pode ficar invisível, e todo dragão a uma milha sabe onde está.',
+    semInvisivel: true,
+  },
+  furiaDaBoca: {
+    name: 'Fúria da Fome',
+    desc: 'Vantagem nos ataques até o fim do próximo turno.',
+  },
+  caracolRecolhido: {
+    name: 'Recolhido na Concha',
+    desc: 'Sem tentáculos, recolhido na concha: cobertura total, e não age.',
+    incapacitated: true,
+    inalcancavel: true,
+  },
+  naConchaDoZaratan: {
+    name: 'Na Carapaça',
+    desc: 'Recolhido: resistência a todo dano e contido, até sair.',
+    resisteTudo: true,
+    speed: 0,
+    attackedAdvantage: true,
+    attackDisadvantage: true,
+  },
+  pragaDoOinoloth: {
+    name: 'Praga',
+    desc: 'O chão em volta apodrece: quem começa o turno a 9 m faz Constituição ou leva 4d6 necrótico e fica envenenado.',
+  },
+  auraFervente: {
+    name: 'Aura Fervente',
+    desc: 'O calor em volta: quem começa o turno a 6 m faz Constituição ou leva o fogo, até o começo do próximo turno do dono.',
+  },
+  morteRastejante: {
+    name: 'Morte Rastejante',
+    desc: 'Vulnerável a dano necrótico até o fim do próximo turno de quem a ergueu.',
+    vulnerabilidade: ['necrótico'],
+  },
+  mortalhaDeAlmas: {
+    name: 'Mortalha de Almas',
+    desc: 'Uma torrente de almas em volta: quem começa o turno a 1,5 m faz Sabedoria ou fica com desvantagem nas resistências.',
+  },
+  almasNaMortalha: {
+    name: 'Almas na Mortalha',
+    desc: 'Desvantagem nos testes de resistência até o fim do próximo turno.',
+    saveDisadvantage: ['str', 'dex', 'con', 'int', 'wis', 'cha'],
+  },
+  fumacaIncendiaria: {
+    name: 'Fumaça Incendiária',
+    desc: 'Fumaça e brasa em volta: quem atira nele tem desvantagem, e quem começa o turno perto faz Constituição ou queima.',
+    attackedDisadvantageRanged: true,
+  },
+  zumbidoNaCabeca: {
+    name: 'Zumbido na Cabeça',
+    desc: 'Desvantagem nos ataques e nas resistências até o fim do turno (o Fomentar a Loucura do alkilith).',
+    attackDisadvantage: true,
+    saveDisadvantage: ['str', 'dex', 'con', 'int', 'wis', 'cha'],
+  },
+  infestadoDeLarvas: {
+    name: 'Infestado de Larvas',
+    desc: 'Larvas putrefatas debaixo da pele: 1d6 perfurante por larva no começo de cada turno. O fogo na ferida as mata.',
+    danoNoInicio: 'perfurante',
+  },
+  golpesDeGigante: {
+    name: 'Golpes de Gigante',
+    desc: 'Até o fim do turno, cada golpe de perto soma o dado da comunidade de gigantes dele.',
+    danoNoAcerto: { dados: '2d6', soPerto: true },
+  },
+  armaduraDeFornalha: {
+    name: 'Armadura de Fornalha',
+    desc: 'A fumaça da armadura dá meia cobertura (+2 de CA) por um minuto.',
+    acBonus: 2,
+  },
+  bloqueandoOCaminho: {
+    name: 'Bloqueando o Caminho',
+    desc: 'Até o começo do próximo turno: quem o ataca tem desvantagem, o ataque de oportunidade dele tem vantagem e fere mais, e quem tenta sair do alcance dele faz um teste de Força ou fica parado.',
+    attackedDisadvantage: true,
+  },
+  chamadoAHonra: {
+    name: 'Chamado à Honra',
+    desc: 'Ataca com vantagem até o fim do próximo turno (o comandante espectro da espada).',
+  },
   lento: {
     name: 'Lento',
     desc: 'Deslocamento reduzido em 3 m.',
@@ -375,6 +469,28 @@ export const CONDITIONS = {
     name: 'Febre do Riso',
     desc: 'Febre e um degrau de exaustão que não sai sem a cura. Quem sofre dano faz Constituição CD 13 ou cai de rir por um minuto. A cada descanso longo, Constituição contra a CD da febre: passando, ela cai 1d6, e a zero a febre se vai.',
     porNivel: true,
+  },
+  cobertoDeAcido: {
+    name: 'Coberto de Ácido',
+    desc: 'A chuva ácida da Tempestade Vingativa: 4d12 ácido no começo de cada turno, por um minuto.',
+    danoNoInicio: 'ácido',
+  },
+  presoNoGelo: {
+    name: 'Preso no Gelo',
+    desc: 'O gelo do temporal prende os pés: deslocamento 0 por um minuto.',
+    speed: 0,
+  },
+  mirandoOPreso: {
+    name: 'Mirando o Preso',
+    desc: 'O golpe na máquina do duergar mira o duergar preso dentro dela (o desenho do interruptor).',
+  },
+  esporosDeZuggtmoy: {
+    name: 'Esporos de Zuggtmoy',
+    desc: 'O fungo da Zuggtmoy no corpo: a cada descanso longo, Constituição CD 19; passa, cura; na terceira falha, morre. A loucura que vem junto fica de fora.',
+  },
+  desafioDoCampeao: {
+    name: 'Desafio do Campeão',
+    desc: 'Não se afasta por vontade própria a mais de 9 m de quem desafiou, enquanto ele estiver de pé.',
   },
   pesteDoEsgoto: {
     name: 'Peste do Esgoto',
@@ -810,6 +926,43 @@ export const CONDITIONS = {
     incapacitated: true,
   },
   // Congelar, do elemental da água: o frio o endurece.
+  // A QUINTA LEVA DA FILA DO BESTIÁRIO (2026-11-16): os estados que o dano e a cura acendem
+  emChoque: {
+    name: 'Em choque',
+    desc: 'O relâmpago o atravessou: −2 na CA e na resistência de DES, metade do deslocamento, sem reações, um ataque só, e a ação OU a ação bônus, até o fim do próximo turno.',
+    acBonus: -2,
+    saveFixo: { dex: -2 },
+    speedHalfMagico: true,
+    semReacao: true,
+    acaoOuBonus: true,
+    umAtaque: true,
+  },
+  congeladoEmParte: {
+    name: 'Congelado em parte',
+    desc: 'O frio o travou: deslocamento de 6 m e desvantagem nos ataques até o fim do próximo turno.',
+    speed: 20,
+    attackDisadvantage: true,
+  },
+  furiaDeVaprak: {
+    name: 'Fúria de Vaprak',
+    desc: 'Em fúria: +4 no dano dos golpes de perto e resistência a concussão, perfurante e cortante, por 1 minuto.',
+    resiste: ['concussão', 'perfurante', 'cortante'],
+  },
+  banidoDoPlano: {
+    name: 'Banido',
+    desc: 'Foi mandado para outro plano e saiu da luta.',
+    incapacitated: true,
+    inalcancavel: true,
+    motivoInalcancavel: 'não está mais neste plano',
+  },
+  raivaCrescente: {
+    name: 'Raiva crescente',
+    desc: 'Ferido, ataca com vantagem até o fim do próximo turno, e o primeiro gancho que acerta fere mais 3d12 psíquico.',
+  },
+  fomeDeVida: {
+    name: 'Fome de vida',
+    desc: 'Viu alguém se curar: ataca com vantagem, e a mordida fere mais 4d10 necrótico, até o fim do próximo turno.',
+  },
   congelado: {
     name: 'Meio congelado',
     desc: 'O frio o endureceu: 6 m a menos de deslocamento até o fim do próximo turno.',
@@ -832,6 +985,39 @@ export const CONDITIONS = {
     name: 'Aperto Psíquico',
     desc: 'O tentáculo do cérebro ancião aperta a mente: dano psíquico no começo de cada turno, enquanto estiver agarrado.',
     danoNoInicio: 'psíquico',
+  },
+  // A PRESENÇA EXAURINTE do dragão oco (a terceira fila dos bestiários): metade do deslocamento e desvantagem nos ataques.
+  esmorecido: {
+    name: 'Esmorecido',
+    desc: 'A força some do corpo: metade do deslocamento e desvantagem nas jogadas de ataque, até o fim do próximo turno.',
+    speedHalf: true,
+    attackDisadvantage: true,
+  },
+  // A TERCEIRA FILA, segunda leva: o Comando Infernal (nada de medo nem de encanto até o fim do próximo turno do dono), a
+  // Incitar o Fanatismo (vantagem nos ataques e nada de medo, um minuto) e o Favor Volúvel de Lolth (vantagem nos ataques
+  // até o fim do próximo turno).
+  firmeNoComando: {
+    name: 'Firme no Comando',
+    desc: 'Não pode ser enfeitiçado nem amedrontado, até o fim do próximo turno de quem deu o comando.',
+    imuneA: ['enfeiticado', 'amedrontado'],
+  },
+  fanatizado: {
+    name: 'Fanatizado',
+    desc: 'Ataca com vantagem e não pode ser amedrontado, por um minuto.',
+    vantagemNosAtaques: true,
+    imuneA: ['amedrontado'],
+  },
+  favorDeLolth: {
+    name: 'Favor de Lolth',
+    desc: 'Pagou o favor com dor: vantagem nos ataques até o fim do próximo turno.',
+    vantagemNosAtaques: true,
+  },
+  // O APERTO que sufoca (o armadilheiro, o rastejador rastreador; a terceira fila dos bestiários): o dano no começo de cada
+  // turno de quem está preso, com o tipo em `data.tipo` (nasce com `comOAgarrao`, e cai junto com ele).
+  apertoQueFere: {
+    name: 'Preso no aperto',
+    desc: 'Agarrado por uma criatura que aperta e sufoca: dano no começo de cada turno, enquanto o agarrão durar.',
+    danoNoInicio: 'concussão',
   },
   // O muco da estátua de Illithinoch (o Obelisco): resistência a psíquico por dez minutos.
   mucoDaEstatua: {
@@ -1269,6 +1455,92 @@ export const CONDITIONS = {
   },
   // Cativar: `abilities.js` (`passivePerception`) tira 5 da Percepção passiva (desvantagem em Percepção);
   // quem está cativado não grita nem chama ajuda (as cenas perguntam por `estaCativado`).
+  // a MURALHA PRISMÁTICA: a camada violeta cegou, e no começo do próximo turno a Sabedoria decide se ele fica neste plano
+  violetaPrismatica: {
+    name: 'Tocado pela luz violeta',
+    desc: 'A camada violeta da Muralha Prismática: cego, e no começo do próximo turno testa Sabedoria; passando, volta a enxergar, falhando, vai para outro plano.',
+  },
+  // o DESEJO: resistência a um tipo de dano, para sempre (o livro não dá duração a ela)
+  resistenciaDoDesejo: {
+    name: 'Resistência do Desejo',
+    desc: 'Resistência ao tipo de dano que o Desejo deu.',
+    resisteTipoDado: true,
+  },
+  // o VÍNCULO COM BESTA (Xanathar): a fera ataca com vantagem quem está a 1,5 m de quem conjurou (`livro-motor.js vantagemNoAtaque`)
+  vinculoBestial: {
+    name: 'Vínculo com besta',
+    desc: 'Ligada pela mente a quem conjurou: vantagem nos ataques contra quem está a 1,5 m dele.',
+    concentrationEffect: true,
+  },
+  // APRIMORAR PERÍCIA (Xanathar): especialização na perícia escolhida (`data.pericia`, `abilities.js skillBonus`)
+  periciaAprimorada: {
+    name: 'Perícia aprimorada',
+    desc: 'O dobro da proficiência nos testes da perícia escolhida, enquanto a magia dura.',
+    concentrationEffect: true,
+  },
+  // GAIOLA DE ALMAS (Xanathar): a alma presa, com os usos que sobram (`data.usos`), e a experiência que ela empresta
+  almaNaGaiola: {
+    name: 'Alma na gaiola',
+    desc: 'Uma alma presa na gaiola: Roubar Vida (2d8 PV) ou Emprestar Experiência, com a ação bônus, até seis vezes.',
+  },
+  experienciaEmprestada: {
+    name: 'Experiência emprestada',
+    desc: 'Vantagem na próxima jogada de ataque, teste ou resistência, até o começo do próximo turno.',
+  },
+  // o FRASCO DE FERRO: a criatura sugada para dentro dele saiu da luta
+  presoNoFrasco: {
+    name: 'Preso no frasco',
+    desc: 'Dentro de um frasco de ferro: fora da luta até que o abram.',
+    incapacitated: true,
+    inalcancavel: true,
+    motivoInalcancavel: 'está preso num frasco de ferro',
+  },
+  // a CONTA DE FORÇA: a esfera transparente prende quem falhou, por 1 minuto; nada passa por ela
+  presoNaEsferaDeForca: {
+    name: 'Preso na esfera de força',
+    desc: 'Dentro de uma esfera de força: nada a atravessa, nem golpe nem magia, para dentro ou para fora, por 1 minuto.',
+    inalcancavel: true,
+    motivoInalcancavel: 'está dentro de uma esfera de força',
+    speed: 0,
+  },
+  // a GARRAFA DO EFREETI: os três desejos (a ação Pedir um Desejo, `magias-concedidas.js desejoDoGenio`)
+  tresDesejos: {
+    name: 'Três desejos',
+    desc: 'O efreeti da garrafa deve desejos: a ação Pedir um Desejo, sem o desgaste do Desejo.',
+  },
+  // o MANTO DA INVISIBILIDADE: o capuz erguido (a ação Baixar o Capuz, `magias-concedidas.js`)
+  capuzErguido: {
+    name: 'Capuz erguido',
+    desc: 'O capuz do manto da invisibilidade está erguido: invisível até baixá-lo, mesmo atacando.',
+  },
+  // o BASTÃO DE TENTÁCULOS: os três acertaram e quem falhou na Constituição fica apertado
+  apertadoPeloBastao: {
+    name: 'Apertado pelos tentáculos',
+    desc: 'Metade do deslocamento, desvantagem nas resistências de Destreza, sem reações, e no turno a ação OU a ação bônus. Repete Constituição CD 15 no fim de cada turno.',
+    speedHalfMagico: true,
+    saveDisadvantage: ['dex'],
+    semReacao: true,
+    acaoOuBonus: true,
+  },
+  // A MOEDA BRILHANTE DE JIM (Acquisitions Incorporated): os olhos presos na moeda que acende
+  distraidoPelaMoeda: {
+    name: 'Distraído pela moeda',
+    desc: 'Não tira os olhos da moeda que brilha: desvantagem em Sabedoria (Percepção) e na iniciativa, por um minuto.',
+    percepcaoPenalidade: 5,
+  },
+  // INCITAR COBIÇA (Acquisitions Incorporated): só anda até a gema de quem a mostra, e encostado fica olhando
+  cobicaIncitada: {
+    name: 'Cobiça incitada',
+    desc: 'Enfeitiçado pela gema: não age nem reage, só usa o deslocamento para chegar perto de quem a mostra, e a 1,5 m dele fica parado. Repete Sabedoria no fim de cada turno; o mal que o conjurador ou um aliado faz quebra o encanto.',
+    incapacitated: true,
+    concentrationEffect: true,
+  },
+  // CAMINHAR EM ÁRVORES: a travessia de árvore em árvore, uma vez por rodada (`magias-concedidas.js atravessarArvore`)
+  caminhandoEmArvores: {
+    name: 'Caminhando em árvores',
+    desc: 'Uma vez por rodada, gastando 1,5 m para entrar e 1,5 m para sair, entra numa árvore viva encostada e sai ao lado de outra a até 150 m.',
+    concentrationEffect: true,
+  },
   cativado: {
     name: 'Cativado',
     desc: 'Só tem olhos para quem o cativou: desvantagem em Percepção para notar qualquer outra coisa, e não grita nem chama ajuda.',
@@ -1426,6 +1698,12 @@ export const CONDITIONS = {
   soproDraconico: {
     name: 'Sopro do Dragão',
     desc: 'Com a ação, sopra um cone de 4,5 m do tipo escolhido.',
+    concentrationEffect: true,
+  },
+  // O DRAGÃO ILUSÓRIO (Xanathar): enquanto a concentração durar, quem conjurou sopra com a ação bônus.
+  dragaoIlusorio: {
+    name: 'Dragão Ilusório',
+    desc: 'Uma sombra de dragão obedece: com a ação bônus, sopra um cone de 18 m do tipo escolhido (Inteligência, 7d6, metade no sucesso).',
     concentrationEffect: true,
   },
   meteorosMinusculos: {
@@ -1986,6 +2264,9 @@ export function hasCondition(actor, id) {
  */
 export function addCondition(actor, id, { rounds = Infinity, source = null, data = null, lado = null, quando = 'fim', magia = null } = {}) {
   actor.conditions ??= [];
+  // CONTORNADO DE LUZ (o Pó de Escamas): quem brilha não fica invisível, e quem passa a brilhar deixa de ser
+  if (id === 'invisivel' && actor.conditions.some((c) => CONDITIONS[c.id]?.semInvisivel)) return;
+  if (CONDITIONS[id]?.semInvisivel) actor.conditions = actor.conditions.filter((c) => c.id !== 'invisivel');
   const existing = actor.conditions.find((c) => c.id === id);
   if (existing) {
     existing.rounds = Math.max(existing.rounds, rounds);

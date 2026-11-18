@@ -72,7 +72,8 @@ export function criarRuaMarcarrubra(app, config) {
         conta: {
           ao: (ctx) => { ctx.flags.sabeDoCajavidro = true; },
           fala: [
-            '…Tá bom, tá bom! Lá embaixo da mansão tem gente presa, perto dos túmulos velhos. Quem vigia são uns esqueletos. Eu não chego perto daquilo, juro.',
+            '…Tá bom, tá bom! A gente fica debaixo da mansão velha, a dos Tresendar, na ponta leste da vila. Entra pelo porão: tem uma escada no meio da ruína.',
+            'Lá embaixo tem gente presa, perto dos túmulos velhos. Quem vigia são uns esqueletos. Eu não chego perto daquilo, juro.',
             'O chefe? A gente chama de Cajavidro, por causa do cajado — é de vidro, e brilha. É mago. Fica na ala oeste, lá embaixo. Nome de verdade, ninguém sabe.',
             'E tem… uma coisa. Na parte mais funda, numa fenda. Um olho só, e enorme. Fala dentro da cabeça da gente. Eu desço o mínimo possível.',
             'Ele recebe ordem de alguém. Um tal de Aranha Negra, que quer a vila de cabeça baixa e aventureiro bem longe. Mandou até uns bugbears para ajudar.',
@@ -104,7 +105,7 @@ export function criarRuaMarcarrubra(app, config) {
       const preso = enc.combatants.find((f) => f.side === 'foes' && f.capturado && !f.dead);
       if (preso) {
         await interrogar(preso);
-        if (vila) (vila.pistas ??= []).push('O Marcarrubra capturado falou: há presos perto das criptas, sob guarda de esqueletos; uma criatura de um olho só vive numa fenda funda; o chefe, Cajavidro, é um mago de cajado de vidro na ala oeste; e quem dá as ordens é o Aranha Negra.');
+        if (vila) (vila.pistas ??= []).push('O Marcarrubra capturado falou: o esconderijo fica debaixo da Mansão Tresendar, com a entrada pelo porão da ruína; há presos perto das criptas, sob guarda de esqueletos; uma criatura de um olho só vive numa fenda funda; o chefe, Cajavidro, é um mago de cajado de vidro na ala oeste; e quem dá as ordens é o Aranha Negra.');
       }
       await narrar(root, { formato: 'painel', paginas: [{ texto: [
         estado.fugiu ? 'O último correu para a Mansão Tresendar. Agora eles sabem que vocês existem.' : 'A rua fica quieta. Algumas janelas se abrem, devagar.',

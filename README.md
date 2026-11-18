@@ -121,14 +121,16 @@ diferentes. O detalhamento está em [NOTICE.md](NOTICE.md); o resumo:
 |---|---|---|
 | Regras, magias, monstros do SRD | **CC-BY-4.0** (SRD 5.1) | Sim, com atribuição. Irrevogável. |
 | Nomes de lugares e personagens dos Reinos | **Fan Content Policy** da WotC | Sim, se o jogo for **gratuito** e trouxer o aviso. Revogável. |
-| Texto, mapas e encontros de módulos publicados | — | **Não.** Nem de graça. |
+| Encontros, blocos e mecânica dos livros e das aventuras (Obelisco, MM, PHB, DMG, XGE, TCE...) | **Fan Content Policy**, com risco assumido pelo dono (2026-11-18) | Como DADO e MECÂNICA, sim. Pode ser preciso tirar se a Wizards pedir. |
+| A PROSA dos livros (texto lido, descrições, falas) | — | **Não.** Medido por `conferir-colagem.py`. |
+| Battlemaps de terceiros (Forgotten Adventures) | Licença deles proíbe video game | **Não.** O build não os leva. |
 
 É por isso que **motor e campanha são separados** no código: a licença das
 regras é irrevogável, a política de fã não é. Se um dia a política mudar,
 troca-se o arquivo de campanha e o motor continua de pé.
 
-Nada neste repositório foi extraído de sites que hospedam os livros sem licença.
-Todo texto de aventura é escrito do zero.
+Os NÚMEROS dos livros (CA, PV, dano, CD) vêm do espelho do 5e.tools no GitHub, que os hospeda sem licença da
+Wizards; o TEXTO é todo escrito do zero. O detalhe, e o risco assumido, está no [NOTICE.md](NOTICE.md).
 
 ---
 

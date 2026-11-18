@@ -52,6 +52,7 @@ import { criarCapitulo5NaVila, capitulo5Ativo } from './obelisco5-vila.js';
 import { criarCapitulo6NaVila, capitulo6Ativo } from './obelisco6-vila.js';
 import { capitulo7Ativo, criarCapitulo7NaVila } from './obelisco7-vila.js';
 import { mostrarMudancaDaVila, estagioDaVila } from './vila-reino.js';
+import { conversaLivreCom, quemConversaNaVila } from './conversa-livre.js';
 import { avancarTransformacao } from './transformacao.js';
 
 // ------------------------------------------------------------- o tempo ----
@@ -161,6 +162,25 @@ export async function abrirPhandalin(app, { grupo, chegando = false } = {}) {
     return { quem: quem.name, pericia: SKILL_NAME[pericia], total: r.total, cd, passou: r.total >= cd };
   };
   const falar = (npcId, arvore, npc = null) => conversar(app, npc ?? pessoa(npcId), arvore, fora);
+
+  /** A conversa livre com quem está na vila neste capítulo do Obelisco: escolhe-se a pessoa, e a caixa de pergunta abre. */
+  async function conversarNaVila() {
+    const lista = quemConversaNaVila(camp, estagioDaVila(camp));
+    if (!lista.length) return;
+    tela.esconder();
+    const quem = await narrar(app.root, {
+      formato: 'painel', lista: true,
+      paginas: [{ titulo: 'Com quem falar', texto: ['Quem vocês procuram na vila?'] }],
+      escolhas: [...lista.map((x) => ({ rotulo: x.nome, ...(x.detalhe ? { detalhe: x.detalhe } : {}), valor: x.ficha })), { rotulo: 'Ninguém agora', valor: 'sai' }],
+    });
+    if (quem && quem !== 'sai') {
+      const p = pessoa(quem);
+      await conversaLivreCom(app, { ...p, name: NPCS[quem]?.nome ?? lista.find((x) => x.ficha === quem).nome }, { ficha: quem, fora });
+    }
+    for (const t of registro.splice(0)) tela.registrar(t);
+    tela.mostrar();
+    tela.atualizar();
+  }
 
   // ---------------------------------------------------------- chegada ----
   if (chegando) {
@@ -1150,7 +1170,11 @@ export async function abrirPhandalin(app, { grupo, chegando = false } = {}) {
     },
     onMenu: () => { tela.fechar(); app.encerrarPartida(); },
     // Sair da vila pela Trilha de Triboar: o mapa da região.
-    botoes: [{ rotulo: 'Viajar', dica: 'Sair de Phandalin pelo mapa da região', fazer: () => { tela.fechar(); app.irParaRegiao(vivos(), 'phandalin'); } }],
+    botoes: [
+      { rotulo: 'Viajar', dica: 'Sair de Phandalin pelo mapa da região', fazer: () => { tela.fechar(); app.irParaRegiao(vivos(), 'phandalin'); } },
+      // CONVERSAR COM ALGUÉM (capítulos 5 a 8 do Obelisco): a conversa livre, em que se pergunta o que quiser (`game/conversa-livre.js`)
+      ...(estagioDaVila(camp) ? [{ rotulo: 'Conversar', dica: 'Procurar alguém da vila e perguntar o que quiser', fazer: () => conversarNaVila() }] : []),
+    ],
     // A ficha fora de combate: vestir o que se comprou, guardar para vender.
     onFicha: (c) => app.abrirFichaNaVila(c, () => tela.atualizar()),
   });

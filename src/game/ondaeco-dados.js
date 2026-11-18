@@ -171,7 +171,8 @@ export const TEXTOS = {
   cofreAvaliadores: 'Cede com um clique fundo. Dentro, num pano de couro, o pagamento esquecido dos mineiros: seiscentas peças de cobre, cento e oitenta de prata, noventa de electro e sessenta de ouro. O electro vai em prata, que é como se troca hoje.',
   estatuaReconhece: 'Uma estátua assim, de anão de barba trançada e martelo no colo, só pode ser de Dumathoin, o Guardião dos Segredos Debaixo da Montanha. O templo é dele, e dele é esta mina, no fim das contas.',
   estatuaNada: 'Não dá para tirar mais nada dali. É pedra, e pedra guarda segredo melhor que ninguém.',
-  estatuaVidro: 'De perto, as pedras verdes não têm a profundidade de uma esmeralda: são vidro lapidado, bom, mas vidro. Quem quer que tenha posto aqui os olhos verdadeiros já os levou há séculos.',
+  // O Obelisco faz os olhos VERDADEIROS (a Mina dizia vidro): duas esmeraldas de cinco mil peças de ouro cada
+  estatuaVidro: 'De perto, as pedras verdes têm o fundo que vidro nenhum tem: são esmeraldas, e das grandes, cada uma do tamanho de um ovo. Valem uma fortuna. E os seis pilares rachados em volta não parecem gostar de peso a mais.',
   estatuaEscorrega: 'A pedra é lisa e a bota escorrega. Ninguém sobe hoje.',
   primeiroOlho: 'Subir é fácil: o martelo de pedra dá apoio, e o joelho dá outro. O olho verde sai com um estalo e cai na mão. Lá em cima, alguma coisa range — e para.',
   segundoOlho: 'O olho sai com um estalo, e o templo inteiro responde com um som seco, de rachadura longa. Os seis pilares, alinhados com as paredes, rangem juntos e começam a ceder. O teto vem abaixo.',

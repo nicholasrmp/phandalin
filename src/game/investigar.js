@@ -377,6 +377,43 @@ export function opcaoDeLembrarCriatura(app, c, m, { fora } = {}) {
 }
 
 /**
+ * MANIPULADOR PERSPICAZ (ladino Mentor, 9º): um minuto observando ou conversando com a criatura, fora da luta, diz como
+ * duas das características dela se comparam com as do herói. O livro deixa escolher duas entre Inteligência,
+ * Sabedoria, Carisma e níveis de classe; aqui são duas opções do menu, a mente (Inteligência e Sabedoria) e a presença
+ * (Carisma e níveis de classe). Uma vez por herói, por criatura e por par.
+ */
+export function opcoesDoManipulador(app, c, m, { fora } = {}) {
+  if (!c || !m || m === c || m.dead || !fora || !c.features?.includes('insightfulManipulator')) return [];
+  const buscas = registro(app.enc);
+  const compara = (a, b) => (a > b ? 'maior que' : a < b ? 'menor que' : 'igual a');
+  const hab = (x, k) => x.abilities?.[k] ?? 10;
+  const nivel = (x) => (x.classe ? x.level ?? 1 : null);
+  const par = (id, rotulo, linhas) => {
+    const tipo = `manipulador:${id}:${m.id ?? m.name}`;
+    const longe = distanceFt(c.pos, m.pos) > 30 ? `chegue mais perto — a 30 pés (está a ${distanceFt(c.pos, m.pos)})` : null;
+    return {
+      rotulo, icone: 'acao-procurar', detalhe: 'Manipulador Perspicaz · um minuto, de graça',
+      motivo: longe ?? buscas.ja(c, tipo, m.pos),
+      fazer: async () => {
+        buscas.marcar(c, tipo, m.pos);
+        const texto = linhas();
+        await mostrar(app, `${m.name}, aos olhos de ${c.name}`, null, texto);
+        anotar(app.enc, { titulo: m.name, texto, heroi: c });
+        app.refresh?.();
+      },
+    };
+  };
+  return [
+    par('mente', 'Medir a mente (Manipulador Perspicaz)', () => [
+      `Inteligência: ${compara(hab(m, 'int'), hab(c, 'int'))} a de ${c.name}.`,
+      `Sabedoria: ${compara(hab(m, 'wis'), hab(c, 'wis'))} a de ${c.name}.`]),
+    par('presenca', 'Medir a presença (Manipulador Perspicaz)', () => [
+      `Carisma: ${compara(hab(m, 'cha'), hab(c, 'cha'))} o de ${c.name}.`,
+      nivel(m) == null ? 'Níveis de classe: não tem nenhum.' : `Níveis de classe: ${compara(nivel(m), nivel(c))} os de ${c.name}.`]),
+  ];
+}
+
+/**
  * O BESTIÁRIO DO GRUPO: o bloco que alguém já reconheceu pelo Lembrar. A ficha da criatura (`view/ficha-criatura.js`)
  * só mostra o que se sabe dela depois disso. Mora na campanha (vai no save, por bloco: reconhecer um goblin vale para
  * todos os goblins); sem campanha (a arena), no campo da cena.

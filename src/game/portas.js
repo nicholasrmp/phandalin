@@ -16,6 +16,10 @@ import { rolarTeste } from '../rules/utilidade.js';
 import { garantirInventario } from '../rules/equipment.js';
 import { ctxDe } from './magias-fora.js';
 import { audio } from '../core/audio.js';
+import { magiasProntas } from '../rules/spells.js';
+import { trancarComMagia } from '../rules/livro-motor.js';
+import { cargasDe, gastarCargaDoItem } from '../rules/itens-que-conjuram.js';
+import { idsCarregados } from '../rules/itens-passivos.js';
 
 /**
  * A AGULHA ENVENENADA (Livro do Mestre): 1 de perfurante e 2d10 de veneno em quem mexeu na fechadura, e Constituição CD 15
@@ -54,6 +58,36 @@ export function portasDaCasa(field, tile) {
 
 const tem = (c, id) => garantirInventario(c).bag.some((i) => i.id === id && (i.qtd ?? 1) > 0);
 
+/**
+ * TRANCAR COM A TRANCA ARCANA, do menu da porta fechada: na luta é a magia de sempre (`combat.js castSpell`, a ação e o
+ * espaço), explorando é a mesma regra com o espaço gasto aqui. Some se o herói não tem a magia pronta.
+ */
+function opcaoDaTrancaArcana(app, c, p, { fora, longe }) {
+  const enc = app.enc;
+  if (!c.spellcasting || !magiasProntas(c).includes('trancaArcana')) return null;
+  const slots = c.spellcasting.slots ?? [];
+  let circulo = null;
+  for (let n = 2; n < slots.length; n++) if (slots[n] > 0) { circulo = n; break; }
+  const semEspaco = circulo == null ? 'sem espaço de 2º círculo ou maior' : null;
+  const semAcao = !fora && c.actionUsed ? 'a ação deste turno já foi usada' : null;
+  const ponto = distanceFt(c.pos, p.a) <= distanceFt(c.pos, p.b) ? p.a : p.b;
+  return {
+    rotulo: 'Trancar com a Tranca Arcana', icone: 'magia-trancaArcana', detalhe: `${circulo ?? 2}º círculo · ${fora ? 'explorando' : 'gasta a ação'}; o grupo abre normalmente`,
+    motivo: longe ?? semAcao ?? semEspaco,
+    fazer: () => {
+      if (fora) {
+        c.spellcasting.slots[circulo] -= 1;
+        trancarComMagia(enc.field, p.chave, c);
+        enc.say('magia', `${c.name} conjura a Tranca Arcana: a porta fica trancada por magia, menos para o grupo.`);
+      } else {
+        const r = enc.castSpell(c, 'trancaArcana', { point: { x: ponto.x, y: ponto.y } });
+        if (!r.ok) { enc.say('aviso', r.why ?? 'a magia não saiu'); return; }
+      }
+      app.refresh?.();
+    },
+  };
+}
+
 /** As opções do menu do botão direito para as portas da casa `tile`, para o herói `c`. */
 export function opcoesDePorta(app, c, tile, { fora = true } = {}) {
   const enc = app.enc;
@@ -84,9 +118,37 @@ export function opcoesDePorta(app, c, tile, { fora = true } = {}) {
       });
       continue;
     }
+    // a TRANCA ARCANA (Livro do Jogador) na porta fechada: quem sabe a magia a tranca, e quem tem uma tranca pode reforçá-la
+    if (!p.tranca?.arcana) {
+      const op = opcaoDaTrancaArcana(app, c, p, { fora, longe });
+      if (op) ops.push(op);
+    }
     if (!p.tranca) {
       ops.push({ rotulo: 'Abrir a porta', icone: 'acao-usarObjeto', detalhe: 'de graça', motivo: longe, fazer: () => abrir(`${c.name} abre a porta.`) });
       continue;
+    }
+    // quem conjurou a Tranca Arcana, e o lado dele, abrem a porta normalmente; ela continua trancada para os outros
+    if (p.tranca.arcana && p.tranca.arcana.lado === c.side) {
+      ops.push({ rotulo: 'Abrir a porta', icone: 'acao-usarObjeto', detalhe: `a Tranca Arcana de ${p.tranca.arcana.nome} a deixa abrir`, motivo: longe, fazer: () => abrir(`${c.name} abre a porta; a tranca de ${p.tranca.arcana.nome} não o segura.`) });
+      continue;
+    }
+    // o SINO DA ABERTURA (Livro do Mestre): de até 36 m, à vista, uma das dez cargas, e a porta destranca e abre
+    if (idsCarregados(c).includes('sinoDaAbertura')) {
+      const ponto = distanceFt(c.pos, p.a) <= distanceFt(c.pos, p.b) ? p.a : p.b;
+      const cargas = cargasDe(c, 'sinoDaAbertura');
+      const longeDoSino = distanceFt(c.pos, ponto) > 120 ? 'longe demais — o sino alcança 36 m'
+        : !enc.field.hasLineOfSight(c.pos, ponto) ? 'não se vê a porta daqui' : null;
+      ops.push({
+        rotulo: 'Tocar o sino da abertura', icone: 'acao-usarObjeto', detalhe: `${cargas} ${cargas === 1 ? 'carga' : 'cargas'} · ${fora ? 'explorando' : 'gasta a ação'}`,
+        motivo: longeDoSino ?? (!fora && c.actionUsed ? 'sem ação neste turno' : null) ?? (cargas > 0 ? null : 'o sino rachou: não tem mais cargas'),
+        fazer: () => {
+          if (!fora) c.actionUsed = true;
+          gastarCargaDoItem(c, 'sinoDaAbertura');
+          destrancar();
+          abrir(`${c.name} toca o sino, e a fechadura salta${p.tranca.arcana ? ', com a Tranca Arcana e tudo' : ''}: a porta se abre.`, null);
+          if (cargasDe(c, 'sinoDaAbertura') <= 0) enc.say('recurso', `O sino de ${c.name} racha: era a última carga.`);
+        },
+      });
     }
     // trancada
     const cd = p.tranca.cd ?? 15;
@@ -96,7 +158,8 @@ export function opcoesDePorta(app, c, tile, { fora = true } = {}) {
       return rolarTeste(x.estado, x.herois(), enc.rng, c, pericia, alvo);
     };
     const gasta = () => { if (!fora) c.actionUsed = true; };
-    if (tem(c, p.tranca.chave ?? 'chave')) {
+    // a chave abre a fechadura de metal; a Tranca Arcana segura do mesmo jeito
+    if (!p.tranca.arcana && tem(c, p.tranca.chave ?? 'chave')) {
       ops.push({
         rotulo: 'Destrancar com a chave', icone: 'acao-usarObjeto', detalhe: 'sem teste', motivo: longe,
         fazer: () => { destrancar(); audio.play('lockKey'); abrir(`${c.name} gira a chave e abre a porta.`); },
@@ -104,7 +167,7 @@ export function opcoesDePorta(app, c, tile, { fora = true } = {}) {
     }
     ops.push({
       rotulo: 'Abrir a fechadura', icone: 'acao-usarObjeto', detalhe: `ferramentas de ladrão · Destreza, CD ${cd}`,
-      motivo: longe ?? semAcao ?? (tem(c, 'ferramentasDeLadrao') ? null : `${c.name} não tem ferramentas de ladrão`),
+      motivo: longe ?? semAcao ?? (p.tranca.semFechadura ? 'a porta não tem fechadura: só a magia a segura' : null) ?? (tem(c, 'ferramentasDeLadrao') ? null : `${c.name} não tem ferramentas de ladrão`),
       fazer: () => {
         gasta();
         const t = teste('prestidigitacao', cd);

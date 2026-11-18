@@ -1,0 +1,30 @@
+[
+ {
+  "magia": "distorcerValor",
+  "en": "Distort Value",
+  "circulo": 1,
+  "motivo": "leva 1 minuto ou mais para conjurar: não cabe num turno de luta, e fora da luta o jogo não tem o que ela muda",
+  "rascunho": null
+ },
+ {
+  "magia": "amigosRapidos",
+  "en": "Fast Friends",
+  "circulo": 3,
+  "motivo": "só se narraria: o tabuleiro ainda não guarda o que ela muda",
+  "rascunho": "debuff"
+ },
+ {
+  "magia": "domDaPalavra",
+  "en": "Gift of Gab",
+  "circulo": 2,
+  "motivo": "só se narraria: o tabuleiro ainda não guarda o que ela muda",
+  "rascunho": null
+ },
+ {
+  "magia": "discursoMotivacional",
+  "en": "Motivational Speech",
+  "circulo": 3,
+  "motivo": "leva 1 minuto ou mais para conjurar: não cabe num turno de luta, e fora da luta o jogo não tem o que ela muda",
+  "rascunho": null
+ }
+]

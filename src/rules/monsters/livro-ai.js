@@ -207,6 +207,9 @@ export const LIVRO_AI = {
    ]
   },
   "traits": [],
+  "marcas": [
+   "half-elf"
+  ],
   "blurb": "Combatente meio-elfa que ataca duas vezes com espada longa ou besta leve, lendo pensamentos dos inimigos para antecipar seus movimentos.",
   "lore": "Irmã caçula de Omin Dran, Auspicia foi arrebatada ainda criança pela Cripta Errante e passou anos presa num sonho sombrio dentro dela, até ser resgatada pelo irmão e pela Equipe \"C\". De volta ao mundo, tenta descobrir quem realmente é e lidar com as sequelas do cativeiro. Saiu da cripta com poderes psiônicos crescentes: lê mentes sem querer e usa um brinco de diamante para conter o dom. Ainda guarda um elo misterioso com a cripta, que lhe traz lembranças de outros prisioneiros e visões de lugares distantes. Em combate, pressente o que vai acontecer e costuma usar isso para travar a luta e abrir espaço para negociação."
  },
@@ -290,6 +293,17 @@ export const LIVRO_AI = {
   },
   "acoesEspeciais": [
    {
+    "nome": "Canção de Dominação",
+    "porDia": 3,
+    "tipo": "alvo",
+    "alcanceFt": 60,
+    "save": "wis",
+    "dc": 13,
+    "condition": "enfeiticado",
+    "rounds": 10,
+    "repete": false
+   },
+   {
     "nome": "Provocação",
     "porDia": 2,
     "tipo": "alvo",
@@ -303,9 +317,11 @@ export const LIVRO_AI = {
    }
   ],
   "traits": [
-   "t_cancaoDeDominacao",
    "ascendenciaFeerica",
    "t_provocacao"
+  ],
+  "marcas": [
+   "elf"
   ],
   "blurb": "Barda elfa que luta de longe com zombarias, provocações e magias de controle como sono e nuvem de adagas. Seu maior perigo é a Canção de Dominação, capaz de virar um aliado contra o grupo.",
   "lore": "Brahma Lutier é uma elfa que já fez parte da Equipe \"B\" e se destaca como cartógrafa, espiã e trovadora. Aprendeu a arte da música com Audra Courtier, dona de uma estalagem em Red Larch, e ficou famosa por uma canção quase irresistível. Depois de romper com o marido, Oak Truestrike, deixou o grupo e passou a trabalhar sozinha. É alegre e homicida na mesma medida, e combate com um alaúde de guerra de origem draconata, cheio de compartimentos secretos e armas embutidas."
@@ -677,8 +693,28 @@ export const LIVRO_AI = {
     "zonaDaVerdade": 13
    }
   },
+  "acoesEspeciais": [
+   {
+    "nome": "Desafio do Campeão",
+    "tipo": "area",
+    "shape": "raio",
+    "areaFt": 30,
+    "save": "wis",
+    "dc": 13,
+    "condition": "desafioDoCampeao",
+    "rounds": 100,
+    "repete": false,
+    "escolhe": true,
+    "porDia": 1,
+    "raioDoDesafio": 30,
+    "bonus": true
+   }
+  ],
   "traits": [
    "t_desafioDoCampeao"
+  ],
+  "marcas": [
+   "dragonborn"
   ],
   "blurb": "Paladino draconato que prende inimigos perto de si com seu desafio de campeão e os castiga com espada grande, chicote de alcance e vômito ácido em linha. Também conjura destruições e cura aliados.",
   "lore": "Donaar é o draconato corpulento que toma as decisões da Equipe \"C\", famoso pela fúria em combate e por cair no sono logo depois, ou em qualquer momento inconveniente. Uma peculiaridade de sua linhagem lhe deu uma cauda rara e fez seu sopro ácido sair como vômito, o que o deixou obcecado com a saúde dos dentes: a espada se chama Escova e o chicote, Fio Dental. Sua bravata é em parte encenação, já que ele aproveitou a vida de aventureiro longe do clã para se reinventar, e quem bajula seu orgulho dracônico conquista sua simpatia com facilidade. Ainda assim, tem um lado generoso: atua como padrinho de Chronaar, uma jovem draconata que o adotou como figura paterna enquanto ele vigiava seu ovo."
@@ -772,6 +808,9 @@ export const LIVRO_AI = {
    }
   },
   "traits": [],
+  "marcas": [
+   "human"
+  ],
   "blurb": "Mago de 9º nível que prefere a diplomacia, mas quando pressionado fica invisível e dispara relâmpagos e cones de frio. Também manipula mentes com sugestão e magias de persuasão.",
   "lore": "Flabbergast é o reservado mordomo-chefe da sede da Acquisitions Incorporated, um burocrata pacifista vindo de uma família rica de Neverwinter. Odeia trabalho braçal e violência, preferindo aproximar pessoas e resolver conflitos com conversa. Raramente exibe seu poder mágico. No passado serviu Portentia Dran na Dran Enterprises e ainda carrega culpa por isso, o que faz alguns duvidarem de sua lealdade. É acompanhado pelo familiar Mister Snibbly, um gato."
  },
@@ -836,8 +875,11 @@ export const LIVRO_AI = {
    ],
    "prepared": [
     "disfarcarSe",
+    "missilMagicoDeJim",
     "armaduraArcana",
     "invisibilidade",
+    "moedaBrilhanteDeJim",
+    "incitarCobica",
     "bolaDeFogo",
     "metamorfose",
     "despistar"
@@ -859,8 +901,11 @@ export const LIVRO_AI = {
     "ilusaoMenor": 15,
     "prestidigitacao": 15,
     "disfarcarSe": 15,
+    "missilMagicoDeJim": 15,
     "armaduraArcana": 15,
     "invisibilidade": 15,
+    "moedaBrilhanteDeJim": 15,
+    "incitarCobica": 15,
     "bolaDeFogo": 15,
     "metamorfose": 15,
     "despistar": 15
@@ -878,6 +923,9 @@ export const LIVRO_AI = {
    "t_conjuracaoMenor",
    "t_equipamentoEspecial",
    "t_transporteBenigno"
+  ],
+  "marcas": [
+   "human"
   ],
   "blurb": "Mago de 9º nível que prefere ficar longe, lançando bolas de fogo e mísseis mágicos enquanto troca de lugar com aliados por teletransporte. Carrega uma varinha das maravilhas, então espere o inesperado.",
   "lore": "Herdeiro de uma excêntrica família de magos que transita entre planos, Jim nasceu com talento arcano de sobra. Mesmo assim, sua verdadeira paixão sempre foi o palco, onde apresenta truques de mão em praças e feiras. Ficou famoso como arcanista-chefe da Acquisitions Incorporated, cargo em que às vezes incendeia mais do que deveria. Sonha em se aposentar para virar um ilusionista de verdade, sem magia real."
@@ -973,6 +1021,9 @@ export const LIVRO_AI = {
    "t_equipamentoEspecial",
    "t_menteDesperta",
    "ascendenciaFeerica"
+  ],
+  "marcas": [
+   "elf"
   ],
   "blurb": "Bruxo drow que prefere lutar à distância com rajada mística, mísseis mágicos do manto e magias como despedaçar e sussurros dissonantes. Se for cercado, ataca duas vezes com a foice, mas é frágil sob a luz do sol.",
   "lore": "K'thriss é um bruxo drow ligado ao Ur, uma entidade ancestral, faminta e indiferente que existe além da realidade. Quando era um seguidor hesitante de Lolth, tocou fragmentos do Altar Negro, e a experiência deixou seu cabelo negro e seus olhos cristalinos e tortos. Vê a existência como um enigma sem sentido, mas costuma ser cortês, porque sabe que não pode arranjar mais inimigos. Suas magias se manifestam como tentáculos, e ele costuma andar vendado, enxergando pelos olhos de Ligotti, seu familiar alienígena."
@@ -1174,6 +1225,9 @@ export const LIVRO_AI = {
   "traits": [
    "ascendenciaFeerica"
   ],
+  "marcas": [
+   "elf"
+  ],
   "blurb": "Arqueira letal que dispara três flechas por turno a até 180 m de distância, ou troca o arco por cimitarras no corpo a corpo. Usa magias de patrulheira como marca do caçador e crescer espinhos para punir quem tenta alcançá-la.",
   "lore": "Môrgæn é uma patrulheira elfa da Acquisitions Incorporated, famosa como rastreadora e caçadora capaz de acertar alvos de qualquer distância e sumir na mata sem deixar pistas. Suas flechas feitas à mão assustam inimigos e até colegas, tanto que ela é a única do grupo que recebe pagamento adiantado. Criada na floresta, protege a natureza com ferocidade e prefere atirar primeiro sem perguntar depois. Mesmo assim, sabe se virar em missões de infiltração e conversa nas cidades, desde que seu gosto por bebida não atrapalhe."
  },
@@ -1257,6 +1311,9 @@ export const LIVRO_AI = {
    "ascendenciaFeerica",
    "audicaoEVisaoApuradas",
    "t_devolverOFavor"
+  ],
+  "marcas": [
+   "elf"
   ],
   "blurb": "Elfo ágil que desfere três golpes por turno com adagas de gancho ou besta de mão, e revida quando é ferido em combate corpo a corpo.",
   "lore": "Oak Truestrike é quem toma as decisões da Equipe \"B\" e, segundo alguns, a reencarnação de um semideus. Arrogante e seguro de si, tem um talento estranho para dizer a cada pessoa o que ela quer ouvir, seja por magia sutil ou pura lábia de vigarista. A cada nova vida sua personalidade muda radicalmente, alternando entre bondade e maldade, e ele tenta equilibrar nesta vida as dívidas da anterior. A encarnação atual pende para o bem, embora carregue amargura e um desprezo frequente pelas pessoas."
@@ -1391,10 +1448,25 @@ export const LIVRO_AI = {
     "lendasEHistorias": 15
    }
   },
+  "motorDoLivro": {
+   "primeiroAcerto": {
+    "nome": "Golpe Divino",
+    "dados": "1d8",
+    "tipo": null
+   },
+   "golpeGuiado": {
+    "nome": "Bênção do Deus da Guerra",
+    "bonus": 10,
+    "alcanceFt": 30
+   }
+  },
   "traits": [
    "t_golpeDivino",
    "ascendenciaFeerica",
    "t_bencaoDoDeusDaGuerra"
+  ],
+  "marcas": [
+   "half-elf"
   ],
   "blurb": "Clérigo de armadura pesada que esmaga inimigos com uma marreta, reforçando cada golpe com poder divino e uma lista ampla de magias como guardiões espirituais e golpe flamejante. Também pode garantir um acerto crucial a um aliado no momento certo.",
   "lore": "Meio-elfo criado em Red Larch, onde a mãe mantinha uma estalagem movimentada, Omin perdeu uma das irmãs para a Cripta Errante, uma criatura disfarçada de ruína. Em parte para procurá-la, fundou a Acquisitions Incorporated, empresa que transformou aventuras em franquias pela Costa da Espada. Devoto de Tymora, é implacável nos negócios, desastrado no amor e péssimo em jogos de azar. Há boatos de que seria um dos Lordes Mascarados de Águas Profundas, algo que ele apenas ri ao ouvir."
@@ -1482,8 +1554,19 @@ export const LIVRO_AI = {
     "raioArdente": 13
    }
   },
+  "acoesEspeciais": [
+   {
+    "nome": "Magia Ecoada",
+    "porDia": 1,
+    "tipo": "magiaEcoada",
+    "bonus": true
+   }
+  ],
   "traits": [
    "t_magiaEcoada"
+  ],
+  "marcas": [
+   "human"
   ],
   "blurb": "Mago de apoio que fica à distância lançando raio ardente, nuvem de adagas e sono; uma vez por dia repete a magia do turno anterior como ação bônus. De perto é frágil, com apenas uma espada curta.",
   "lore": "Pendragon é o cartógrafo da equipe \"B\" da Acquisitions Incorporated, que entrou no lugar de Brahma Lutier e teve como primeira missão ajudar a caçá-lo. Filho adotivo de Rosie Beestinger, da equipe \"C\", ele é o oposto da mãe em quase tudo e chegou a tentar matá-la, morrendo na tentativa antes de ser ressuscitado a pedido dela. Expulso da escola de magia por causa da má fama da família, aprendeu sozinho e virou uma espécie de arqueólogo arcano, fascinado por feitiços perigosos e bugigangas estranhas. Fica na equipe porque busca ali um senso de família, mesmo tendo que aturar Oak Truestrike como figura paterna."
@@ -1587,6 +1670,9 @@ export const LIVRO_AI = {
   "traits": [
    "t_exibicaoDivina"
   ],
+  "marcas": [
+   "human"
+  ],
   "blurb": "Clérigo de linha de frente que golpeia duas vezes com o martelo de guerra, empurrando inimigos, e pode cegar vários adversários de uma vez com o brilho divino do escudo. Também paralisa alvos com magia e cura aliados.",
   "lore": "Phoenix Anvil é o clérigo de Waukeen da equipe reserva de uma franquia de aventureiros, um homem tão calado que quase ninguém conhece sua voz. Cresceu brigando nas ruas até que um emprego varrendo a escadaria de um pequeno templo da deusa do comércio mudou seu rumo. Por saber o que é passar necessidade, persegue o ouro com disciplina e cuida com obsessão dos bens e das contas da franquia. Como considera os colegas parte desse patrimônio, é ferozmente leal a eles, embora só tenha criado laços de verdade com Oak Truestrike."
  },
@@ -1647,6 +1733,9 @@ export const LIVRO_AI = {
   "sneakAttack": "4d6",
   "traits": [
    "t_mudarDeForma"
+  ],
+  "marcas": [
+   "shapechanger"
   ],
   "blurb": "Portentia ataca três vezes por turno com espadas curtas e causa 14 de dano extra com Ataque Furtivo quando tem vantagem ou um aliado ao lado do alvo. Pode mudar de forma no meio da luta, confundindo quem tenta acompanhá-la.",
   "lore": "Portentia comanda a Dran Enterprises, a grande concorrente da Acquisitions Incorporated no ramo de aventuras lucrativas. Na verdade, ela é uma changeling que tomou o lugar da verdadeira Portentia quando a menina ainda era pequena. Há anos manipula a família Dran por dentro, e foi ela quem atraiu a irmã Auspicia para a Cripta Errante. Em combate e em conversas troca de rosto e de atitude o tempo todo, lutando para ferir e humilhar. Seus verdadeiros objetivos continuam um segredo só dela."
@@ -1735,8 +1824,11 @@ export const LIVRO_AI = {
    }
   },
   "traits": [
-   "t_eminenciaDivina",
+   "eminenciaDivina",
    "ascendenciaFeerica"
+  ],
+  "marcas": [
+   "elf"
   ],
   "blurb": "Clériga elfa que avança com uma marreta e queima os inimigos com luz divina, gastando magia para somar dano radiante aos golpes. Pode cercar-se de guardiões espirituais e curar aliados no meio da luta.",
   "lore": "Dran é uma elfa devota que fala em nome de sua divindade e é tratada como profetisa por seus seguidores. Ordeira e bondosa, costuma agir como líder espiritual e curandeira de sua comunidade. Ainda assim, não foge do combate: veste peitoral e empunha uma marreta pesada. Quando luta, mistura fé e força bruta, abençoando cada golpe com poder sagrado."
@@ -1856,11 +1948,17 @@ export const LIVRO_AI = {
   "features": [
    "evasion"
   ],
+  "motorDoLivro": {
+   "desviarProjetil": "1d10+9"
+  },
   "traits": [
    "bravura",
    "t_agilidadeHalfling",
    "t_passoDasSombras",
    "t_desviarProjeteis"
+  ],
+  "marcas": [
+   "halfling"
   ],
   "blurb": "Monja halfling ágil que se teleporta entre sombras e despeja uma rajada de golpes de cajado e socos mágicos. Desvia projéteis e escapa de áreas de efeito com facilidade.",
   "lore": "Rosie é uma halfling idosa, miúda e de jeito de avó, o que faz muitos a subestimarem uma única vez. É a cartógrafa do Time \"C\" e famosa entre os halflings, em parte por sua enorme família de filhos naturais e adotados, vários deles aventureiros. Estudiosa das estrelas, busca no céu sinais dos laços que a unem à família. Boatos ligam o clã Beestinger ao crime organizado halfling, e seu apelido \"Avó Noite\" não ajuda, embora ela jure não saber de nada."
@@ -1934,11 +2032,23 @@ export const LIVRO_AI = {
     "ateFimDoTurnoDele": true
    }
   ],
+  "motorDoLivro": {
+   "desvantagemContraEle": {
+    "nome": "Vantagem Defensiva",
+    "aliadosColados": 2
+   },
+   "absorverGolpe": {
+    "nome": "Absorver Ataque"
+   }
+  },
   "traits": [
    "t_vantagemDefensiva",
    "nimbleEscape",
    "ascendenciaFeerica",
    "t_absorverAtaque"
+  ],
+  "marcas": [
+   "goblinoid"
   ],
   "blurb": "Goblin ágil que ataca duas vezes com a adaga, foge ou se esconde como ação bônus e fica difícil de acertar quando cercado de aliados. Uma vez por dia, pode atordoar quem estiver por perto com palavras trazidas do além.",
   "lore": "Splugoth já foi Splug, um goblin capturado por aventureiros da Acquisitions Incorporated que o deixaram morrer depois de ele salvar suas vidas. Voltou dos mortos, ninguém sabe quantas vezes, e adotou um nome mais dramático. Hoje lidera a linha de frente do grupo rival conhecido como os Seis. Sua única obsessão é se vingar da Acq Inc e, principalmente, de Omin Dran, nesta vida e nas próximas."
@@ -2025,12 +2135,16 @@ export const LIVRO_AI = {
   },
   "features": [
    "evasion",
-   "sneakAttack"
+   "sneakAttack",
+   "uncannyDodge"
   ],
   "sneakAttack": "4d6",
   "traits": [
    "t_trabalhoNoSegundoAndar",
-   "t_esquivaSobrenatural"
+   "esquivaSobrenatural"
+  ],
+  "marcas": [
+   "human"
   ],
   "blurb": "Ladino ágil que desfere quatro golpes por turno com espada curta e rapieira, somando 4d6 de Ataque Furtivo quando tem vantagem ou um aliado ao lado do alvo. Escala e salta com facilidade e reduz à metade o dano de golpes que vê chegando.",
   "lore": "Viari cresceu numa pequena fazenda e guarda boas lembranças da família, embora se incomode com a preferência dos pais pelo irmão mais velho e jamais revele o nome que usava naquela época. Subiu rápido na Acquisitions Incorporated e hoje chefia o chamado Departamento de Esfaqueamento da companhia. É tão perigoso num duelo quanto numa discussão, gosta de planejar, adora saltar de lugares altos em combate e sabe ser vingativo. Certa vez derrubou sozinho um gigante com a Adaga do Apocalipse e perdeu o braço no feito; a magia o restaurou, mas quem o conhece percebe que aquele episódio ainda pesa sobre ele."
@@ -2153,10 +2267,22 @@ export const LIVRO_AI = {
     "liberdadeDeMovimento": 14
    }
   },
+  "acoesEspeciais": [
+   {
+    "nome": "Forma Selvagem",
+    "tipo": "formaSelvagem",
+    "fera": "loboAtroz",
+    "porDia": 1,
+    "bonus": true
+   }
+  ],
   "traits": [
    "ascendenciaFeerica",
    "t_mascaraDaNatureza",
    "t_formaSelvagem"
+  ],
+  "marcas": [
+   "elf"
   ],
   "blurb": "Druida élfica que alterna golpes da cimitarra mágica Foremother e flechas de arco longo com magias como Raio Lunar, Invocar Relâmpago e Constrição; pode virar um lobo atroz e se curar gastando espaços de magia.",
   "lore": "Walnut cresceu num clã só de mulheres, druidas e patrulheiras devotas de Mielikki, que defendiam a natureza selvagem mais com lâminas do que com palavras. Quando o enclave foi aniquilado, ela ficou sozinha e movida apenas pela vingança. Apesar de detestar cidades, mudou-se para uma delas por acreditar que a origem do mal está ali, e atua como documante da Equipe \"C\". Desconfia de quase todos, exceto de quem lembra a estrutura matriarcal de seu povo, e segue suas convicções sem hesitar."
@@ -2164,10 +2290,6 @@ export const LIVRO_AI = {
 };
 
 export const TRACOS_AI = {
- "t_cancaoDeDominacao": {
-  "name": "Canção de Dominação",
-  "desc": "Três vezes por dia, uma criatura que possa vê-la ou ouvi-la faz teste de resistência de Sabedoria CD 13; se falhar, fica enfeitiçada por 1 minuto, repetindo o teste ao fim de cada turno (com desvantagem se desejar estar sob o encanto). Por 1 hora após o fim do efeito, o alvo tem desvantagem em testes resistidos de Inteligência, Sabedoria ou Carisma contra Brahma."
- },
  "t_provocacao": {
   "name": "Provocação",
   "desc": "Duas vezes por dia, como ação bônus, escolhe uma criatura que veja a até 9 m e que possa ouvi-la. Se falhar num teste de resistência de Carisma CD 13, o alvo tem desvantagem em testes de habilidade, ataques e testes de resistência até o início do próximo turno de Brahma."
@@ -2220,10 +2342,6 @@ export const TRACOS_AI = {
   "name": "Mudar de Forma",
   "desc": "Transforma-se magicamente em um humanoide ou fera de ND 3 ou menor, ou volta à forma verdadeira. Mantém suas estatísticas e a fala, mas assume CA, deslocamentos, Força, Destreza e sentidos da nova forma, ganhando também capacidades que ela possua."
  },
- "t_eminenciaDivina": {
-  "name": "Eminência Divina",
-  "desc": "Com uma ação bônus, gasta um espaço de magia para que seus ataques corpo a corpo com arma causem 10 (3d6) de dano radiante extra até o fim do turno. Cada nível do espaço acima do 1º soma mais 1d6."
- },
  "t_agilidadeHalfling": {
   "name": "Agilidade Halfling",
   "desc": "Pode atravessar o espaço de criaturas de tamanho maior que o dela."
@@ -2247,10 +2365,6 @@ export const TRACOS_AI = {
  "t_trabalhoNoSegundoAndar": {
   "name": "Trabalho no Segundo Andar",
   "desc": "Escalar não gasta movimento extra, e seus saltos com corrida alcançam 1,5 m a mais."
- },
- "t_esquivaSobrenatural": {
-  "name": "Esquiva Sobrenatural",
-  "desc": "Quando um atacante que ele consegue ver o acerta, reduz o dano desse ataque à metade."
  },
  "t_mascaraDaNatureza": {
   "name": "Máscara da Natureza",

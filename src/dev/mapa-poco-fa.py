@@ -141,6 +141,16 @@ def main():
         **({'tracosTipo': base['tracosTipo']} if base.get('tracosTipo') else {}),
         'fundo': {'nome': 'poco.jpg', 'url': '/mapas/fa/poco.jpg', 'escala': 100,
                   'x0': 0, 'y0': 0, 'giro': 0, 'opacidade': 1},
+        # A TENDA DO KOST TEM DENTRO (revisão de 2026-11-13). A arte base pinta só o telhado de lona; a FA dá o interior
+        # (`Overlay/Gridless/TentInterior_5x5.webp`, no disco como `poco-tenda-interior.webp`), que a cena do Foundry põe
+        # em (4,7). O interior fica por baixo, e o TELHADO, recortado da própria arte com transparência fora da lona
+        # (`poco-tenda-telhado.webp`), vai por cima das fichas e some quando alguém do grupo entra (`modo: 'peca'`,
+        # o mesmo do parapeito do Zorzula). Sem os arquivos no disco, a cena abre com o telhado da arte base, como antes.
+        'sobreposicoes': [
+            {'id': 'tendaInterior', 'url': '/mapas/fa/poco-tenda-interior.webp', 'x': 4, 'y': 7, 'w': 5, 'h': 5, 'ligada': True},
+            {'id': 'tendaTelhado', 'url': '/mapas/fa/poco-tenda-telhado.webp', 'x': 4, 'y': 7, 'w': 5, 'h': 5, 'ligada': True,
+             'frente': True, 'modo': 'peca'},
+        ],
     }
     pontos = {
         'porta': {'x': PORTA[0], 'y': PORTA[1]},
@@ -175,6 +185,7 @@ def main():
         '  tracos: [\n' + ''.join(f'    {um(t)},\n' for t in mapa['tracos']) + '  ],\n'
         + (f'  tracosTipo: {um(mapa["tracosTipo"])},\n' if 'tracosTipo' in mapa else '')
         + f'  fundo: {um(mapa["fundo"])},\n'
+        '  sobreposicoes: [\n' + ''.join(f'    {um(o)},\n' for o in mapa['sobreposicoes']) + '  ],\n'
         '};\n\n'
         'export const POCO = {\n'
         + ''.join(f'  {c}: {um(pontos[c])},\n' for c in pontos)

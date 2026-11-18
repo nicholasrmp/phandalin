@@ -55,6 +55,9 @@ export const LIVRO_MTF = {
    }
   ],
   "traits": [],
+  "marcas": [
+   "demon"
+  ],
   "blurb": "Demônio lento e frágil que avança aos tropeços para morder quem estiver ao alcance. Sozinho é fraco, mas resiste a fogo, frio e eletricidade e não se deixa assustar nem enfeitiçar.",
   "lore": "É uma das formas mais miseráveis de demônio, nascida das almas mais baixas que chegam ao Abismo. Vaga em bandos pelas camadas infernais, faminto e sem rumo, atacando qualquer coisa que pareça comestível. Entende o idioma Abissal, mas é incapaz de falar. Demônios mais fortes o tratam como bucha de canhão."
  },
@@ -312,8 +315,22 @@ export const LIVRO_MTF = {
     "Mangual"
    ]
   },
+  "acoesEspeciais": [
+   {
+    "nome": "Golpe Relâmpago",
+    "recharge": [
+     6
+    ],
+    "tipo": "golpeReforcado",
+    "arma": "Mangual",
+    "extra": "4d8",
+    "extraTipo": "elétrico",
+    "save": "con",
+    "dc": 13,
+    "condition": "atordoado"
+   }
+  ],
   "traits": [
-   "t_golpeRelampago",
    "armasMagicas"
   ],
   "blurb": "Guerreiro de vento encerrado em armadura que paira no ar e golpeia três vezes com seu mangual mágico. De tempos em tempos, descarrega um raio que pode deixar o alvo atordoado.",
@@ -389,11 +406,21 @@ export const LIVRO_MTF = {
     "Tentáculo"
    ]
   },
+  "motorDoLivro": {
+   "fomentarLoucura": {
+    "nome": "Fomentar Loucura",
+    "raioFt": 30,
+    "dc": 18
+   }
+  },
   "traits": [
    "amorfo",
    "aparenciaFalsa",
    "t_fomentarLoucura",
    "resistenciaAMagia"
+  ],
+  "marcas": [
+   "demon"
   ],
   "blurb": "Massa demoníaca que se disfarça de lodo e açoita com três tentáculos ácidos de longo alcance. Sua simples presença corrói a mente de quem está perto, podendo deixar a vítima em confusão.",
   "lore": "O alkilith é um demônio amorfo que lembra um tapete de fungo ou gosma pútrida. Costuma se infiltrar em frestas de portas, janelas e paredes, onde sua presença enfraquece a barreira entre os mundos e abre caminho para outros demônios do Abismo. Vive escondido no Subterrâneo e em cidades decadentes, esperando imóvel até que vítimas se aproximem. Não fala, mas entende o idioma abissal, e a loucura que espalha ao redor é muitas vezes o primeiro sinal de sua chegada."
@@ -659,9 +686,20 @@ export const LIVRO_MTF = {
   "features": [
    "devilsSight"
   ],
+  "motorDoLivro": {
+   "encantoInstintivo": {
+    "nome": "Encanto Instintivo",
+    "alcanceFt": 60,
+    "dc": 19,
+    "imunizaAoPassar": true
+   }
+  },
   "traits": [
    "resistenciaAMagia",
    "t_encantoInstintivo"
+  ],
+  "marcas": [
+   "devil"
   ],
   "blurb": "Comandante diabólico que fere com chicote de longo alcance e toque necrótico enquanto cega mentes à distância e pode atordoar e apagar memórias. Quem o ataca pode acabar golpeando um aliado.",
   "lore": "Os amnizus são oficiais dos Nove Infernos: conduzem legiões diabólicas à guerra e chefiam as sentinelas nos portões infernais. Prepotentes e cruéis, compensam a arrogância com mente estratégica afiada e lealdade inabalável aos arquiduques. Alguns vigiam o Rio Estige a partir de fortalezas em Dis e Estígia, recebendo as almas recém-chegadas como lemures. Ali, martelam as leis infernais nessas criaturas sem memória e as organizam em tropas."
@@ -758,6 +796,9 @@ export const LIVRO_MTF = {
   "traits": [
    "resistenciaAMagia",
    "armasMagicas"
+  ],
+  "marcas": [
+   "demon"
   ],
   "blurb": "Demônio veloz que avança como cavalaria pesada, golpeando com cascos, garras e cauda serrilhada no mesmo turno. Também dispara uma lança de relâmpago em linha que castiga grupos alinhados.",
   "lore": "Os armanitas são demônios com corpo de cavalo que correm em manadas pelas planícies devastadas do Abismo, movidos por pura sede de sangue. Os lordes demoníacos os usam como tropa de choque, lançando-os contra os flancos inimigos. Vivem para lutar e, sem adversários por perto, brigam entre si. Sua coragem beira a burrice, e diante de formações firmes recorrem à magia inata para abrir brechas com raios."
@@ -887,6 +928,9 @@ export const LIVRO_MTF = {
    "t_cortarCordaoDePrata",
    "acoesLendarias"
   ],
+  "marcas": [
+   "titan"
+  ],
   "blurb": "Titã colossal que esmaga e devora com mordida e garras de longo alcance, enquanto seu olho anula toda magia num cone enorme. Quem cai diante dele é engolido para uma prisão em outro plano.",
   "lore": "Monstruosidade gigantesca criada por Tharizdun, o Deus Acorrentado, para caçar viajantes que buscam os portais do Plano Astral rumo às moradas dos deuses. Coberto de placas espinhosas, com garras em pinça e um único olho onde parecem girar constelações, vaga solitário pelo vazio prateado desde o início do multiverso. Não se comunica nem se reproduz: apenas devora o que encontra e segue sua patrulha silenciosa. O que engole vai parar num semiplano de pedra repleto de restos de vítimas antigas."
  },
@@ -1015,11 +1059,20 @@ export const LIVRO_MTF = {
    "rounds": 10,
    "repete": true
   },
+  "motorDoLivro": {
+   "cultivarAPaz": {
+    "nome": "Promover a Paz",
+    "alcanceFt": 60
+   }
+  },
   "traits": [
    "aura",
    "t_passoFeerico",
    "resistenciaAMagia",
    "t_promoverAPaz"
+  ],
+  "marcas": [
+   "elf"
   ],
   "blurb": "Encanta quem se aproxima e anula os ataques das criaturas enfeitiçadas, enquanto fere com espada ou arco carregados de dano psíquico. Também cura aliados com magias poderosas e se teleporta para escapar.",
   "lore": "Eladrins do outono são elfos feéricos ligados à estação da colheita e da serenidade. Habitam florestas encantadas, sobretudo nas bordas da Agrestia das Fadas, e costumam receber viajantes com hospitalidade. Preferem acalmar conflitos e tratar feridos a lutar. Quando forçados ao combate, usam seu encanto para desarmar a hostilidade antes de recorrer às armas."
@@ -1155,11 +1208,26 @@ export const LIVRO_MTF = {
   },
   "acoesEspeciais": [
    {
+    "nome": "Comando Infernal",
+    "tipo": "animarAliados",
+    "raioFt": 60,
+    "condicao": "firmeNoComando",
+    "ateFimDoProximoTurno": true
+   },
+   {
     "nome": "Teletransporte",
     "tipo": "teleporte",
     "alcanceFt": 120
    }
   ],
+  "aura": {
+   "raioFt": 10,
+   "quando": "inicioDoAlvo",
+   "save": "wis",
+   "dc": 22,
+   "condition": "amedrontado",
+   "rounds": 1
+  },
   "regeneracao": {
    "pv": 20,
    "bloqueia": [
@@ -1200,12 +1268,13 @@ export const LIVRO_MTF = {
    ]
   },
   "traits": [
-   "t_comandoInfernal",
-   "t_pavoroso",
    "resistenciaAMagia",
    "armasMagicas",
    "regeneracaoDoLivro",
    "acoesLendarias"
+  ],
+  "marcas": [
+   "devil"
   ],
   "blurb": "Duque infernal que golpeia com uma maça-estrela de alcance enorme, regenera 20 PV por turno e aterroriza quem fica perto dele. Teletransporta-se pelo campo e usa magia de dominação e encantamento para virar inimigos contra aliados.",
   "lore": "Bael é um duque do Inferno, servo de alta patente nas hierarquias diabólicas e conhecido por sua crueldade calculada. Comanda legiões de diabos e prefere vencer pela manipulação, despertando a ganância dos mortais antes de esmagá-los. Sua presença é tão aterradora que guerreiros veteranos fogem só de vê-lo em fúria. Raramente luta sozinho e usa ilusões e encantamentos para escolher o terreno do confronto."
@@ -1301,6 +1370,11 @@ export const LIVRO_MTF = {
      "custo": 1,
      "tipo": "teleporte",
      "alcanceFt": 60
+    },
+    {
+     "nome": "Sumir",
+     "custo": 1,
+     "tipo": "invisivel"
     }
    ]
   },
@@ -1473,6 +1547,9 @@ export const LIVRO_MTF = {
    "imprudente",
    "acoesLendarias"
   ],
+  "marcas": [
+   "demon"
+  ],
   "blurb": "Senhor demônio com cabeça de touro que avança em investidas brutais, derrubando alvos com os chifres e retalhando com a glaive Cortacoração a 4,5 m de alcance. Sua presença aterrorizante e a imprudência calculada tornam cada turno perto dele um risco mortal.",
   "lore": "Baphomet é o Príncipe das Bestas, um lorde demônio do Abismo que governa uma fortaleza labiríntica e cultua a selvageria. Ele despreza a civilização e quer que todos cedam aos instintos brutais que escondem. Seus seguidores incluem minotauros e cultistas que caçam presas em labirintos em sua honra. Em combate, é um caçador implacável que nunca esquece um caminho percorrido."
  },
@@ -1564,6 +1641,15 @@ export const LIVRO_MTF = {
     "falarComOsMortos": 13
    }
   },
+  "acoesEspeciais": [
+   {
+    "nome": "Duplicata Espectral",
+    "tipo": "duplicata",
+    "alcanceFt": 60,
+    "porDia": 1,
+    "bonus": true
+   }
+  ],
   "traits": [
    "t_duplicataEspectral"
   ],
@@ -1653,6 +1739,19 @@ export const LIVRO_MTF = {
     "Mordida"
    ]
   },
+  "spellcasting": {
+   "ability": "wis",
+   "cantrips": [],
+   "prepared": [
+    "escuridao"
+   ],
+   "slots": [],
+   "noMotor": true,
+   "conjuraNoTurno": "geral",
+   "porDia": {
+    "escuridao": 1
+   }
+  },
   "features": [
    "devilsSight"
   ],
@@ -1661,6 +1760,9 @@ export const LIVRO_MTF = {
    "resistenciaAMagia",
    "armasMagicas",
    "furtividadeNasSombras"
+  ],
+  "marcas": [
+   "devil"
   ],
   "blurb": "Espreita nas sombras e se esconde como ação bônus, depois ataca com duas cimitarras e uma mordida ácida. Pode cobrir o campo com uma escuridão mágica que só ele enxerga através e que ele desloca à vontade.",
   "lore": "Os abishais negros são diabos dracônicos a serviço de Tiamat nos Nove Infernos, especializados em emboscada e infiltração. Atuam como espiões e assassinos, movendo-se em silêncio pelas trevas que eles mesmos conjuram. Com escamas escuras e asas largas, preferem cidades e lugares sombrios onde possam caçar sem serem vistos. Obedecem com fanatismo à Rainha dos Dragões e desprezam os mortais que enfrentam."
@@ -1826,6 +1928,9 @@ export const LIVRO_MTF = {
    "resistenciaAMagia",
    "armasMagicas"
   ],
+  "marcas": [
+   "devil"
+  ],
   "blurb": "Conjurador infernal de 13º nível que domina o campo com relâmpagos, frio, invisibilidade e muralhas de energia; de perto, alterna bordão e uma mordida carregada de eletricidade.",
   "lore": "Abishais azuis são diabos dracônicos a serviço de Tiamat nos Nove Infernos, devotados ao estudo da magia arcana. Preferem agir das sombras, usando ilusões, disfarces e encantos para manipular mortais e cumprir os planos da Rainha dos Dragões. Costumam rondar cidades e regiões costeiras atrás de segredos mágicos e servos úteis. Em combate, mantêm distância e só se aproximam quando o inimigo já está enfraquecido."
  },
@@ -1911,6 +2016,11 @@ export const LIVRO_MTF = {
     "alcanceFt": 60
    }
   ],
+  "motorDoLivro": {
+   "alcanceMortal": {
+    "nome": "Alcance Mortal"
+   }
+  },
   "traits": [
    "t_rejuvenescimento",
    "furtividadeNasSombras",
@@ -2064,10 +2174,21 @@ export const LIVRO_MTF = {
     }
    }
   ],
+  "motorDoLivro": {
+   "presencaPodre": {
+    "nome": "Presença Putrefata",
+    "raioFt": 30,
+    "dc": 13,
+    "dano": "1d6"
+   }
+  },
   "traits": [
    "t_presencaPutrefata",
    "t_saltoParado",
    "pesFirmes"
+  ],
+  "marcas": [
+   "demon"
   ],
   "blurb": "Demônio saltador que ataca com uma cauda farpada capaz de transmitir uma doença que corrói os PV máximos. Sua simples presença apodrece a carne de quem está por perto, e em bando o dano se acumula.",
   "lore": "Os bulezaus são demônios doentes que encarnam a fúria bestial da natureza. Habitam desfiladeiros e penhascos do Abismo e costumam servir como tropa de linha nos exércitos dos lordes demoníacos. Vivem para a matança e não temem morrer, por isso aparecem em quase toda comitiva demoníaca. Quando ninguém os comanda, juntam-se em turbas que brigam entre si até surgir uma presa melhor. Seus corpos são cobertos de feridas com larvas e exalam fedor de carne podre."
@@ -2154,6 +2275,18 @@ export const LIVRO_MTF = {
     "condition": "paralisado",
     "rounds": 10,
     "repete": false
+   },
+   {
+    "nome": "Invocar Espectros",
+    "tipo": "invocar",
+    "opcoes": [
+     {
+      "id": "espectro",
+      "dados": "1d6"
+     }
+    ],
+    "porDia": 1,
+    "bonus": true
    }
   ],
   "traits": [
@@ -2262,11 +2395,20 @@ export const LIVRO_MTF = {
     ]
    ]
   },
+  "motorDoLivro": {
+   "trancaDimensional": {
+    "nome": "Trava Dimensional",
+    "raioFt": 60
+   }
+  },
   "traits": [
    "t_travaDimensional",
    "resistenciaAMagia",
    "armasMagicas",
    "sempreAlerta"
+  ],
+  "marcas": [
+   "yugoloth"
   ],
   "blurb": "Caçador yugoloth que puxa presas de longe com a língua farpada e as despedaça com mordida e garras. Impede qualquer teletransporte por perto e enxerga através de ilusões e invisibilidade.",
   "lore": "O canoloth é um yugoloth bestial, parecido com um cão de caça sem olhos e coberto de placas, usado como rastreador e sentinela. Mercenários de outros yugoloths e de quem pagar bem, eles guardam portais, cofres e prisioneiros com lealdade fria ao contrato. Seus sentidos sobrenaturais quase nunca são enganados, e sua presença trava viagens mágicas ao redor. Aparecem em cidades, costas e nas profundezas do Subterrâneo, onde caçam fugitivos."
@@ -2332,6 +2474,11 @@ export const LIVRO_MTF = {
     "Tentáculo",
     "Tentáculo"
    ]
+  },
+  "motorDoLivro": {
+   "rapidezAberrante": {
+    "nome": "Rapidez Aberrante"
+   }
   },
   "traits": [
    "t_rapidezAberrante",
@@ -2403,6 +2550,32 @@ export const LIVRO_MTF = {
     "Tentáculo"
    ]
   },
+  "acoesEspeciais": [
+   {
+    "nome": "Colher os Mortos",
+    "tipo": "colherMorto",
+    "alcanceFt": 10
+   },
+   {
+    "nome": "Digerir um Cadáver",
+    "tipo": "digerir",
+    "bonus": true,
+    "dados": "2d10"
+   },
+   {
+    "nome": "Erguer um Cadáver",
+    "tipo": "animarCadaver",
+    "bonus": true,
+    "id": "zumbi"
+   }
+  ],
+  "motorDoLivro": {
+   "cadaveres": {
+    "nome": "Cadáveres",
+    "dados": "1d6+3",
+    "max": 9
+   }
+  },
   "aura": {
    "raioFt": 10,
    "quando": "inicioDoAlvo",
@@ -2412,7 +2585,6 @@ export const LIVRO_MTF = {
    "rounds": 1
   },
   "traits": [
-   "t_colherOsMortos",
    "t_cadaveres",
    "spiderClimb",
    "aura"
@@ -2847,6 +3019,17 @@ export const LIVRO_MTF = {
     "repete": false
    }
   ],
+  "vantagemRacial": [
+   {
+    "nome": "Duas Cabeças",
+    "condicoes": [
+     "cego",
+     "surdo",
+     "atordoado",
+     "inconsciente"
+    ]
+   }
+  ],
   "lendarias": {
    "acoes": 2,
    "opcoes": [
@@ -2880,6 +3063,9 @@ export const LIVRO_MTF = {
    "armasMagicas",
    "t_duasCabecas",
    "acoesLendarias"
+  ],
+  "marcas": [
+   "demon"
   ],
   "blurb": "Gigante demoníaco de duas cabeças que esmaga com tentáculos capazes de drenar o PV máximo e usa o olhar para atordoar, enfeitiçar ou enlouquecer quem o encara. Resiste à magia e só é ferido de verdade por armas mágicas.",
   "lore": "Conhecido como Príncipe dos Demônios, Demogorgon é um senhor do Abismo que personifica a loucura e a ruína, desejando arrastar todo o multiverso para o caos. Seu corpo mistura pernas de réptil, tronco de grande símio, tentáculos nos ombros e duas cabeças simiescas, Aameul e Hathradiah, que vivem em desacordo. Até o símbolo espiral de seu culto corrói a mente de quem o contempla, e seus seguidores acabam perdendo a sanidade. Ele habita Abysm, um palácio de torres gêmeas em forma de serpente cuja maior parte se estende por cavernas frias e submersas."
@@ -2939,6 +3125,9 @@ export const LIVRO_MTF = {
   "traits": [
    "resistenciaAMagia",
    "sunlightSensitivity"
+  ],
+  "marcas": [
+   "derro"
   ],
   "blurb": "Pequenos e traiçoeiros, atacam em bandos com bestas leves de longe e lanças com gancho que derrubam os inimigos. Resistem bem à magia, mas sofrem sob a luz do sol.",
   "lore": "Os derro são parentes distorcidos dos anões que rastejam pelo Subterrâneo atrás de refúgios seguros. Covardes diante dos mais fortes e cruéis com os mais fracos, vivem em bandos barulhentos e caóticos. Todos carregam alguma loucura, quase sempre paranoia e mania, e os que despertam poder de feitiçaria viram líderes, chamados sábios, tidos como abençoados pelo deus Diirinka. Os duergar dizem que eles descendem de um clã anão deixado para trás sob o domínio dos devoradores de mentes, enquanto os próprios derro contam lendas que celebram a traição e a sobrevivência a qualquer custo."
@@ -3027,6 +3216,9 @@ export const LIVRO_MTF = {
   "traits": [
    "resistenciaAMagia",
    "sunlightSensitivity"
+  ],
+  "marcas": [
+   "derro"
   ],
   "blurb": "Feiticeiro instável que fica atrás dos aliados lançando relâmpagos, mãos flamejantes e orbes cromáticos, além de sono e invisibilidade. Resiste bem à magia, mas é frágil no corpo a corpo e sofre sob a luz do sol.",
   "lore": "Os sábios derro são os raros membros desse povo subterrâneo que despertaram poder arcano em meio à loucura que aflige a raça. Vivem nas profundezas do Subterrâneo, onde os demais derro os tratam como profetas e conselheiros. Acreditam que sua magia lhes revela verdades ocultas, e isso os torna arrogantes e imprevisíveis. Costumam liderar bandos em emboscadas e saques contra outros habitantes das cavernas."
@@ -3145,6 +3337,9 @@ export const LIVRO_MTF = {
   "traits": [
    "resistenciaAMagia",
    "armasMagicas"
+  ],
+  "marcas": [
+   "yugoloth"
   ],
   "blurb": "Brutamontes yugoloth que avança girando as garras, retalhando todos no caminho, e se teleporta para escolher a próxima vítima. Resiste a magia e ainda lança escuridão, medo e sono.",
   "lore": "Os dhergoloths são yugoloths de força bruta e pouca inteligência, usados como tropa de choque pelos mercenários demoníacos dos planos inferiores. Têm vários braços terminados em garras e entram em combate em um frenesi rodopiante. Obedecem a quem paga melhor ou a yugoloths mais poderosos, sem lealdade verdadeira. Às vezes são enviados ao Subterrâneo e a outros lugares sombrios para servir como guardas ou executores."
@@ -3386,6 +3581,9 @@ export const LIVRO_MTF = {
    "sunlightSensitivity",
    "webWalker"
   ],
+  "marcas": [
+   "elf"
+  ],
   "blurb": "Bruxo drow que alterna entre forma élfica e de aranha gigante, envenenando com toques e mordidas e controlando o campo com teias, insetos e magias de dominação. O primeiro golpe que acerta a cada rodada causa uma grande carga extra de veneno.",
   "lore": "Os aracnomantes são bruxos drow que firmaram pacto com a deusa-aranha e receberam dela o dom de assumir a forma de aranha. Habitam as profundezas do Subterrâneo, em cidades e covis repletos de teias, onde conversam com aranhas e as comandam. Costumam servir como guardiões e caçadores das casas nobres, preparando emboscadas no escuro. Detestam a luz do sol, que os deixa vulneráveis."
  },
@@ -3494,10 +3692,18 @@ export const LIVRO_MTF = {
     "luzesDancantes": 18
    }
   },
+  "motorDoLivro": {
+   "magiaDeGuerra": {
+    "nome": "Magia de Guerra"
+   }
+  },
   "traits": [
    "ascendenciaFeerica",
    "sunlightSensitivity",
    "t_magiaDeGuerra"
+  ],
+  "marcas": [
+   "elf"
   ],
   "blurb": "Mestre que mistura espada e magia: golpeia com cimitarras envenenadas enquanto lança bola de fogo, relâmpago em cadeia e cone de frio. Cada acerto da cimitarra enfraquece a resistência do alvo às suas magias.",
   "lore": "Os consortes favoritos são homens drow escolhidos por matronas poderosas como parceiros e conselheiros. Eles dominam tanto a arte da lâmina quanto a magia arcana, e muitos já tiveram treinamento de mago antes de chegar a esse posto. Vivem nas cidades drow do Subterrâneo, onde suas vidas dependem do favor de quem os escolheu. Costumam ser astutos e ambiciosos, sempre tramando para garantir a própria posição."
@@ -3619,11 +3825,24 @@ export const LIVRO_MTF = {
     "luzesDancantes": 13
    }
   },
+  "acoesEspeciais": [
+   {
+    "nome": "Comando de Batalha",
+    "tipo": "comandar",
+    "max": 1,
+    "alcanceFt": 30,
+    "corpoACorpo": true,
+    "bonus": true
+   }
+  ],
   "traits": [
    "t_comandoDeBatalha",
    "ascendenciaFeerica",
    "sunlightSensitivity",
    "aparar"
+  ],
+  "marcas": [
+   "elf"
   ],
   "blurb": "Comandante drow que golpeia com cimitarras envenenadas e usa o chicote para incitar aliados, enquanto coordena o grupo com ordens rápidas. Seus virotes podem derrubar alvos inconscientes.",
   "lore": "Os capitães de casa são os chefes militares das famílias nobres drow do Subterrâneo, encarregados de proteger e expandir o poder da casa. Costumam ser filhos de matronas, servindo com lealdade forçada. Lideram tropas de guerreiros e escravos, preferindo emboscadas na escuridão. Na luz do sol perdem boa parte da eficiência."
@@ -3738,6 +3957,9 @@ export const LIVRO_MTF = {
    "ascendenciaFeerica",
    "resistenciaAMagia",
    "sunlightSensitivity"
+  ],
+  "marcas": [
+   "elf"
   ],
   "blurb": "Sacerdotisa de Lolth que golpeia três vezes com a lança da morte, causando dano necrótico que reduz os PV máximos do alvo, e ainda conta com magias divinas poderosas como ferir e banimento.",
   "lore": "As inquisidoras drow são sacerdotisas encarregadas de caçar hereges, traidores e infiltrados nas cidades do Subterrâneo. Usam magia e interrogatório para arrancar a verdade, e poucas mentiras escapam aos seus ouvidos. São temidas até pelas outras sacerdotisas, pois respondem diretamente às exigências da Rainha Aranha. Algumas chegam a invocar demônios para auxiliá-las em suas investigações."
@@ -3862,6 +4084,30 @@ export const LIVRO_MTF = {
     "detectarMagia": 20
    }
   },
+  "acoesEspeciais": [
+   {
+    "nome": "Invocar Servo",
+    "porDia": 1,
+    "tipo": "invocar",
+    "opcoes": [
+     {
+      "id": "yochlol",
+      "dados": "1"
+     }
+    ]
+   },
+   {
+    "nome": "Favor Volúvel de Lolth",
+    "tipo": "animarAliados",
+    "max": 1,
+    "raioFt": 30,
+    "condicao": "favorDeLolth",
+    "ateFimDoProximoTurno": true,
+    "dano": "2d6",
+    "tipoDano": "psíquico",
+    "bonus": true
+   }
+  ],
   "lendarias": {
    "acoes": 3,
    "opcoes": [
@@ -3870,6 +4116,14 @@ export const LIVRO_MTF = {
      "custo": 1,
      "tipo": "golpe",
      "arma": "Cajado Demoníaco"
+    },
+    {
+     "nome": "Comandar Demônio",
+     "custo": 2,
+     "tipo": "comandar",
+     "max": 1,
+     "aliado": "demon",
+     "alcanceFt": 30
     },
     {
      "nome": "Conjurar Magia",
@@ -3892,12 +4146,14 @@ export const LIVRO_MTF = {
    ]
   },
   "traits": [
-   "t_invocarServo",
    "ascendenciaFeerica",
    "t_favorVoluvelDeLolth",
    "resistenciaAMagia",
    "sunlightSensitivity",
    "acoesLendarias"
+  ],
+  "marcas": [
+   "elf"
   ],
   "blurb": "Clériga suprema de Lolth que golpeia com um cajado demoníaco capaz de causar dano psíquico e medo, ou enlaça inimigos com um bastão de tentáculos que os deixa lentos. Conjura magias devastadoras, como palavra divina e portal, e comanda demônios aliados.",
   "lore": "A matriarca é a governante absoluta de uma casa nobre drow no Subterrâneo, escolhida e vigiada de perto pela Rainha Aranha. Seu poder vem tanto da devoção fanática a Lolth quanto das intrigas cruéis que travou para chegar ao topo. Cercada de sacerdotisas, filhas ambiciosas e servos demoníacos, ela raramente luta sem guarda. Mesmo sua bênção é perigosa: os favores da deusa sempre cobram um preço de quem os recebe."
@@ -4004,10 +4260,22 @@ export const LIVRO_MTF = {
     "luzesDancantes": 13
    }
   },
+  "acoesEspeciais": [
+   {
+    "nome": "Passo Sombrio",
+    "tipo": "teleporte",
+    "alcanceFt": 60,
+    "soNaSombra": true,
+    "bonus": true
+   }
+  ],
   "traits": [
    "ascendenciaFeerica",
    "t_passoSombrio",
    "sunlightSensitivity"
+  ],
+  "marcas": [
+   "elf"
   ],
   "blurb": "Salta de sombra em sombra por teletransporte e golpeia com uma espada de trevas que causa dano perfurante, necrótico e venenoso. Os cubos de escuridão que deixa pelo caminho podem explodir em dano necrótico extra.",
   "lore": "Os lâminas sombrias são assassinos de elite dos drow, que juraram servir a forças demoníacas em troca do domínio sobre as sombras. Vivem no Subterrâneo, onde caçam inimigos das casas nobres e eliminam rivais sem deixar rastros. Preferem atacar de surpresa, aproveitando a escuridão para surgir ao lado da vítima e sumir logo depois. Alguns conseguem até invocar demônios das sombras para ajudá-los."
@@ -4138,10 +4406,20 @@ export const LIVRO_MTF = {
     "ilusaoMenor": 12
    }
   },
+  "motorDoLivro": {
+   "motorPsiquico": {
+    "nome": "Motor Psíquico",
+    "dano": "4d6",
+    "raioFt": 5
+   }
+  },
   "traits": [
    "resistenciaAMagia",
    "t_motorPsiquico",
    "sunlightSensitivity"
+  ],
+  "marcas": [
+   "dwarf"
   ],
   "blurb": "Uma carcaça de ferro movida a psiônica que arremessa inimigos com socos, pisoteia quem está caído e cospe jatos de fogo em linha. Cuidado ao derrubá-lo ou acertá-lo criticamente: ele explode em energia psíquica.",
   "lore": "Déspotas são duergar que trocaram boa parte do próprio corpo por uma estrutura metálica alimentada pela força da mente. Governam enclaves no Subterrâneo e em minas sob as montanhas com crueldade metódica. Sua armadura mecânica os torna lentos, mas quase impossíveis de ferir ou intimidar. Odeiam a luz do sol e raramente deixam a escuridão das profundezas."
@@ -4209,6 +4487,12 @@ export const LIVRO_MTF = {
     "Garra",
     "Martelo"
    ]
+  },
+  "motorDoLivro": {
+   "motorDaDor": {
+    "nome": "Motor de Dor",
+    "extra": "1d10"
+   }
   },
   "traits": [
    "t_motorDeDor",
@@ -4281,11 +4565,18 @@ export const LIVRO_MTF = {
     "Picareta de Guerra"
    ]
   },
+  "acoesEspeciais": [
+   {
+    "nome": "Invisibilidade Compartilhada",
+    "tipo": "sumir"
+   }
+  ],
   "traits": [
-   "t_invisibilidadeCompartilhada",
-   "t_treinamentoDeCavalaria",
    "t_resilienciaDuergar",
    "sunlightSensitivity"
+  ],
+  "marcas": [
+   "dwarf"
   ],
   "blurb": "Cavaleiro duergar montado em uma aranha steeder, golpeia duas vezes com a picareta envenenada e faz a montaria atacar junto. Pode ficar invisível com a aranha para emboscar.",
   "lore": "Os kavalrachni formam a cavalaria dos duergar, anões cinzentos do Subterrâneo que montam grandes aranhas chamadas steeders. Patrulham túneis e cavernas, atacando caravanas e intrusos de surpresa. Treinam suas montarias para lutar em sincronia, saltando por paredes e tetos. Detestam a luz do sol, que os deixa desajeitados."
@@ -4356,13 +4647,22 @@ export const LIVRO_MTF = {
     "condition": "enfeiticado",
     "rounds": 10,
     "repete": false
+   },
+   {
+    "nome": "Reduzir",
+    "tipo": "postura",
+    "condicao": "reduzidoDuergar",
+    "rounds": 10,
+    "porDia": 1
    }
   ],
   "traits": [
    "invisivelAVontade",
-   "t_reduzir",
    "t_resilienciaDuergar",
    "sunlightSensitivity"
+  ],
+  "marcas": [
+   "dwarf"
   ],
   "blurb": "Encolhe até ficar minúsculo, some de vista e golpeia com uma adaga que envenena a mente, enquanto força inimigos a atacarem os próprios aliados. Difícil de acertar e de encontrar.",
   "lore": "Os mestres mentais são duergar treinados para espionar e manipular, servindo como olhos e punhais ocultos dos clãs do Subterrâneo. Usam a magia ancestral de seu povo para diminuir de tamanho e se esgueirar por frestas e acampamentos inimigos. Preferem semear confusão, levando adversários a ferirem uns aos outros antes de atacar. Vivem nas profundezas e em montanhas, evitando a luz do sol."
@@ -4439,6 +4739,12 @@ export const LIVRO_MTF = {
     "repete": false
    }
   ],
+  "motorDoLivro": {
+   "motorDaDor": {
+    "nome": "Motor de Dor",
+    "extra": "2d10"
+   }
+  },
   "traits": [
    "t_motorDeDor"
   ],
@@ -4528,8 +4834,10 @@ export const LIVRO_MTF = {
   "traits": [
    "invisivelAVontade",
    "t_resilienciaDuergar",
-   "t_criarLaminaDaAlma",
    "sunlightSensitivity"
+  ],
+  "marcas": [
+   "dwarf"
   ],
   "blurb": "Duelista psiônico que conjura uma lâmina de energia, usa Golpe Certeiro e Marca do Caçador para atacar com vantagem e causar dano extra. Pode ficar invisível ou crescer até tamanho Grande.",
   "lore": "Os lâminas da alma são guerreiros duergar que canalizam o poder psiônico da própria mente para forjar armas de pura energia. Vivem nas cidades sombrias do Subterrâneo e nas profundezas das montanhas, servindo como batedores e assassinos de seus clãs. Treinados com rigor, preferem emboscar o inimigo e atacar com precisão. São cruéis e disciplinados, e evitam a luz do sol, que os deixa vulneráveis."
@@ -4600,11 +4908,19 @@ export const LIVRO_MTF = {
     "tipo": "aumentar"
    }
   ],
+  "motorDoLivro": {
+   "falange": {
+    "nome": "Formação de Falange"
+   }
+  },
   "traits": [
    "invisivelAVontade",
    "t_resilienciaDuergar",
    "t_formacaoDeFalange",
    "sunlightSensitivity"
+  ],
+  "marcas": [
+   "dwarf"
   ],
   "blurb": "Soldado de elite que luta em formação cerrada com outros duergar de escudo, ganhando vantagem nos ataques. Pode crescer até tamanho Grande para dobrar o dano ou ficar invisível para emboscar.",
   "lore": "Os guardas de pedra são a tropa de elite dos duergar, anões cinzentos que habitam as profundezas do Subterrâneo e as raízes das montanhas. Treinados para a guerra desde cedo, marcham em falanges disciplinadas de escudos unidos. Servem como escolta de nobres e linha de frente das cidades duergar. A luz do sol os incomoda, então preferem combater na escuridão."
@@ -4686,16 +5002,31 @@ export const LIVRO_MTF = {
   },
   "acoesEspeciais": [
    {
+    "nome": "Chamado ao Ataque",
+    "tipo": "comandar",
+    "max": 3,
+    "aliado": "duergar",
+    "alcanceFt": 120,
+    "corpoACorpo": false
+   },
+   {
     "nome": "Aumentar",
     "tipo": "aumentar"
    }
   ],
+  "motorDoLivro": {
+   "instrucaoCortante": {
+    "nome": "Instrução Flageladora"
+   }
+  },
   "traits": [
-   "t_chamadoAoAtaque",
    "invisivelAVontade",
    "t_resilienciaDuergar",
    "sunlightSensitivity",
    "t_instrucaoFlageladora"
+  ],
+  "marcas": [
+   "dwarf"
   ],
   "blurb": "Comandante blindado que golpeia três vezes com um martelo carregado de energia psíquica, cresce até tamanho Grande e faz seus soldados duergar atacarem fora do turno. Também consegue sumir de vista e forçar os aliados a acertar à custa de dor psíquica.",
   "lore": "Os senhores da guerra duergar comandam as tropas dos anões cinzentos nas profundezas do Subterrâneo e nas raízes das montanhas. Treinados em disciplina brutal, tratam a dor como ferramenta de ensino e não hesitam em ferir os próprios subordinados para arrancar deles um desempenho melhor. Lideram da linha de frente, ampliando o próprio corpo com magia e coordenando ataques em massa. Odeiam a luz do sol, que os deixa desajeitados e vulneráveis."
@@ -4773,6 +5104,9 @@ export const LIVRO_MTF = {
    "invisivelAVontade",
    "t_resilienciaDuergar",
    "sunlightSensitivity"
+  ],
+  "marcas": [
+   "dwarf"
   ],
   "blurb": "Luta com uma lança-chamas de longo alcance, perfurando e queimando inimigos a até 3 m e cuspindo jatos de fogo em cone ou linha. Pode crescer até o tamanho Grande para dobrar o dano ou sumir invisível antes de atacar.",
   "lore": "Os xarrorn são duergar que se dedicam a armas movidas a fogo, criadas nas forjas das cidades do Subterrâneo. Carregam lanças que expelem chamas e servem como tropa de choque contra invasores e escravos rebeldes. Disciplinados e cruéis, odeiam a luz do sol e raramente deixam as profundezas ou as montanhas onde escavam."
@@ -4875,11 +5209,23 @@ export const LIVRO_MTF = {
     "dimensaoPorta": 12
    }
   },
+  "acoesEspeciais": [
+   {
+    "nome": "Possuir Cadáver",
+    "recharge": [
+     6
+    ],
+    "tipo": "possuirCadaver",
+    "alcanceFt": 5
+   }
+  ],
   "traits": [
-   "t_possuirCadaver",
    "incorporealMovement",
    "resistenciaAMagia",
    "t_profanarCadaver"
+  ],
+  "marcas": [
+   "demon"
   ],
   "blurb": "Demônio flutuante e incorpóreo que drena a vida com tentáculos necróticos e se esconde dentro de cadáveres, ganhando um corpo novo e PV temporários. Resiste a magia e a armas comuns, e usa medo e ilusões para desorganizar o grupo.",
   "lore": "O dybbuk é um demônio do Abismo que, em sua forma verdadeira, lembra uma água-viva translúcida flutuando com longos filamentos. Ele raramente fica assim: prefere ocupar o primeiro cadáver adequado que encontra e devolvê-lo a uma falsa vida. Com as memórias do morto, consegue se passar por ele por algum tempo, mas seus vícios obsessivos logo o denunciam. Adora aterrorizar os vivos fazendo o corpo hospedeiro se contorcer, vomitar sangue e se mover de formas impossíveis."
@@ -4945,8 +5291,22 @@ export const LIVRO_MTF = {
     "Marreta"
    ]
   },
+  "acoesEspeciais": [
+   {
+    "nome": "Golpe Trovejante",
+    "recharge": [
+     6
+    ],
+    "tipo": "golpeReforcado",
+    "arma": "Marreta",
+    "extra": "3d10",
+    "extraTipo": "trovejante",
+    "save": "str",
+    "dc": 14,
+    "condition": "caido"
+   }
+  ],
   "traits": [
-   "t_golpeTrovejante",
    "armasMagicas"
   ],
   "blurb": "Guerreiro de pedra blindado que avança com uma marreta, golpeando duas vezes por turno; de tempos em tempos desfere um impacto trovejante capaz de derrubar o alvo. Resiste a armas comuns e não pode ser derrubado nem petrificado.",
@@ -5248,6 +5608,27 @@ export const LIVRO_MTF = {
   "recursos": {
    "resistenciaLendaria": 3
   },
+  "acoesEspeciais": [
+   {
+    "nome": "Tempestade de Raios",
+    "recharge": [
+     6
+    ],
+    "tipo": "area",
+    "shape": "raio",
+    "areaFt": 120,
+    "save": "dex",
+    "dc": 20,
+    "damage": "6d8",
+    "damageType": "elétrico",
+    "halfOnSave": true,
+    "condition": "atordoado",
+    "rounds": 1,
+    "repete": false,
+    "ateFimDoTurnoDele": true,
+    "soFalhandoPor": 5
+   }
+  ],
   "lendarias": {
    "acoes": 3,
    "opcoes": [
@@ -5269,11 +5650,24 @@ export const LIVRO_MTF = {
      "damageType": "elétrico",
      "halfOnSave": true,
      "soNoChao": true
+    },
+    {
+     "nome": "Vendaval Uivante",
+     "custo": 3,
+     "tipo": "linha",
+     "comprimentoFt": 5280,
+     "larguraFt": 20,
+     "save": "dex",
+     "dc": 21,
+     "damage": "4d10",
+     "damageType": "trovejante",
+     "halfOnSave": false,
+     "arremessaFt": 60,
+     "dcDaBatida": 19
     }
    ]
   },
   "traits": [
-   "t_tempestadeDeRaios",
    "formaFluida",
    "voaSemProvocar",
    "t_tempestadeViva",
@@ -5334,10 +5728,24 @@ export const LIVRO_MTF = {
      "damage": "2d8",
      "type": "veneno"
     }
+   },
+   {
+    "name": "Pata Pegajosa",
+    "bonus": 5,
+    "damage": 0,
+    "type": "nenhum",
+    "reachFt": 5,
+    "onHit": {
+     "semResistencia": true,
+     "dc": 12,
+     "escape": 12,
+     "condition": "agarrado",
+     "note": "é agarrado",
+     "maxAgarrados": 1
+    }
    }
   ],
   "traits": [
-   "t_pataPegajosa",
    "spiderClimb",
    "t_saltoExtraordinario"
   ],
@@ -5407,12 +5815,23 @@ export const LIVRO_MTF = {
     "Cimitarra"
    ]
   },
+  "acoesEspeciais": [
+   {
+    "nome": "Golpes Ardentes",
+    "recharge": [
+     6
+    ],
+    "tipo": "golpeReforcado",
+    "multi": true,
+    "extra": "1d10",
+    "extraTipo": "fogo"
+   }
+  ],
   "luzPropria": {
    "claro": 20,
    "penumbra": 20
   },
   "traits": [
-   "t_golpesArdentes",
    "armasMagicas"
   ],
   "blurb": "Guerreiro de chamas vivas que golpeia três vezes com cimitarras e, de tempos em tempos, incendeia cada golpe com dano de fogo extra. Resiste a armas comuns, mas sofre ao atravessar água.",
@@ -5584,6 +6003,9 @@ export const LIVRO_MTF = {
    "t_indetectavel",
    "acoesLendarias"
   ],
+  "marcas": [
+   "demon"
+  ],
   "blurb": "Gigante demoníaco que mistura golpes brutais de punhos, mordida e cauda com ilusões e magias mentais devastadoras. Impossível de localizar por adivinhação, ele confunde, engana e esmaga quem cai em suas armadilhas.",
   "lore": "Fraz-Urb'luu é o Príncipe da Enganação, senhor demoníaco das ilusões, capaz de criar mundos oníricos que iludem até os mais atentos. Após séculos aprisionado sob o Castelo Greyhawk, em Oerth, ele voltou ao Abismo e reconstrói seu poder enquanto caça os fragmentos do cajado que lhe tomaram. Sua forma real lembra uma enorme gárgula de pescoço longo e sorriso perturbador, mas ele assume qualquer aparência e às vezes se perde nos próprios papéis. Muitos de seus cultistas nem sabem a quem servem, e ele adora ajudar caçadores de demônios até corrompê-los e reclamar suas almas. Seu covil é Zoragmelok, uma cidade-fortaleza de arquitetura impossível cercada por muralhas de adamante numa planície de pó branco."
  },
@@ -5678,6 +6100,11 @@ export const LIVRO_MTF = {
    "recharge": [
     6
    ]
+  },
+  "motorDoLivro": {
+   "fogoRecarrega": {
+    "nome": "Fúria Ardente"
+   }
   },
   "traits": [
    "t_furiaArdente"
@@ -5871,6 +6298,9 @@ export const LIVRO_MTF = {
    "regeneracaoDoLivro",
    "acoesLendarias"
   ],
+  "marcas": [
+   "devil"
+  ],
   "blurb": "Arquidiabo enorme e brutal que agarra presas com as garras a até 4,5 m e as perfura com um ferrão venenoso que corrói o máximo de PV. Regenera, teleporta-se e resiste a magia, então é preciso dano radiante e pressão constante.",
   "lore": "Geryon é um arquidiabo caçador que disputa há séculos com Levistus o domínio de Stygia, a camada gelada dos Nove Infernos. Embora Levistus esteja aprisionado no gelo por ordem de Asmodeus, ainda reivindica o trono, e Geryon trama sem parar para tomá-lo. Ao contrário de outros senhores infernais, ele prefere lutar pessoalmente e saborear o sangue dos inimigos, o que prejudica sua coleta de almas e sua hierarquia. Hoje ocupa a fortaleza Coldsteel, no coração de Stygia, cercado de diabos do gelo e minotauros escravizados, remoendo a traição de Asmodeus."
  },
@@ -5958,6 +6388,17 @@ export const LIVRO_MTF = {
     "halfOnSave": true
    }
   ],
+  "motorDoLivro": {
+   "investidaDeCabeca": {
+    "nome": "Investida de Cabeça",
+    "pes": 20,
+    "tamanhoMax": "large",
+    "dc": 14,
+    "save": "str",
+    "dano": "2d6",
+    "tipo": "concussão"
+   }
+  },
   "traits": [
    "t_investidaDeCabeca",
    "t_periciaComArmasDeFogo"
@@ -6056,8 +6497,16 @@ export const LIVRO_MTF = {
     "maoMagica": 15
    }
   },
+  "motorDoLivro": {
+   "magiaDeGuerra": {
+    "nome": "Magia de Guerra"
+   }
+  },
   "traits": [
    "t_magiaDeGuerra"
+  ],
+  "marcas": [
+   "gith"
   ],
   "blurb": "Guerreiro-mago que alterna golpes de espada longa carregados de dano psíquico com magias como bola de fogo, velocidade e contramágica. Após conjurar, ainda ataca com a arma como ação bônus, e some com passo nebuloso ou porta dimensional quando acuado.",
   "lore": "Os gishes são a elite marcial e arcana dos githyanki, treinados para unir lâmina e feitiço numa só disciplina de combate. Servem à rainha-lich Vlaakith em incursões que partem do Plano Astral rumo a outros mundos, em busca de saque e de devoradores de mentes para exterminar. Costumam liderar pequenos grupos de ataque, abrindo caminho com magia antes de entrar no corpo a corpo. Frios e disciplinados, enxergam outras raças apenas como presas ou obstáculos."
@@ -6156,9 +6605,25 @@ export const LIVRO_MTF = {
     "maoMagica": 15
    }
   },
+  "acoesEspeciais": [
+   {
+    "nome": "Reunir as Tropas",
+    "tipo": "animarAliados",
+    "raioFt": 30,
+    "remove": [
+     "enfeiticado",
+     "amedrontado"
+    ],
+    "incluiSi": true,
+    "bonus": true
+   }
+  ],
   "traits": [
    "t_reunirAsTropas",
    "aparar"
+  ],
+  "marcas": [
+   "gith"
   ],
   "blurb": "Comandante de elite que desfere três golpes de espadão por turno, cada um somando dano psíquico pesado, e livra seus aliados de medo e encantamento. Apara ataques corpo a corpo e usa psiônica para se teleportar ou desaparecer.",
   "lore": "Os kith'rak são oficiais de alta patente do exército githyanki, encarregados de liderar pelotões de guerreiros em incursões pelos planos. Conquistaram o posto em batalhas sangrentas e mantêm a disciplina pela força e pelo exemplo. Obedecem cegamente à rainha-lich Vlaakith e odeiam os devoradores de mentes acima de tudo. Costumam aparecer à frente de grupos de ataque em desertos, montanhas e cidades do Plano Material."
@@ -6271,12 +6736,30 @@ export const LIVRO_MTF = {
      "custo": 2,
      "tipo": "golpe",
      "arma": "Espada Grande de Prata"
+    },
+    {
+     "nome": "Comandar Aliado",
+     "custo": 1,
+     "tipo": "comandar",
+     "max": 1,
+     "alcanceFt": 30,
+     "corpoACorpo": true,
+     "vantagem": true
+    },
+    {
+     "nome": "Teletransporte",
+     "custo": 1,
+     "tipo": "teleporte",
+     "alcanceFt": 30
     }
    ]
   },
   "traits": [
    "aparar",
    "acoesLendarias"
+  ],
+  "marcas": [
+   "gith"
   ],
   "blurb": "Guerreiro de elite que golpeia duas vezes com a espada de prata, somando dano cortante a muito dano psíquico, e usa ações lendárias para atacar de novo, teleportar-se ou mandar aliados golpearem. Também apara golpes e lança magias psiônicas poderosas como mão de Bigby e sugestão em massa.",
   "lore": "Os comandantes supremos estão entre os mais temidos líderes militares do povo githyanki, servindo diretamente à rainha-lich que governa sua raça. Conduzem exércitos em incursões a partir do Plano Astral, saqueando mundos e caçando devoradores de mentes, inimigos ancestrais dos gith. Combinam disciplina marcial com poderes psiônicos refinados, comandando suas tropas pela mente e pela espada. Raramente aparecem sem uma escolta de guerreiros leais dispostos a morrer por eles."
@@ -6398,6 +6881,12 @@ export const LIVRO_MTF = {
      "arma": "Golpe Desarmado"
     },
     {
+     "nome": "Teletransporte",
+     "custo": 1,
+     "tipo": "teleporte",
+     "alcanceFt": 30
+    },
+    {
      "nome": "Alterar Gravidade",
      "custo": 3,
      "tipo": "magia",
@@ -6410,6 +6899,9 @@ export const LIVRO_MTF = {
   "traits": [
    "t_defesaPsiquica",
    "acoesLendarias"
+  ],
+  "marcas": [
+   "gith"
   ],
   "blurb": "Monge psiônico que flutua pelo campo desferindo três golpes desarmados carregados de dano psíquico, teleportando-se entre alvos. Pode inverter a gravidade em qualquer direção e erguer muralhas de energia para isolar o grupo.",
   "lore": "Os anarcas são os mestres mais poderosos entre os githzerai, capazes de impor ordem ao caos do Limbo apenas com a força da mente. Cada um sustenta ao seu redor ilhas de matéria estável onde seu povo constrói fortalezas e mosteiros. Vivem em disciplina rígida, meditando e treinando o corpo e a psique por séculos. Raramente deixam seus domínios, mas quando o fazem costuma ser para caçar devoradores de mentes ou proteger os seus."
@@ -6541,6 +7033,9 @@ export const LIVRO_MTF = {
   "traits": [
    "t_defesaPsiquica"
   ],
+  "marcas": [
+   "gith"
+  ],
   "blurb": "Monge psiônico que desfere três golpes desarmados carregados de dano psíquico e pode lançar o alvo para fora do tempo com um Golpe Temporal devastador. Usa magias inatas como velocidade, escudo e teleporte para se reposicionar.",
   "lore": "Os githzerai iluminados alcançaram um domínio da mente que poucos de seu povo atingem, após décadas de disciplina no caos do Limbo. Vivem em mosteiros isolados ou viajam pelo multiverso em missões de sua ordem. Calmos e reservados, só entram em combate quando necessário, mas então agem com precisão impiedosa. Seus golpes atingem tanto o corpo quanto a mente, e alguns chegam a arrancar inimigos do fluxo do tempo."
  },
@@ -6608,6 +7103,7 @@ export const LIVRO_MTF = {
    "ability": "cha",
    "cantrips": [],
    "prepared": [
+    "portalArcano",
     "perdicao",
     "compulsao",
     "confusao",
@@ -6620,6 +7116,7 @@ export const LIVRO_MTF = {
    "noMotor": true,
    "conjuraNoTurno": "geral",
    "porDia": {
+    "portalArcano": 1,
     "perdicao": 1,
     "compulsao": 1,
     "confusao": 1,
@@ -6631,6 +7128,7 @@ export const LIVRO_MTF = {
     "falarComOsMortos"
    ],
    "cdPorMagia": {
+    "portalArcano": 16,
     "perdicao": 16,
     "compulsao": 16,
     "confusao": 16,
@@ -6640,10 +7138,24 @@ export const LIVRO_MTF = {
     "falarComOsMortos": 16
    }
   },
+  "motorDoLivro": {
+   "desvantagemNasResistencias": {
+    "nome": "Fardo do Tempo",
+    "raioFt": 10,
+    "soTipos": [
+     "fera",
+     "humanoide"
+    ],
+    "poupaNome": "shadar-kai"
+   }
+  },
   "traits": [
    "t_fardoDoTempo",
    "ascendenciaFeerica",
    "t_fugaNebulosa"
+  ],
+  "marcas": [
+   "elf"
   ],
   "blurb": "Conjurador shadar-kai que alterna golpes de lança carregados de energia necrótica com magias de bruxo, enquanto quem fica perto dele sofre desvantagem nas resistências. Quando ferido, some e reaparece longe.",
   "lore": "Os tecelões sombrios são shadar-kai, elfos ligados ao Pendor das Sombras, que fizeram pactos com poderes sombrios para dominar a melancolia desse plano. Andam pelo Subterrâneo e pelas cidades como espiões e agentes de sua rainha. O peso do tempo parece emanar deles, enfraquecendo a vontade de quem se aproxima. Preferem enfraquecer o inimigo com ilusões e maldições antes de atacar de perto."
@@ -6718,6 +7230,11 @@ export const LIVRO_MTF = {
     "Garras",
     "Garras"
    ]
+  },
+  "revide": {
+   "nome": "Fúria Sangrenta",
+   "arma": "Garras",
+   "aoAcaso": true
   },
   "traits": [
    "t_furiaSangrenta"
@@ -6872,6 +7389,12 @@ export const LIVRO_MTF = {
      "arma": "Onda de Pesar (Espada Grande)"
     },
     {
+     "nome": "Dance, Minha Marionete",
+     "custo": 1,
+     "tipo": "marionete",
+     "soMove": true
+    },
+    {
      "nome": "Semear Discórdia",
      "custo": 1,
      "tipo": "magia",
@@ -6893,6 +7416,10 @@ export const LIVRO_MTF = {
    "resistenciaAMagia",
    "armasMagicas",
    "acoesLendarias"
+  ],
+  "marcas": [
+   "demon",
+   "shapechanger"
   ],
   "blurb": "Manipulador antes de guerreiro: enfeitiça e domina inimigos, faz marionetes deles com ações lendárias e se teletransporta pelo campo. Quando decide lutar, sua espada ondulada causa corte e ácido com alcance de 3 m.",
   "lore": "Conhecido como o Príncipe Sombrio, Graz'zt é um senhor demoníaco do Abismo cuja beleza esconde detalhes perturbadores, como seis dedos em cada mão. Ele governa Azzatar a partir do Palácio Argênteo, na cidade de Zelatar, um lugar de luxo extremo onde só a moderação e a bondade são proibidas. Seus cultos são sociedades secretas de excessos, mascaradas de alabastro, que controlam os outros com chantagem, vícios e manipulação. Prefere seduzir e enganar, mas se provocado empunha Angdrelve, a Onda de Pesar, com violência brutal. Sua presença prolongada num lugar chega a distorcer a própria realidade."
@@ -7032,6 +7559,9 @@ export const LIVRO_MTF = {
   "traits": [
    "resistenciaAMagia",
    "armasMagicas"
+  ],
+  "marcas": [
+   "devil"
   ],
   "blurb": "Diabo manipulador que combina garras venenosas com espada longa ou magia de controle mental, como dominar pessoa e confusão. Resiste a magia e só é ferido de verdade por armas mágicas ou prateadas.",
   "lore": "Os abishais verdes são diabos dracônicos a serviço de Tiamat, enviados ao mundo para agir nas sombras. São mestres da intriga: mudam de aparência, sussurram mentiras e se infiltram em cortes e cidades. Preferem dobrar a vontade dos mortais a lutar abertamente, mas suas garras envenenadas são letais quando precisam sujar as mãos. Costumam servir como conselheiros e espiões de cultos dracônicos."
@@ -7376,11 +7906,30 @@ export const LIVRO_MTF = {
     "alcanceFt": 120
    }
   ],
+  "motorDoLivro": {
+   "desvantagemNasResistencias": {
+    "nome": "Desespero Infernal",
+    "raioFt": 15,
+    "poupaTipos": [
+     "corruptor"
+    ]
+   }
+  },
   "regeneracao": {
    "pv": 20,
    "bloqueia": [
     "radiante"
    ]
+  },
+  "repreensao": {
+   "nome": "Voz Aterradora",
+   "alcanceFt": 60,
+   "save": "wis",
+   "dc": 22,
+   "condition": "amedrontado",
+   "rounds": 10,
+   "repete": true,
+   "raioFt": 30
   },
   "lendarias": {
    "acoes": 3,
@@ -7417,6 +7966,9 @@ export const LIVRO_MTF = {
    "regeneracaoDoLivro",
    "t_vozAterradora",
    "acoesLendarias"
+  ],
+  "marcas": [
+   "devil"
   ],
   "blurb": "Duque infernal que despedaça com mordida venenosa, garra, maça e cauda, enquanto sua aura faz quem está perto falhar em resistências e sua voz espalha pavor. Regenera a cada turno e se teletransporta pelo campo, lançando tempestades de raios.",
   "lore": "Hutijin é um duque de Cania que serve Mefistófeles com uma lealdade rara nos Nove Infernos, talvez por estar preso a algum segredo do mestre. Ele comanda duas companhias de diabos das profundezas, a nobreza de Cania, e com elas esmaga qualquer rival. Odeia mortais e não tem cultos; quem o invoca fecha um acordo barato e apressado, mas recebe em seguida uma morte lenta. Arquidiabos rivais espalham os meios de invocá-lo para afastá-lo da guarda de seu senhor."
@@ -7554,11 +8106,19 @@ export const LIVRO_MTF = {
     "alcanceFt": 60
    }
   ],
+  "motorDoLivro": {
+   "vantagemNaAgua": {
+    "nome": "Vantagem Aquática"
+   }
+  },
   "traits": [
    "resistenciaAMagia",
    "armasMagicas",
    "t_memoriaProtegida",
    "t_vantagemAquatica"
+  ],
+  "marcas": [
+   "yugoloth"
   ],
   "blurb": "Combate melhor submerso, onde tem vantagem nos ataques, alternando garras e mordida com magias de medo e loucura. Seu Roubo de Memória pode deixar um herói sem perícias, sem magias e sem entender idiomas.",
   "lore": "Os hidroloths são yugoloths anfíbios, parecidos com sapos demoníacos, que vivem nas águas sombrias dos Planos Inferiores, especialmente perto do Rio Estige. Mercenários frios e calculistas, servem a quem pagar melhor e costumam ser contratados como guias ou guardas em travessias aquáticas. Dominam a água ao redor e apagam lembranças das vítimas, vendendo segredos roubados quando lhes convém. Suas próprias mentes são blindadas contra qualquer leitura ou alteração."
@@ -7822,6 +8382,9 @@ export const LIVRO_MTF = {
    "spiderClimb",
    "acoesLendarias"
   ],
+  "marcas": [
+   "demon"
+  ],
   "blurb": "Massa de lodo demoníaco que açoita com pseudópodes ácidos de longo alcance, envenena quem chega perto e cospe gosma que corrói armaduras e armas de metal. Regenera 20 PV por turno, a menos que sofra dano de fogo ou radiante.",
   "lore": "Conhecido como o Senhor Sem Rosto e a Fome Gotejante, Juiblex é o lorde demônio dos limos e gosmas. Ele não se interessa pelas intrigas dos outros demônios: só quer devorar e converter matéria viva em mais de si mesmo. Aparece como um monte borbulhante de lodo negro e verde, com olhos vermelhos flutuando lá dentro, capaz de se erguer a uns 6 metros de altura. Apenas loucos o cultuam, e os que se entregam viram gosmas vagamente humanoides cujas identidades ele digere aos poucos. Habita os Fossos de Limo, camada pútrida do Abismo que divide com Zuggtmoy."
  },
@@ -8006,6 +8569,29 @@ export const LIVRO_MTF = {
   "recursos": {
    "resistenciaLendaria": 3
   },
+  "acoesEspeciais": [
+   {
+    "nome": "Maremoto",
+    "recharge": [
+     6
+    ],
+    "tipo": "area",
+    "shape": "raio",
+    "areaFt": 25,
+    "save": "str",
+    "dc": 24,
+    "damage": "6d10",
+    "damageType": "concussão",
+    "halfOnSave": true,
+    "arremessaFt": 50
+   }
+  ],
+  "motorDoLivro": {
+   "congelamentoParcial": {
+    "nome": "Congelamento Parcial",
+    "limiar": 50
+   }
+  },
   "lendarias": {
    "acoes": 3,
    "opcoes": [
@@ -8025,7 +8611,6 @@ export const LIVRO_MTF = {
    ]
   },
   "traits": [
-   "t_maremoto",
    "t_congelamentoParcial",
    "monstroDeCerco",
    "formaFluida",
@@ -8085,10 +8670,24 @@ export const LIVRO_MTF = {
      "damage": "1d8",
      "type": "veneno"
     }
+   },
+   {
+    "name": "Perna Pegajosa",
+    "bonus": 4,
+    "damage": 0,
+    "type": "nenhum",
+    "reachFt": 5,
+    "onHit": {
+     "semResistencia": true,
+     "dc": 12,
+     "escape": 12,
+     "condition": "agarrado",
+     "note": "é agarrado",
+     "maxAgarrados": 1
+    }
    }
   ],
   "traits": [
-   "t_pernaPegajosa",
    "spiderClimb",
    "t_saltoExtraordinario"
   ],
@@ -8161,7 +8760,8 @@ export const LIVRO_MTF = {
     "bonus": 0,
     "damage": 60,
     "type": "energético",
-    "reachFt": 5
+    "reachFt": 5,
+    "acertaSempre": true
    }
   ],
   "multiattack": {
@@ -8202,26 +8802,22 @@ export const LIVRO_MTF = {
     "areaFt": 60,
     "save": "wis",
     "dc": 20,
+    "damage": "45",
+    "damageType": "radiante",
+    "danoSemTeste": true,
     "condition": "atordoado",
     "rounds": 1,
     "repete": false,
     "ateFimDoTurnoDele": true
-   },
-   {
-    "nome": "Justificar",
-    "tipo": "alvo",
-    "alcanceFt": 60,
-    "alvos": 2,
-    "save": "cha",
-    "dc": 20,
-    "condition": "incapacitado",
-    "rounds": 10,
-    "repete": false
    }
   ],
   "traits": [
+   "t_justificar",
    "formaImutavel",
    "resistenciaAMagia"
+  ],
+  "marcas": [
+   "inevitable"
   ],
   "blurb": "Um executor colossal cujas pancadas nunca erram e causam 60 de dano energético cada, capaz de atordoar grupos inteiros com uma explosão radiante. Também pode arrastar até dois alvos direto para Sigil, tirando-os da luta.",
   "lore": "O marut é um inevitável, construto criado por Primus, o líder dos modrons, para garantir que acordos entre seres dos planos sejam cumpridos. Contratos firmados no Salão da Concordância, em Sigil, são gravados numa placa de ouro e inseridos no peito do marut, que passa a vigiar as partes até o fim do acordo. Ele segue apenas o que está escrito, sem se importar com intenções, e só mata quando o contrato exige, quando é totalmente rompido ou quando é atacado. Não precisa respirar, comer, beber nem dormir."
@@ -8306,10 +8902,27 @@ export const LIVRO_MTF = {
     "Garras"
    ]
   },
+  "acoesEspeciais": [
+   {
+    "nome": "Erguer Carniçal",
+    "recharge": [
+     5,
+     6
+    ],
+    "tipo": "reviver",
+    "alcanceFt": 30,
+    "nomes": [
+     "ghoul",
+     "ghast"
+    ]
+   }
+  ],
   "traits": [
-   "t_erguerCarnical",
    "t_assumirForma",
    "resistenciaAMagia"
+  ],
+  "marcas": [
+   "demon"
   ],
   "blurb": "Combina mordida e garras: as garras podem paralisar e a mordida drena o Carisma de humanoides, que se erguem como carniçais se chegarem a zero. Ainda consegue devolver à vida carniçais e lívidos abatidos por perto.",
   "lore": "Os maurezhi surgiram quando Doresain, o Rei dos Carniçais, corrompeu um povo élfico e moldou com ele uma nova linhagem de demônios. Sua função no mundo material é comandar bandos de carniçais e lívidos. Depois de devorar o cadáver de uma vítima humanoide, o demônio passa a ter a aparência dela, um disfarce que apodrece aos poucos ao longo de alguns dias. Funcionam como portadores de uma praga: quem é mordido perde a própria identidade até ser tomado por uma fome profana e virar carniçal."
@@ -8384,6 +8997,9 @@ export const LIVRO_MTF = {
   ],
   "traits": [
    "furtividadeNasSombras"
+  ],
+  "marcas": [
+   "meazel"
   ],
   "blurb": "Embosca das sombras, estrangula a vítima com um garrote e a arrasta por teleporte sombrio para lugares isolados. Quem é levado fica marcado e não consegue se esconder de mortos-vivos e criaturas do Pendor das Sombras.",
   "lore": "Meazels já foram pessoas comuns que fugiram para o Pendor das Sombras querendo abandonar a vida mortal. A escuridão os deformou, e o rancor os tornou cruéis e solitários. Rondam os pontos onde aquele plano encosta no Material, atacando viajantes que chegam perto de seus covis. Gostam de capturar vítimas pelas sombras e largá-las em lugares remotos, onde horrores atraídos pela maldição terminam o serviço."
@@ -8465,9 +9081,18 @@ export const LIVRO_MTF = {
   "features": [
    "devilsSight"
   ],
+  "motorDoLivro": {
+   "guardaCostas": {
+    "nome": "Guarda-Costas Leal",
+    "tipo": "corruptor"
+   }
+  },
   "traits": [
    "resistenciaAMagia",
    "t_guardaCostasLeal"
+  ],
+  "marcas": [
+   "devil"
   ],
   "blurb": "Soldado infernal de alabarda com alcance de 3 m que ataca três vezes quando um demônio aliado poderoso está por perto. Protege outros diabos recebendo os golpes no lugar deles.",
   "lore": "Merregons são as almas de soldados, mercenários e guarda-costas que serviram ao mal sem hesitar e acabaram presos para sempre nos Nove Infernos. Formam a infantaria das legiões infernais, guardando os planos e seus senhores contra invasores. Não têm rosto: uma máscara de metal parafusada na cabeça mostra apenas a quem obedecem e em qual camada servem. Não falam e só se comunicam por telepatia com um ser de cada vez, por isso ficam desorientados quando seus comandantes caem. Leais até o fim, nunca recuam a menos que recebam ordem para isso."
@@ -8594,6 +9219,9 @@ export const LIVRO_MTF = {
    "resistenciaAMagia",
    "armasMagicas",
    "t_teletransporte"
+  ],
+  "marcas": [
+   "yugoloth"
   ],
   "blurb": "Barqueiro yugoloth que se teletransporta pelo campo, amedronta alvos com o olhar e golpeia com seu remo; resiste bem à magia e domina água e clima com feitiços.",
   "lore": "Os merrenoloths são yugoloths que conduzem barcaças pelo Rio Estige, transportando passageiros e cargas entre os planos inferiores. Mercenários frios, servem a quem paga melhor e cumprem contratos sem questionar. Conhecem profundamente as correntes e os ventos, e são capazes de dobrar o tempo e as águas à sua vontade. Às vezes aparecem em costas do plano material, guiando navios de intenções sombrias."
@@ -8810,6 +9438,9 @@ export const LIVRO_MTF = {
    "regeneracaoDoLivro",
    "acoesLendarias"
   ],
+  "marcas": [
+   "devil"
+  ],
   "blurb": "Arquidiabo brutal que puxa vítimas de longe com seu chicote de muitas caudas e as despedaça com mordida e garras. Seu Sopro do Desespero faz grupos inteiros largarem as armas e fugirem, e ele se regenera a cada turno, a menos que sofra dano radiante.",
   "lore": "Moloch já governou Malbolge, a sexta camada dos Nove Infernos, como recompensa por expulsar demônios de lá, mas conspirou contra Asmodeus sob a influência da bruxa da noite Malagard e acabou deposto e condenado. Fugiu por um portal planar e viu seu exército de retorno ser aniquilado enquanto estava preso em outro mundo. Hoje, sempre que entra nos Infernos, é reduzido à forma de um diabrete, por isso vaga pelos planos, sobretudo por Sigil, negociando com yugoloths e mortais em busca de riquezas e poder para retomar o trono. Seus cultistas quase todos o abandonaram, mas ídolos de olhos de joias em masmorras profundas ainda atraem monstros e aventureiros imprudentes."
  },
@@ -8944,6 +9575,17 @@ export const LIVRO_MTF = {
      "custo": 1,
      "tipo": "golpe",
      "arma": "Arma Demoníaca"
+    },
+    {
+     "nome": "Mover",
+     "custo": 1,
+     "tipo": "mover",
+     "semOportunidade": true
+    },
+    {
+     "nome": "Conjurar Magia",
+     "custo": 1,
+     "tipo": "magia"
     }
    ]
   },
@@ -8951,6 +9593,9 @@ export const LIVRO_MTF = {
    "resistenciaAMagia",
    "armasMagicas",
    "acoesLendarias"
+  ],
+  "marcas": [
+   "demon"
   ],
   "blurb": "Demônio gigante de duas cabeças que ataca com arma demoníaca, mordida de lobo e mordida de serpente; a serpente drena o máximo de PV e pode transformar a vítima em mane, e um crítico da arma pode decapitar. Ainda conjura aprisionamento, metamorfose e relâmpago.",
   "lore": "O molydeus é o executor pessoal de um lorde demônio, temido até mais que o balor. Tem uns 3,6 m de altura, corpo vermelho humanoide, uma cabeça de lobo e outra de serpente num pescoço longo, pela qual seu mestre fala e o vigia a qualquer momento, o que o torna incapaz de traição. Nasce de um demônio que se destacou e foi recriado à força de torturas. Guarda os tesouros do mestre, sobretudo o amuleto que lhe permite renascer no Abismo, e porta uma arma feita da própria essência, cujo formato reflete o lorde que serve."
@@ -9032,12 +9677,35 @@ export const LIVRO_MTF = {
     "Mordida"
    ]
   },
+  "acoesEspeciais": [
+   {
+    "nome": "Olhar Rouba-Alma",
+    "tipo": "alvo",
+    "alcanceFt": 30,
+    "save": "cha",
+    "dc": 16,
+    "reduzMaximoDados": "2d12",
+    "pvTempIgual": true,
+    "naoTipos": [
+     "constructo",
+     "morto-vivo"
+    ]
+   }
+  ],
+  "motorDoLivro": {
+   "sombrasDemoniacas": {
+    "nome": "Sombras Demoníacas",
+    "raioFt": 10
+   }
+  },
   "traits": [
-   "t_olharRoubaAlma",
    "t_sombrasDemoniacas",
    "t_devorarAlma",
    "resistenciaAMagia",
    "armasMagicas"
+  ],
+  "marcas": [
+   "demon"
   ],
   "blurb": "Demônio voador que combina garras e uma mordida brutal com um olhar que arranca pedaços da alma, reduzindo o máximo de PV da vítima. Humanoides mortos pelo olhar voltam como carniçais sob seu comando.",
   "lore": "Os nabassus vagam pelos planos famintos por almas e atacam qualquer um que pareçam capazes de matar, inclusive outros demônios. Por devorarem almas, são desprezados até pelos próprios demônios e empurrados para as margens do Abismo, onde caçam sozinhos ou em bandos. Adoram ser invocados ao Plano Material, pois lá encontram um banquete de almas. Quem os conjura costuma virar a primeira refeição, a menos que mantenha o demônio bem alimentado."
@@ -9187,11 +9855,19 @@ export const LIVRO_MTF = {
     "rounds": 10,
     "repete": true,
     "bonus": true
+   },
+   {
+    "nome": "Forma Etérea",
+    "tipo": "etereo",
+    "porDia": 1
    }
   ],
   "traits": [
    "t_corrupcao",
    "t_paralisiaRecarga6"
+  ],
+  "marcas": [
+   "nagpa"
   ],
   "blurb": "Mago ancestral que prefere lutar à distância com magias devastadoras, como desintegrar e rajada prismática. Com ações bônus, enfeitiça um alvo ou paralisa todos ao redor, abrindo caminho para golpes finais.",
   "lore": "Os nagpas eram treze magos poderosos que a Rainha Corvo amaldiçoou por sabotarem um ritual capaz de evitar uma guerra divina, transformando-os em criaturas sarnentas com aparência de aves. A maldição os impede de obter saber e poder de qualquer fonte que não sejam as ruínas de civilizações caídas e grandes catástrofes. Por isso tramam colapsos de cidades e reinos, manipulando outras criaturas em vários planos simultâneos e com enorme paciência. Só saem das sombras para dar o golpe final e saquear bibliotecas e cofres dos escombros. Temem a Rainha Corvo acima de tudo e se tornam bajuladores servis quando não conseguem fugir de seus agentes."
@@ -9272,6 +9948,13 @@ export const LIVRO_MTF = {
   },
   "acoesEspeciais": [
    {
+    "nome": "Comando Infernal",
+    "tipo": "animarAliados",
+    "raioFt": 60,
+    "condicao": "firmeNoComando",
+    "ateFimDoProximoTurno": true
+   },
+   {
     "nome": "Comando Aterrorizante",
     "tipo": "area",
     "shape": "raio",
@@ -9282,14 +9965,21 @@ export const LIVRO_MTF = {
     "rounds": 10,
     "repete": true,
     "imunizaAoPassar": true
+   },
+   {
+    "nome": "Cura",
+    "porDia": 1,
+    "tipo": "cura",
+    "dados": "100"
    }
   ],
   "traits": [
-   "t_comandoInfernal",
-   "t_cura",
    "t_sentidoDiabolico",
    "t_arreiosInfernais",
    "resistenciaAMagia"
+  ],
+  "marcas": [
+   "devil"
   ],
   "blurb": "Cavaleiro infernal que ataca três vezes por turno com uma lança de fogo infernal de 3 m de alcance, enquanto aterroriza os inimigos ou fortalece os aliados. Quem morre pela lança tem a alma arrastada para os Nove Infernos como lêmure.",
   "lore": "Narzugons são as almas de paladinos que firmaram pactos com diabos e mantiveram, após a morte, um código de honra corrompido. Os arquiduques dos Nove Infernos os valorizam como campeões obedientes para comandar suas legiões. Montados em pesadelos presos por arreios infernais, percorrem os planos cumprindo as ordens de seus senhores. Cada um carrega uma lança única, forjada em fogo infernal e marcada com o símbolo do cavaleiro e de seu mestre."
@@ -9395,6 +10085,11 @@ export const LIVRO_MTF = {
    "damageType": "necrótico",
    "imunizaAoPassar": true
   },
+  "motorDoLivro": {
+   "comedorDeVida": {
+    "nome": "Devorador de Vida"
+   }
+  },
   "traits": [
    "aura",
    "t_devoradorDeVida"
@@ -9472,6 +10167,9 @@ export const LIVRO_MTF = {
   "traits": [
    "aura",
    "t_movidoPelaFome"
+  ],
+  "marcas": [
+   "devil"
   ],
   "blurb": "Lento e cego, avança mordendo enquanto uma nuvem de insetos fere quem estiver por perto; em bando, essas nuvens se sobrepõem e ficam bem mais difíceis de resistir.",
   "lore": "Nupperibos são as almas mais desprezíveis dos Nove Infernos, gente cuja maldade em vida nasceu da preguiça e do descaso. Cegos e inchados de fome, vagam sem rumo pelas paisagens infernais engolindo restos podres e bichos. Sozinhos são patéticos, mas andam em multidões capazes de bloquear vales inteiros, envoltos em enxames de insetos e parasitas. Quando sentem uma presa, perseguem-na sem descanso, e obedecem cegamente a ordens telepáticas de outros diabos."
@@ -9566,8 +10264,25 @@ export const LIVRO_MTF = {
     ]
    ]
   },
+  "acoesEspeciais": [
+   {
+    "nome": "Virote Explosivo",
+    "recharge": [
+     5,
+     6
+    ],
+    "tipo": "area",
+    "shape": "sphere",
+    "areaFt": 20,
+    "alcanceFt": 120,
+    "save": "dex",
+    "dc": 15,
+    "damage": "5d6",
+    "damageType": "fogo",
+    "halfOnSave": true
+   }
+  ],
   "traits": [
-   "t_viroteExplosivo",
    "resistenciaAMagia"
   ],
   "blurb": "Constructo de artilharia que dispara virotes pesados de longe, arpoa alvos para puxá-los até si e lança cargas explosivas que queimam grupos inteiros.",
@@ -9672,8 +10387,18 @@ export const LIVRO_MTF = {
     "reachFt": 5
    }
   ],
+  "acoesEspeciais": [
+   {
+    "nome": "Bloquear o Caminho",
+    "tipo": "postura",
+    "condicao": "bloqueandoOCaminho",
+    "data": {
+     "extra": "3d10",
+     "dc": 14
+    }
+   }
+  ],
   "traits": [
-   "t_bloquearOCaminho",
    "monstroDeCerco"
   ],
   "blurb": "Brutamontes que derruba portões e empurra inimigos com golpes pesados. Quando decide bloquear a passagem, fica difícil de acertar e pune duramente quem tenta escapar dele.",
@@ -9971,6 +10696,15 @@ export const LIVRO_MTF = {
   },
   "acoesEspeciais": [
    {
+    "nome": "Cura Corrompida",
+    "recharge": [
+     6
+    ],
+    "tipo": "curaCorrompida",
+    "alcanceFt": 5,
+    "reduzDados": "2d6"
+   },
+   {
     "nome": "Teletransporte",
     "tipo": "teleporte",
     "alcanceFt": 60
@@ -9986,13 +10720,37 @@ export const LIVRO_MTF = {
     "repete": false,
     "ateFimDoTurnoDele": true,
     "imunizaAoPassar": true
+   },
+   {
+    "nome": "Portador de Pragas",
+    "recharge": [
+     5,
+     6
+    ],
+    "tipo": "postura",
+    "condicao": "pragaDoOinoloth",
+    "rounds": 10,
+    "data": {
+     "auraNoInicio": {
+      "raioFt": 30,
+      "dc": 16,
+      "save": "con",
+      "dano": "4d6",
+      "tipo": "necrótico",
+      "condition": "envenenado",
+      "imunizaAoPassar": true
+     }
+    },
+    "bonus": true
    }
   ],
   "traits": [
-   "t_curaCorrompida",
    "t_portadorDePragas",
    "resistenciaAMagia",
    "armasMagicas"
+  ],
+  "marcas": [
+   "yugoloth"
   ],
   "blurb": "Yugoloth da peste que prende alvos com o olhar e dilacera com garras carregadas de energia necrótica, enquanto espalha uma praga que envenena e impede a cura. Também conjura muralhas de fogo e gelo, debilidade mental e teleporta-se pelo campo.",
   "lore": "Os oinoloths são yugoloths ligados à doença e à fome, enviados para onde a guerra precisa de um empurrão rumo à ruína. Por onde passam, as plantações secam e os enfermos definham. Servem aos senhores dos yugoloths como mercenários de alto preço e costumam oferecer curas falsas que cobram caro do corpo de quem aceita. São frios, calculistas e indiferentes ao sofrimento que causam, vistos em desertos e nas profundezas do Subterrâneo."
@@ -10134,6 +10892,14 @@ export const LIVRO_MTF = {
      "magias": [
       "toqueArrepiante"
      ]
+    },
+    {
+     "nome": "Morte Rastejante",
+     "custo": 2,
+     "tipo": "vulnerar",
+     "alcanceFt": 100,
+     "raioFt": 10,
+     "condicao": "morteRastejante"
     }
    ]
   },
@@ -10143,6 +10909,9 @@ export const LIVRO_MTF = {
    "armasMagicas",
    "t_mestreDaNaoVida",
    "acoesLendarias"
+  ],
+  "marcas": [
+   "demon"
   ],
   "blurb": "Gigante demoníaco que esmaga com a varinha, causando dano de concussão e necrótico, e lança morte em área com magias como círculo da morte e palavra de poder matar. Ignora armas não mágicas e pode erguer exércitos de mortos-vivos no meio da batalha.",
   "lore": "Orcus é o Príncipe Demônio dos Mortos-Vivos, também chamado de Senhor do Sangue. Sonha em extinguir toda a vida e transformar o multiverso numa imensa necrópole governada por ele. Tem corpo inchado e apodrecido, pernas de bode, asas de morcego e uma cabeça que lembra um crânio caprino. Governa Thanatos, camada do Abismo onde fica Naratyr, uma cidade-fortaleza fria e silenciosa cercada pelo Estige, com um castelo de ossos e paredes de carne. Seus seguidores, de carniçais a necromantes, recebem migalhas de seu poder em troca de espalhar a morte."
@@ -10235,10 +11004,34 @@ export const LIVRO_MTF = {
     "longRangeFt": 400
    }
   ],
+  "acoesEspeciais": [
+   {
+    "nome": "Campo de Invisibilidade",
+    "tipo": "sumir",
+    "acabaAoSerAtingido": true,
+    "bonus": true
+   }
+  ],
+  "motorDoLivro": {
+   "explodeFerido": {
+    "nome": "Retribuição Explosiva",
+    "limiar": 15,
+    "raioFt": 30,
+    "dc": 17,
+    "save": "dex",
+    "dano": "2d8",
+    "tipo": "fogo",
+    "dano2": "2d8",
+    "tipo2": "trovejante"
+   }
+  },
   "traits": [
    "t_campoDeInvisibilidade",
    "resistenciaAMagia",
    "t_retribuicaoExplosiva"
+  ],
+  "marcas": [
+   "devil"
   ],
   "blurb": "Caçador infernal que some com uma ação bônus e ataca de surpresa, alternando adaga venenosa e uma besta de latão com virotes de efeitos variados (ácido, cegueira, paralisia, teia). Ao cair quase morto, explode em fogo e trovão.",
   "lore": "O orthon é o diabo que os arquiduques dos Nove Infernos enviam quando alguém precisa ser rastreado, capturado ou eliminado. Persegue suas presas por todo o multiverso sem descanso, quase sempre invisível, e com sentidos aguçadíssimos. Adora a emoção da caçada e do duelo contra um rival à altura. Sem ordens do seu senhor, pode aceitar trabalho de quem lhe prometa um desafio digno, e conhece os Infernos como poucos guias."
@@ -10473,15 +11266,40 @@ export const LIVRO_MTF = {
    "dc": 18,
    "alcanceFt": 120
   },
+  "acoesEspeciais": [
+   {
+    "nome": "Incitar Fanatismo",
+    "tipo": "animarAliados",
+    "max": 4,
+    "raioFt": 60,
+    "condicao": "fanatizado",
+    "rounds": 10
+   },
+   {
+    "nome": "Poder da Rainha Dragão",
+    "tipo": "alvo",
+    "alcanceFt": 120,
+    "save": "cha",
+    "dc": 18,
+    "condition": "enfeiticado",
+    "rounds": 600,
+    "repete": false,
+    "soTipos": [
+     "dragão"
+    ],
+    "imunizaAoPassar": true
+   }
+  ],
   "features": [
    "devilsSight"
   ],
   "traits": [
    "presencaAterradora",
-   "t_incitarFanatismo",
-   "t_poderDaRainhaDragao",
    "resistenciaAMagia",
    "armasMagicas"
+  ],
+  "marcas": [
+   "devil"
   ],
   "blurb": "Comandante infernal que aterroriza os inimigos e inflama os aliados, rasgando alvos com estrela da manhã, garra e uma mordida flamejante devastadora. Ainda pode dominar dragões, especialmente os cromáticos.",
   "lore": "Os abishais vermelhos são diabos dracônicos a serviço de Tiamat, a Rainha dos Dragões, e atuam como generais e arautos de sua vontade. Costumam liderar cultos e exércitos em regiões montanhosas ou cidades onde a influência da deusa se espalha. Seu fervor contagia os seguidores, transformando tropas comuns em fanáticos destemidos. Diante de dragões, usam a autoridade de sua senhora para submetê-los e trazê-los para a causa."
@@ -10678,6 +11496,18 @@ export const LIVRO_MTF = {
     "Garras"
    ]
   },
+  "motorDoLivro": {
+   "fimDoDono": {
+    "nome": "Degeneração Rançosa",
+    "raioFt": 5,
+    "dano": "2d10",
+    "tipo": "necrótico",
+    "bloqueia": [
+     "ácido",
+     "fogo"
+    ]
+   }
+  },
   "traits": [
    "t_degeneracaoRancosa"
   ],
@@ -10753,6 +11583,9 @@ export const LIVRO_MTF = {
   },
   "traits": [
    "aura"
+  ],
+  "marcas": [
+   "demon"
   ],
   "blurb": "Rutterkins atacam em bando e, quando três ou mais cercam a vítima, irradiam um medo que a deixa paralisada no lugar. A mordida transmite uma doença abissal capaz de transformar quem morre por ela em um desgraçado abissal.",
   "lore": "Os rutterkins são demônios deformados que vagam pelo Abismo em turbas famintas. Funcionam como guardiões do plano, caçando qualquer criatura que não seja demoníaca. Ao avistar um intruso, se juntam e avançam em massa, precedidos por uma onda de pavor. Suas mordidas espalham uma praga que retorce a carne das vítimas até convertê-las em desgraçados abissais, que passam a seguir a turba."
@@ -10916,6 +11749,9 @@ export const LIVRO_MTF = {
    "ascendenciaFeerica",
    "t_saltoSombrio"
   ],
+  "marcas": [
+   "elf"
+  ],
   "blurb": "Salta de sombra em sombra com ação bônus e golpeia três vezes com uma corrente cravejada de 3 m de alcance, podendo agarrar, derrubar ou causar dano necrótico pesado a cada acerto.",
   "lore": "Os dançarinos das sombras são shadar-kai, elfos ligados ao Pendor das Sombras que aprenderam a mover-se pela escuridão como se ela fosse uma porta. Atuam como espiões, guardas e assassinos a serviço de sua rainha sombria. Preferem lutar em locais mal iluminados, onde surgem e somem entre os inimigos. Podem ser encontrados em florestas, cidades e no Subterrâneo."
  },
@@ -11055,6 +11891,21 @@ export const LIVRO_MTF = {
     "repete": true
    }
   ],
+  "motorDoLivro": {
+   "chaoDificil": {
+    "nome": "Contaminação",
+    "raioFt": 30
+   }
+  },
+  "aura": {
+   "raioFt": 30,
+   "quando": "inicioDoAlvo",
+   "save": "con",
+   "dc": 20,
+   "damage": "4d6",
+   "damageType": "veneno",
+   "imunizaAoPassar": true
+  },
   "lendarias": {
    "acoes": 3,
    "opcoes": [
@@ -11081,6 +11932,9 @@ export const LIVRO_MTF = {
    "t_contaminacao",
    "resistenciaAMagia",
    "acoesLendarias"
+  ],
+  "marcas": [
+   "demon"
   ],
   "blurb": "Flutua lentamente enquanto sua aura corrompe o chão e envenena quem chega perto; cospe bile ácida a longa distância e deforma até três inimigos por vez, podendo transformá-los em servos abissais. Também lança magias poderosas como imobilizar monstro e enfraquecer o intelecto.",
   "lore": "O sibriex é um demônio antiquíssimo, talvez tão velho quanto o próprio Abismo, que se esconde em regiões isoladas desse plano. Seu corpo enorme escorre sangue e bile, e a terra onde esses fluidos caem apodrece. Acumula há eras segredos de todos os planos e os negocia com cautela, servindo às vezes de conselheiro até para lordes demônios. Também molda carne: cria hordas de demônios menores e enxerta novos membros em quem lhe pede, sempre cobrando um favor ou tesouro em troca."
@@ -11140,7 +11994,7 @@ export const LIVRO_MTF = {
    }
   ],
   "traits": [
-   "t_invisibilidadeFalivel",
+   "sempreInvisivel",
    "t_semRastros"
   ],
   "blurb": "Sempre invisível, ataca com vantagem e suas garras causam dano necrótico extra quando isso acontece. Só espelhos, velas especiais ou crianças revelam sua posição.",
@@ -11287,6 +12141,11 @@ export const LIVRO_MTF = {
   "recursos": {
    "resistenciaLendaria": 3
   },
+  "motorDoLivro": {
+   "mestreDaSepultura": {
+    "nome": "Mestre da Sepultura"
+   }
+  },
   "features": [
    "evasion"
   ],
@@ -11311,6 +12170,13 @@ export const LIVRO_MTF = {
      "tipo": "mover",
      "metade": false,
      "semOportunidade": true
+    },
+    {
+     "nome": "Invocar Mortos-Vivos",
+     "custo": 3,
+     "tipo": "invocar",
+     "id": "esqueleto",
+     "max": 5
     }
    ]
   },
@@ -11446,11 +12312,23 @@ export const LIVRO_MTF = {
     "repete": false
    }
   ],
+  "motorDoLivro": {
+   "pvTempAoDerrubar": {
+    "nome": "Sede de Almas",
+    "pv": "metade"
+   },
+   "pesoDasEras": {
+    "nome": "Peso das Eras"
+   }
+  },
   "traits": [
    "ascendenciaFeerica",
    "resistenciaAMagia",
    "t_sedeDeAlmas",
    "t_pesoDasEras"
+  ],
+  "marcas": [
+   "elf"
   ],
   "blurb": "Luta de perto com adagas fantasmagóricas que causam dano necrótico e deixam o alvo vulnerável a magias, enquanto sua onda de cansaço esgota grupos inteiros. Quem fica ao seu lado tem o passo arrastado pelo peso dos séculos.",
   "lore": "Os mercadores de almas são shadar-kai, elfos ligados ao Pendor das Sombras que carregam no corpo a melancolia daquele plano. Alimentam-se da essência dos que matam, ficando mais ferozes a cada vítima. Costumam agir no Subterrâneo ou em cidades sombrias, servindo como agentes e caçadores de sua rainha. São frios, calculistas e imunes ao medo e ao desespero que espalham."
@@ -11685,6 +12563,9 @@ export const LIVRO_MTF = {
    "aura",
    "resistenciaAMagia"
   ],
+  "marcas": [
+   "elf"
+  ],
   "blurb": "Encanta todos ao redor com sua alegria contagiante e alterna golpes de espada ou arco com magias de controle mental, teleportando-se pelo campo. Resiste a armas comuns e a magia.",
   "lore": "Os eladrins da primavera são elfos feéricos tomados pelo humor da estação do renascimento, cheios de entusiasmo e vontade de festejar. Vivem em florestas e campos ligados à Agrestia das Fadas, onde a vida brota sem parar. Costumam arrastar viajantes para danças e brincadeiras que podem durar dias. Mesmo amistosos, são caprichosos e veem os mortais como divertimento passageiro."
  },
@@ -11730,6 +12611,15 @@ export const LIVRO_MTF = {
     "reachFt": 5
    }
   ],
+  "motorDoLivro": {
+   "desvantagemNasResistencias": {
+    "nome": "Aura de Loucura",
+    "raioFt": 20,
+    "poupaTipos": [
+     "aberração"
+    ]
+   }
+  },
   "traits": [
    "t_auraDeLoucura"
   ],
@@ -11814,6 +12704,12 @@ export const LIVRO_MTF = {
     "repete": false
    }
   ],
+  "motorDoLivro": {
+   "espelhoPsiquico": {
+    "nome": "Espelho Psíquico",
+    "raioFt": 10
+   }
+  },
   "traits": [
    "t_espelhoPsiquico"
   ],
@@ -11936,14 +12832,37 @@ export const LIVRO_MTF = {
     "repete": true
    }
   ],
+  "motorDoLivro": {
+   "voltaAosVermes": {
+    "nome": "Retorno aos Vermes"
+   },
+   "alimentarDaFraqueza": {
+    "nome": "Nutrir-se da Fraqueza",
+    "raioFt": 20,
+    "pv": 10
+   }
+  },
   "lendarias": {
    "acoes": 3,
    "opcoes": [
+    {
+     "nome": "Truque",
+     "custo": 2,
+     "tipo": "magia",
+     "soTruque": true
+    },
     {
      "nome": "Pancada",
      "custo": 2,
      "tipo": "golpe",
      "arma": "Pancada"
+    },
+    {
+     "nome": "Alimentar-se",
+     "custo": 3,
+     "tipo": "alimentar",
+     "damage": "3d8",
+     "pvTemp": 6
     }
    ]
   },
@@ -12023,8 +12942,20 @@ export const LIVRO_MTF = {
     "Garra"
    ]
   },
+  "acoesEspeciais": [
+   {
+    "nome": "Rajada de Garras",
+    "recharge": [
+     4,
+     5,
+     6
+    ],
+    "tipo": "golpes",
+    "arma": "Garra",
+    "vezes": 6
+   }
+  ],
   "traits": [
-   "t_rajadaDeGarras",
    "emboscador",
    "furtividadeNasSombras"
   ],
@@ -12132,6 +13063,12 @@ export const LIVRO_MTF = {
     "halfOnSave": false
    }
   ],
+  "motorDoLivro": {
+   "curvarEspaco": {
+    "nome": "Dobrar o Espaço",
+    "alcanceFt": 60
+   }
+  },
   "traits": [
    "incorporealMovement",
    "t_dobrarOEspaco"
@@ -12325,6 +13262,11 @@ export const LIVRO_MTF = {
     }
    }
   ],
+  "motorDoLivro": {
+   "oportunista": {
+    "nome": "Oportunista Astuto"
+   }
+  },
   "traits": [
    "t_oportunistaAstuto",
    "aparenciaFalsa"
@@ -12386,6 +13328,12 @@ export const LIVRO_MTF = {
     "reachFt": 5
    }
   ],
+  "motorDoLivro": {
+   "interceptar": {
+    "nome": "Interceptar Ataque",
+    "bonus": 5
+   }
+  },
   "traits": [
    "aparenciaFalsa",
    "resistenciaAMagia",
@@ -12492,6 +13440,9 @@ export const LIVRO_MTF = {
    "resistenciaAMagia",
    "aparar"
   ],
+  "marcas": [
+   "elf"
+  ],
   "blurb": "Guerreiro feérico veloz que alterna espada longa e arco longo, ambos com dano extra de fogo, e se teleporta pelo campo de batalha. Sua presença aterradora amedronta quem se aproxima, e ele apara golpes corpo a corpo.",
   "lore": "Eladrins do verão são elfos feéricos tomados pela estação do calor, ardentes, impetuosos e sempre prontos para a luta. Vivem em regiões ligadas à Agrestia das Fadas, como florestas e desertos, onde a fúria do sol de verão se manifesta. Movem-se pela paixão do combate e intimidam adversários com sua simples presença. Seu humor pode mudar de estação com o tempo, mas enquanto o verão os domina, buscam desafios e glória."
  },
@@ -12571,6 +13522,19 @@ export const LIVRO_MTF = {
   },
   "acoesEspeciais": [
    {
+    "nome": "Chamado à Honra",
+    "porDia": 1,
+    "tipo": "invocar",
+    "opcoes": [
+     {
+      "id": "guerreiroEspectroDaEspada",
+      "dados": "1d4+1"
+     }
+    ],
+    "soFerido": true,
+    "vantagemPropria": true
+   },
+   {
     "nome": "Fúria Marcial",
     "tipo": "golpeBonus",
     "extra": "2d8",
@@ -12580,9 +13544,8 @@ export const LIVRO_MTF = {
    }
   ],
   "traits": [
-   "t_chamadoAHonra",
    "t_furiaMarcial",
-   "t_desafioAoExpulsar"
+   "resisteExpulsar"
   ],
   "blurb": "Guerreiro morto-vivo que golpeia duas vezes com a espada longa e pode arriscar a guarda para um ataque extra carregado de energia necrótica. Ferido, ergue do chão uma tropa de espectros guerreiros para lutar ao seu lado.",
   "lore": "Espectros da espada são soldados mortos cuja sede de glória e disciplina militar sobreviveram à própria morte. O comandante foi um líder em vida e continua organizando suas fileiras fantasmagóricas em velhos campos de batalha, sejam planícies ou pântanos. Ele despreza a covardia e busca combates que o honrem. Mantém o idioma que falava em vida e raramente recua."
@@ -12724,6 +13687,26 @@ export const LIVRO_MTF = {
     "Gancho"
    ]
   },
+  "vantagemRacial": [
+   {
+    "nome": "Duas Cabeças",
+    "condicoes": [
+     "cego",
+     "enfeiticado",
+     "surdo",
+     "amedrontado",
+     "atordoado",
+     "inconsciente"
+    ]
+   }
+  ],
+  "motorDoLivro": {
+   "raivaCrescente": {
+    "nome": "Fúria Crescente",
+    "arma": "Gancho",
+    "dados": "3d12"
+   }
+  },
   "traits": [
    "t_duasCabecas",
    "t_furiaCrescente"
@@ -12800,6 +13783,13 @@ export const LIVRO_MTF = {
     "Mordida",
     "Garras"
    ]
+  },
+  "motorDoLivro": {
+   "fomeDeVida": {
+    "nome": "Fome de Vida",
+    "arma": "Mordida",
+    "dados": "4d10"
+   }
   },
   "traits": [
    "t_fomeDeVida"
@@ -12880,6 +13870,11 @@ export const LIVRO_MTF = {
    "damage": "3d6",
    "damageType": "psíquico"
   },
+  "motorDoLivro": {
+   "companhia": {
+    "nome": "Prospera na Companhia"
+   }
+  },
   "traits": [
    "aura",
    "t_prosperaNaCompanhia"
@@ -12959,6 +13954,12 @@ export const LIVRO_MTF = {
     "Espinho do Braço"
    ]
   },
+  "motorDoLivro": {
+   "abracoQueAperta": {
+    "nome": "Abraço Apertado",
+    "dados": "4d8"
+   }
+  },
   "traits": [
    "t_abracoApertado"
   ],
@@ -13011,9 +14012,18 @@ export const LIVRO_MTF = {
     "danoExtra": {
      "damage": "1d10+1",
      "type": "necrótico"
-    }
+    },
+    "gruda": true
    }
   ],
+  "motorDoLivro": {
+   "grude": {
+    "nome": "Mordida",
+    "dano": "1d10+1",
+    "tipo": "necrótico",
+    "semLimite": true
+   }
+  },
   "traits": [
    "packTactics"
   ],
@@ -13218,6 +14228,9 @@ export const LIVRO_MTF = {
    "t_ventriloquismo",
    "acoesLendarias"
   ],
+  "marcas": [
+   "devil"
+  ],
   "blurb": "Manipulador que luta com palavras: enfeitiça, assusta e manda os inimigos fugirem enquanto sua espada de prata drena o PV máximo. Regenera, se teletransporta e resiste a magia, então é difícil de encurralar.",
   "lore": "Titivilus é o arquidiabo conselheiro de Dispater, senhor do segundo círculo dos Nove Infernos, e hoje é o segundo poder na cidade de Dis. Fraco em força bruta para um arquidiabo, subiu na hierarquia só com lábia, dizendo a coisa certa na hora certa. Alimentou a paranoia de Dispater até que o mestre se trancasse no palácio, deixando o governo e os pactos com mortais nas mãos do conselheiro, o que faz alguns suspeitarem que ele tomou o lugar do arquiduque. Sabendo que sua posição é frágil, recruta aventureiros como peões descartáveis para eliminar rivais e criar problemas que só ele resolve."
  },
@@ -13292,6 +14305,9 @@ export const LIVRO_MTF = {
    }
   ],
   "traits": [],
+  "marcas": [
+   "tortle"
+  ],
   "blurb": "Humanoide-tartaruga resistente que luta com garras, bordão ou besta leve. Quando a luta aperta, recolhe-se no casco e fica muito difícil de ferir.",
   "lore": "Os tortles são humanoides com aparência de tartaruga que carregam a própria casa nas costas. Vivem em litorais e ilhas, levando uma vida errante e simples, sempre atentos ao mar e à natureza. Costumam ser honrados, pacientes e de boa índole, valorizando a jornada mais que o destino. Mergulham com facilidade e passam longos períodos sob a água."
  },
@@ -13391,6 +14407,9 @@ export const LIVRO_MTF = {
    }
   ],
   "traits": [],
+  "marcas": [
+   "tortle"
+  ],
   "blurb": "Druida resistente que cura aliados, paralisa inimigos com Imobilizar Pessoa e empurra grupos com Onda Trovejante. Quando aperta, recolhe-se no casco e fica com CA 21.",
   "lore": "Tortles são humanoides com aparência de tartaruga que vivem em litorais e ilhas, levando a casa nas costas. Os druidas desse povo cultivam laços com animais e com o mar, guiando viajantes e protegendo seus territórios costeiros. São pacientes e metódicos, preferem conversar com as feras a lutar contra elas e só recorrem à magia de combate quando não têm escolha."
  },
@@ -13566,6 +14585,17 @@ export const LIVRO_MTF = {
     "repete": true
    }
   ],
+  "motorDoLivro": {
+   "aoSerFerido": {
+    "nome": "Respingo Venenoso",
+    "raioFt": 5,
+    "dano": "2d8",
+    "tipo": "veneno",
+    "exceto": [
+     "psíquico"
+    ]
+   }
+  },
   "regeneracao": {
    "pv": 10,
    "bloqueia": [
@@ -13669,10 +14699,20 @@ export const LIVRO_MTF = {
     "halfOnSave": true
    }
   ],
+  "motorDoLivro": {
+   "chaoDificil": {
+    "nome": "Correnteza",
+    "raioFt": 60,
+    "soNaAgua": true
+   }
+  },
   "traits": [
    "t_aguaCorrompida",
    "resistenciaAMagia",
    "t_correnteza"
+  ],
+  "marcas": [
+   "demon"
   ],
   "blurb": "Demônio aquático que puxa vítimas com jatos de água ácida e as despedaça com mordida e garras de longo alcance. A água ao seu redor vira veneno e, submerso, ele transforma o mar em terreno difícil.",
   "lore": "O wastrilith é um demônio das águas do Abismo e de qualquer lago, pântano ou mar tocado pela influência desse plano. Ele se impõe como senhor das profundezas e governa seus domínios com crueldade. Sua simples presença apodrece a água próxima, mesmo quando ele se desloca por terra, e essa água contaminada carrega parte de sua essência e obedece às suas vontades. Quem bebe dela pode definhar até a morte ou acabar servindo ao caos, e a mancha deixada pode durar décadas e até abrir caminho para o Abismo."
@@ -13749,8 +14789,19 @@ export const LIVRO_MTF = {
     "Tridente"
    ]
   },
+  "acoesEspeciais": [
+   {
+    "nome": "Golpes Congelantes",
+    "recharge": [
+     6
+    ],
+    "tipo": "golpeReforcado",
+    "multi": true,
+    "extra": "1d10",
+    "extraTipo": "frio"
+   }
+  ],
   "traits": [
-   "t_golpesCongelantes",
    "armasMagicas"
   ],
   "blurb": "Guerreiro de água viva que golpeia três vezes com seu tridente mágico; de tempos em tempos, seus ataques congelam o alvo, causando frio extra e deixando-o mais lento.",
@@ -13858,6 +14909,9 @@ export const LIVRO_MTF = {
    "armasMagicas",
    "imprudente",
    "t_represaliaCruel"
+  ],
+  "marcas": [
+   "devil"
   ],
   "blurb": "Combatente imprudente que pode atacar com vantagem em troca de ficar exposto, golpeando com espada longa e garra. Ao sofrer dano, revida com uma mordida gélida ou avança contra um inimigo.",
   "lore": "Abishais são diabos dracônicos a serviço de Tiamat nos Nove Infernos, e os brancos ocupam o degrau mais baixo dessa hierarquia. Movidos por fúria e desespero, lançam-se na batalha sem pensar na própria segurança. Costumam servir como tropa de choque em cultos e cidades corrompidas, obedecendo a abishais mais poderosos. Sua lealdade à Rainha dos Dragões é absoluta, e falham raramente por falta de vontade."
@@ -13987,6 +15041,9 @@ export const LIVRO_MTF = {
    "aura",
    "t_repreensaoGelida"
   ],
+  "marcas": [
+   "elf"
+  ],
   "blurb": "Abate a vontade dos inimigos com uma aura de tristeza que os enfeitiça e enfraquece, enquanto lança cone de frio e tempestade de gelo. Quem o fere sente o troco gélido na hora.",
   "lore": "Os eladrins do inverno são elfos feéricos tomados pelo luto e pela melancolia, ligados à estação mais fria da Agrestia das Fadas. Costumam habitar florestas congeladas e ermos árticos, onde o silêncio combina com seu humor. Sua presença carrega uma tristeza tão intensa que contagia quem se aproxima. Raramente buscam briga, mas respondem a ofensas com frieza implacável."
  },
@@ -14113,16 +15170,44 @@ export const LIVRO_MTF = {
   },
   "acoesEspeciais": [
    {
+    "nome": "Sanguessuga Vital",
+    "tipo": "alvo",
+    "alcanceFt": 15,
+    "soIncapacitado": true,
+    "save": "con",
+    "dc": 16,
+    "damage": "7d8+4",
+    "damageType": "necrótico",
+    "danoSemTeste": true,
+    "pvTempMetade": true,
+    "reduzMaximo": true,
+    "reduzMaximoSeFalhar": true
+   },
+   {
+    "nome": "Astúcia de Batalha",
+    "recharge": [
+     4,
+     5,
+     6
+    ],
+    "tipo": "comandar",
+    "max": 2,
+    "aliado": "yugoloth",
+    "alcanceFt": 60,
+    "corpoACorpo": true
+   },
+   {
     "nome": "Teletransporte",
     "tipo": "teleporte",
     "alcanceFt": 60
    }
   ],
   "traits": [
-   "t_sanguessugaVital",
-   "t_astuciaDeBatalha",
    "resistenciaAMagia",
    "armasMagicas"
+  ],
+  "marcas": [
+   "yugoloth"
   ],
   "blurb": "Gigante assimétrico que esmaga com um braço colossal de 4,5 m de alcance, capaz de atordoar, e eletrocuta com o outro; teleporta-se pelo campo e drena a vida de quem cai incapacitado.",
   "lore": "O yagnoloth é um yugoloth corpulento, com um braço enorme e outro pequeno e crepitante de eletricidade. Atua como diplomata e oficial de campo dos exércitos yugoloth, negociando contratos com mortais e outros demônios em nome de seus mestres. Fala com charme calculado, mas cumpre sempre a letra do acordo e nada além dela. Em combate, coordena os mercenários ao redor e prefere esgotar o inimigo antes de sugar sua essência vital."
@@ -14243,6 +15328,13 @@ export const LIVRO_MTF = {
    "acoes": 3,
    "opcoes": [
     {
+     "nome": "Investida",
+     "custo": 1,
+     "tipo": "mover",
+     "metade": false,
+     "semOportunidade": false
+    },
+    {
      "nome": "Rebater",
      "custo": 1,
      "tipo": "golpe",
@@ -14261,6 +15353,9 @@ export const LIVRO_MTF = {
    "armasMagicas",
    "rampage",
    "acoesLendarias"
+  ],
+  "marcas": [
+   "demon"
   ],
   "blurb": "Senhor demônio gnoll que gira um mangual de três cabeças com 4,5 m de alcance, podendo paralisar, confundir ou esmagar com dano extra a cada sequência de golpes. Quando derruba alguém, avança e morde de novo, e entre turnos arremessa inimigos para longe ou morde todos ao redor.",
   "lore": "Conhecido como a Fera da Carnificina, Yeenoghu é um gnoll colossal de mais de 4 m, coberto de cicatrizes, pelo emaranhado e armaduras remendadas presas por correntes. Segundo a lenda, as hienas que comeram as presas dele se tornaram os primeiros gnolls, que hoje servem como instrumentos de sua fúria. Ele só deseja matança e ruína, adora aterrorizar as vítimas antes de matá-las e jamais negocia. Seu covil no Abismo, os Vales da Morte, é um terreno árido de colinas e ravinas onde caça mortais capturados, cercado de gnolls, hienas e carniçais. Odeia Baphomet, e os seguidores dos dois se atacam sempre que se encontram."
@@ -14433,6 +15528,14 @@ export const LIVRO_MTF = {
     "repete": false
    }
   ],
+  "motorDoLivro": {
+   "tremorDepoisDeAndar": {
+    "nome": "Passos que Abalam a Terra",
+    "exigeFt": 10,
+    "raioFt": 120,
+    "dc": 25
+   }
+  },
   "lendarias": {
    "acoes": 3,
    "opcoes": [
@@ -14456,9 +15559,20 @@ export const LIVRO_MTF = {
      "arma": "Cuspir Rocha"
     },
     {
+     "nome": "Recolher-se",
+     "custo": 2,
+     "tipo": "recolher"
+    },
+    {
+     "nome": "Revitalizar",
+     "custo": 2,
+     "tipo": "revitalizar",
+     "dados": "5d20"
+    },
+    {
      "nome": "Emergir",
      "custo": 2,
-     "tipo": "golpe",
+     "tipo": "emergir",
      "arma": "Cuspir Rocha"
     }
    ]
@@ -14664,6 +15778,9 @@ export const LIVRO_MTF = {
    "regeneracaoDoLivro",
    "acoesLendarias"
   ],
+  "marcas": [
+   "devil"
+  ],
   "blurb": "Arquidiaba guerreira que combina espada longa ou azagaias flamejantes (cada golpe soma 36 de dano de fogo) com um toque necrótico que cega e ensurdece, teleportando-se pelo campo à vontade. Regenera 20 PV por turno, a menos que sofra dano radiante.",
   "lore": "Zariel foi um anjo enviado para vigiar a Guerra Sangrenta, mas acabou corrompida pelos Nove Infernos e caiu. Hoje governa Avernus, a primeira camada infernal, por onde passa todo viajante e onde se reúnem os exércitos diabólicos contra os demônios. Ela tomou de volta o posto do cauteloso Bel, que agora a aconselha, e muitos suspeitam que sonha em derrubar Asmodeus. Busca as almas dos maiores guerreiros mortais com pactos eternos e implacáveis, deixando-os viver e se aperfeiçoar até cobrar a dívida. Reside numa vasta cidadela de basalto cercada de torres, com vítimas queimadas acorrentadas às muralhas."
  },
@@ -14784,6 +15901,54 @@ export const LIVRO_MTF = {
   "recursos": {
    "resistenciaLendaria": 3
   },
+  "acoesEspeciais": [
+   {
+    "nome": "Esporos de Infestação",
+    "porDia": 3,
+    "tipo": "area",
+    "shape": "raio",
+    "areaFt": 20,
+    "save": "con",
+    "dc": 19,
+    "condition": "esporosDeZuggtmoy",
+    "rounds": null,
+    "repete": false,
+    "naoTipos": [
+     "constructo",
+     "morto-vivo",
+     "elemental"
+    ]
+   },
+   {
+    "nome": "Esporos de Controle Mental",
+    "recharge": [
+     5,
+     6
+    ],
+    "tipo": "area",
+    "shape": "raio",
+    "areaFt": 20,
+    "save": "wis",
+    "dc": 19,
+    "condition": "enfeiticado",
+    "rounds": 100,
+    "repete": false,
+    "soTipos": [
+     "humanoide",
+     "fera"
+    ]
+   },
+   {
+    "nome": "Forma Etérea",
+    "tipo": "etereo",
+    "porDia": 1
+   }
+  ],
+  "motorDoLivro": {
+   "servoProtetor": {
+    "nome": "Servo Protetor"
+   }
+  },
   "lendarias": {
    "acoes": 3,
    "opcoes": [
@@ -14792,16 +15957,22 @@ export const LIVRO_MTF = {
      "custo": 1,
      "tipo": "golpe",
      "arma": "Pseudópode"
+    },
+    {
+     "nome": "Impor Vontade",
+     "custo": 1,
+     "tipo": "marionete"
     }
    ]
   },
   "traits": [
-   "t_esporosDeInfestacao",
-   "t_esporosDeControleMental",
    "resistenciaAMagia",
    "armasMagicas",
    "t_servoProtetor",
    "acoesLendarias"
+  ],
+  "marcas": [
+   "demon"
   ],
   "blurb": "Golpeia com três pseudópodes que causam dano de concussão e de veneno, e espalha nuvens de esporos que adoecem, enlouquecem ou dominam quem está por perto. Usa os servos enfeitiçados como escudo e os comanda à distância.",
   "lore": "Zuggtmoy, a Rainha Demônio dos Fungos e Senhora da Podridão, só quer contaminar os vivos com seus esporos. As vítimas viram servos sem mente e, mais tarde, adubo para os fungos que ela gera. Seu corpo fúngico pode assumir uma forma vagamente humanoide, magra e coberta de micélio e líquen, que imita a vida mortal sem ter alma. Muitos de seus cultistas a servem sem perceber, tomados pelos esporos até que carne e fungo se tornem uma coisa só. Ela reina em Shedaklah, num palácio de cogumelos colossais ligados por pontes de orelhas-de-pau e cercados por bufas ácidas e vapores venenosos."
@@ -14812,10 +15983,6 @@ export const TRACOS_MTF = {
  "t_imitacaoSulfurosa": {
   "name": "Imitação Sulfurosa",
   "desc": "Como ação bônus, cria uma cópia perfeita (com leve cheiro de enxofre) de uma criatura Média ou menor cujas memórias roubou, ligada a ele por um filamento de até 36 m; pode imitar 2d6 + 1 criaturas diferentes. A cópia conta como o próprio oblex e some se o filamento, imune a dano, for cortado por falta de uma abertura de 2,5 cm."
- },
- "t_golpeRelampago": {
-  "name": "Golpe Relâmpago",
-  "desc": "Recarga 6. Faz um ataque de mangual que, se acertar, causa 18 (4d8) de dano elétrico adicional. Quem leva o golpe faz Constituição CD 13; se falhar, fica atordoado até o fim do próximo turno do mirmidão."
  },
  "t_fomentarLoucura": {
   "name": "Fomentar Loucura",
@@ -14840,14 +16007,6 @@ export const TRACOS_MTF = {
  "t_promoverAPaz": {
   "name": "Promover a Paz",
   "desc": "Quando uma criatura enfeitiçada por ele, a até 18 m e visível, acerta um ataque, o eladrin faz o ataque errar."
- },
- "t_comandoInfernal": {
-  "name": "Comando Infernal",
-  "desc": "Aliados a até 18 m não podem ficar enfeitiçados nem amedrontados até o fim do próximo turno do narzugon."
- },
- "t_pavoroso": {
-  "name": "Pavoroso",
-  "desc": "Como ação bônus, até o início do próximo turno dele, toda criatura que não seja diabo e comece o turno a até 3 m de Bael faz teste de resistência de Sabedoria CD 22 ou fica amedrontada até o início do próprio próximo turno."
  },
  "t_memoriaLabirintica": {
   "name": "Memória Labiríntica",
@@ -14897,10 +16056,6 @@ export const TRACOS_MTF = {
   "name": "Sem Ossos",
   "desc": "Passa e permanece em espaços de apenas 10 cm de largura sem precisar se espremer."
  },
- "t_colherOsMortos": {
-  "name": "Colher os Mortos",
-  "desc": "Pega um humanoide morto e desprotegido a até 3 m e o guarda no próprio corpo, com todo o equipamento, para uso com o traço Cadáveres."
- },
  "t_cadaveres": {
   "name": "Cadáveres",
   "desc": "Começa com 1d6+3 corpos humanoides guardados (máximo de nove), protegidos por cobertura total. Com uma ação bônus, digere um corpo para recuperar 11 (2d10) PV ou anima um como zumbi a 1,5 m, que age logo depois dela como aliado autônomo e também carrega o fedor."
@@ -14925,10 +16080,6 @@ export const TRACOS_MTF = {
   "name": "Discernir Mentira",
   "desc": "Ela percebe sempre que uma criatura mente em um idioma que ela entende."
  },
- "t_invocarServo": {
-  "name": "Invocar Servo",
-  "desc": "1/dia, invoca um recuperador ou uma yochlol a até 18 m, que luta a seu lado por 10 minutos, sem poder invocar outros demônios, até morrer, a matriarca morrer ou dispensá-lo com uma ação."
- },
  "t_favorVoluvelDeLolth": {
   "name": "Favor Volúvel de Lolth",
   "desc": "Com uma ação bônus, escolhe um aliado visível a até 9 m: ele sofre 7 (2d6) de dano psíquico, mas ganha vantagem na próxima jogada de ataque até o fim do seu próximo turno."
@@ -14945,73 +16096,33 @@ export const TRACOS_MTF = {
   "name": "Motor de Dor",
   "desc": "Uma vez por turno, quem ataca o gritador pode mirar o duergar preso nele, com desvantagem. Se acertar, causa 11 (2d10) de dano extra, e o gritador pode usar sua reação para fazer um Ataque Múltiplo."
  },
- "t_invisibilidadeCompartilhada": {
-  "name": "Invisibilidade Compartilhada",
-  "desc": "Recarrega após descanso curto ou longo. Fica invisível com seu equipamento por até 1 hora (concentração), terminando se atacar ou conjurar magia; a steeder fêmea que montar também fica invisível até atacar."
- },
- "t_treinamentoDeCavalaria": {
-  "name": "Treinamento de Cavalaria",
-  "desc": "Ao acertar um ataque corpo a corpo enquanto monta uma steeder fêmea, a montaria pode usar a reação para atacar o mesmo alvo corpo a corpo."
- },
  "t_resilienciaDuergar": {
   "name": "Resiliência Duergar",
   "desc": "Tem vantagem em testes de resistência contra veneno, magias e ilusões, e para evitar ficar enfeitiçado ou paralisado."
- },
- "t_reduzir": {
-  "name": "Reduzir",
-  "desc": "Uma vez por descanso, por 1 minuto fica Miúdo: dano de arma cai para 1, desvantagem em tudo que use Força, +5 na CA e em Furtividade, e pode se Esconder como ação bônus."
- },
- "t_criarLaminaDaAlma": {
-  "name": "Criar Lâmina da Alma",
-  "desc": "Com uma ação bônus, forma na mão uma lâmina visível de energia psiônica do tamanho de uma espada curta. Ela some se sair da mão dele ou se ele morrer ou ficar incapacitado."
  },
  "t_formacaoDeFalange": {
   "name": "Formação de Falange",
   "desc": "Enquanto estiver a até 1,5 m de um aliado duergar empunhando escudo, tem vantagem em jogadas de ataque e testes de resistência de Destreza."
  },
- "t_chamadoAoAtaque": {
-  "name": "Chamado ao Ataque",
-  "desc": "Até três duergar aliados a até 36 m que possam ouvi-lo podem usar a reação para fazer um ataque com arma cada."
- },
  "t_instrucaoFlageladora": {
   "name": "Instrução Flageladora",
   "desc": "Quando um aliado que ele vê rola um d20, o senhor da guerra rola 1d6; o aliado pode somar o resultado à rolagem sofrendo 3 (1d6) de dano psíquico. Não afeta criaturas imunes a dano psíquico."
- },
- "t_possuirCadaver": {
-  "name": "Possuir Cadáver",
-  "desc": "(Recarga 6) Entra num cadáver intacto de besta ou humanoide, Grande ou menor, a até 1,5 m, tornando-se morto-vivo com aparência viva e ganhando PV temporários iguais ao PV máximo que o corpo tinha em vida. Mantém seus PV, mentais, telepatia e imunidades, mas usa as demais estatísticas do corpo. Sai quando os PV temporários acabam ou com uma ação bônus, surgindo a até 1,5 m."
  },
  "t_profanarCadaver": {
   "name": "Profanar Cadáver",
   "desc": "Com uma ação bônus enquanto possui um cadáver, faz o corpo agir de modo grotesco. Bestas e humanoides que virem precisam passar num teste de resistência de Sabedoria CD 12 ou ficam amedrontados por 1 minuto, repetindo o teste ao fim de cada turno; quem passar fica imune por 24 horas."
  },
- "t_golpeTrovejante": {
-  "name": "Golpe Trovejante",
-  "desc": "Recarga 5–6. Faz um ataque de marreta que, se acertar, causa 16 (3d10) de dano trovejante extra. O alvo faz um teste de resistência de Força CD 14 ou fica caído."
- },
  "t_animacaoSagrada": {
   "name": "Animação Sagrada",
   "desc": "Recarga 5–6. Ao entrar no espaço de uma estátua sagrada, pode sumir dentro dela e controlá-la, passando a usar as estatísticas da estátua sagrada no lugar das suas."
- },
- "t_tempestadeDeRaios": {
-  "name": "Tempestade de Raios",
-  "desc": "Recarga 6. Todas as outras criaturas a até 36 m fazem teste de resistência de Destreza CD 20: 27 (6d8) de dano elétrico, ou metade se passarem. Quem falhar por 5 ou mais fica atordoado até o fim do próximo turno."
  },
  "t_tempestadeViva": {
   "name": "Tempestade Viva",
   "desc": "Está sempre no centro de um temporal de 1d6+4 milhas de diâmetro, com chuva ou neve que deixa a área levemente obscurecida e dá desvantagem em Percepção pela audição. Os ventos fortes dão desvantagem em ataques à distância, apagam chamas e dissipam névoa."
  },
- "t_pataPegajosa": {
-  "name": "Pata Pegajosa",
-  "desc": "Ataque corpo a corpo +5, alcance 1,5 m, contra criatura Média ou menor. O alvo fica grudado e agarrado (CD 12 para escapar); só uma criatura por vez."
- },
  "t_saltoExtraordinario": {
   "name": "Salto Extraordinário",
   "desc": "Seus saltos em distância são triplicados: cada 0,3 m de deslocamento gasto no salto o leva 0,9 m adiante."
- },
- "t_golpesArdentes": {
-  "name": "Golpes Ardentes",
-  "desc": "Recarga 5–6. Usa Ataques Múltiplos, e cada acerto causa 5 (1d10) de dano de fogo adicional."
  },
  "t_indetectavel": {
   "name": "Indetectável",
@@ -15065,21 +16176,13 @@ export const TRACOS_MTF = {
   "name": "Vantagem Aquática",
   "desc": "Enquanto estiver submerso em líquido, tem vantagem nas jogadas de ataque."
  },
- "t_maremoto": {
-  "name": "Maremoto",
-  "desc": "Recarga 6. Submerso, cria uma muralha de água de até 75 m de comprimento e altura e 15 m de espessura; criaturas na área fazem teste de Força CD 24, sofrendo 33 (6d10) de concussão na falha ou metade no sucesso. A cada turno ela avança 15 m, forçando novo teste CD 24 contra 27 (5d10) de dano, perde 15 m de altura e 1d10 de dano até sumir; nadar dentro dela exige teste de Força (Atletismo) CD 24."
- },
  "t_congelamentoParcial": {
   "name": "Congelamento Parcial",
   "desc": "Se sofrer 50 ou mais de dano de frio num único turno, até o fim do seu próximo turno seus deslocamentos caem para 6 m e seus ataques têm desvantagem."
  },
- "t_pernaPegajosa": {
-  "name": "Perna Pegajosa",
-  "desc": "Ataque corpo a corpo com arma, +4 para acertar, alcance 1,5 m, contra uma criatura Pequena ou Miúda. Se acertar, o alvo fica grudado e agarrado (CD 12 para escapar); só pode manter uma criatura agarrada por vez."
- },
- "t_erguerCarnical": {
-  "name": "Erguer Carniçal",
-  "desc": "Recarga 5–6. Escolhe um carniçal ou lívido morto que veja a até 9 m; ele volta à vida com todos os PV."
+ "t_justificar": {
+  "name": "Justificar",
+  "desc": "Até duas criaturas visíveis a até 18 m fazem teste de resistência de Carisma CD 20 (incapacitados falham automaticamente) ou são teleportadas ao Salão da Concordância em Sigil, levando o marut junto. Depois disso, só pode usar de novo após um descanso curto ou longo."
  },
  "t_assumirForma": {
   "name": "Assumir Forma",
@@ -15092,10 +16195,6 @@ export const TRACOS_MTF = {
  "t_teletransporte": {
   "name": "Teletransporte",
   "desc": "Com uma ação bônus, teletransporta-se com seu equipamento até 18 m para um espaço desocupado que possa ver."
- },
- "t_olharRoubaAlma": {
-  "name": "Olhar Rouba-Alma",
-  "desc": "Uma criatura a até 9 m que consiga ver o nabassu (não constructo nem morto-vivo) faz teste de resistência de Carisma CD 16; se falhar, seu máximo de PV cai 13 (2d12) até um descanso curto ou longo, e o nabassu ganha o mesmo valor em PV temporários. Se o máximo chegar a 0, a vítima morre, e um humanoide se ergue na hora como carniçal sob controle do demônio."
  },
  "t_sombrasDemoniacas": {
   "name": "Sombras Demoníacas",
@@ -15113,10 +16212,6 @@ export const TRACOS_MTF = {
   "name": "Paralisia (Recarga 6)",
   "desc": "Como ação bônus, cada criatura a até 9 m deve passar num teste de resistência de Sabedoria CD 20 ou ficar paralisada por 1 minuto, repetindo o teste ao fim de cada turno. Mortos-vivos e constructos são imunes."
  },
- "t_cura": {
-  "name": "Cura",
-  "desc": "Uma vez por dia, o narzugon ou uma criatura que ele toque recupera até 100 PV."
- },
  "t_sentidoDiabolico": {
   "name": "Sentido Diabólico",
   "desc": "Tem vantagem em testes de Sabedoria (Percepção) para perceber criaturas de tendência boa."
@@ -15133,21 +16228,9 @@ export const TRACOS_MTF = {
   "name": "Movido pela Fome",
   "desc": "Nos Nove Infernos, nupperibos rastreiam sem falhas qualquer criatura ferida pela Nuvem de Vermes de algum nupperibo nas últimas 24 horas."
  },
- "t_viroteExplosivo": {
-  "name": "Virote Explosivo",
-  "desc": "Dispara uma carga em um ponto a até 36 m; criaturas a até 6 m dele fazem teste de resistência de Destreza CD 15, sofrendo 17 (5d6) de dano de fogo na falha ou metade no sucesso. Recarga 5–6."
- },
- "t_bloquearOCaminho": {
-  "name": "Bloquear o Caminho",
-  "desc": "Até o início do próximo turno, ataques contra o ogro têm desvantagem e seu ataque de oportunidade tem vantagem, causando 16 (3d10) de dano de concussão extra. Inimigos que tentem sair do alcance dele sem teletransporte devem passar num teste de resistência de Força CD 14 ou ficam com deslocamento 0 até o início do próximo turno do ogro."
- },
  "t_liteira": {
   "name": "Liteira",
   "desc": "Até quatro criaturas Pequenas viajam no forte nas costas do ogro, com três quartos de cobertura contra ataques e efeitos de fora. Para atacar corpo a corpo alvos a até 1,5 m do ogro, precisam usar lanças ou armas de alcance. Se o ogro morrer, elas vão para espaços livres a até 1,5 m dele."
- },
- "t_curaCorrompida": {
-  "name": "Cura Corrompida",
-  "desc": "Recarga 6. Toca uma criatura voluntária a até 1,5 m, que recupera todos os PV e pode ter uma doença ou a condição cego, surdo, paralisado ou envenenado removida. Em troca, ela ganha 1 nível de exaustão e perde 7 (2d6) de PV máximo, só restaurável por desejo ou três restaurações maiores na mesma hora; morre se o máximo chegar a 0."
  },
  "t_portadorDePragas": {
   "name": "Portador de Pragas",
@@ -15168,14 +16251,6 @@ export const TRACOS_MTF = {
  "t_retribuicaoExplosiva": {
   "name": "Retribuição Explosiva",
   "desc": "Ao ficar com 15 PV ou menos, explode: todas as outras criaturas a até 9 m fazem teste de resistência de Destreza CD 17, sofrendo 2d8 de fogo mais 2d8 trovejante na falha ou metade no sucesso. O orthon e suas armas são destruídos."
- },
- "t_incitarFanatismo": {
-  "name": "Incitar Fanatismo",
-  "desc": "Até quatro aliados a até 18 m que possam vê-lo ganham vantagem nas jogadas de ataque e não podem ficar amedrontados por 1 minuto."
- },
- "t_poderDaRainhaDragao": {
-  "name": "Poder da Rainha Dragão",
-  "desc": "Um dragão visível a até 36 m faz teste de resistência de Carisma CD 18 (com desvantagem se for cromático) ou fica enfeitiçado por 1 hora, tratando o abishai como aliado a proteger; dano do abishai ou de seus companheiros encerra o efeito. Se passar, fica imune por 1 hora."
  },
  "t_rastreadorInfalivel": {
   "name": "Rastreador Infalível",
@@ -15200,10 +16275,6 @@ export const TRACOS_MTF = {
  "t_contaminacao": {
   "name": "Contaminação",
   "desc": "Aura de 9 m que seca plantas e torna o chão terreno difícil para os outros. Quem começa o turno nela faz teste de resistência de Constituição CD 20 ou sofre 14 (4d6) de dano de veneno; quem passa fica imune por 24 horas."
- },
- "t_invisibilidadeFalivel": {
-  "name": "Invisibilidade Falível",
-  "desc": "Está sempre invisível, mas aparece como humanoide sem graça em reflexos, como vulto translúcido à luz de uma vela feita com gordura de cadáver desconhecido, e crianças humanoides de até 10 anos o enxergam normalmente."
  },
  "t_semRastros": {
   "name": "Sem Rastros",
@@ -15237,10 +16308,6 @@ export const TRACOS_MTF = {
   "name": "Nutrir-se da Fraqueza",
   "desc": "Quando uma criatura a até 6 m falha num teste de resistência, o mago ganha 10 PV temporários."
  },
- "t_rajadaDeGarras": {
-  "name": "Rajada de Garras",
-  "desc": "Recarga 4–6. Faz seis ataques de garra contra um único alvo. Antes ou depois, pode se mover até seu deslocamento como ação bônus sem provocar ataques de oportunidade."
- },
  "t_dobrarOEspaco": {
   "name": "Dobrar o Espaço",
   "desc": "Quando seria atingido por um ataque, troca de lugar por teletransporte com outra cria estelar visível a até 18 m, que recebe o ataque no lugar dele."
@@ -15253,17 +16320,9 @@ export const TRACOS_MTF = {
   "name": "Interceptar Ataque",
   "desc": "Quando outra criatura a até 1,5 m dele é atingida por uma jogada de ataque, concede +5 na CA dela contra esse ataque, podendo fazê-lo errar. Precisa ver a criatura e o atacante."
  },
- "t_chamadoAHonra": {
-  "name": "Chamado à Honra",
-  "desc": "Uma vez por dia, se já sofreu dano neste combate, ganha vantagem em jogadas de ataque até o fim do próximo turno e invoca 1d4+1 guerreiros espectros da espada a até 9 m. Eles agem logo após o comandante e duram até chegarem a 0 PV."
- },
  "t_furiaMarcial": {
   "name": "Fúria Marcial",
   "desc": "Com uma ação bônus, faz um ataque com arma. Se fizer, ataques contra ele têm vantagem até o início do próximo turno dele."
- },
- "t_desafioAoExpulsar": {
-  "name": "Desafio ao Expulsar",
-  "desc": "Ele e outros espectros da espada a até 9 m têm vantagem em testes de resistência contra efeitos de expulsar mortos-vivos."
  },
  "t_furiaCrescente": {
   "name": "Fúria Crescente",
@@ -15305,10 +16364,6 @@ export const TRACOS_MTF = {
   "name": "Correnteza",
   "desc": "Como ação bônus, estando submerso, torna toda a água a até 18 m terreno difícil para as outras criaturas até o início do seu próximo turno."
  },
- "t_golpesCongelantes": {
-  "name": "Golpes Congelantes",
-  "desc": "Recarga 6. Usa Ataques Múltiplos e cada acerto causa 5 (1d10) de dano de frio adicional. Um alvo atingido tem o deslocamento reduzido em 3 m até o fim do próximo turno do mirmidão."
- },
  "t_represaliaCruel": {
   "name": "Represália Cruel",
   "desc": "Ao sofrer dano, morde uma criatura aleatória a até 1,5 m. Se não houver ninguém ao alcance, move até metade do deslocamento rumo a um inimigo visível sem provocar ataques de oportunidade."
@@ -15317,25 +16372,9 @@ export const TRACOS_MTF = {
   "name": "Repreensão Gélida",
   "desc": "Ao sofrer dano de uma criatura visível a até 18 m, obriga-a a passar num teste de resistência de Constituição CD 16 ou sofrer 11 (2d10) de dano de frio."
  },
- "t_sanguessugaVital": {
-  "name": "Sanguessuga Vital",
-  "desc": "Toca uma criatura incapacitada a até 4,5 m: ela sofre 36 (7d8 + 4) de dano necrótico e o yagnoloth ganha PV temporários iguais à metade. Se falhar num teste de Constituição CD 16, o PV máximo do alvo cai no valor do dano até um descanso longo; se chegar a 0, morre."
- },
- "t_astuciaDeBatalha": {
-  "name": "Astúcia de Batalha",
-  "desc": "Recarga 4–6. Até dois yugoloths aliados a até 18 m que o ouçam podem usar a reação para fazer um ataque corpo a corpo cada."
- },
  "t_passosQueAbalamATerra": {
   "name": "Passos que Abalam a Terra",
   "desc": "Como ação bônus após andar ao menos 3 m no chão, cria uma onda de choque num raio de 36 m: a área vira terreno difícil por 1 minuto e quem está concentrado no chão faz teste de Constituição CD 25 ou perde a concentração. Estruturas sofrem 100 de dano trovejante; criaturas perto de uma que desaba fazem teste de Destreza CD 25, sofrendo 17 (5d6) de concussão, ficando caídas e soterradas (contidas, escapam com Atletismo CD 20) na falha, ou metade do dano no sucesso."
- },
- "t_esporosDeInfestacao": {
-  "name": "Esporos de Infestação",
-  "desc": "3 vezes por dia, cria uma nuvem com 6 m de raio centrada nela, que dura 1 minuto. Criaturas de carne e osso dentro dela fazem um teste de resistência de Constituição CD 19. Quem falha contrai uma doença e uma loucura aleatória, repete o teste a cada 24 horas e, após três falhas, morre e se ergue como servo de esporos. Quem passa fica imune a esses esporos por 24 horas."
- },
- "t_esporosDeControleMental": {
-  "name": "Esporos de Controle Mental",
-  "desc": "Recarga 5–6. Cria uma nuvem com 6 m de raio que dura 1 minuto. Humanoides e bestas dentro dela fazem um teste de resistência de Sabedoria CD 19 e, se falharem, ficam enfeitiçados por ela durante 24 horas. Quem passa fica imune a esses esporos por 24 horas."
  },
  "t_servoProtetor": {
   "name": "Servo Protetor",

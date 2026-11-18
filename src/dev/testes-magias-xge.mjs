@@ -338,5 +338,310 @@ await teste('nenhuma condição tem o nome repetido (a Arma Sagrada da magia já
   assert.deepEqual(repetidas, []);
 });
 
+// ---------------------------------------------------------------- a segunda leva da fila (2026-11-12)
+const d20s = (enc, valores) => { const orig = enc.rng.die; const fila = [...valores]; enc.rng.die = (l) => (l === 20 && fila.length ? fila.shift() : orig(l)); };
+
+await teste('Esfera Aquosa: quem está nela e falha Força fica contido; com a ação, ela anda 9 m', () => {
+  const { enc, mago, foes, texto } = montar({ prepara: ['esferaAquosa'], foes: [['ogro', { x: 12, y: 9 }]] });
+  d20s(enc, [1]);
+  const r = enc.castSpell(mago, 'esferaAquosa', { point: { x: 12, y: 9 }, circulo: 4 });
+  assert.ok(r.ok, r.why);
+  assert.ok(hasCondition(foes[0], 'contido'), texto());
+  const z = enc.zonas.find((q) => q.spellId === 'esferaAquosa');
+  assert.ok(z?.casas.has('12,9'));
+  novoTurno(mago);
+  const r2 = enc.castSpell(mago, 'esferaAquosa', { point: { x: 14, y: 12 } });
+  assert.ok(r2.ok, r2.why);
+  assert.ok(enc.zonas.find((q) => q.spellId === 'esferaAquosa')?.casas.has('14,12'));
+});
+
+await teste('Redemoinho: 10d6 de concussão em quem está nele (metade no sucesso), e a zona fica ferindo', () => {
+  const { enc, mago, foes, texto } = montar({ prepara: ['redemoinho'], foes: [['ogro', { x: 14, y: 9 }]] });
+  foes[0].hp = foes[0].maxHp = 400;
+  d20s(enc, [1]);
+  const r = enc.castSpell(mago, 'redemoinho', { point: { x: 14, y: 9 }, circulo: 7 });
+  assert.ok(r.ok, r.why);
+  assert.ok(foes[0].hp <= 400 - 10, texto());
+  assert.ok(enc.zonas.find((q) => q.spellId === 'redemoinho' && q.dano));
+});
+
+await teste('Transmutar Rocha: o chão vira lama (cada passo custa quatro), e quem estava nele afunda se falhar Força', () => {
+  const { enc, mago, foes, texto } = montar({ prepara: ['transmutarRocha'], foes: [['ogro', { x: 14, y: 9 }]] });
+  d20s(enc, [1]);
+  const r = enc.castSpell(mago, 'transmutarRocha', { point: { x: 14, y: 9 }, circulo: 5 });
+  assert.ok(r.ok, r.why);
+  assert.ok(hasCondition(foes[0], 'contido'), texto());
+  assert.equal(enc.field.costOf(15, 10), 20, 'cada 1,5 m custa 6 m');
+});
+
+await teste('Moldar Terra: o truque deixa um quadrado de 1,5 m de terreno difícil', () => {
+  const { enc, mago } = montar({ prepara: [] });
+  mago.spellcasting.cantrips.push('moldarTerra');
+  const r = enc.castSpell(mago, 'moldarTerra', { point: { x: 8, y: 9 } });
+  assert.ok(r.ok, r.why);
+  assert.equal(enc.field.costOf(8, 9), 10);
+});
+
+await teste('Dragão Ilusório: quem vê a sombra testa Sabedoria ou fica amedrontado, e quem conjurou sopra o cone de 18 m com a ação bônus', () => {
+  const { enc, mago, foes, texto } = montar({ prepara: ['dragaoIlusorio'], foes: [['ogro', { x: 12, y: 9 }], ['ogro', { x: 13, y: 10 }]] });
+  for (const f of foes) f.hp = f.maxHp = 400;
+  d20s(enc, [1, 1]);
+  const r = enc.castSpell(mago, 'dragaoIlusorio', { point: { x: 10, y: 9 }, circulo: 8, opcao: 'frio' });
+  assert.ok(r.ok, r.why);
+  assert.ok(foes.every((f) => hasCondition(f, 'amedrontado')), texto());
+  assert.ok(magiasProntas(mago).includes('soproDoDragaoIlusorio'), 'o sopro não apareceu na lista');
+  novoTurno(mago);
+  const hp = foes[0].hp;
+  const r2 = enc.castSpell(mago, 'soproDoDragaoIlusorio', { point: foes[0].pos });
+  assert.ok(r2.ok, r2.why);
+  assert.ok(mago.bonusUsed && !mago.actionUsed, 'o sopro é ação bônus');
+  assert.ok(foes[0].hp < hp, texto());
+  assert.match(texto(), /de frio/);
+});
+
+// ---------------------------------------------------------------- a fila do Xanathar (2026-11-16)
+
+await teste('Vínculo com Besta: a fera aliada ataca com vantagem quem está a 1,5 m de quem conjurou, e só ela', () => {
+  const { enc, mago, foes } = montar({ prepara: ['vinculoComBesta'] });
+  // (o lobo do Conjurar Animais é feérico no livro de 2014: este vem de outra porta, como fera)
+  const lobo = enc.invocar(mago, 'lobo', { x: 7, y: 8 }, { spellId: 'teste' });
+  assert.match(enc.canCast(mago, 'vinculoComBesta', { target: enc.combatants.find((c) => c.classe === 'guerreiro') }).why ?? '', /fera/);
+  const r = enc.castSpell(mago, 'vinculoComBesta', { target: lobo });
+  assert.ok(r.ok, r.why);
+  assert.ok(hasCondition(lobo, 'vinculoBestial'));
+  assert.equal(enc.attackModifiers(lobo, foes[0]).advantage ?? JSON.stringify(enc.attackModifiers(lobo, foes[0])).includes('Vínculo'), true);
+  foes[0].pos = { ...foes[0].pos, x: 15, y: 15 };
+  assert.ok(!JSON.stringify(enc.attackModifiers(lobo, foes[0])).includes('Vínculo'), 'longe de quem conjurou, sem vantagem');
+});
+
+await teste('Metamorfose em Massa: até dez de um lado só; os inimigos viram rã, e a concentração que cai devolve todos', () => {
+  const { enc, mago, foes } = montar({ prepara: ['metamorfoseEmMassa'], foes: [['ogro', { x: 9, y: 9 }], ['ogro', { x: 9, y: 12 }], ['goblin', { x: 10, y: 6 }]] });
+  d20s(enc, [1, 1, 1]);
+  const r = enc.castSpell(mago, 'metamorfoseEmMassa', { opcao: 'inimigos' });
+  assert.ok(r.ok, r.why);
+  assert.ok(foes.every((f) => f.formaSelvagem), foes.map((f) => f.name).join(' '));
+  enc.dropConcentration(mago);
+  assert.ok(foes.every((f) => !f.formaSelvagem));
+});
+
+await teste('Dispersar: os inimigos que falham somem para longe do grupo; os aliados, para longe dos inimigos', () => {
+  const { enc, party, mago, foes } = montar({ prepara: ['dispersar'], foes: [['ogro', { x: 8, y: 9 }], ['goblin', { x: 7, y: 11 }]] });
+  d20s(enc, [1, 1]);
+  const r = enc.castSpell(mago, 'dispersar', { opcao: 'inimigos' });
+  assert.ok(r.ok, r.why);
+  const perto = (c) => Math.min(...party.map((h) => distanceFt(h.pos, c.pos)));
+  assert.ok(foes.every((f) => perto(f) >= 40), foes.map((f) => perto(f)).join(' '));
+  assert.ok(foes.every((f) => distanceFt(f.pos, mago.pos) <= 120));
+  const b = montar({ prepara: ['dispersar'], foes: [['ogro', { x: 7, y: 9 }]] });
+  novoTurno(b.mago);
+  assert.ok(b.enc.castSpell(b.mago, 'dispersar', { opcao: 'aliados' }).ok);
+  assert.ok(distanceFt(b.mago.pos, b.foes[0].pos) >= 40, 'quem conjurou também saiu de perto');
+});
+
+await teste('Ossos da Terra: os pilares (as dobras e a casa clicada) viram rocha; nunca em cima de ninguém', () => {
+  const { enc, mago, foes } = montar({ prepara: ['ossosDaTerra'] });
+  assert.match(enc.canCast(mago, 'ossosDaTerra', { point: foes[0].pos }).why ?? '', /embaixo de ninguém/);
+  const escalas = [{ x: 10, y: 4 }, { x: 11, y: 4 }];
+  const r = enc.castSpell(mago, 'ossosDaTerra', { point: { x: 12, y: 4 }, escalas });
+  assert.ok(r.ok, r.why);
+  for (const p of [...escalas, { x: 12, y: 4 }]) assert.ok(enc.field.blocksMove(p.x, p.y) && enc.field.blocksSight(p.x, p.y), `${p.x},${p.y}`);
+});
+
+await teste('Invocar Demônios Menores: eles atacam qualquer um que não seja demônio, de qualquer lado, e o grupo pode atacá-los', async () => {
+  const { enc, party, mago } = montar({ prepara: ['invocarDemoniosMenores'], foes: [['ogro', { x: 18, y: 18 }]] });
+  const r = enc.castSpell(mago, 'invocarDemoniosMenores', { point: { x: 8, y: 9 } });
+  assert.ok(r.ok, r.why);
+  const demonios = enc.combatants.filter((c) => c.invocado?.spellId === 'invocarDemoniosMenores');
+  assert.ok([2, 4, 8].includes(demonios.length), `${demonios.length}`);
+  assert.ok(demonios.every((d) => d.hostilATodos && d.invocado.auto));
+  const d = demonios[0];
+  assert.ok(enc.enemiesOf(d).some((c) => c.side === 'party' && !c.invocado), 'o demônio mira o grupo');
+  assert.ok(!enc.enemiesOf(d).some((c) => demonios.includes(c)), 'e não os outros demônios');
+  assert.ok(enc.enemiesOf(party[0]).includes(d), 'o grupo pode atacá-lo');
+  enc.definirAutoDoInvocado(d, false);
+  assert.ok(d.invocado.auto, 'ninguém o comanda');
+  enc.dropConcentration(mago);
+  assert.ok(demonios.every((x) => x.dead || !enc.combatants.includes(x) || x.dispensado), 'somem com a concentração');
+});
+
+await teste('Invocar Demônio Maior: o mais forte que o círculo deixa obedece até passar no Carisma do fim de um turno dele', () => {
+  const { enc, mago } = montar({ prepara: ['invocarDemonioMaior'], foes: [['ogro', { x: 18, y: 18 }]] });
+  const r = enc.castSpell(mago, 'invocarDemonioMaior', { point: { x: 8, y: 9 }, circulo: 4 });
+  assert.ok(r.ok, r.why);
+  const dm = enc.combatants.find((c) => c.invocado?.spellId === 'invocarDemonioMaior');
+  assert.equal(dm.defId ?? dm.id.replace(/-.*/, ''), 'barlgura');
+  assert.ok(!dm.hostilATodos);
+  d20s(enc, [20]);
+  const L = enc.combatants && dm;
+  enc.endTurn(L);
+  assert.ok(dm.hostilATodos, 'passou no Carisma e se soltou');
+});
+
+await teste('Fúria da Natureza: a Pedra da Fúria (ação bônus) só mira quem está na área; as raízes prendem no fim do turno; as árvores açoitam', () => {
+  const field = new Battlefield(20, 20, Array(20).fill('.'.repeat(20)).map((l, y) => (y === 11 ? `${l.slice(0, 13)}T${l.slice(14)}` : l)));
+  const party = makeParty({ nivel: 17 });
+  party.forEach((c, i) => { c.pos = { x: 1, y: 1 + i * 2, f: 1 }; });
+  const mago = party.find((c) => c.classe === 'mago');
+  mago.pos = { x: 6, y: 9, f: 1 };
+  mago.spellcasting.prepared.push('furiaDaNatureza');
+  const fs = [makeMonster('goblin', { x: 12, y: 10 }), makeMonster('goblin', { x: 19, y: 19 })];
+  for (const f of fs) f.hp = f.maxHp = 200;
+  const enc = new Encounter({ battlefield: field, party, foes: fs, rng: makeRng(2) });
+  enc.firstSide = 'party'; enc.round = 1; enc.beginSide('party');
+  // (o quadrado mirado parte do canto clicado: de 8,6 a 19,17)
+  const r = enc.castSpell(mago, 'furiaDaNatureza', { point: { x: 8, y: 6 } });
+  assert.ok(r.ok, r.why);
+  assert.ok(magiasProntas(mago).includes('pedraDaIra'));
+  assert.match(enc.canCast(mago, 'pedraDaIra', { target: fs[1] }).why ?? '', /dentro da área/);
+  { const q = enc.canCast(mago, 'pedraDaIra', { target: fs[0] }); assert.ok(q.ok, q.why); }
+  d20s(enc, [1]);
+  enc.endTurn(mago);
+  assert.ok(hasCondition(fs[0], 'contido'), 'as raízes prenderam');
+  const hp = fs[0].hp;
+  d20s(enc, [1]);
+  enc.fimDoTurnoDoLado('party'); enc.beginSide('foes'); enc.fimDoTurnoDoLado('foes'); enc.beginSide('party');
+  assert.ok(fs[0].hp < hp, 'a árvore ao lado açoitou');
+  enc.dropConcentration(mago);
+  assert.ok(!hasCondition(fs[0], 'contido'), 'a concentração que cai solta as raízes');
+});
+
+// ---------------------------------------------------------------- as quatro que sobravam (2026-11-16)
+const { skillBonus } = await import(P + 'rules/abilities.js');
+
+await teste('Aprimorar Perícia: o dobro da proficiência na perícia treinada escolhida; a não treinada é recusada', () => {
+  const { enc, mago, guerreira } = montar({ prepara: ['aprimorarPericia'] });
+  const treinada = guerreira.skills[0];
+  const nao = ['arcanismo', 'religiao', 'historia', 'atuacao'].find((k) => !guerreira.skills.includes(k));
+  assert.match(enc.canCast(mago, 'aprimorarPericia', { target: guerreira, opcao: nao }).why ?? '', /não é treinado/);
+  const antes = skillBonus(guerreira, treinada);
+  const r = enc.castSpell(mago, 'aprimorarPericia', { target: guerreira, opcao: treinada });
+  assert.ok(r.ok, r.why);
+  assert.equal(skillBonus(guerreira, treinada) - antes, 2 + Math.floor(((guerreira.level ?? 1) - 1) / 4), 'mais uma proficiência');
+  enc.dropConcentration(mago);
+  assert.equal(skillBonus(guerreira, treinada), antes);
+});
+
+await teste('Aprimorar Perícia fora da luta: a tabela de exploração a tem, e a perícia escolhida vai na condição', async () => {
+  const { UTIL, conjurarFora, estadoDe } = await import(P + 'rules/utilidade.js');
+  assert.ok(UTIL.aprimorarPericia);
+  const party = makeParty({ nivel: 17 });
+  const mago = party.find((c) => c.classe === 'mago');
+  const g = party.find((c) => c.classe === 'guerreiro');
+  mago.spellcasting.prepared.push('aprimorarPericia');
+  const estado = estadoDe({});
+  const r = conjurarFora(estado, mago, 'aprimorarPericia', { herois: party, rng: makeRng(1), alvo: g, opcao: g.skills[0] });
+  assert.ok(r.ok, r.why);
+  assert.equal(getCondition(g, 'periciaAprimorada')?.data?.pericia, g.skills[0]);
+});
+
+await teste('Controlar Ventos: a flecha que passa pelo vento tem desvantagem, a magia não; a corrente descendente derruba quem voa; a ascendente corta a queda', () => {
+  const { enc, mago, foes, guerreira } = montar({ prepara: ['controlarVentos'], foes: [['goblin', { x: 16, y: 9 }]] });
+  const r = enc.castSpell(mago, 'controlarVentos', { point: { x: 10, y: 4 }, opcao: 'rajadas' });
+  assert.ok(r.ok, r.why);
+  assert.ok(JSON.stringify(enc.attackModifiers(foes[0], guerreira, { ranged: true })).includes('o vento'), 'a flecha que cruza o vento');
+  assert.ok(!JSON.stringify(enc.attackModifiers(foes[0], guerreira, { ranged: true, deMagia: true })).includes('o vento'), 'a magia não');
+  assert.ok(!JSON.stringify(enc.attackModifiers(foes[0], guerreira, { ranged: false })).includes('o vento'), 'o golpe de perto não');
+  assert.ok(magiasProntas(mago).includes('mudarOVento'));
+  novoTurno(mago);
+  assert.ok(enc.castSpell(mago, 'mudarOVento', { opcao: 'descendente' }).ok);
+  const z = enc.zonas.find((x) => x.vento);
+  assert.equal(z.vento.modo, 'descendente');
+  const L = enc.combatants;
+  addCondition(foes[0], 'voando', { rounds: 10 });
+  foes[0].voa = true;
+  foes[0].pos = { ...foes[0].pos, x: 12, y: 8 };
+  d20s(enc, [1]);
+  const caiu = !(enc.resistirAZona(foes[0], z, 'entra'));
+  assert.ok(!enc.voaAgora(foes[0]) || caiu || hasCondition(foes[0], 'caido'), 'a corrente derrubou o voador');
+  novoTurno(mago);
+  enc.castSpell(mago, 'mudarOVento', { opcao: 'ascendente' });
+  guerreira.pos = { ...guerreira.pos, x: 12, y: 8 };
+  guerreira.hp = guerreira.maxHp = 500;
+  enc.rng.die = () => 6;
+  enc.cair(guerreira, '10d6');
+  assert.equal(500 - guerreira.hp, 30, 'a metade dos 60');
+  void L;
+});
+
+await teste('Gaiola de Almas: o herói é PERGUNTADO (a oferta), e aceitando a alma fica presa; Roubar Vida cura 2d8 e gasta um dos seis usos; o morto não volta', async () => {
+  const Livro = await import(P + 'rules/livro-motor.js');
+  const { enc, mago, foes } = montar({ prepara: ['gaiolaDeAlmas', 'revivificar'], foes: [['bandido', { x: 9, y: 9 }]] });
+  const eventos = [];
+  const ouvir = enc.onEvent;
+  enc.onEvent = (ev) => { eventos.push(ev); ouvir?.(ev); };
+  assert.match(enc.canCast(mago, 'gaiolaDeAlmas', {}).why ?? '', /reação/);
+  const altos = () => mago.spellcasting.slots.slice(6).reduce((a, b) => a + b, 0);
+  const slots6 = altos();
+  enc.applyDamage(foes[0], 999, 'cortante', mago);
+  assert.ok(foes[0].dead);
+  // nada foi gasto ainda: a tela pergunta
+  assert.ok(!hasCondition(mago, 'almaNaGaiola') && !mago.reactionUsed && altos() === slots6, 'não reagiu sozinho');
+  const ev = eventos.find((e) => e.type === 'ofertaDaGaiola');
+  assert.ok(ev && ev.reator === mago && ev.morto === foes[0], 'a oferta foi feita');
+  assert.ok(Livro.aceitarGaiola(enc, ev.oferta));
+  assert.equal(altos(), slots6 - 1, 'gastou um espaço de 6º círculo ou maior');
+  const g = getCondition(mago, 'almaNaGaiola');
+  assert.ok(g && g.data.usos === 6, 'a alma ficou presa');
+  assert.ok(mago.reactionUsed, 'gastou a reação');
+  assert.equal(foes[0].almaNaGaiola, mago.id);
+  // (o morto não volta: o Revivificar, que só mira aliado, recusa pela alma presa)
+  foes[0].side = mago.side;
+  assert.match(enc.porqueNaoAlvo(mago, SPELLS.revivificar, foes[0]) ?? '', /Gaiola de Almas/);
+  foes[0].side = 'foes';
+  mago.hp = 10;
+  assert.ok(enc.castSpell(mago, 'roubarVidaDaAlma', {}).ok);
+  assert.ok(mago.hp > 10);
+  assert.equal(getCondition(mago, 'almaNaGaiola').data.usos, 5);
+  novoTurno(mago);
+  assert.ok(enc.castSpell(mago, 'experienciaDaAlma', {}).ok);
+  assert.ok(hasCondition(mago, 'experienciaEmprestada'));
+  enc.resistencia(mago, 'wis', 10);
+  assert.ok(!hasCondition(mago, 'experienciaEmprestada'), 'gasta-se na próxima resistência');
+});
+
+await teste('Gaiola de Almas: recusada, nada se gasta; a oferta não vale na rodada seguinte; o monstro que a tem reage sozinho', async () => {
+  const Livro = await import(P + 'rules/livro-motor.js');
+  const a = montar({ prepara: ['gaiolaDeAlmas'], foes: [['bandido', { x: 9, y: 9 }], ['bandido', { x: 10, y: 10 }]] });
+  a.enc.applyDamage(a.foes[0], 999, 'cortante', a.mago);
+  const oferta = a.enc.ofertasDaGaiola[0];
+  Livro.recusarGaiola(a.enc, oferta);
+  assert.ok(!hasCondition(a.mago, 'almaNaGaiola') && !a.mago.reactionUsed);
+  a.enc.applyDamage(a.foes[1], 999, 'cortante', a.mago);
+  const outra = a.enc.ofertasDaGaiola[0];
+  a.enc.round += 1;
+  assert.equal(Livro.aceitarGaiola(a.enc, outra), false, 'a alma já se foi');
+  // o monstro com a magia: reage sozinho, sem pergunta
+  const b = montar({ prepara: [], foes: [['bandido', { x: 9, y: 9 }]] });
+  const bruxo = b.foes[0];
+  bruxo.spellcasting = { ability: 'int', cantrips: [], prepared: ['gaiolaDeAlmas'], slots: [0, 0, 0, 0, 0, 0, 1] };
+  const vitima = b.party.find((c) => c.classe === 'guerreiro');
+  vitima.pos = { ...vitima.pos, x: 9, y: 10 };
+  b.enc.morrer(vitima);
+  assert.ok(hasCondition(bruxo, 'almaNaGaiola'), 'o monstro prendeu a alma');
+});
+
+await teste('Míssil Mágico de Jim: um ataque por dardo, o crítico é 5d4, e um 1 natural estoura todos em quem conjurou', () => {
+  const { enc, mago, foes } = montar({ prepara: ['missilMagicoDeJim'], foes: [['ogro', { x: 10, y: 9 }]] });
+  foes[0].hp = foes[0].maxHp = 300;
+  d20s(enc, [15, 20, 15]);
+  enc.rng.die = ((o) => (l) => (l === 4 ? 4 : o(l)))(enc.rng.die);
+  assert.ok(enc.castSpell(mago, 'missilMagicoDeJim', { target: foes[0], targets: [foes[0], foes[0], foes[0]] }).ok);
+  assert.equal(300 - foes[0].hp, 8 + 20 + 8, 'dois de 2d4 e um crítico de 5d4');
+  const b = montar({ prepara: ['missilMagicoDeJim'], foes: [['ogro', { x: 10, y: 9 }]] });
+  const hp = b.mago.hp;
+  d20s(b.enc, [15, 1, 15]);
+  assert.ok(b.enc.castSpell(b.mago, 'missilMagicoDeJim', { target: b.foes[0], targets: [b.foes[0], b.foes[0], b.foes[0]] }).ok);
+  assert.equal(b.foes[0].hp, b.foes[0].maxHp, 'todos erram');
+  assert.equal(hp - b.mago.hp, 3, '1 por dardo em quem conjurou');
+});
+
+await teste('As filas de magia não têm mais "o motor ainda não faz" em livro nenhum', async () => {
+  const fs = await import('node:fs');
+  for (const l of ['phb', 'xge', 'tce', 'ai']) {
+    const fila = JSON.parse(fs.readFileSync(new URL(`./magias/${l}-pendente.json`, import.meta.url), 'utf8'));
+    assert.deepEqual(fila.filter((p) => /motor ainda não faz/.test(p.motivo)).map((p) => p.en), [], l);
+  }
+});
+
 console.log(`\n${total - falhas}/${total} testes passaram.`);
 if (falhas) process.exit(1);

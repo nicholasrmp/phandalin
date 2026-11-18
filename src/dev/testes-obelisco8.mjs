@@ -767,6 +767,27 @@ await teste('Nematódeo: perto da tenda a boca se fecha e as armadilhas atacam; 
   assert.equal(s.field.aresta(boca.a.x, boca.a.y, boca.b.x, boca.b.y), ARESTA.aberta, 'o furo não abriu a boca');
 });
 
+await teste('Nematódeo: quando a boca fecha, o grupo inteiro fica dentro, e todo herói de pé alcança as armadilhas (o grupo não se parte)', async () => {
+  escolher();
+  const s = ilhaDoVazio('nematodeo');
+  await s.cena.iniciar();
+  const N = VZ.NEMATODEO;
+  // um herói chega à tenda; os outros três ficam lá atrás, onde o grupo nasceu
+  await s.ir(s.party[0], N.dentroDaBoca.find((q) => distanceFt(q, N.tenda) <= 10));
+  const dentro = (p) => N.dentroDaBoca.concat(N.garganta).some((q) => q.x === p.x && q.y === p.y);
+  for (const h of s.party) assert.ok(dentro(h.pos), `${h.name} ficou fora da boca, em ${h.pos.x},${h.pos.y}`);
+  const ardis = s.enc.combatants.filter((c) => c.defId === 'armadilhaDeIntelecto' && !c.dead);
+  for (const h of s.party) {
+    const r = s.field.reachable(h.pos, 600, () => false, () => true, h.pos.f ?? 1, s.enc.atravessaPara?.(h));
+    assert.ok(ardis.some((a) => [[-1, 0], [1, 0], [0, -1], [0, 1]].some(([dx, dy]) => r.has(`${a.pos.x + dx},${a.pos.y + dy}`))), `${h.name} não alcança as armadilhas`);
+  }
+  const casas = s.party.map((h) => `${h.pos.x},${h.pos.y}`);
+  assert.equal(new Set(casas).size, casas.length, 'dois heróis na mesma casa');
+  // e lá dentro é breu, como o texto diz (revisão de 2026-11-13: a grade seguia clara)
+  const { nivelDeLuz } = await import('../rules/luz.js');
+  assert.equal(nivelDeLuz(s.field, N.tenda.x, N.tenda.y, []), 0, 'a boca fechou e a caverna seguiu clara');
+});
+
 await teste('Miasma: atravessar a névoa fere na chegada; pegar a língua solta os perseguidores, que caçam na ilha seguinte', async () => {
   escolher();
   const s = ilhaDoVazio('miasma');
@@ -1322,6 +1343,17 @@ await teste('Shalfi: convencido no covil, o dragão sobe cavando por baixo da co
   await s.cena.fimDoCombate('vitoria');
   assert.ok(!s.enc.combatants.includes(drag), 'o dragão ficou no labirinto');
   assert.ok(camp.obelisco8.lab.mortos.includes('shalfi') && !camp.obelisco8.lab.mortos.includes('lowarnizel'));
+});
+
+await teste('espalharFora: o grupo que ainda não entrou no campo cai em casas distintas, com a pegada inteira (os valentes, os espectros, a fusão de carne)', () => {
+  const s = montar({ foes: [['lowarnizel', { x: 10, y: 10 }]] });
+  const quatro = s.enc.espalharFora(Array.from({ length: 4 }, () => makeMonster('wraith', { x: 0, y: 0 })), { x: 20, y: 20 });
+  assert.equal(new Set(quatro.map((c) => c.pos.x + ',' + c.pos.y)).size, 4, 'empilhou');
+  const [jj] = s.enc.espalharFora([makeMonster('fusaoDeCarne', { x: 0, y: 0 })], { x: 10, y: 10 });
+  const casas = (c) => { const f = c.pos.f ?? 1; const out = []; for (let dy = 0; dy < f; dy++) for (let dx = 0; dx < f; dx++) out.push((c.pos.x + dx) + ',' + (c.pos.y + dy)); return out; };
+  const dragao = new Set(casas(s.foes[0]));
+  assert.ok(casas(jj).every((k) => !dragao.has(k)), 'a fusão de carne caiu em cima do dragão');
+  assert.equal(jj.pos.f, 3);
 });
 
 console.log(`\n${total - falhas}/${total} testes passaram.`);

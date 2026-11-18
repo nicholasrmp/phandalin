@@ -1,5 +1,7 @@
 node_modules/
 dist/
+# o public/ da publicação, montado no prebuild por src/dev/montar-publico.mjs
+.publico/
 .vite/
 .wrangler/
 *.local

@@ -14,7 +14,7 @@
 // `descanso.js descansoLongo` (o teste diário, `avancarDoencas`), `combat.js applyDamage` (a febre ri quando apanha).
 import { addCondition, removeCondition, getCondition, hasCondition, CONDITIONS } from './conditions.js';
 
-export const DOENCAS = ['febreDoRiso', 'pesteDoEsgoto', 'podridaoDaVista', 'doencaDoOtyugh'];
+export const DOENCAS = ['febreDoRiso', 'pesteDoEsgoto', 'podridaoDaVista', 'doencaDoOtyugh', 'esporosDeZuggtmoy'];
 
 /** Quem não pega doença: a Saúde Divina do paladino, a Pureza do Corpo do monge, a Bênção da Natureza do druida da Terra. */
 export const imuneADoenca = (c) => Boolean(c?.features?.some((f) => ['divineHealth', 'purityOfBody', 'naturesWard'].includes(f))
@@ -45,6 +45,17 @@ const conDe = (c, d20) => d20 + mod(c.abilities?.con) + ((c.saves ?? []).include
  */
 export function avancarDoencas(c, rolar = (n) => 1 + Math.floor(Math.random() * n)) {
   const linhas = [];
+  // os ESPOROS DE ZUGGTMOY (o golpe dela, na luta): a cada dia, Con 19; passa, cura; três falhas, morre
+  const esporos = getCondition(c, 'esporosDeZuggtmoy');
+  if (esporos) {
+    esporos.data ??= {};
+    if (conDe(c, rolar(20)) >= 19) { removeCondition(c, 'esporosDeZuggtmoy'); linhas.push(`${c.name} expulsa os esporos de Zuggtmoy.`); }
+    else {
+      esporos.data.falhas = (esporos.data.falhas ?? 0) + 1;
+      linhas.push(`O fungo cresce em ${c.name} (${esporos.data.falhas} de 3).`);
+      if (esporos.data.falhas >= 3) { c.dead = true; c.hp = 0; linhas.push(`${c.name} é tomado pelo fungo e morre.`); }
+    }
+  }
   for (const id of ['febreDoRiso', 'pesteDoEsgoto', 'podridaoDaVista']) {
     const d = getCondition(c, id);
     if (!d) continue;

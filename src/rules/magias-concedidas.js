@@ -12,6 +12,72 @@
 import { ACOES_RACIAIS, acoesDaRaca } from './racas-motor.js';
 
 export const MAGIAS_CONCEDIDAS = {
+  // ---- a do mago dos ESCRIBAS (Tasha): pôr a mente espectral, ou movê-la
+  menteManifesta: {
+    tom: 10, id: 'menteManifesta', name: 'Mente Manifesta', level: 0, school: 'adivinhação', fonte: 'tce', interna: true, semEscala: true,
+    castTime: 'bonus', rangeFt: 60, kind: 'livro', efeito: 'menteManifesta', mira: 'casa', semRegraDeBonus: true, familiaSonora: 'utilidade',
+    desc: 'Com a ação bônus, o espírito do grimório surge numa casa a até 18 m, ou a mente que já está no tabuleiro anda até 9 m. Ela dá penumbra a 3 m, e com o interruptor ligado a magia de mago sai do lugar dela, uma vez por bônus de proficiência por descanso longo. Pôr a mente: uma vez por descanso longo.',
+  },
+  // ---- a do GUERREIRO PSIÔNICO (Tasha): mover outra criatura (ou objeto) para uma casa escolhida
+  movimentoTelecinetico: {
+    tom: 9, id: 'movimentoTelecinetico', name: 'Movimento Telecinético', level: 0, school: 'transmutação', fonte: 'tce', interna: true, semEscala: true,
+    castTime: 'action', rangeFt: 30, kind: 'livro', efeito: 'movimentoTelecinetico', mira: 'casa', pontosLivres: 2, semRegraDeBonus: true, familiaSonora: 'utilidade',
+    textoDaMira: 'Ctrl+clique na criatura aliada a mover, depois o clique na casa de chegada',
+    desc: 'Com a ação, uma criatura voluntária (não você) Grande ou menor a até 9 m vai até 9 m para uma casa livre que você vê. Uma vez por descanso curto; de novo, um dado de energia psiônica.',
+  },
+  // ---- a que a FORMA ETÉREA dá (Livro do Jogador): voltar ao plano material, com a ação, onde se andou no etéreo
+  voltarDoEtereo: {
+    tom: -1, id: 'voltarDoEtereo', name: 'Voltar do Plano Etéreo', level: 0, school: 'conjuração', fonte: 'phb', interna: true, semEscala: true,
+    castTime: 'action', rangeFt: 30, kind: 'livro', efeito: 'voltarDoEtereo', mira: 'casa', semRegraDeBonus: true, doEtereo: true, familiaSonora: 'utilidade',
+    desc: 'Enquanto a Forma Etérea dura: a ação acaba com ela, e quem a conjurou reaparece numa casa livre a até o deslocamento dele de onde sumiu, por cima de parede e de móvel (no etéreo nada disso existe).',
+  },
+  // ---- a que a GARRAFA DO EFREETI dá, no 91 a 100 do d100: o Desejo do jogo, sem o desgaste, três vezes
+  desejoDoGenio: {
+    tom: 6, id: 'desejoDoGenio', name: 'Pedir um desejo', level: 0, school: 'conjuração', fonte: 'dmg', interna: true, semEscala: true,
+    castTime: 'action', rangeFt: 0, kind: 'livro', efeito: 'desejo', doGenio: true, semRegraDeBonus: true, familiaSonora: 'utilidade',
+    opcoes: [
+      { id: 'cura', rotulo: 'Curar o grupo', detalhe: 'até vinte aliados à vista: todos os PV e o que a Restauração Maior tira' },
+      ...['ácido', 'concussão', 'cortante', 'elétrico', 'energético', 'fogo', 'frio', 'necrótico', 'perfurante', 'psíquico', 'radiante', 'trovejante', 'veneno']
+        .map((t) => ({ id: `res:${t}`, rotulo: `Resistência a ${t}`, detalhe: 'até dez aliados à vista, para sempre' })),
+    ],
+    desc: 'O efreeti da garrafa deve três desejos: com a ação, o Desejo do jogo (curar o grupo ou dar resistência a um tipo de dano), sem o desgaste de quem o conjura.',
+  },
+  // ---- a que o MANTO DA INVISIBILIDADE dá, com o capuz erguido
+  baixarOCapuz: {
+    tom: -2, id: 'baixarOCapuz', name: 'Baixar o capuz', level: 0, school: 'ilusão', fonte: 'dmg', interna: true, semEscala: true,
+    castTime: 'action', rangeFt: 0, kind: 'livro', efeito: 'baixarOCapuz', semRegraDeBonus: true, familiaSonora: 'utilidade',
+    desc: 'Com a ação, baixa o capuz do manto da invisibilidade, e quem o veste reaparece.',
+  },
+  // ---- a que a CONTROLAR VENTOS dá (Xanathar): trocar o modo, ou parar e recomeçar, com a ação
+  mudarOVento: {
+    tom: 2, id: 'mudarOVento', name: 'Mudar o vento', level: 0, school: 'transmutação', fonte: 'xge', interna: true, semEscala: true,
+    castTime: 'action', rangeFt: 0, kind: 'livro', efeito: 'mudarOVento', semRegraDeBonus: true, familiaSonora: 'utilidade',
+    opcoes: [{ id: 'rajadas', rotulo: 'Rajadas' }, { id: 'descendente', rotulo: 'Corrente descendente' }, { id: 'ascendente', rotulo: 'Corrente ascendente' }, { id: 'parar', rotulo: 'Parar ou recomeçar' }],
+    desc: 'Enquanto a Controlar Ventos dura, com a ação: outro modo para o cubo, ou parar o vento e recomeçá-lo.',
+  },
+  // ---- as que a GAIOLA DE ALMAS dá (Xanathar), enquanto houver alma presa
+  roubarVidaDaAlma: {
+    tom: -4, id: 'roubarVidaDaAlma', name: 'Roubar Vida', level: 0, school: 'necromancia', fonte: 'xge', interna: true, semEscala: true,
+    castTime: 'bonus', rangeFt: 0, kind: 'livro', efeito: 'roubarVidaDaAlma', semRegraDeBonus: true, familiaSonora: 'cura',
+    desc: 'Ação bônus: a alma presa dá 2d8 PV a quem a tem. Gasta um dos seis usos.',
+  },
+  experienciaDaAlma: {
+    tom: 5, id: 'experienciaDaAlma', name: 'Emprestar Experiência', level: 0, school: 'necromancia', fonte: 'xge', interna: true, semEscala: true,
+    castTime: 'bonus', rangeFt: 0, kind: 'livro', efeito: 'experienciaDaAlma', semRegraDeBonus: true, familiaSonora: 'reforco',
+    desc: 'Ação bônus: vantagem na próxima jogada de ataque, teste ou resistência, até o começo do próximo turno. Gasta um dos seis usos.',
+  },
+  // ---- a que a FÚRIA DA NATUREZA dá (Xanathar): a pedra solta da área, atirada como ação bônus
+  pedraDaIra: {
+    tom: 3, id: 'pedraDaIra', name: 'Pedra da Fúria', level: 0, school: 'evocação', fonte: 'xge', interna: true, semEscala: true,
+    castTime: 'bonus', rangeFt: 120, kind: 'livro', efeito: 'pedraDaIra', alvo: 'criatura', semRegraDeBonus: true, damageType: 'concussão',
+    desc: 'Enquanto a Fúria da Natureza dura, ação bônus: uma pedra da área voa contra uma criatura dentro dela. Ataque de magia à distância, 3d8 de concussão, e Força ou cai no chão.',
+  },
+  // ---- a que a CAMINHAR EM ÁRVORES dá (Livro do Jogador): a travessia de árvore em árvore, de graça, com o deslocamento
+  atravessarArvore: {
+    tom: 1, id: 'atravessarArvore', name: 'Atravessar a árvore', level: 0, school: 'conjuração', fonte: 'phb', interna: true, semEscala: true,
+    castTime: 'livre', rangeFt: 500, kind: 'livro', efeito: 'atravessarArvore', mira: 'casa', semRegraDeBonus: true, familiaSonora: 'utilidade',
+    desc: 'Enquanto a Caminhar em Árvores dura, uma vez por rodada: encostado numa árvore viva, 1,5 m de deslocamento para entrar e 1,5 m para sair ao lado de outra a até 150 m.',
+  },
   // ---- as que as SUBCLASSES dão (`classes/subclasses-xge.js`)
   comandoDaMajestade: {
     tom: 3, id: 'comandoDaMajestade', name: 'Manto de Majestade: Comando', level: 0, school: 'encantamento', fonte: 'xge', interna: true, semEscala: true,
@@ -118,6 +184,12 @@ export const MAGIAS_CONCEDIDAS = {
     daCondicao: 'soproDraconico', semRegraDeBonus: true,
     desc: 'A ação que o Sopro do Dragão dá: um cone de 4,5 m do tipo escolhido; Destreza na CD de quem conjurou, metade no sucesso.',
   },
+  soproDoDragaoIlusorio: {
+    tom: 7, id: 'soproDoDragaoIlusorio', name: 'Dragão Ilusório: soprar', level: 0, school: 'ilusão', fonte: 'xge', interna: true, semEscala: true,
+    castTime: 'bonus', rangeFt: 0, shape: 'cone', areaFt: 60, kind: 'save', save: 'int', damage: '7d6', damageType: 'fogo', halfOnSave: true,
+    daCondicao: 'dragaoIlusorio', semRegraDeBonus: true,
+    desc: 'A ação bônus que o Dragão Ilusório dá: um cone de 18 m do tipo escolhido; Inteligência na CD de quem conjurou, 7d6, metade no sucesso.',
+  },
   meteoroDeMelf: {
     tom: 5, id: 'meteoroDeMelf', name: 'Meteoros: soltar dois', level: 0, school: 'evocação', fonte: 'xge', interna: true, semEscala: true,
     castTime: 'bonus', rangeFt: 120, shape: 'sphere', areaFt: 5, kind: 'save', save: 'dex', damage: '4d6', damageType: 'fogo', halfOnSave: true,
@@ -164,7 +236,13 @@ export const MAGIAS_CONCEDIDAS = {
 
 /** As concedidas pela CONDIÇÃO de quem as usa. */
 export const CONCEDIDAS_POR_CONDICAO = {
+  caminhandoEmArvores: ['atravessarArvore'],
+  almaNaGaiola: ['roubarVidaDaAlma', 'experienciaDaAlma'],
+  capuzErguido: ['baixarOCapuz'],
+  tresDesejos: ['desejoDoGenio'],
+  etereo: ['voltarDoEtereo'],
   soproDraconico: ['soproDraconicoSopro'],
+  dragaoIlusorio: ['soproDoDragaoIlusorio'],
   meteorosMinusculos: ['meteoroDeMelf'],
   pedrasEncantadas: ['pedraEncantadaArremesso'],
   coroaDeEstrelas: ['coroaEstrela'],
@@ -180,6 +258,8 @@ export const CONCEDIDAS_POR_CONDICAO = {
 /** As concedidas pela CONCENTRAÇÃO de quem conjurou (a esfera está no chão; quem a mantém é que solta o raio). */
 export const CONCEDIDAS_POR_CONCENTRACAO = {
   esferaDaTempestade: ['raioDaTempestade'],
+  furiaDaNatureza: ['pedraDaIra'],
+  controlarVentos: ['mudarOVento'],
 };
 
 /** As concedidas por uma CARACTERÍSTICA de classe ou subclasse (sempre que o combatente a tem). */
@@ -187,6 +267,8 @@ export const CONCEDIDAS_POR_CARACTERISTICA = {
   circleOfMortality: ['pouparOsMoribundosDaSepultura'],
   searingSunburst: ['explosaoSolarAbrasadora'],
   hiddenPaths: ['caminhosOcultos'],
+  telekineticMovement: ['movimentoTelecinetico'],
+  manifestMind: ['menteManifesta'],
   shadowWalk: ['passoDasSombrasDaFeiticaria'],
   tempestuousMagic: ['saltoDaTempestade'],
   soulBlades: ['teletransportePsiquico'],

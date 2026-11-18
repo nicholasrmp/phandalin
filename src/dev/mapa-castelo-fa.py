@@ -700,7 +700,11 @@ def main():
                               if os.path.exists(os.path.join(RAIZ, 'public', 'mapas', 'fa',
                                                              o['url'].rsplit('/', 1)[-1]))]}
            if base.get('sobreposicoes') else {}),
-        **({'interativos': base['interativos']} if base.get('interativos') else {}),
+        # Os MARCADORES da FA (`fachest1..3`, `fatrap1`) saem: o texto deles era nota de quem importou ("a FA marcou um baú
+        # por aqui"), e o jogador a lia no botão direito (revisão de 2026-11-13). Os baús do castelo são da cena, com o que o
+        # livro põe dentro, e a armadilha da entrada é a região do fio (`encounter.js`).
+        **({'interativos': [o for o in base['interativos'] if not o['id'].startswith('fa')]}
+           if any(not o['id'].startswith('fa') for o in base.get('interativos', [])) else {}),
         'fundo': {'nome': 'castelo.webp', 'url': '/mapas/fa/castelo.webp', 'escala': 100,
                   'x0': 0, 'y0': 0, 'giro': 0, 'opacidade': 1},
         # O grupo chega pelo OESTE, onde o desenho põe os degraus de pedra (casas 2,10 e 2,13) — é por ali que a
@@ -752,6 +756,26 @@ def main():
             nx, ny = mais_perto(o['x'], o['y'])
             o['x'], o['y'] = nx, ny
             andaram += 1
+
+    # AS CHAMAS ACENDEM O DESENHO DO CÔMODO. O desenho base é a planta sem luz, e a FA dá a cada cômodo com fogo uma peça
+    # ACESA (`Overlays/Lights`): o salão do banquete, o alojamento, o quarto do rei e a capela. Elas existiam aqui e nenhuma
+    # chama as ligava, então apagar uma tocha punha o cômodo no breu da regra e deixava a pintura como estava (revisão de
+    # 2026-11-13). Agora cada uma vai com a sua chama (`luz.sobreposicao`, que `game/fogo.js` acende e apaga junto).
+    # A da capela tem o MESMO nome de arquivo do sarcófago (`Shrine.webp`, 400x200), e o importador pegava o errado: a peça
+    # de luz dela (1000x1000) vai para o disco como `ShrineLight.webp`.
+    pecas = {o['id']: o for o in mapa.get('sobreposicoes', [])}
+    if 'l1' in pecas:
+        if os.path.exists(os.path.join(RAIZ, 'public', 'mapas', 'fa', 'ShrineLight.webp')):
+            pecas['l1']['url'] = '/mapas/fa/ShrineLight.webp'
+        else:
+            mapa['sobreposicoes'] = [o for o in mapa['sobreposicoes'] if o['id'] != 'l1']
+            del pecas['l1']
+    CHAMA_DA_PECA = {(15, 12): 'l2', (22, 11): 'l3', (27, 6): 'l4', (13, 8): 'l1'}
+    for l in mapa['luzes']:
+        pid = CHAMA_DA_PECA.get((l['pos']['x'], l['pos']['y']))
+        if pid and pid in pecas:
+            l['sobreposicao'] = pid
+            pecas[pid]['ligada'] = not l.get('apagada', False)
 
     # A luz que fica do lado de FORA (conferido DEPOIS de elas andarem: a que se mudou para o mato
     # também precisa da marca) só acende quando escurece (`soNoEscuro`, de `rules/luz.js`). Sem isso ela é

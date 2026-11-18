@@ -178,6 +178,11 @@ export const MAPA_CRIPTA = {
     {"x": 29, "y": 9, "id": "nichosAbencoados", "rotulo": "Olhar os nichos", "texto": "Catorze nichos com sarcófagos, e em cada tampa um sacerdote de mãos postas que brilha fraco, como brasa debaixo da cinza."},
     {"x": 32, "y": 16, "id": "projetos", "rotulo": "Olhar os entalhes das paredes", "texto": "As paredes inteiras são plantas: cada sala da cripta, cada passagem, cada porta — inclusive as que não parecem portas.", "pista": {"verbo": "investigar", "cd": 10, "achado": "Estudando os entalhes, dá para achar toda porta secreta da cripta: há uma em cada uma das três salas que encostam no santuário redondo."}, "olhar": true},
     {"x": 13, "y": 21, "id": "paredesDeLivros", "rotulo": "Olhar as paredes", "texto": "Livros abertos entalhados na pedra, de cima a baixo, com letra miúda: a obra do historiador, copiada pelos alunos. Mais fábula que história."},
+    {"x": 37, "y": 24, "id": "estatuasDoPatamar", "rotulo": "Olhar as estátuas", "texto": "Entre cada par de sarcófagos, um guerreiro anão de pedra, de pé, rachado do elmo às botas."},
+    {"x": 15, "y": 10, "id": "entalhesDeBatalha", "rotulo": "Olhar os entalhes", "texto": "Anões lutando por todas as paredes: contra gigantes, contra orcs, contra coisas que o entalhador nem sabia desenhar direito. Só a parede leste é lisa, lisa até demais."},
+    {"x": 11, "y": 6, "id": "lajesVazias", "rotulo": "Olhar as lajes", "texto": "Catorze lajes com o vão de um guerreiro deitado, e nenhuma ocupada. Nas paredes, sacerdotes de machado em punho, com um fogo claro saindo das mãos."},
+    {"x": 28, "y": 17, "id": "picosEntalhados", "rotulo": "Olhar os entalhes", "texto": "Picos de montanha enormes entalhados na parede, cada um em cima de uma gema pequena encravada na pedra."},
+    {"x": 40, "y": 17, "id": "mineirosEntalhados", "rotulo": "Olhar os entalhes", "texto": "Sete mineiros anões de picareta erguida, em tamanho natural.", "pista": {"verbo": "investigar", "cd": 12, "achado": "Cada entalhe é uma tampa: atrás dele há um nicho, e no nicho um mineiro que virou sacerdote, os mais venerados de todos os Talhund.", "titulo": "Os sete mineiros"}, "olhar": true},
   ],
   sobreposicoes: [
     {"id": "paredeAberta", "url": "/mapas/fa/cripta-parede-aberta.jpg", "x": 20, "y": 7, "w": 3, "h": 7, "ligada": false},

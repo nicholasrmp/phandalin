@@ -43,7 +43,8 @@ const TABELA = { muito: [5, 13, 24], visto: [33, 43, 53], descricao: [43, 53, 73
 export function viagensPossiveis(grupo, de, para, { feitos = {} } = {}) {
   const out = [];
   if (de === para) return out;
-  for (const c of grupo.filter((h) => !h.dead && h.hp > 0 && h.spellcasting)) {
+  // (quem não conjura entra também: o Elmo do Teletransporte conjura pelas cargas dele)
+  for (const c of grupo.filter((h) => !h.dead && h.hp > 0)) {
     for (const id of VIAGENS) {
       if (out.some((o) => o.spellId === id)) continue;
       if (id === 'palavraDeRecordacao' && para !== 'phandalin') continue;

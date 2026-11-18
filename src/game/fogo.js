@@ -34,6 +34,8 @@ export function mudarFogo(field, luz, acesa) {
   if (acesa) delete luz.apagada;
   else luz.apagada = true;
   if (luz.sobreposicao) field.alternarSobreposicao?.(luz.sobreposicao, acesa);
+  // a peça que pinta o lugar APAGADO (o forno frio de Talhundereth): o contrário da de cima, acende quando o fogo apaga
+  if (luz.sobreposicaoApagada) field.alternarSobreposicao?.(luz.sobreposicaoApagada, !acesa);
   field.versao = (field.versao ?? 0) + 1;        // a visão e o véu se recalculam
   return true;
 }
@@ -42,8 +44,22 @@ export function mudarFogo(field, luz, acesa) {
  * A opção do menu para a luz desta casa, ou `null`. `fora`: fora da luta (de graça). `depois`: o que a cena quer
  * fazer em seguida (o capítulo 2 fecha o turno da luta e redesenha).
  */
+// Os MÓVEIS DE FOGO: quem clica neles quer a chama, mesmo que ela more na casa do lado.
+const MOVEL_DE_FOGO = new Set(['braseiro', 'braseiroFrio', 'fogueira', 'lareira', 'forja']);
+
+/**
+ * A luz desta casa, ou — se a casa é um móvel de fogo que barra o passo — a da casa encostada. A luz precisa morar em
+ * casa de chão (ninguém a alcançaria dentro do móvel), então o braseiro da cripta da Mansão tem a chama em (18,8) e o
+ * desenho em (19,8): o botão direito no braseiro pintado não oferecia apagar nada (revisão de 2026-11-13).
+ */
+export function luzDoMovel(field, tile) {
+  const aqui = luzNaCasa(field, tile);
+  if (aqui || !MOVEL_DE_FOGO.has(field.surfaceAt?.(tile.x, tile.y))) return aqui;
+  return (field.luzes ?? []).find((l) => l.pos && Math.max(Math.abs(l.pos.x - tile.x), Math.abs(l.pos.y - tile.y)) === 1) ?? null;
+}
+
 export function opcaoDeFogo(enc, c, tile, { fora, nome = null, depois = () => {} } = {}) {
-  const luz = luzNaCasa(enc.field, tile);
+  const luz = luzDoMovel(enc.field, tile);
   // NEM TODA LUZ É CHAMA. A fumaça venenosa do dragão de Árvore Trovão é uma luz do mapa (verde, 12 m de
   // penumbra, só no escuro) que a cena da Forgotten Adventures põe no covil — e o menu oferecia "Apagar a
   // vela" em cima dela. Não se abafa veneno com terra e cinza. `semChama` marca a luz que ilumina sem

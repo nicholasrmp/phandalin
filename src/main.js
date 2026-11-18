@@ -91,6 +91,8 @@ import { criarTunel7 } from "./game/tunel-cap7.js";
 import { criarIllithinoch } from "./game/illithinoch.js";
 import { criarFenda } from "./game/fendas.js";
 import { criarLabirintoSalgado, criarCovilLowarnizel } from "./game/labirinto-salgado.js";
+import { arvoreLivre } from "./game/conversa-livre.js";
+import { podePerguntar } from "./game/perguntar.js";
 import { criarPocaSalgada } from "./game/poca-salgada.js";
 import { criarIlhaDoVazio } from "./game/vazio.js";
 import { criarTalhundereth } from "./game/talhundereth.js";
@@ -110,6 +112,8 @@ import {
   definirPorta,
   definirVoto,
 } from "./view/narrativa.js";
+// a GAIOLA DE ALMAS do herói: a oferta que o motor deixa na morte do humanoide, e a tela pergunta
+import { aceitarGaiola, recusarGaiola } from "./rules/livro-motor.js";
 import { criarPortaCompartilhada } from "./game/porta-narrativa.js";
 import { abrirMenuContexto, fecharMenuContexto } from "./view/menu-contexto.js";
 import { opcoesDaCasa } from "./game/interacoes.js";
@@ -355,10 +359,10 @@ class App {
 
     let last = performance.now();
     const loop = (now) => {
-      const dt = Math.min(0.1, (now - last) / 1000);
+      const dt = Math.max(0, Math.min(0.1, (now - last) / 1000));
       last = now;
-      this.board?.render(dt);
-      requestAnimationFrame(loop);
+      // o próximo quadro vem mesmo se este lançar: um erro de desenho num quadro não pode congelar o tabuleiro
+      try { this.board?.render(dt); } finally { requestAnimationFrame(loop); }
     };
     requestAnimationFrame(loop);
 
@@ -1939,6 +1943,42 @@ class App {
     this.votoDeLugar = null;
   }
 
+  /**
+   * A GAIOLA DE ALMAS do herói: o motor não pode parar no meio do golpe que matou, então a pergunta vem logo depois, e
+   * quem responde é o jogador daquele herói (`prenderAtor`, o mesmo caminho das decisões da narrativa numa sala). Aceitando,
+   * gasta a reação e o espaço de 6º círculo e prende a alma (`livro-motor.js aceitarGaiola`).
+   */
+  async perguntarGaiola(ev) {
+    const enc = this.enc;
+    const { reator, morto, oferta } = ev;
+    if (!enc || enc !== this.enc || !(enc.ofertasDaGaiola ?? []).includes(oferta)) return;
+    const antes = this.prenderAtor(reator.id);
+    try {
+      const r = await narrar(this.root, {
+        formato: "painel",
+        paginas: [
+          {
+            titulo: "Gaiola de Almas",
+            texto: [
+              `${morto.name} acaba de morrer a ${(distanceFt(reator.pos, morto.pos) * 0.3).toLocaleString("pt-BR")} m de ${reator.name}. Prender a alma na gaiola?`,
+              "Gasta a reação e um espaço de 6º círculo. A alma dá seis usos (Roubar Vida ou Emprestar Experiência), e o morto não volta enquanto ela estiver presa.",
+            ],
+          },
+        ],
+        escolhas: [
+          { rotulo: "Prender a alma", valor: "sim", primaria: true },
+          { rotulo: "Deixar ir", valor: "nao" },
+        ],
+      });
+      if (enc !== this.enc) return;
+      if (r === "sim") aceitarGaiola(enc, oferta);
+      else recusarGaiola(enc, oferta);
+      this.refresh();
+    } finally {
+      this.prenderAtor(antes);
+    }
+  }
+
   // ---- quem decide na narrativa (J-20, como no Baldur's Gate 3) ---------------------------
 
   /** O herói que acabou de agir: de quem é a cena que ele começar. Vale por 10 s (a caminhada e o gatilho acontecem logo depois). */
@@ -2759,6 +2799,12 @@ class App {
         break;
       }
 
+      // a GAIOLA DE ALMAS: um humanoide inimigo morreu perto de quem a tem pronta; pergunta ao jogador, logo depois da ação
+      case "ofertaDaGaiola": {
+        setTimeout(() => this.perguntarGaiola(ev), 700);
+        break;
+      }
+
       case "downed":
       case "died": {
         const { target } = ev;
@@ -3302,7 +3348,7 @@ class App {
   dobrasDaMuralha() {
     if (this.mode?.kind !== "spell") return null;
     const s = getSpell(this.mode.spellId);
-    return s?.muralhaLivre ? (this.mode.dobras ?? []) : null;
+    return s?.muralhaLivre || s?.pontosLivres ? (this.mode.dobras ?? []) : null;
   }
 
   /** Ctrl+clique mirando uma muralha de forma livre: põe a dobra na casa, ou tira, se já era uma. */
@@ -3312,8 +3358,10 @@ class App {
     if (i >= 0) pontos.splice(i, 1);
     else {
       // O teto é o comprimento da muralha: mais dobras que casas não é forma, é rabisco.
-      if (pontos.length >= Math.min(MAX_ESCALAS, spell.areaFt / 5 - 1)) {
-        this.refuse(c, `no máximo ${Math.min(MAX_ESCALAS, spell.areaFt / 5 - 1)} dobras`);
+      // os OSSOS DA TERRA: os pilares a mais (o último é a casa clicada)
+      const teto = spell.pontosLivres ? spell.pontosLivres - 1 : Math.min(MAX_ESCALAS, spell.areaFt / 5 - 1);
+      if (pontos.length >= teto) {
+        this.refuse(c, `no máximo ${teto} ${spell.pontosLivres ? "pontos marcados" : "dobras"}`);
         return;
       }
       if (this.enc.field.blocksSight(tile.x, tile.y)) {
@@ -3403,7 +3451,7 @@ class App {
         this.mode.kind === "spell" ? getSpell(this.mode.spellId) : null;
       // Ctrl+clique mirando uma muralha de forma livre marca uma DOBRA: o livro deixa dar a ela a
       // forma que se quiser, desde que ela faça um caminho contínuo pelo chão, e as dobras são isso.
-      if (magia?.muralhaLivre && (ev?.ctrlKey || ev?.metaKey)) {
+      if ((magia?.muralhaLivre || magia?.pontosLivres) && (ev?.ctrlKey || ev?.metaKey)) {
         this.marcarDobra(c, magia, tile);
         return;
       }
@@ -3478,7 +3526,8 @@ class App {
         return;
       }
       if (this.mode.kind === "attack") {
-        if (occupant.side === c.side) {
+        // (o demônio hostil a todos é do lado do grupo no motor, e se ataca como inimigo)
+        if (occupant.side === c.side && !occupant.hostilATodos) {
           this.select(occupant);
           return;
         }
@@ -3519,7 +3568,7 @@ class App {
     }
 
     // Seleção
-    if (occupant && occupant.side === "party") {
+    if (occupant && occupant.side === "party" && !occupant.hostilATodos) {
       this.select(occupant);
       return;
     }
@@ -3712,6 +3761,8 @@ class App {
   }
 
   onTileHover(tile) {
+    // fora do tabuleiro (a vila, a região) o canvas da cena anterior ainda pode mandar o passar do mouse: sem luta, nada a fazer
+    if (!this.enc) return;
     const c = this.selected;
     if (!tile && this.mode?.kind !== "featureAlvo") this.hud.setHint(""); // o cursor saiu do tabuleiro ou foi para uma parede: a dica antiga não fica
     this.definirAlvo(tile ? this.enc.at(tile.x, tile.y) : null);
@@ -3848,6 +3899,10 @@ class App {
         : "";
       return `${s.name}${circ}${forma} — aponte a área e clique${dobras}`;
     }
+    if (s.textoDaMira)
+      return `${s.name}${circ} — ${s.textoDaMira} (${this.mode.dobras?.length ?? 0} de ${s.pontosLivres - 1} marcado), Esc desfaz`;
+    if (s.pontosLivres)
+      return `${s.name}${circ} — Ctrl+clique marca os pilares (${this.mode.dobras?.length ?? 0} de ${s.pontosLivres - 1}), Esc desfaz, e o clique põe o último`;
     if (s.mira === "casa")
       return `${s.name}${circ} — clique na casa de chegada (até ${(s.rangeFt / 5) * 1.5} m)`;
     if (s.kind === "reviver")
@@ -4125,7 +4180,9 @@ class App {
    */
   async conversar(npc) {
     if (narrativaAberta()) return;
-    const arvore = npc.dialogo ?? this.capitulo?.dialogoDe?.(npc);
+    // Quem tem ficha de saber e nenhuma árvore (os NPCs do Obelisco) ganha a conversa de um nó, com a caixa de pergunta
+    // (`game/conversa-livre.js`).
+    const arvore = npc.dialogo ?? this.capitulo?.dialogoDe?.(npc) ?? (podePerguntar(npc) ? arvoreLivre(npc) : null);
     if (arvore) {
       const fim = await conversarComArvore(this, npc, arvore);
       this.capitulo?.depoisDaConversa?.(npc, fim);
@@ -4495,8 +4552,12 @@ const app = new App(document.getElementById("app"));
 // Em desenvolvimento, dá para dirigir o combate pelo console:
 //   __app.enc            estado do encontro
 //   __app.autoPlay()     joga o grupo sozinho até o fim (teste de fumaça)
-if (import.meta.env?.DEV) {
+// No build de publicação, só com `?teste` na URL: é por aí que `testes-cenas-navegador.mjs --url` dirige o jogo
+// publicado. Não abre nada que o console já não abrisse.
+if (import.meta.env?.DEV || new URLSearchParams(location.search).has("teste")) {
   window.__app = app;
+  // o teste das cenas pede estes módulos de dentro da página; no build não há `/src/` para importar pelo caminho
+  app.modulos = { grid: () => import("./core/grid.js"), estrada: () => import("./rules/encontros-estrada.js") };
   // A política do grupo mora em dev/balance.js, junto do simulador de
   // equilíbrio — uma cópia só, para as duas não saírem do lugar.
   let playCharacter = null;

@@ -2,7 +2,10 @@ import { defineConfig, loadEnv } from 'vite';
 import { pluginDialogo } from './src/dev/servidor-dialogo.mjs';
 import { resolve } from 'node:path';
 
-export default defineConfig(({ mode }) => ({
+export default defineConfig(({ mode, command }) => ({
+  // No build, o `public/` é o `.publico/` que `src/dev/montar-publico.mjs` monta no `prebuild`: só o que o git conhece,
+  // sem a arte de terceiros ignorada (os mapas da FA, os oficiais, a figura das criaturas). No `dev`, o `public/` inteiro.
+  publicDir: command === 'build' ? '.publico' : 'public',
   // O diálogo com modelo: `POST /api/dialogo`, só em `npm run dev`. O '' lê o `.env` inteiro AQUI, no Node; o que vai
   // ao navegador continua sendo só o que começa com VITE_, e a chave não começa.
   plugins: [{ ...pluginDialogo(loadEnv(mode, process.cwd(), ''), process.cwd()), apply: 'serve' }],

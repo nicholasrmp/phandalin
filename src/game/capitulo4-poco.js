@@ -17,8 +17,9 @@
 //     que faz ali, mas troca informação por um favor: tirar os orcs do Cume
 //     da Wyvern, ou perguntar à banshee Agatha o nome de quem ergueu a torre;
 //   - negociar e contar ao Daran: 200 XP. Vencer o mago e os zumbis: 800 XP;
-//   - na tenda: 35 pp, 20 pe, 20 po, 5 pl, uma pérola, uma poção de cura, um
-//     pergaminho de escuridão, cinco joias miúdas e um anel de proteção.
+//   - na tenda (o Obelisco): 35 pp, 20 pe, 20 po, 5 pl, cinco gemas de 10 po, uma poção
+//     de cura, um pergaminho de escuridão e a caixinha com o anel de Netheril (na Mina
+//     eram a pérola e um anel de proteção).
 // Os 20 pe entram como 10 po (o jogo não tem peça de electro).
 //
 // O estado mora em `app.campanha.poco` e sobrevive a sair e voltar.
@@ -221,7 +222,7 @@ export function criarPoco(app, config) {
               requer: () => (salvo.kost === 'acordo' ? 'nada' : null), oculta: true },
             { texto: 'Os saqueadores do Cume da Wyvern não incomodam mais ninguém.', vai: 'pago',
               requer: () => (salvo.kost === 'acordo' && feitos.cumeLimpo && !feitos.kostPagou ? null : 'nada'), oculta: true },
-            { texto: 'A banshee respondeu: o mago da torre se chamava Arthindol.', vai: 'pago',
+            { texto: 'A banshee respondeu: a maga da torre se chamava Dresina.', vai: 'pago',
               requer: () => (salvo.kost === 'acordo' && feitos.agathaTorre && !feitos.kostPagou ? null : 'nada'), oculta: true },
             { texto: 'Atacar.', fim: 'luta' },
             { texto: 'Vamos embora. Bom estudo.', fim: 'paz' },

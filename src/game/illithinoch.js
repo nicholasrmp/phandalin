@@ -639,6 +639,8 @@ export function criarIllithinoch(app, config = {}) {
   async function abrirOPortal() {
     for (const g of GNAWBLES) { const h = herois().find((x) => garantirInventario(x).bag.some((i) => i.id === g)); if (h) tirar(h, g); }
     o7.portalAberto = { dia: vila.dia ?? 1 };
+    const doNicho = enc.field.portais?.find((p) => p.x === P.nicho.x && p.y === P.nicho.y);
+    if (doNicho) doNicho.nome = 'o portal de X16, aberto';
     await painel([
       'Os três gnawbles se agitam nas mãos de vocês, se esticam todos para o nicho, e estouram juntos, como frutas maduras demais, em pedaços de carne.',
       'O nicho se rasga numa fenda maior que todas, e do outro lado há túneis cinza-rosados, dobrados como a superfície de um cérebro.',
@@ -689,6 +691,13 @@ export function criarIllithinoch(app, config = {}) {
     estado,
     abrirOPortal,
     async iniciar() {
+      // OS PORTAIS que o Detectar Portal sente (`combat.js`): o do nicho de X16, aberto ou fechado, e as três fendas
+      enc.field.portais = [
+        { ...P.nicho, nome: o7.portalAberto ? 'o portal de X16, aberto' : 'o nicho de X16, um portal fechado' },
+        { ...P.fendaLabirinto, nome: 'uma fenda para o Reino Distante' },
+        { ...P.fendaOco, nome: 'uma fenda para o Reino Distante' },
+        { ...P.fendaTrincheiras, nome: 'uma fenda para o Reino Distante' },
+      ];
       // O ATAQUE DOS GITHYANKI: a Varakkta, que soube do portal pelo grupo (`labirinto-salgado.js contarGithyanki`), passou
       // por ele com os dois guerreiros. Decisão nossa, porque o livro só diz que ela decide atacar: os três morrem na
       // fortaleza e levam junto até dois devoradores de mentes que ainda vivem (não o que se rendeu).

@@ -113,6 +113,8 @@ export function recuperarNoCurto(c) {
   // CURANDEIRO (talento de 2014): a cura do kit volta a valer em quem já a recebeu.
   delete c.curadoPeloKit;
   restaurarForca(c);
+  // ANDARILHO DOS SONHOS (druida dos Sonhos, 14º): ao fim do descanso curto, a Vidência sem espaço (`utilidade.js`)
+  if (c.features?.includes('walkerInDreams') && (c.resources?.walkerInDreams ?? 0) > 0) c.andarilhoDosSonhos = true;
   // O CONHAQUE ANÃO do Castelo (área 5): o livro envenena quem toma dois copos "em menos de 1 hora", e o
   // descanso curto é exatamente uma hora. Então ele é o relógio: passou a hora, some a marca e passa a
   // ressaca.
@@ -248,10 +250,26 @@ export function bomFrutoNoDescanso(conjurador, alvos, { circulo = 1 } = {}) {
  * informação (arena, descanso de cena), vale alimentado — fora da viagem o
  * jogo não conta mantimento.
  */
+/**
+ * A MALDIÇÃO MORTAL do fensir devorador: por 24 horas o descanso não dá nada. Cada descanso conta as horas dele (8 o longo,
+ * 1 o curto), e a maldição acaba quando somar 24. Devolve true se o descanso foi engolido pela maldição.
+ */
+export function maldicaoEngoleODescanso(c, horas) {
+  const m = getCondition(c, 'maldicaoDoFensir');
+  if (!m) return false;
+  m.data = { ...(m.data ?? {}), horas: (m.data?.horas ?? 0) + horas };
+  if (m.data.horas >= 24) removeCondition(c, 'maldicaoDoFensir');
+  return true;
+}
+
 export function descansoLongo(c, { alimentado = true } = {}) {
   if (c.dead) return;
+  if (maldicaoEngoleODescanso(c, 8)) return;
   // as cargas dos itens que conjuram voltam ao amanhecer
   recarregarItens(c);
+  // o DESGASTE DO DESEJO acaba com o descanso longo (`livro-motor.js estresseDoDesejo`)
+  delete c.estresseDoDesejo;
+  delete c.andarilhoDosSonhos;
   // a loucura do Contatar Outro Plano acaba com o descanso longo
   removeCondition(c, 'enlouquecido');
   delete c.curadoPeloKit;

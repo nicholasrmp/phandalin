@@ -73,6 +73,9 @@ export const LIVRO_MM = {
   "traits": [
    "t_invocarElementalDoAr"
   ],
+  "marcas": [
+   "aarakocra"
+  ],
   "blurb": "Guerreiro alado que fica no ar, despenca sobre o alvo para golpes mais fortes e arremessa azagaias de longe. Cinco deles juntos conseguem invocar um elemental do ar.",
   "lore": "Os aarakocra são humanoides com feições de ave, nativos do Plano Elemental do Ar, onde patrulham a tempestade que cerca o reino de Aaqa contra intrusos da terra, sobretudo gárgulas. Servem aos Duques do Vento, vasculhando os planos atrás de templos do Mal Elemental e de fragmentos do lendário Cetro das Sete Partes. No Plano Material, fazem ninhos nos picos mais altos, perto de portais para o Plano do Ar, e vigiam a região por anos se preciso. Não ligam para fronteiras, posses ou riquezas: usam o que precisam e deixam o resto para os outros."
  },
@@ -4139,6 +4142,9 @@ export const LIVRO_MM = {
    "resistenciaAMagia",
    "armasMagicas"
   ],
+  "marcas": [
+   "yugoloth"
+  ],
   "blurb": "Conjurador de 16º nível com bola de fogo, relâmpago em cadeia e dedo da morte, que se teletransporta para fugir do corpo a corpo. Suas garras envenenam e ele resiste à maioria das magias.",
   "lore": "Os arcanaloths são yugoloths de cabeça de chacal que atuam como escribas, negociadores e contadores da sua raça mercenária. Vivem nos planos inferiores, sobretudo no Gehenna, mas viajam a serviço de quem pagar bem. Ardilosos e eruditos, colecionam segredos e contratos, e preferem manipular a lutar. Quando o combate é inevitável, recorrem a magia devastadora e a ilusões para confundir os inimigos."
  },
@@ -4282,6 +4288,9 @@ export const LIVRO_MM = {
   "traits": [
    "resistenciaAMagia"
   ],
+  "marcas": [
+   "any race"
+  ],
   "blurb": "Conjurador de 18º nível que entra em combate já protegido por pele de pedra e mente vazia, e controla o campo com muralha de energia, contramágica, cone de frio e até parada temporal. Resiste a dano de magias e tem vantagem contra efeitos mágicos.",
   "lore": "O arquimago é um estudioso das artes arcanas que dedicou décadas, às vezes uma vida inteira, a dominar a magia. Os bondosos servem de conselheiros a monarcas, e os cruéis governam pelo medo e buscam se tornar liches. Os que não pendem para nenhum lado se isolam em torres distantes para pesquisar em paz. Costumam ter aprendizes, e suas moradas são protegidas por guardiões e barreiras mágicas contra intrusos."
  },
@@ -4379,6 +4388,9 @@ export const LIVRO_MM = {
   "sneakAttack": "4d6",
   "traits": [
    "assassinar"
+  ],
+  "marcas": [
+   "any race"
   ],
   "blurb": "Ataca primeiro e das sombras: no primeiro turno tem vantagem e acerta críticos em alvos surpresos, somando ataque furtivo e lâminas envenenadas que causam dano de veneno pesado.",
   "lore": "Assassinos são matadores profissionais, frios e sem remorso, que dominam o uso de venenos. Vendem seus serviços a quem puder pagar, de nobres e mestres de guilda a reis. Costumam agir nas cidades, misturando-se à multidão até o momento do golpe. Preferem emboscadas cuidadosamente planejadas a combates abertos."
@@ -4808,6 +4820,9 @@ export const LIVRO_MM = {
    "resistenciaAMagia",
    "armasMagicas"
   ],
+  "marcas": [
+   "demon"
+  ],
   "blurb": "Avança envolto em chamas, puxa alvos distantes com o chicote flamejante e os corta com uma espada elétrica. Ficar colado nele queima, e matá-lo provoca uma explosão devastadora.",
   "lore": "O balor é um dos demônios mais poderosos do Abismo, um general brutal que comanda hordas de demônios menores. Tem forma gigantesca, asas enormes e o corpo cercado de fogo. Serve aos senhores demônios e só respeita a força. Nos campos de batalha, procura os inimigos mais fortes para provar seu domínio, e mesmo derrotado leva os oponentes consigo numa erupção de chamas."
  },
@@ -4910,6 +4925,9 @@ export const LIVRO_MM = {
   "traits": [
    "espinhos",
    "resistenciaAMagia"
+  ],
+  "marcas": [
+   "devil"
   ],
   "blurb": "Combina garras e cauda em três golpes por turno ou arremessa duas chamas à distância. Quem tenta agarrá-lo se fere nos espinhos do corpo.",
   "lore": "O diabo farpado é um guerreiro dos Nove Infernos, coberto de espinhos afiados da cabeça à cauda. Costuma servir como guarda e sentinela de diabos mais poderosos, vigiando tesouros e prisioneiros com atenção incansável. É ganancioso e cobiça objetos de valor, o que às vezes o distrai. Em combate, prefere cercar o inimigo e atacar sem trégua."
@@ -5017,6 +5035,9 @@ export const LIVRO_MM = {
   "traits": [
    "imprudente",
    "t_saltoComImpulso"
+  ],
+  "marcas": [
+   "demon"
   ],
   "blurb": "Demônio simiesco que salta de longe sobre a presa e a esmurra com dois punhos e uma mordida a cada turno. Pode atacar de forma imprudente para ganhar vantagem, e usa magia para se esconder ou prender alvos em vinhas.",
   "lore": "O barlgura é um demônio do Abismo com aparência de um grande símio brutal, de pelagem áspera e presas salientes. Vagueia em bandos pelas regiões selvagens e caóticas dos planos inferiores, caçando o que encontrar. Apesar da pouca inteligência, sabe ficar invisível ou disfarçado para emboscar as vítimas. Quando chega ao Plano Material, costuma se refugiar em florestas e ruínas, de onde salta para atacar."
@@ -5156,6 +5177,9 @@ export const LIVRO_MM = {
   "traits": [
    "resistenciaAMagia",
    "bravura"
+  ],
+  "marcas": [
+   "devil"
   ],
   "blurb": "Combina a barba venenosa, que impede a cura do alvo, com uma glaive de alcance longo que abre feridas infernais cada vez piores. Resiste a magia e não se amedronta perto de aliados.",
   "lore": "O diabo barbado é um soldado de choque dos Nove Infernos, servindo como tropa de elite a diabos mais poderosos. Sua barba de espinhos cobertos de veneno e sua glaive serrilhada são marcas de sua brutalidade. Luta com disciplina feroz e ganha coragem quando combate ao lado de companheiros. Obedece cegamente à hierarquia infernal e se deleita em ferir quem cruza seu caminho."
@@ -5533,6 +5557,9 @@ export const LIVRO_MM = {
   ],
   "traits": [
    "imprudente"
+  ],
+  "marcas": [
+   "any race"
   ],
   "blurb": "Guerreiro feroz que avança com um machado grande e pode se atirar sem cautela ao combate, ganhando vantagem nos ataques ao custo de ficar exposto. Cada golpe acerta pesado, e ele aguenta bastante castigo.",
   "lore": "Berserkers vêm de terras selvagens, longe de cidades e leis. Reúnem-se em bandos de guerra e vagam em busca de qualquer briga que apareça. São imprevisíveis e movidos pela fúria, preferindo o choque direto a qualquer estratégia. Podem surgir em costas, montanhas, florestas, desertos ou no gelo do norte."
@@ -6061,6 +6088,9 @@ export const LIVRO_MM = {
   "traits": [
    "resistenciaAMagia"
   ],
+  "marcas": [
+   "devil"
+  ],
   "blurb": "Ataca de longe com garras e um ferrão de escorpião, alcançando 3 m; o ferrão causa muito dano de veneno e pode deixar o alvo envenenado. Resiste a magia e a armas comuns, e enxerga na escuridão mágica.",
   "lore": "Diabo esquelético de pele ressecada esticada sobre os ossos, com cauda de escorpião e asas. Serve nos Nove Infernos como capataz e policial, vigiando diabos menores com crueldade metódica. Adora atormentar quem está sob seu comando e obedece fielmente aos superiores na hierarquia infernal. Prefere a intimidação e o castigo exemplar para manter a ordem."
  },
@@ -6541,6 +6571,9 @@ export const LIVRO_MM = {
    "ataqueSurpresa",
    "t_coracaoDeHruggek"
   ],
+  "marcas": [
+   "goblinoid"
+  ],
   "blurb": "Líder brutal que golpeia duas vezes por turno com maça-estrela ou azagaias, causando dano extra em emboscadas. Resiste bem a medo, encantamentos e venenos.",
   "lore": "O chefe bugbear é o mais forte e cruel de seu bando, e mantém a liderança pela intimidação e pela força bruta. Esses goblinoides peludos vivem em florestas, campos e nas profundezas do Subterrâneo. Preferem atacar de surpresa, movendo-se em silêncio apesar do tamanho. Acredita-se que o deus Hruggek abençoe esses chefes com uma vontade quase inquebrável."
  },
@@ -6684,6 +6717,9 @@ export const LIVRO_MM = {
    "t_falarComSaposERas",
    "t_camuflagemDoPantano",
    "t_saltoParado"
+  ],
+  "marcas": [
+   "bullywug"
   ],
   "blurb": "Luta em bandos, cercando o alvo com lança e mordida no mesmo turno, e salta longe para alcançar presas ou fugir. Some facilmente no pântano e prefere emboscar a enfrentar inimigos fortes.",
   "lore": "Os bullywugs são humanoides anfíbios com cabeça de sapo que precisam viver molhados, ocupando brejos, florestas chuvosas e grutas úmidas. Famintos e cruéis, atacam em grande número, mas debandam quando o perigo é real. Julgam-se a nobreza legítima dos pântanos e vivem de bajular um senhor da lama, a quem oferecem tesouros roubados de caravanas e vilas. Preferem capturar invasores para humilhá-los diante do rei, e treinam sapos gigantes como guardas, caçadores e montarias graças ao seu idioma coaxado."
@@ -7222,6 +7258,9 @@ export const LIVRO_MM = {
    "resistenciaAMagia",
    "mascaraPerturbadora"
   ],
+  "marcas": [
+   "devil"
+  ],
   "blurb": "Ataca duas vezes com correntes de 3 m de alcance que agarram, contêm e dilaceram a vítima a cada turno, e pode dar vida a correntes próximas para atacar junto. Sua máscara ilusória amedronta quem chega perto.",
   "lore": "Diabo dos Nove Infernos, coberto de correntes farpadas que se movem como extensões do próprio corpo. Serve como torturador e carcereiro, sentindo prazer na dor que causa. Obedece à hierarquia infernal e costuma guardar prisioneiros ou caçar fugitivos. Usa ilusões para assumir rostos que a vítima amou ou odiou, quebrando sua coragem antes do golpe."
  },
@@ -7293,6 +7332,9 @@ export const LIVRO_MM = {
    "t_zumbido",
    "resistenciaAMagia",
    "spiderClimb"
+  ],
+  "marcas": [
+   "demon"
   ],
   "blurb": "Seu zumbido constante faz quem estiver por perto cair inconsciente, e então ela crava a probóscide na vítima indefesa para sugar sua vitalidade. Cada picada reduz o máximo de PV do alvo e pode matá-lo de vez.",
   "lore": "A chasme é um demônio do Abismo com aparência de mosca gigante e traços vagamente humanos. Serve como caçadora e carcereira dos senhores demoníacos, rastreando desertores e fugitivos. Ela zumbe pelo ar até que suas presas desmaiem e depois se alimenta delas sem pressa. Caminha por paredes e tetos com facilidade e costuma atacar de cima."
@@ -8228,6 +8270,9 @@ export const LIVRO_MM = {
   "traits": [
    "devocaoSombria"
   ],
+  "marcas": [
+   "any race"
+  ],
   "blurb": "Combina duas punhaladas por turno com magias de clérigo: paralisa alvos com Imobilizar Pessoa, causa dano necrótico pesado com Infligir Ferimentos e invoca uma arma espiritual. Resiste bem a medo e encantamentos.",
   "lore": "O fanático costuma ocupar posições de comando dentro de um culto, usando lábia e doutrina para manipular os mais fracos de vontade. Por trás da fé aparente, quase sempre o que move esse sectário é a sede de poder próprio. Age sobretudo nas cidades, recrutando seguidores e escondendo suas reuniões nos becos e porões. Em combate, deixa os acólitos na linha de frente enquanto conjura bênçãos e maldições de seu deus sombrio."
  },
@@ -8368,6 +8413,7 @@ export const LIVRO_MM = {
    "ability": "cha",
    "cantrips": [],
    "prepared": [
+    "criarPassagem",
     "linguas",
     "formaGasosa",
     "invisibilidade",
@@ -8381,6 +8427,7 @@ export const LIVRO_MM = {
    "noMotor": true,
    "conjuraNoTurno": "geral",
    "porDia": {
+    "criarPassagem": 3,
     "linguas": 3,
     "formaGasosa": 1,
     "invisibilidade": 1,
@@ -8393,6 +8440,7 @@ export const LIVRO_MM = {
     "detectarMagia"
    ],
    "cdPorMagia": {
+    "criarPassagem": 14,
     "linguas": 14,
     "formaGasosa": 14,
     "invisibilidade": 14,
@@ -8529,6 +8577,19 @@ export const LIVRO_MM = {
     "Mordida"
    ]
   },
+  "vantagemRacial": [
+   {
+    "nome": "Duas Cabeças",
+    "condicoes": [
+     "cego",
+     "enfeiticado",
+     "surdo",
+     "amedrontado",
+     "atordoado",
+     "inconsciente"
+    ]
+   }
+  ],
   "traits": [
    "t_duasCabecas"
   ],
@@ -8810,6 +8871,9 @@ export const LIVRO_MM = {
    "resistenciaAMagia",
    "armasMagicas",
    "regeneracaoDoLivro"
+  ],
+  "marcas": [
+   "shapechanger"
   ],
   "blurb": "Combatente brutal que morde e golpeia com garras ou montante, somando dano necrótico a cada acerto, enquanto se regenera todo turno. Também conjura bola de fogo, névoa mortal e medo, e resiste bem à magia.",
   "lore": "Os slaadi da morte são os mais cruéis de sua raça anfíbia, nascidos do caos do plano de Limbo. Costumam surgir quando um slaad cinzento é tocado por energias de morte, tornando-se líderes temidos entre seus semelhantes. Adoram se disfarçar de humanoides para semear destruição em outros mundos. Alguns carregam uma gema de controle no cérebro, o que os torna servos de quem a possuir."
@@ -9682,6 +9746,9 @@ export const LIVRO_MM = {
    }
   ],
   "traits": [],
+  "marcas": [
+   "demon"
+  ],
   "blurb": "Demônio fraco e lento que morde e arranha em sequência; uma vez por dia solta uma nuvem fétida que envenena e limita as ações de quem fica dentro dela.",
   "lore": "Os dretches estão entre os demônios mais baixos do Abismo, criaturas barrigudas e patéticas que mal passam de carne de canhão. Vivem em bandos que vagam pelos planos inferiores, servindo de fodder para demônios mais poderosos. São covardes e invejosos, atacando em grupo quando sentem vantagem. Comunicam-se por telepatia com outros que entendem abissal e exalam um fedor insuportável."
  },
@@ -9908,6 +9975,9 @@ export const LIVRO_MM = {
    "ascendenciaFeerica",
    "sunlightSensitivity"
   ],
+  "marcas": [
+   "elf"
+  ],
   "blurb": "Conjurador frágil que domina o campo à distância com teia, tentáculos negros, relâmpagos e névoa mortal, além de poder invocar um demônio aliado. Fica invisível e voa para escapar do corpo a corpo.",
   "lore": "Os magos drow são arcanistas dos elfos sombrios que vivem nas cidades da Umbreterna. Estudam magia para ganhar poder e prestígio numa sociedade dominada pelas sacerdotisas. Costumam lutar protegidos por guerreiros e escravos, atacando das sombras. Alguns firmam laços com demônios, que chamam para servi-los em combate."
  },
@@ -10020,6 +10090,9 @@ export const LIVRO_MM = {
    "ascendenciaFeerica",
    "sunlightSensitivity"
   ],
+  "marcas": [
+   "elf"
+  ],
   "blurb": "Conjuradora divina que alterna golpes de flagelo envenenado com teias, pragas de insetos e aranhas gigantes invocadas. Pode ainda tentar trazer um demônio yochlol para o combate.",
   "lore": "Ela pertence à casta religiosa que governa as cidades drow do Subterrâneo em nome de Lolth, a Rainha Aranha. Recebe poder diretamente da deusa e é temida tanto por inimigos quanto por seus próprios súditos. Intrigas, sacrifícios e crueldade fazem parte da sua rotina. Raramente luta sozinha, cercando-se de servos, aranhas e, às vezes, demônios."
  },
@@ -10105,6 +10178,9 @@ export const LIVRO_MM = {
    }
   },
   "traits": [],
+  "marcas": [
+   "any race"
+  ],
   "blurb": "Conjurador da natureza que prende inimigos com constrição, empurra-os com onda trovejante e golpeia com um bordão encantado por shillelagh. Fica mais resistente quando ativa pele de árvore.",
   "lore": "Os druidas vivem em florestas e outros recantos selvagens e isolados, guardando a natureza contra monstros e contra o avanço das cidades. Muitos servem como xamãs de suas tribos. Curam enfermos, conversam com espíritos animais e orientam seu povo nas questões da alma. Costumam evitar a civilização, mas defendem com firmeza o território que protegem."
  },
@@ -10281,6 +10357,9 @@ export const LIVRO_MM = {
    "invisivelAVontade",
    "t_resilienciaDuergar",
    "sunlightSensitivity"
+  ],
+  "marcas": [
+   "dwarf"
   ],
   "blurb": "Anão cinzento que cresce até tamanho Grande para dobrar o dano de sua picareta ou some invisível para emboscar e fugir. Resiste bem a magias, ilusões e venenos, mas sofre sob a luz do sol.",
   "lore": "Os duergar, ou anões cinzentos, erguem cidades austeras nas profundezas do Subterrâneo, sustentadas por escravos e por saberes anões antigos. Descendem de anões que passaram gerações cativos dos devoradores de mentes e, ao se libertarem, saíram tão cruéis quanto seus antigos senhores. São carrancudos, desconfiados e incansáveis, fazem alianças apenas por conveniência e guerreiam contra outros anões e povos subterrâneos. A magia do Subterrâneo lhes deu o poder de crescer ou desaparecer, e há rumores de que Asmodeus se disfarça de seus deuses para alimentar sua tirania."
@@ -10788,6 +10867,9 @@ export const LIVRO_MM = {
    "armasMagicas",
    "acoesLendarias"
   ],
+  "marcas": [
+   "titan"
+  ],
   "blurb": "Titã celestial que esmaga com uma marreta capaz de atordoar e dispara raios elementais a 180 m de distância. Com ações lendárias, derruba todos ao redor com tremores e fortalece os aliados.",
   "lore": "Os empíreos são filhos dos deuses dos Planos Superiores, gigantes belíssimos e cheios de confiança. Seu humor transborda para o mundo: na tristeza, flores murcham e nuvens choram sal, e na alegria o sol e os pássaros os acompanham. Alguns se corrompem nos Planos Inferiores ou sob maldições divinas e passam a governar reinos mortais no Plano Material como tiranos. Não envelhecem e lutam sem medo, incapazes de conceber a própria morte. Quando morrem, o espírito volta ao plano natal, onde um dos pais divinos costuma ressuscitá-los."
  },
@@ -10885,6 +10967,9 @@ export const LIVRO_MM = {
    "armasMagicas",
    "resistenciaAMagia",
    "aparar"
+  ],
+  "marcas": [
+   "devil"
   ],
   "blurb": "Guerreira infernal alada que ataca três vezes por turno, com espada ou arco, e cada golpe carrega veneno extra. Apara golpes corpo a corpo e resiste bem a magia.",
   "lore": "As erínias são diabas guerreiras de porte elegante e asas emplumadas, a elite marcial dos Nove Infernos. Servem arquiduques e generais diabólicos como caçadoras de traidores e fugitivos, perseguindo suas presas sem descanso. Disciplinadas e orgulhosas, preferem combater do alto, alternando flechas envenenadas e investidas de espada. Enxergam a verdade por trás de ilusões e disfarces, o que torna quase impossível escapar delas."
@@ -11048,6 +11133,19 @@ export const LIVRO_MM = {
     "Maça-Estrela"
    ]
   },
+  "vantagemRacial": [
+   {
+    "nome": "Duas Cabeças",
+    "condicoes": [
+     "cego",
+     "enfeiticado",
+     "surdo",
+     "amedrontado",
+     "atordoado",
+     "inconsciente"
+    ]
+   }
+  ],
   "traits": [
    "t_duasCabecas",
    "sempreAlerta"
@@ -13993,6 +14091,9 @@ export const LIVRO_MM = {
    }
   },
   "traits": [],
+  "marcas": [
+   "gith"
+  ],
   "blurb": "Guerreiro de elite que golpeia duas vezes por turno com uma espada larga de prata, somando dano psíquico ao corte. Usa psiônica para saltar, teletransportar-se em névoa ou arremessar inimigos com telecinesia.",
   "lore": "Os cavaleiros githyanki são os campeões marciais de seu povo, servindo à rainha-lich Vlaakith no Plano Astral. Caçam devoradores de mentes sem descanso e lideram incursões a outros mundos em navios astrais. Cada um porta uma espada de prata forjada para sua ordem, símbolo de honra e de crueldade. São disciplinados, arrogantes e tratam outras raças como presas ou servos."
  },
@@ -14072,6 +14173,9 @@ export const LIVRO_MM = {
    ]
   },
   "traits": [],
+  "marcas": [
+   "gith"
+  ],
   "blurb": "Combatente disciplinado que golpeia duas vezes por turno com uma espada grande carregada de energia psíquica. Usa passo nebuloso e salto para se reposicionar rapidamente no campo de batalha.",
   "lore": "Os githyanki são um povo marcial que vive no Plano Astral, descendente de antigos escravos que se rebelaram contra os devoradores de mentes. Seus guerreiros formam a espinha dorsal de grupos de ataque que saqueiam outros mundos. Combinam treino rigoroso com poderes psiônicos inatos, e servem com fanatismo à sua rainha-lich. São arrogantes, cruéis e desprezam quem consideram inferior."
  },
@@ -14158,6 +14262,9 @@ export const LIVRO_MM = {
   },
   "traits": [
    "t_defesaPsiquica"
+  ],
+  "marcas": [
+   "gith"
   ],
   "blurb": "Lutador desarmado que desfere dois golpes por turno, cada um somando concussão e dano psíquico. Usa psiônica para saltar, cair sem dano e erguer escudos mentais na hora certa.",
   "lore": "Os githzerai são um povo disciplinado que rompeu com seus parentes githyanki e se refugiou no caos do Limbo. Ali, mosteiros erguidos pela força da mente resistem à turbulência do plano. Os monges treinam corpo e espírito até que cada golpe carregue energia psíquica. Costumam ser reservados e calculistas, e só se envolvem em conflitos quando estes servem à ordem que buscam ou à guerra contra os devoradores de mentes."
@@ -14250,6 +14357,9 @@ export const LIVRO_MM = {
   },
   "traits": [
    "t_defesaPsiquica"
+  ],
+  "marcas": [
+   "gith"
   ],
   "blurb": "Monge psiônico ágil que desfere dois golpes desarmados mágicos, cada um somando dano psíquico pesado ao impacto. Pode se proteger com escudo arcano e conjurar assassino fantasmagórico para aterrorizar um alvo.",
   "lore": "Os zerths são mestres entre os githzerai, monges que dedicaram a vida a disciplinar a mente até que o pensamento molde a realidade. Vivem em mosteiros fortificados no caos do Limbo, mantidos estáveis apenas pela força de vontade. São reservados e metódicos, mas lutam com precisão implacável contra devoradores de mentes e contra seus parentes githyanki. Viajam entre planos quando sua ordem exige, sempre buscando equilíbrio e ordem."
@@ -14378,6 +14488,9 @@ export const LIVRO_MM = {
   "traits": [
    "resistenciaAMagia"
   ],
+  "marcas": [
+   "demon"
+  ],
   "blurb": "Demônio brutal que agarra com pinças de 3 m de alcance e esmurra com os punhos, ou troca os golpes por magias como confusão e palavra de poder atordoar. Resiste a magia e enxerga através de ilusões.",
   "lore": "O glabrezu é um demônio do Abismo, enorme e de quatro braços: dois terminam em pinças de caranguejo e dois em mãos. Mais astuto que a maioria de sua espécie, prefere a tentação à força bruta, oferecendo poder e riquezas a mortais desesperados em troca de sua ruína. Quando o engano falha, parte para o combate sem hesitar, esmagando quem resistir. Costuma servir a senhores demoníacos como conselheiro ou corruptor."
  },
@@ -14456,6 +14569,9 @@ export const LIVRO_MM = {
    "bravura",
    "aparar"
   ],
+  "marcas": [
+   "any race"
+  ],
   "blurb": "Lutador corpo a corpo resistente que desfere três golpes por turno com lança e escudo, podendo derrubar os alvos. Aparar ataques o torna difícil de acertar.",
   "lore": "Gladiadores são combatentes que lutam em arenas para divertir plateias barulhentas. Alguns são brigões selvagens de fossos, que encaram cada combate como questão de vida ou morte. Outros são duelistas profissionais, bem pagos, que raramente lutam até o fim. Costumam ser encontrados em cidades, onde há arenas e público."
  },
@@ -14524,6 +14640,9 @@ export const LIVRO_MM = {
   ],
   "traits": [
    "rampage"
+  ],
+  "marcas": [
+   "gnoll"
   ],
   "blurb": "Ataca com lança ou arco longo e, ao derrubar um inimigo em combate corpo a corpo, avança e morde de novo na mesma rodada. Em bando, cada morte alimenta a próxima.",
   "lore": "Os gnolls nasceram de hienas que seguiam o lorde demônio Yeenoghu quando ele devastou o Plano Material, e se espalharam pelo mundo depois que ele foi banido ao Abismo. Vivem como saqueadores nômades nas fronteiras da civilização, surgindo do nada para arrasar vilas e fazendas e devorar os mortos. Não fabricam quase nada: usam armas e armaduras tiradas das vítimas, enfeitadas com orelhas, dentes e escalpos. Não têm consciência nem piedade, preferem alvos indefesos e, sem inimigo comum, brigam entre si."
@@ -14598,6 +14717,9 @@ export const LIVRO_MM = {
   },
   "traits": [
    "rampage"
+  ],
+  "marcas": [
+   "gnoll"
   ],
   "blurb": "Ataca com uma mordida venenosa e duas garras a cada turno. Quando derruba um inimigo, avança e morde de novo na mesma rodada.",
   "lore": "As Presas de Yeenoghu são gnolls que o Senhor Demônio das Hienas escolheu e transformou em corruptores ligados ao Abismo. Lideram bandos de gnolls em planícies, florestas, colinas e desertos, sempre à frente da matança. Têm fome insaciável de carne e destruição e espalham o culto de seu mestre demoníaco por onde o bando passa."
@@ -14675,6 +14797,9 @@ export const LIVRO_MM = {
   "traits": [
    "incitarRampage",
    "rampage"
+  ],
+  "marcas": [
+   "gnoll"
   ],
   "blurb": "Ataca duas vezes com a glaive de longo alcance ou com o arco longo e incita outros gnolls a golpear fora de turno. Quando derruba alguém, avança e morde de novo.",
   "lore": "É o gnoll mais forte e cruel do bando, que conquistou a liderança à base de violência. Conduz a matilha por campos, florestas, colinas e desertos em busca de presas e saques. Aproveita cada morte para levar seus seguidores a um frenesi sanguinário. Não tem piedade e só respeita a força."
@@ -14988,6 +15113,9 @@ export const LIVRO_MM = {
    "resistenciaAMagia",
    "monstroDeCerco"
   ],
+  "marcas": [
+   "demon"
+  ],
   "blurb": "Demônio colossal que investe de chifres baixos para empalar e arremessar alvos, depois esmaga com punhos e cascos que derrubam. Resiste a magia e despedaça estruturas com facilidade.",
   "lore": "O goristro é um demônio gigantesco com feições de touro, uma fera de cerco usada pelos senhores do Abismo para arrombar fortalezas. Tem pouca inteligência, mas uma memória impecável para caminhos, o que o torna um guia temível em labirintos. Costuma ser mantido como animal de guerra por demônios mais poderosos. Quando solto, avança sem hesitar contra muralhas e fileiras inimigas."
  },
@@ -15197,6 +15325,9 @@ export const LIVRO_MM = {
    "resistenciaAMagia",
    "armasMagicas",
    "regeneracaoDoLivro"
+  ],
+  "marcas": [
+   "shapechanger"
   ],
   "blurb": "Mordida e garras (ou espadão) em três ataques por turno, regeneração de 10 PV por rodada e magias como bola de fogo, medo e voo. Pode se disfarçar de humanoide e sumir invisível.",
   "lore": "Os slaadi cinzentos são agentes do caos nascidos no Limbo, servos diretos dos slaadi mais poderosos. Mudam de forma e se infiltram entre humanoides nas cidades para espionar, sabotar ou cumprir ordens de seus mestres. São curiosos sobre magia e costumam empunhar espadões como os mortais que imitam. Alguns trazem uma gema de controle no cérebro, que os obriga a obedecer a quem a possuir."
@@ -15493,6 +15624,9 @@ export const LIVRO_MM = {
    "resistenciaAMagia",
    "regeneracaoDoLivro"
   ],
+  "marcas": [
+   "shapechanger"
+  ],
   "blurb": "Combina mordida e garras (ou cajado) em três ataques por turno, ou arremessa chamas à distância, e regenera 10 PV por rodada. Pode se disfarçar de humanoide, ficar invisível e soltar uma bola de fogo.",
   "lore": "Os slaads verdes são aberrações anfíbias do caos, nascidas do Limbo, mais astutas que seus parentes vermelhos e azuis. Muitos já foram slaads menores que amadureceram e agora dominam alguma magia inata. Gostam de se infiltrar entre humanoides sob forma disfarçada, espalhando desordem e buscando conhecimento arcano. Alguns carregam no cérebro uma gema de controle que os prende à vontade de quem a possui."
  },
@@ -15698,6 +15832,9 @@ export const LIVRO_MM = {
    "t_sentidosCegos",
    "keenHearingSmell",
    "camuflagemDePedra"
+  ],
+  "marcas": [
+   "grimlock"
   ],
   "blurb": "Caçador cego que percebe tudo ao redor pela audição e pelo olfato, imune a ilusões visuais e à cegueira. Golpeia com uma clava de osso cravejada de espinhos que causa concussão e perfuração ao mesmo tempo.",
   "lore": "Os grimlocks descendem de humanos que, por gerações, cultuaram os devoradores de mentes como deuses e acabaram virando canibais monstruosos. Quando o império dos illithids ruiu, esses cultistas fugiram para o Subterrâneo, e na escuridão seus olhos atrofiaram até as pálpebras se fecharem de vez. Hoje dependem de ouvidos e narizes aguçadíssimos, espalhando sangue e vísceras longe de seus covis para farejar a chegada de intrusos. Ainda servem aos devoradores de mentes e sobem à superfície para sequestrar vítimas, travando uma guerra que para eles nunca terminou."
@@ -16128,6 +16265,9 @@ export const LIVRO_MM = {
    ]
   },
   "traits": [],
+  "marcas": [
+   "human"
+  ],
   "blurb": "Guerreiro blindado que golpeia duas vezes com a espada longa e pode somar um golpe de espada curta. Seu sopro de fogo em cone causa dano pesado a grupos próximos.",
   "lore": "Meio-dragões surgem da união de um dragão disfarçado por magia com outra criatura, ou de rituais e feitiços que misturam sangue dracônico a um ser comum. Este é um soldado humano experiente que herdou a fúria e o orgulho dos dragões vermelhos. Não pode gerar filhos naturalmente, mas vive cerca do dobro de um humano comum. Costuma ser ganancioso, arrogante e desconfiado, e enxerga no escuro graças à sua herança."
  },
@@ -16414,6 +16554,9 @@ export const LIVRO_MM = {
    "resistenciaAMagia",
    "aura"
   ],
+  "marcas": [
+   "demon"
+  ],
   "blurb": "Demônio sapo robusto que avança para a linha de frente com mordida e duas garras. Seu fedor pode envenenar quem fica a até 3 m dele no início do turno.",
   "lore": "O hezrou é um demônio do Abismo com corpo de sapo gigante, couro grosso e braços terminados em garras. Nas hordas demoníacas, costuma servir de tropa de choque e esmaga as fileiras inimigas com força bruta. É pouco inteligente, mas teimoso e cruel, e só obedece a demônios mais poderosos por medo. Exala um cheiro pútrido tão forte que deixa nauseado qualquer um que se aproxime."
  },
@@ -16605,6 +16748,9 @@ export const LIVRO_MM = {
    "lideranca",
    "martialAdvantage"
   ],
+  "marcas": [
+   "goblinoid"
+  ],
   "blurb": "Comandante disciplinado que golpeia duas vezes com a espada grande e causa dano extra quando um aliado está ao lado do alvo. Sua liderança fortalece os ataques e resistências da tropa.",
   "lore": "Capitães hobgoblins comandam companhias de guerreiros goblinoides com rigor militar e pouca paciência para falhas. Sobem de posto provando valor em batalha e mantêm a ordem pela força e pelo exemplo. São vistos em acampamentos fortificados, desde planícies e colinas até as profundezas do Subterrâneo. Em combate, coordenam formações e gritam ordens que mantêm os soldados firmes."
  },
@@ -16689,6 +16835,9 @@ export const LIVRO_MM = {
    "lideranca",
    "martialAdvantage",
    "aparar"
+  ],
+  "marcas": [
+   "goblinoid"
   ],
   "blurb": "Comandante blindado que desfere três golpes por turno, derruba inimigos com o escudo e causa dano extra quando um aliado está ao lado do alvo. Sua liderança fortalece ataques e resistências da tropa inteira.",
   "lore": "O senhor da guerra é o topo da hierarquia militar hobgoblin, um general que conquistou o posto por mérito em batalha. Comanda legiões disciplinadas em campanhas de conquista por colinas, florestas, desertos e até no Subterrâneo. Valoriza a ordem, a estratégia e a obediência acima de tudo. Raramente luta sozinho, preferindo cercar os inimigos com seus soldados antes de avançar."
@@ -16909,6 +17058,9 @@ export const LIVRO_MM = {
   "traits": [
    "resistenciaAMagia"
   ],
+  "marcas": [
+   "devil"
+  ],
   "blurb": "Voa sobre o campo e golpeia com o tridente e a cauda a 3 m de distância, ou lança chamas de longe. O ferimento infernal da cauda drena PV a cada turno e piora a cada novo acerto.",
   "lore": "Diabos chifrudos são soldados alados dos Nove Infernos, brutos que preferem cumprir ordens a pensar nelas. Servem como tropa de choque e guardas nas legiões infernais. Detestam a própria posição e obedecem por medo dos superiores. Em batalha, mergulham do alto para empalar os inimigos."
  },
@@ -17128,6 +17280,9 @@ export const LIVRO_MM = {
   "traits": [
    "resistenciaAMagia"
   ],
+  "marcas": [
+   "devil"
+  ],
   "blurb": "Fera insectoide que dilacera com mordida, garras e cauda, cada golpe somando frio intenso. Ergue muralhas de gelo que dividem o grupo e castigam quem as atravessa.",
   "lore": "Diabos do gelo são infernais de alto escalão, comandantes frios e calculistas das legiões dos Nove Infernos. Lembram enormes insetos bípedes de carapaça branca, com mandíbulas cortantes e uma longa cauda. Odeiam a perda de controle e tratam seus subordinados com crueldade gélida. Muitos empunham lanças de gelo que entorpecem as vítimas, e alguns podem convocar outros de sua espécie para o combate."
  },
@@ -17312,6 +17467,9 @@ export const LIVRO_MM = {
    "metamorfo",
    "resistenciaAMagia"
   ],
+  "marcas": [
+   "devil"
+  ],
   "blurb": "Pequeno diabo voador que se torna invisível, aproxima-se sem ser visto e crava um ferrão venenoso. Resiste a magia e a armas comuns não prateadas, o que o torna difícil de derrubar.",
   "lore": "O diabrete é um demônio menor dos Nove Infernos, astuto e covarde, que adora intrigas e pequenas maldades. Muitos servem magos mortais como espiões, conselheiros ou familiares, sempre empurrando o mestre rumo à corrupção, de olho na alma dele. Apesar disso, costuma ser estranhamente leal e reage com fúria quando seu senhor é ameaçado. Disfarça-se de rato, corvo ou aranha para circular despercebido."
  },
@@ -17413,6 +17571,9 @@ export const LIVRO_MM = {
   "traits": [
    "t_vinculoTelepatico",
    "metamorfo"
+  ],
+  "marcas": [
+   "shapechanger"
   ],
   "blurb": "Seduz à distância com seu Encanto e depois drena a vida da vítima com um beijo psíquico que reduz o máximo de PV. Em combate direto é frágil, preferindo fugir para o Plano Etéreo.",
   "lore": "O íncubo é um corruptor que se alimenta da devoção e da energia vital dos mortais. Assume formas humanas atraentes para circular por cidades, cultivando relações que terminam em ruína moral. Manipula suas vítimas com promessas e sonhos, mantendo contato telepático mesmo entre planos. Quando se cansa ou é descoberto, desaparece no Plano Etéreo."
@@ -17790,6 +17951,9 @@ export const LIVRO_MM = {
    "keenHearingSmell",
    "packTactics"
   ],
+  "marcas": [
+   "shapechanger"
+  ],
   "blurb": "Ataca em bando, com vantagem quando um aliado está perto do alvo, e usa o olhar para fazer adormecer quem falhar numa CD 10 de Sabedoria. Só armas mágicas ou de prata o ferem de verdade.",
   "lore": "É um chacal comum corrompido por poder demoníaco, criado por Graz'zt para servir às lâmias. Ronda estradas e trilhas dos desertos e campos, quase sempre disfarçado de viajante humano miserável que pede abrigo. Quando é acolhido, assume a forma híbrida e ataca. Mente por natureza, e quem presta atenção pode vê-lo fazer careta de dor ao dizer a verdade. Sequestra vítimas para seus mestres e prefere lutar ao lado de chacais, mas foge sem hesitar quando o inimigo é forte demais."
  },
@@ -17850,6 +18014,9 @@ export const LIVRO_MM = {
   "traits": [
    "emboscador",
    "t_mimetismo"
+  ],
+  "marcas": [
+   "kenku"
   ],
   "blurb": "Atacam de emboscada com espada curta ou arco curto, ganhando vantagem contra quem foi surpreendido no primeiro turno. Imitam vozes e ruídos para atrair vítimas a armadilhas.",
   "lore": "Os kenku são humanoides emplumados e sem asas que vagam pelo mundo como andarilhos movidos pela cobiça. Segundo suas lendas, perderam o voo como castigo de um antigo mestre ao qual roubaram o segredo da fala. Escondem o corpo sob trapos e mantos, vivem em florestas e cidades e costumam servir a quadrilhas como ladrões e falsificadores. Só se comunicam reproduzindo sons e frases que já ouviram, usando códigos secretos entre os membros do bando. Ainda sonham em voar, e suas punições e execuções lembram com amargura as asas perdidas."
@@ -17958,6 +18125,9 @@ export const LIVRO_MM = {
   "traits": [
    "sunlightSensitivity",
    "packTactics"
+  ],
+  "marcas": [
+   "kobold"
   ],
   "blurb": "Frágil sozinho, o kobold fica perigoso em grupo: ganha vantagem quando um aliado está ao lado do alvo e alterna entre adaga e funda. Sob a luz do sol, porém, erra muito mais.",
   "lore": "Pequenos humanoides reptilianos e covardes, os kobolds veneram dragões malignos e os servem como lacaios. Vivem em covis de dragões ou, com mais frequência, em masmorras, onde juntam bugigangas para seus próprios tesouros. Compensam a fraqueza física com astúcia: cavam túneis baixos que atrapalham invasores maiores e enchem tudo de armadilhas engenhosas. Cultuam também o deus Kurtulmak, aprisionado num labirinto por um truque do deus dos gnomos, e por isso odeiam gnomos e pegadinhas."
@@ -18101,6 +18271,9 @@ export const LIVRO_MM = {
    "monstroDeCerco",
    "acoesLendarias"
   ],
+  "marcas": [
+   "titan"
+  ],
   "blurb": "Agarra até dez alvos com tentáculos de 9 m de alcance, arremessa-os longe ou os engole para dissolvê-los em ácido, enquanto invoca raios a até 36 m. Armas comuns não o ferem e ele é imune a eletricidade.",
   "lore": "O kraken é um titã das profundezas que dorme por eras no fundo do mar, esperando algum presságio para despertar. Nos primórdios lutou como guerreiro dos deuses, mas rompeu essa servidão e jamais aceitou outro senhor. Quando emerge, afunda frotas inteiras, controla tempestades e pode subir rios para fazer ninho em lagos, arrasando cidades pelo caminho. Alguns são venerados como deuses por cultos em terra e no mar, mas sua mente antiquíssima deseja apenas a ruína de tudo. Seu covil costuma ser uma fenda ou caverna submersa cheia de destroços, tesouros e navios naufragados."
  },
@@ -18186,6 +18359,9 @@ export const LIVRO_MM = {
    "t_escorregadio",
    "sunlightSensitivity",
    "escudoPegajoso"
+  ],
+  "marcas": [
+   "kuo-toa"
   ],
   "blurb": "Luta com lança e rede para prender a presa, e seu escudo pegajoso gruda nas armas de quem erra o golpe. Fica fraco sob a luz do sol.",
   "lore": "Os kuo-toa são humanoides com feições de peixe que outrora viviam nas costas do mundo da superfície, até serem expulsos para o Subterrâneo. Séculos de escravidão sob os devoradores de mentes destruíram sua sanidade e os deixaram com uma devoção religiosa delirante. Inventam deuses absurdos, e a fé coletiva deles pode dar corpo a essas divindades. São governados por arquissacerdotes fanáticos e preferem capturar os inimigos a matá-los. Odeiam a luz do dia e vivem em guerra constante com os drow."
@@ -18303,6 +18479,9 @@ export const LIVRO_MM = {
    "t_escorregadio",
    "sunlightSensitivity"
   ],
+  "marcas": [
+   "kuo-toa"
+  ],
   "blurb": "Conjurador divino que paralisa inimigos com Imobilizar Pessoa, cerca-se de guardiões espirituais e golpeia com um cetro carregado de eletricidade. Sofre sob a luz do sol.",
   "lore": "Os arquissacerdotes são os líderes religiosos das comunidades kuo-toa no Subterrâneo, servos fanáticos de deuses que o próprio povo inventou. Sua fé insana é tão intensa que de fato lhes concede poderes divinos. Governam os cardumes com mão de ferro, ordenando sacrifícios e guerras contra quem ameaça seus santuários submersos. Raramente lutam sozinhos, preferindo comandar monitores e chicoteadores enquanto lançam magias de longe."
  },
@@ -18378,6 +18557,9 @@ export const LIVRO_MM = {
    "t_percepcaoSobrenatural",
    "t_escorregadio",
    "sunlightSensitivity"
+  ],
+  "marcas": [
+   "kuo-toa"
   ],
   "blurb": "Lutador desarmado que combina uma mordida com dois golpes carregados de eletricidade, que impedem o alvo de usar reações. Percebe criaturas invisíveis por perto, mas sofre sob a luz do sol.",
   "lore": "Os monitores são monges guerreiros da sociedade kuo-toa, encarregados de manter a ordem e punir quem desafia os sacerdotes. Vivem nas cidades submersas e cavernas alagadas do Subterrâneo. Treinados em combate corpo a corpo, canalizam uma energia elétrica pelos punhos. Agem com disciplina fanática, caçando hereges e intrusos em nome de seus deuses estranhos."
@@ -18479,6 +18661,9 @@ export const LIVRO_MM = {
    "t_percepcaoSobrenatural",
    "t_escorregadio",
    "sunlightSensitivity"
+  ],
+  "marcas": [
+   "kuo-toa"
   ],
   "blurb": "Sacerdote kuo-toa que prende inimigos com seu bastão-pinça a 3 m e os morde, enquanto lança chama sagrada e perdição. Difícil de agarrar e capaz de perceber criaturas invisíveis.",
   "lore": "Os chicoteadores são os clérigos de nível inferior das comunidades kuo-toa, servindo aos arquissacerdotes e espalhando a fé fanática de seu povo. Vivem nas cavernas alagadas do Subterrâneo, onde conduzem ritos estranhos a deuses nascidos da loucura coletiva. Em combate, lideram grupos de guerreiros, capturando presas para sacrifício. Detestam a luz do sol e raramente sobem à superfície."
@@ -18657,6 +18842,9 @@ export const LIVRO_MM = {
   ],
   "traits": [
    "t_rejuvenescimentoInfernal"
+  ],
+  "marcas": [
+   "devil"
   ],
   "blurb": "Massa lenta e disforme que avança em bandos e esmurra com os punhos, causando pouco dano. O perigo está no número, e nos Nove Infernos ela volta a se erguer dias depois de destruída.",
   "lore": "Lêmures são a forma mais baixa entre os diabos, almas condenadas reduzidas a montes de carne derretida. Rastejam pelos Nove Infernos em enxames sem mente, servindo de bucha de canhão para diabos superiores. Não têm vontade própria e só obedecem a ordens em infernal, que compreendem mas não falam. Mesmo destruídos, costumam se reconstituir no inferno, a menos que sejam eliminados com poder sagrado."
@@ -19072,6 +19260,9 @@ export const LIVRO_MM = {
   "traits": [
    "espetar"
   ],
+  "marcas": [
+   "lizardfolk"
+  ],
   "blurb": "Combina mordida e golpes de tridente, e uma vez por turno empala o alvo para causar 3d6 de dano extra e ganhar PV temporários. Não pode ser amedrontado e luta tão bem na água quanto em terra.",
   "lore": "Alguns homens-lagarto nascem tocados pelo demônio Sess'inek e crescem mais astutos e ambiciosos que seus irmãos. Esses reis tomam o controle das tribos nos pântanos e florestas alagadas, exigindo obediência e sacrifícios. Desprezam a tradição dos xamãs e governam pelo medo e pela força. Costumam empunhar um tridente e liderar pessoalmente os ataques contra vizinhos."
  },
@@ -19174,6 +19365,9 @@ export const LIVRO_MM = {
   "traits": [
    "espetar"
   ],
+  "marcas": [
+   "lizardfolk"
+  ],
   "blurb": "Combina mordida e golpes de tridente que empalam o alvo com 3d6 de dano extra, convertendo esse dano em PV temporários. Destemida, avança sem recuar e se mantém de pé por mais tempo do que parece.",
   "lore": "É uma soberana do povo lagarto que ganhou poder graças a pactos com demônios, e por isso fala abissal. Governa tribos em pântanos e florestas alagadas, onde se move com facilidade tanto na lama quanto debaixo d'água. Cruel e ambiciosa, conduz seus súditos a ataques contra povoados vizinhos e oferece prisioneiros a seus patronos sombrios. Não conhece o medo e costuma liderar os combates pessoalmente, empunhando seu tridente."
  },
@@ -19267,6 +19461,9 @@ export const LIVRO_MM = {
    ]
   },
   "traits": [],
+  "marcas": [
+   "lizardfolk"
+  ],
   "blurb": "Ataca duas vezes por turno combinando mordida com clava, escudo cravejado ou azagaia, e pode emboscar a partir da água, onde nada tão rápido quanto anda.",
   "lore": "Humanoides reptilianos de cultura simples que habitam pântanos e selvas, erguendo aldeias de cabanas em grutas, cavernas alagadas e ruínas meio submersas. Defendem seu território com batedores camuflados e tratam qualquer intruso como presa, sem se importar com noções de bem e mal. Apreciam carne humanoide e costumam levar prisioneiros para banquetes rituais ou sacrifícios ao deus Semuanya. Fazem ferramentas com ossos e escudos com couro e carapaças de monstros, e falam dracônico, chegando a prestar tributo a dragões. Raramente fazem alianças, mas quando fazem são aliados leais e ferozes."
  },
@@ -19381,6 +19578,9 @@ export const LIVRO_MM = {
   },
   "traits": [
    "t_mudarDeForma"
+  ],
+  "marcas": [
+   "lizardfolk"
   ],
   "blurb": "Druida do pântano que prende inimigos com magias de plantas e espinhos, esquenta armaduras e, quando quer morder de verdade, vira crocodilo e arrasta a presa contida.",
   "lore": "Entre o povo-lagarto, os xamãs são os guardiões dos ritos e intermediários entre a tribo e os espíritos da natureza. Vivem em pântanos e florestas alagadas, onde conhecem cada canal e cada tocaia. Pensam de forma fria e prática, julgando tudo pela utilidade para a sobrevivência do grupo. Em combate, preferem moldar o terreno a seu favor antes de avançar com garras e dentes."
@@ -19669,6 +19869,9 @@ export const LIVRO_MM = {
    }
   ],
   "traits": [],
+  "marcas": [
+   "demon"
+  ],
   "blurb": "Demônio menor, lento e frágil, que avança em bandos e rasga com as garras. Sozinho é fraco, mas resiste a fogo, frio e eletricidade e não pode ser amedrontado nem enfeitiçado.",
   "lore": "Os manes são a forma mais baixa de demônio, nascidos das almas corrompidas de mortais cruéis que acabam no Abismo. Vagam em hordas famintas pelas planícies abissais, atacando qualquer coisa viva que encontrem. Não têm vontade própria além da fome e da violência, e demônios mais poderosos os usam como carne de canhão. Entendem o Abissal, mas não conseguem falar."
  },
@@ -19991,6 +20194,9 @@ export const LIVRO_MM = {
    "reativo",
    "aparar"
   ],
+  "marcas": [
+   "demon"
+  ],
   "blurb": "Demônio de seis braços que desfere seis golpes de espada longa e uma cauda por turno, contendo alvos médios ou menores. Pode reagir em todo turno para aparar golpes e se teleporta pelo campo de batalha.",
   "lore": "A marilith é uma demônia do Abismo com torso feminino de seis braços e corpo inferior de serpente. Estrategista nata, comanda hordas demoníacas e adora planejar guerras e cercos. Raramente luta sem uma espada em cada mão, buscando o oponente mais forte para provar sua superioridade. Sua mente afiada a torna tão perigosa como general quanto como duelista."
  },
@@ -20097,6 +20303,9 @@ export const LIVRO_MM = {
    }
   ],
   "traits": [],
+  "marcas": [
+   "merfolk"
+  ],
   "blurb": "Luta com lança, golpeando de perto ou arremessando-a a distância; é ágil na água, mas quase inútil em terra firme.",
   "lore": "Os sereianos têm tronco humano e cauda de peixe, e enfeitam pele e escamas com conchas. Vivem em mares rasos, em cavernas submersas, labirintos de coral ou ruínas afundadas, onde cultivam o leito marinho e pastoreiam cardumes. Sem meios de forjar metal ou erguer cidades de pedra, organizam-se em pequenas tribos de caçadores-coletores, cada uma com seus próprios costumes. Às vezes um líder une várias tribos contra uma ameaça comum, e isso pode dar origem a reinos submarinos duradouros. Defendem seus lares com lanças feitas de destroços de navios e restos de criaturas marinhas."
  },
@@ -20286,6 +20495,9 @@ export const LIVRO_MM = {
   "traits": [
    "resistenciaAMagia",
    "armasMagicas"
+  ],
+  "marcas": [
+   "yugoloth"
   ],
   "blurb": "Soldado yugoloth que ataca com garras e tridente e se teleporta para flanquear os inimigos. Resiste a magia e pode lançar névoa mortal sobre grupos inteiros.",
   "lore": "Mezzoloths são os soldados rasos dos yugoloths, demônios mercenários com corpo de inseto do tamanho de um homem. Servem a quem pagar mais, lutando em guerras nos planos inferiores e também no mundo material. São brutos e pouco inteligentes, mas disciplinados quando bem comandados. Costumam agir em bandos, cercando a presa e envolvendo-a em nuvens venenosas."
@@ -21341,6 +21553,9 @@ export const LIVRO_MM = {
   "traits": [
    "resistenciaAMagia"
   ],
+  "marcas": [
+   "demon"
+  ],
   "blurb": "Demônio corpulento que abre o combate com um clarão de luz multicolorida que amedronta quem está perto, depois morde e golpeia com garras de longo alcance. Teleporta-se com facilidade e resiste a magia.",
   "lore": "O nalfeshnee é um demônio enorme que mistura feições de javali e de macaco, com asas pequenas demais para o corpo pesado. Apesar da aparência grotesca, é astuto e se vê como estrategista e juiz entre os demônios do Abismo. Costuma comandar hordas menores e avaliar almas, decidindo o destino delas com crueldade. Em batalha prefere aterrorizar os inimigos antes de despedaçá-los."
  },
@@ -21625,6 +21840,9 @@ export const LIVRO_MM = {
    "resistenciaAMagia",
    "armasMagicas"
   ],
+  "marcas": [
+   "yugoloth"
+  ],
   "blurb": "Combatente alado que alterna golpes de machado e garras com teletransportes de até 18 m, surgindo onde menos se espera. Suas garras abrem feridas infernais que sangram cada vez mais até serem estancadas ou curadas por magia.",
   "lore": "Os nicaloths são yugoloths de elite, enormes demônios alados de pele esverdeada que servem como tropa de choque dos mercenários infernais. Vagam pelos planos inferiores vendendo seus serviços a quem pagar melhor, sem lealdade a nenhum lado da Guerra Sangrenta. Costumam comandar bandos de mezzoloths e atacam de surpresa, usando invisibilidade e escuridão para emboscar. Frios e brutais, valorizam apenas o contrato e a própria sobrevivência."
  },
@@ -21895,6 +22113,9 @@ export const LIVRO_MM = {
    "agressivo",
    "t_furiaDeGruumsh"
   ],
+  "marcas": [
+   "orc"
+  ],
   "blurb": "Sacerdote orc que avança com fúria e golpeia com a lança abençoada, causando dano extra em cada acerto. Apoia o bando com bênção, comando e uma arma espiritual flutuante.",
   "lore": "Os Olhos de Gruumsh são orcs que arrancaram o próprio olho em devoção ao deus caolho da tribo. Em troca, recebem dele poderes divinos e passam a servir como clérigos e conselheiros do chefe. Acompanham os bandos em ataques por montanhas, florestas, pântanos e até no Subterrâneo. Pregam a guerra sem trégua e são os primeiros a incitar os guerreiros ao massacre."
  },
@@ -21986,6 +22207,9 @@ export const LIVRO_MM = {
    "agressivo",
    "t_furiaDeGruumsh"
   ],
+  "marcas": [
+   "orc"
+  ],
   "blurb": "Avança com ação bônus sobre o inimigo e desfere dois golpes de machado grande reforçados pela fúria de Gruumsh. Uma vez por dia, seu grito de guerra dá vantagem aos aliados próximos.",
   "lore": "O chefe de guerra é o orc mais forte e cruel de sua tribo, que conquistou o posto derrubando rivais. Acredita-se abençoado por Gruumsh, o deus caolho dos orcs, e luta com fúria sagrada. Lidera bandos saqueadores em colinas, florestas, pântanos, montanhas e até no Subterrâneo. Seus guerreiros o seguem por medo e por sede de pilhagem, e ele está sempre na linha de frente do ataque."
  },
@@ -22052,6 +22276,9 @@ export const LIVRO_MM = {
   },
   "traits": [
    "agressivo"
+  ],
+  "marcas": [
+   "orc"
   ],
   "blurb": "Guerreiro orc de elite em armadura pesada que avança como ação bônus e desfere dois golpes de machado grande por turno. Difícil de ferir e muito perigoso no corpo a corpo.",
   "lore": "Orogs nascem da união entre orcs e orcas, abençoados por Gruumsh com força e astúcia acima do comum. Servem como tropa de choque e guardas de elite dos chefes tribais, muitas vezes liderando ataques. Vivem em cavernas do Subterrâneo, montanhas, florestas e ermos gelados, onde as tribos orcs se instalam. São disciplinados em batalha, mas tão cruéis e sedentos por destruição quanto seus parentes."
@@ -22653,6 +22880,9 @@ export const LIVRO_MM = {
    "aura",
    "resistenciaAMagia",
    "armasMagicas"
+  ],
+  "marcas": [
+   "devil"
   ],
   "blurb": "Um general infernal que despeja quatro ataques por turno, com mordida venenosa que impede a cura e maça flamejante, enquanto sua aura de medo paralisa a coragem de quem se aproxima. Ainda lança bolas de fogo à vontade e imobiliza heróis com magia.",
   "lore": "Os diabos das profundezas são a elite da hierarquia dos Nove Infernos, servindo como generais e conselheiros dos arquiduques. Enormes, alados e cobertos de escamas, carregam uma maça e exalam uma presença opressiva. São estrategistas frios e arrogantes, que planejam guerras e intrigas com séculos de antecedência. Raramente lutam sem antes calcular cada vantagem, e comandam legiões de diabos menores com punho de ferro."
@@ -23504,6 +23734,9 @@ export const LIVRO_MM = {
   "traits": [
    "furiaFerida"
   ],
+  "marcas": [
+   "quaggoth"
+  ],
   "blurb": "Ataca com duas garras e escala paredes com facilidade. Fica mais perigoso quando está quase morto: com 10 PV ou menos, ganha vantagem nos ataques e causa dano extra.",
   "lore": "Os quaggoths são humanoides peludos e selvagens que defendem seu território nos abismos do Subterrâneo. No passado viviam nas florestas da superfície, mas foram quase exterminados pelos elfos e se refugiaram nas profundezas. Lá, perderam a cor do pelo, adaptaram os olhos ao escuro e adotaram o canibalismo. Os drow criam esses brutos como tropas leais e usam o ódio que eles sentem pelos elfos em ataques à superfície. Alguns desenvolvem poderes psiônicos e passam a servir como xamãs da tribo, chamados thonots."
  },
@@ -23666,6 +23899,9 @@ export const LIVRO_MM = {
   },
   "traits": [
    "furiaFerida"
+  ],
+  "marcas": [
+   "quaggoth"
   ],
   "blurb": "Bruto peludo que dilacera com duas garras e apoia o bando com magia psiônica, como curar ferimentos, crescer de tamanho ou esquentar armaduras metálicas. Fica ainda mais perigoso quando está quase morto.",
   "lore": "O thonot é um quaggoth raro, nascido com poderes psiônicos, que atua como líder espiritual e curandeiro da sua tribo no Subterrâneo. Esses humanoides de pelo branco vivem em cavernas profundas e costumam servir a senhores mais poderosos, como os drow. O thonot guia os outros em combate e usa sua mente para proteger os aliados. Como todo quaggoth, entra num frenesi selvagem quando gravemente ferido."
@@ -24641,6 +24877,9 @@ export const LIVRO_MM = {
    "t_anfibioLimitado",
    "t_telepatiaComTubaroes"
   ],
+  "marcas": [
+   "sahuagin"
+  ],
   "blurb": "Caçador anfíbio que morde e golpeia com garras ou lança, e fica ainda mais feroz contra quem já está ferido. Costuma atacar em grupo, às vezes com tubarões ao seu lado.",
   "lore": "Conhecidos nas costas como diabos do mar, os sahuagin são humanoides com feições de peixe que sobem das fossas oceânicas para saquear navios e aldeias litorâneas. Cultuam Sekolah, o deus tubarão, e suas sacerdotisas têm grande poder; os machos mutantes de quatro braços governam como barões. O cheiro de sangue os leva ao frenesi, e tubarões os tratam como aliados. Travam uma guerra de séculos contra os elfos aquáticos, infiltrando entre eles os malenti, sahuagin que nascem idênticos a elfos."
  },
@@ -24735,6 +24974,9 @@ export const LIVRO_MM = {
    "frenesiDeSangue",
    "t_anfibioLimitado",
    "t_telepatiaComTubaroes"
+  ],
+  "marcas": [
+   "sahuagin"
   ],
   "blurb": "Brutamontes aquático que morde e golpeia três vezes por turno com garras ou tridente, ficando ainda mais perigoso contra quem já está ferido. Pode convocar tubarões próximos para cercar suas presas.",
   "lore": "Os barões sahuagin são líderes enormes e cruéis que comandam grupos de guerreiros das profundezas. Vivem em cidadelas submersas e atacam litorais e navios em busca de saque e sacrifícios. O cheiro de sangue os leva a um frenesi assassino. Costumam lutar acompanhados de tubarões, que obedecem às suas ordens mentais."
@@ -24840,6 +25082,9 @@ export const LIVRO_MM = {
    "frenesiDeSangue",
    "t_anfibiaLimitada",
    "t_telepatiaComTubaroes"
+  ],
+  "marcas": [
+   "sahuagin"
   ],
   "blurb": "Conjuradora divina que paralisa inimigos com imobilizar pessoa, invoca uma arma espiritual em forma de tridente e cura os aliados em massa. De perto morde e arranha, e fica ainda mais feroz contra alvos já feridos.",
   "lore": "As sacerdotisas são as líderes espirituais dos sahuagin, devotas do deus-tubarão Sekolah. Vivem em cidades submersas nos mares profundos e ao longo de costas perigosas. Elas comandam rituais, conduzem ataques contra povoados litorâneos e controlam tubarões com a mente. Dentro da sociedade sahuagin, a palavra delas tem peso quase igual à do rei."
@@ -25333,6 +25578,9 @@ export const LIVRO_MM = {
    "incorporealMovement",
    "sensibilidadeALuz",
    "furtividadeNasSombras"
+  ],
+  "marcas": [
+   "demon"
   ],
   "blurb": "Espreita na escuridão, se esconde com facilidade e atravessa paredes para atacar com garras psíquicas que ferem muito mais quando ele tem vantagem. É fraco sob luz intensa e vulnerável a dano radiante.",
   "lore": "Quando um demônio perece fora do Abismo, às vezes sua essência se recusa a voltar inteira e se torna uma sombra viva, sem corpo verdadeiro. Esse ser ressentido vaga por ruínas, masmorras e lugares sem luz, onde se sente seguro. Ele adora sussurrar telepaticamente para suas vítimas, alimentando medos e desconfianças antes de atacar. Evita a claridade e prefere emboscar quem está isolado."
@@ -25981,6 +26229,9 @@ export const LIVRO_MM = {
    "voaSemProvocar",
    "t_espinhosLimitados",
    "resistenciaAMagia"
+  ],
+  "marcas": [
+   "devil"
   ],
   "blurb": "Voa em volta dos inimigos sem provocar ataques de oportunidade e dispara espinhos flamejantes da cauda à distância. De perto, morde e golpeia com seu forcado.",
   "lore": "O diabo espinhoso é um pequeno demônio alado dos Nove Infernos, coberto de espinhos e armado com um forcado. Costuma servir como batedor, mensageiro ou vigia para diabos mais poderosos. Prefere atacar do alto, lançando os espinhos da cauda, que pegam fogo ao voar. Rancoroso e covarde, evita combates justos e foge quando a situação piora."
@@ -26656,6 +26907,9 @@ export const LIVRO_MM = {
    "t_vinculoTelepatico",
    "metamorfo"
   ],
+  "marcas": [
+   "shapechanger"
+  ],
   "blurb": "Enfeitiça um humanoide a até 9 m e o faz obedecer, depois drena sua vida com um beijo que reduz o máximo de PV. Foge para o Plano Etéreo quando ameaçada e resiste a armas não mágicas.",
   "lore": "Corruptora infernal que se disfarça de mortal sedutor para desviar almas do bom caminho. Frequenta cidades, onde se infiltra entre nobres, artistas e devotos sob formas humanas. Prefere manipular a lutar, usando vítimas enfeitiçadas como servos e ferramentas. Mantém contato telepático com seus escravos mesmo de outros planos, sussurrando tentações até que a alma esteja perdida."
  },
@@ -27279,6 +27533,9 @@ export const LIVRO_MM = {
    "monstroDeCerco",
    "acoesLendarias"
   ],
+  "marcas": [
+   "titan"
+  ],
   "blurb": "Um titã quase invulnerável que despedaça tudo ao alcance com cinco ataques por turno, engole criaturas inteiras e ainda pode devolver feitiços ao conjurador. Armas comuns não o ferem, e sua mera presença aterroriza exércitos.",
   "lore": "O tarrasque é visto como o pior flagelo do Plano Material, e muitos acreditam que existe apenas um. É um réptil colossal bípede, com cerca de 15 metros de altura, que anda curvado como uma ave de rapina e se equilibra na cauda imensa. Passa décadas ou séculos adormecido em um covil oculto nas profundezas da terra. Quando desperta, por motivos que ninguém compreende, emerge faminto e devora cidades inteiras. Algumas religiões o tratam como instrumento do castigo divino."
  },
@@ -27350,6 +27607,9 @@ export const LIVRO_MM = {
   "traits": [
    "camuflagemGeral",
    "t_saltoParado"
+  ],
+  "marcas": [
+   "thri-kreen"
   ],
   "blurb": "Caçador insetoide que salta longe e ataca com garras e uma mordida venenosa capaz de paralisar quem falhar feio na resistência. Some na paisagem graças à carapaça camuflada.",
   "lore": "Os thri-kreen são humanoides insetoides que percorrem desertos e savanas, mantendo distância das demais raças. Conversam entre si estalando as mandíbulas e mexendo as antenas, e com estrangeiros recorrem a desenhos na areia ou figuras feitas de gravetos. Enxergam quase todo ser vivo como possível refeição, com predileção por carne de elfo, mas poupam quem lhes pareça útil e nunca matam por diversão. Não dormem, descansando alertas, e vivem em média só uns trinta anos."
@@ -27547,6 +27807,9 @@ export const LIVRO_MM = {
   ],
   "traits": [
    "packTactics"
+  ],
+  "marcas": [
+   "any race"
   ],
   "blurb": "Luta em bando, ganhando vantagem quando um aliado está colado no alvo. Usa a lança corpo a corpo ou a arremessa à distância.",
   "lore": "Vive longe das cidades, em tribos que sobrevivem da caça e da pesca. Obedece ao chefe da tribo, geralmente o guerreiro mais forte ou mais velho, ou alguém tido como escolhido pelos deuses. Pode ser encontrado em quase qualquer ambiente selvagem, das montanhas geladas aos desertos. Sozinho é fraco, mas raramente anda sozinho."
@@ -27747,6 +28010,9 @@ export const LIVRO_MM = {
    "camuflagemGeral",
    "aura",
    "sunlightSensitivity"
+  ],
+  "marcas": [
+   "troglodyte"
   ],
   "blurb": "Ataca com uma mordida e duas garras por turno, e seu fedor pode deixar envenenado quem começa o turno colado nele. Fica fraco sob a luz do sol.",
   "lore": "Trogloditas são humanoides brutais que ocupam as camadas mais rasas do Subterrâneo e vivem em guerra com tudo ao redor, inclusive entre si. Suas cavernas são imundas, cheias de restos de comida e secreções, e seus territórios são marcados com ossos e desenhos feitos de sangue ou esterco. Incapazes de planejar a longo prazo, sobrevivem de caçadas e ataques constantes, sentindo prazer cruel em capturar e devorar criaturas mais fracas. Quase nada fabricam, pilhando o que precisam das vítimas, e disputam armas de metal até a morte. Alguns cultuam Laogzed, um demônio sapo-lagarto gordo e adormecido no Abismo, cuja saciedade eterna eles sonham alcançar."
@@ -28037,6 +28303,9 @@ export const LIVRO_MM = {
   "traits": [
    "resistenciaAMagia",
    "armasMagicas"
+  ],
+  "marcas": [
+   "yugoloth"
   ],
   "blurb": "Comandante yugoloth que paralisa um alvo com o olhar hipnótico enquanto desfere três golpes de espada longa, e ainda se teleporta e conjura tempestade de fogo e sugestão em massa.",
   "lore": "Os ultroloths estão no topo da hierarquia dos yugoloths, demônios mercenários das planícies neutras e malignas do Hades e da Geena. Parecem figuras esguias, de rosto sem traços, com olhos que cintilam como opalas. Comandam exércitos de yugoloths menores e vendem seus serviços a quem pagar melhor, sem lealdade a ninguém. Frios e manipuladores, preferem dobrar mentes com magia a lutar abertamente."
@@ -28404,6 +28673,9 @@ export const LIVRO_MM = {
    "t_fraquezasVampiricas",
    "acoesLendarias"
   ],
+  "marcas": [
+   "shapechanger"
+  ],
   "blurb": "Agarra a vítima com golpes desarmados e a morde para drenar vida, regenerando-se a cada turno e enfeitiçando inimigos. Radiante, água benta, luz do sol e água corrente são suas fraquezas.",
   "lore": "Vampiros são mortos-vivos que despertaram para uma noite sem fim e se alimentam do sangue dos vivos. Não têm sombra nem reflexo e evitam a luz do sol, que os queima. Seus sentimentos antigos apodrecem em obsessões, e eles colecionam objetos e pessoas que simbolizam o que desejam. Cada um fica preso a um caixão ou túmulo onde precisa descansar de dia, geralmente escondido sob castelos ou mansões fortificadas guardadas por crias vampíricas."
  },
@@ -28683,6 +28955,9 @@ export const LIVRO_MM = {
    "t_fraquezasVampiricas",
    "acoesLendarias"
   ],
+  "marcas": [
+   "shapechanger"
+  ],
   "blurb": "Vampiro que soma garras, mordida drenante e encanto a magias de mago como invisibilidade maior, praga e dominar pessoa. Regenera 20 PV por turno e foge como névoa ao cair, então luz solar, dano radiante e água corrente são as chaves para destruí-lo.",
   "lore": "Alguns vampiros estudaram as artes arcanas em vida e continuaram aperfeiçoando-as depois da maldição. Eles governam covis em cidades e castelos, usando feitiços para espionar, esconder-se e subjugar mortais. Calculistas e pacientes, preferem manipular de longe e só se expor quando a vitória é certa. Sempre mantêm um local de descanso protegido, para onde retornam quando derrotados."
  },
@@ -28841,6 +29116,9 @@ export const LIVRO_MM = {
    "t_fraquezasVampiricas",
    "acoesLendarias"
   ],
+  "marcas": [
+   "shapechanger"
+  ],
   "blurb": "Combate com espada grande em dois golpes por turno, agarra e morde para drenar vida e se curar. Regenera 20 PV por turno e foge em forma de névoa quando derrubado, mas sofre com luz solar, água corrente e dano radiante.",
   "lore": "É um vampiro que manteve na morte a disciplina e o gosto pelo combate de quando era soldado ou cavaleiro. Veste armadura pesada e empunha espada grande, mas conserva todos os poderes e fraquezas de sua espécie. Costuma assombrar cidades, caçando à noite e voltando ao seu local de descanso antes do amanhecer. Quem morre drenado por ele pode se erguer como cria vampírica a seu serviço."
  },
@@ -28954,6 +29232,9 @@ export const LIVRO_MM = {
   ],
   "traits": [
    "resistenciaAMagia"
+  ],
+  "marcas": [
+   "demon"
   ],
   "blurb": "Demônio abutre que mergulha do céu para bicar e rasgar com as garras, espalhando esporos venenosos e soltando um guincho capaz de atordoar quem estiver por perto.",
   "lore": "O vrock é um demônio do Abismo com corpo de homem e cabeça e asas de abutre gigante. Cruel e pouco inteligente, adora causar destruição e caos ao lado de outros de sua espécie. Costuma atacar em bandos, sobrevoando o campo de batalha e descendo sobre as presas mais fracas. Sua resistência à magia e às armas comuns o torna um adversário difícil de derrubar."
@@ -29333,6 +29614,10 @@ export const LIVRO_MM = {
    "metamorfo",
    "keenSmell"
   ],
+  "marcas": [
+   "human",
+   "shapechanger"
+  ],
   "blurb": "Combatente brutal que alterna machado grande e garras, com mordida capaz de transmitir a licantropia. Só armas mágicas ou prateadas o ferem de verdade.",
   "lore": "O lobisomem-urso é um humano amaldiçoado que pode assumir a forma de um grande urso ou de um híbrido entre homem e fera. Ao contrário de outros licantropos, costuma ser solitário e de boa índole, protegendo florestas, colinas e terras geladas de quem as ameaça. Evita cidades e prefere viver isolado, tratando os animais selvagens como seus protegidos. Quando provocado, porém, luta com fúria devastadora."
  },
@@ -29407,6 +29692,10 @@ export const LIVRO_MM = {
   "traits": [
    "metamorfo",
    "relentless"
+  ],
+  "marcas": [
+   "human",
+   "shapechanger"
   ],
   "blurb": "Investe em linha reta para rasgar com as presas e derrubar o alvo, depois castiga com a marreta. Só armas mágicas ou prateadas o ferem de verdade, e ele resiste a cair uma vez por descanso.",
   "lore": "O javali-lobisomem é um humano amaldiçoado pela licantropia, capaz de assumir a forma de um javali ou de um híbrido brutal. Costuma viver em campos, florestas e colinas, muitas vezes em pequenos clãs rústicos e desconfiados de forasteiros. É temperamental e agressivo, e reage a qualquer provocação com fúria cega. Quem sobrevive às suas presas pode acabar carregando a mesma maldição."
@@ -29492,6 +29781,10 @@ export const LIVRO_MM = {
   "traits": [
    "metamorfo",
    "keenSmell"
+  ],
+  "marcas": [
+   "human",
+   "shapechanger"
   ],
   "blurb": "Ataca com espada curta e besta de mão ou morde na forma híbrida, e sua mordida pode transmitir a licantropia. Só armas mágicas ou de prata o ferem de verdade.",
   "lore": "Homens-ratos são licantropos astutos e mesquinhos que escondem a maldição sob uma aparência humana comum. Costumam viver nos esgotos e becos das cidades, mas também em florestas próximas a povoados. Organizam-se em bandos que agem como guildas de ladrões, espionando e roubando nas sombras. Preferem emboscadas e fuga rápida a lutas abertas, muitas vezes cercados de ratos comuns."
@@ -29597,6 +29890,10 @@ export const LIVRO_MM = {
    "metamorfo",
    "keenHearingSmell"
   ],
+  "marcas": [
+   "human",
+   "shapechanger"
+  ],
   "blurb": "Caçador paciente que salta sobre a presa para derrubá-la e morder, ou luta com cimitarras e arco longo. Só armas mágicas ou prateadas o ferem de verdade, e sua mordida transmite a licantropia.",
   "lore": "O tigre-lobisomem é um humano amaldiçoado que pode assumir a forma de tigre ou de um híbrido entre homem e fera. Costuma viver isolado em savanas, florestas e desertos, perto de povoados onde troca mercadorias. É orgulhoso e seletivo, preferindo a companhia de outros de sua espécie. Caça por prazer e evita espalhar a maldição, embora a transmita com a mordida."
  },
@@ -29686,6 +29983,10 @@ export const LIVRO_MM = {
   "traits": [
    "metamorfo",
    "keenHearingSmell"
+  ],
+  "marcas": [
+   "human",
+   "shapechanger"
   ],
   "blurb": "Caçador feroz que alterna entre homem, lobo e fera híbrida, atacando com mordida e garras. Só armas mágicas ou prateadas o ferem de verdade, e sua mordida pode transmitir a maldição da licantropia.",
   "lore": "O lobisomem é um humano amaldiçoado que se transforma em lobo ou em uma criatura meio homem, meio lobo. Vive em florestas e colinas, muitas vezes escondendo sua natureza entre aldeões durante o dia. Quando a fera desperta, caça com selvageria e prazer cruel, perseguindo presas pelo faro. Muitos formam matilhas e espalham a maldição a quem sobrevive às suas mordidas."
@@ -29905,6 +30206,9 @@ export const LIVRO_MM = {
   "traits": [
    "sunlightSensitivity",
    "packTactics"
+  ],
+  "marcas": [
+   "kobold"
   ],
   "blurb": "Voa sobre os inimigos e solta pedras de cima, ou desce para apunhalar quando há aliados por perto. Frágil e ruim sob a luz do sol, mas perigoso em bando.",
   "lore": "Kobolds alados são membros raros de sua raça que nascem com asas semelhantes às de dragões, o que os faz se considerarem mais próximos dos dragões que veneram. Vivem junto das tribos kobolds em cavernas, ruínas e túneis, servindo como batedores e atacantes aéreos. Preferem emboscadas e ataques do alto, fugindo de confrontos diretos. Evitam a luz do dia e agem sempre em grupo."
@@ -30390,6 +30694,10 @@ export const LIVRO_MM = {
    "resistenciaAMagia",
    "spiderClimb",
    "webWalker"
+  ],
+  "marcas": [
+   "demon",
+   "shapechanger"
   ],
   "blurb": "Demônio metamorfo que golpeia duas vezes com ataques carregados de veneno (6d6) e prende inimigos com teias. Pode virar névoa tóxica imune a dano não mágico, deixando quem ela envolve envenenado e incapacitado.",
   "lore": "Os yochlols são demônios servos de Lolth, a Rainha Aranha, enviados ao mundo para vigiar e punir seus fiéis. Costumam viver nos templos drow do Subterrâneo, onde se disfarçam de sacerdotisas élficas ou de aranhas gigantes. Em sua forma verdadeira parecem um amontoado viscoso de carne com tentáculos e um único olho. São espiões astutos que leem mentes e manipulam intrigas antes de partir para a violência."
@@ -31676,6 +31984,10 @@ export const LIVRO_MM = {
    "metamorfo",
    "resistenciaAMagia"
   ],
+  "marcas": [
+   "shapechanger",
+   "yuan-ti"
+  ],
   "blurb": "Serpente gigante com braços que alterna mordida venenosa, constrição e cimitarra, ou dispara flechas envenenadas de longe. Resiste à magia e pode amedrontar ou dominar com sugestões.",
   "lore": "As abominações são o ápice da transformação yuan-ti, criaturas quase totalmente serpentinas que governam os templos e cidades da raça. Habitam ruínas em florestas, pântanos e desertos, cercadas de cultistas e cobras. São inteligentes, cruéis e se veem como escolhidas por deuses serpentes. Manipulam servos com magia e só lutam pessoalmente quando seus planos estão em risco."
  },
@@ -31790,6 +32102,10 @@ export const LIVRO_MM = {
    "resistenciaAMagia",
    "t_tipoDeMaldito"
   ],
+  "marcas": [
+   "shapechanger",
+   "yuan-ti"
+  ],
   "blurb": "Combina mordida venenosa com cimitarra ou arco longo envenenado, atacando duas vezes por turno. Resiste bem à magia e pode manipular inimigos com sugestão.",
   "lore": "Os malditos são a casta intermediária dos yuan-ti, mesclas de humano e serpente; este tipo tem corpo humano e cabeça de cobra. Habitam templos em ruínas em selvas, pântanos e desertos, servindo a deuses serpentes. São astutos e cruéis, preferindo enganar e manipular antes de lutar. Podem assumir a forma de uma cobra para espionar ou fugir."
  },
@@ -31876,6 +32192,10 @@ export const LIVRO_MM = {
    "metamorfo",
    "resistenciaAMagia",
    "t_tipoDeAbominacao"
+  ],
+  "marcas": [
+   "shapechanger",
+   "yuan-ti"
   ],
   "blurb": "Ataca duas vezes com os braços de serpente, cada mordida somando veneno ao dano perfurante. Resiste bem a magia e usa sugestão para manipular inimigos.",
   "lore": "Este yuan-ti tem cabeça e tronco humanos, mas no lugar dos braços se contorcem duas serpentes vivas. Malisons formam a casta intermediária da sociedade yuan-ti, servindo como guardas, espiões e capatazes nos templos escondidos em selvas, pântanos e desertos. Astutos e cruéis, preferem enganar e dominar antes de lutar. Podem assumir a forma de uma cobra para se infiltrar ou fugir."
@@ -32005,6 +32325,10 @@ export const LIVRO_MM = {
    "resistenciaAMagia",
    "t_tipoDeAbominavel"
   ],
+  "marcas": [
+   "shapechanger",
+   "yuan-ti"
+  ],
   "blurb": "Metade humano, metade serpente, alterna cimitarra e arco longo enquanto esmaga um alvo nos anéis do corpo, deixando-o contido. Resiste a magia e pode sugestionar inimigos.",
   "lore": "Os yuan-ti abomináveis formam a casta intermediária da sociedade serpentina, mais humanos que as abominações e menos que os sangue-puros. Este tipo tem cabeça e tronco humanos sobre uma longa cauda de cobra no lugar das pernas. Habitam templos arruinados em selvas, pântanos e desertos, onde servem a deuses-serpente e tramam contra os povos vizinhos. Costumam agir como guerreiros, sacerdotes e capatazes de escravos, usando enganação e veneno para dominar."
  },
@@ -32101,6 +32425,9 @@ export const LIVRO_MM = {
   },
   "traits": [
    "resistenciaAMagia"
+  ],
+  "marcas": [
+   "yuan-ti"
   ],
   "blurb": "Infiltrador que parece humano: golpeia duas vezes com a cimitarra ou dispara flechas envenenadas, e usa sugestão para manipular inimigos. Resiste bem a magia.",
   "lore": "Os puros-sangues são os yuan-ti mais parecidos com humanos, traídos apenas por detalhes como escamas ou olhos de serpente. Servem como espiões e agentes de seus parentes mais monstruosos, circulando por cidades humanas. Habitam selvas, pântanos e desertos em torno de templos antigos. São frios, calculistas e veem as outras raças como gado ou ferramentas."

@@ -91,6 +91,9 @@ export function criarZorzulaPosto(app, config = {}) {
   const pista = (t) => { if (!(vila.pistas ??= []).includes(t)) vila.pistas.push(t); };
   const longe = (c, tile, pes = 5) => (distanceFt(c.pos, tile) > pes ? `longe demais — chegue a ${pes} pés` : null);
   const abrirAresta = (a, b) => enc.field.porAresta(a.x, a.y, b.x, b.y, ARESTA.aberta);
+  // OS SAWPLEE SEM O CHEFE (o livro: morto o Ruxithid, o clã é pacífico, curioso e travesso). Ninguém mais briga no
+  // posto: os vigias abrem, o refeitório só olha, o dormitório acorda e pergunta. Os ferais da forja não são do clã.
+  const semChefe = () => z.santuario === 'vencido';
   const fecharAresta = (a, b, cod = ARESTA.parede) => enc.field.porAresta(a.x, a.y, b.x, b.y, cod);
 
   // ------------------------------------------------------------- o elenco ----
@@ -224,6 +227,13 @@ export function criarZorzulaPosto(app, config = {}) {
   }
 
   async function falarComOsVigias(c) {
+    if (semChefe()) {
+      z.vigias = 'abriram';
+      await painel(['Dois focinhos aparecem nas seteiras. — Ah, são vocês. — Cochicham. — Os que acabaram com o chefe.',
+        'A corrente range sem ninguém pedir duas vezes, e a porta de pedra se abre. Um deles grita lá de cima: — Limpa os pés!']);
+      abrirPortao();
+      return;
+    }
     const podePagar = totalEmCobre(todos()) >= 2500;
     const escolha = await painel([
       'Uma voz fina desce de uma das seteiras: — Quem é? O que quer? A gente não compra nada! — Outra, da outra seteira, ri. — Fala que a gente não tá.',
@@ -272,6 +282,13 @@ export function criarZorzulaPosto(app, config = {}) {
   // ---------------------------------------------------------- o refeitório ----
   async function chegarAoRefeitorio() {
     if (z.refeitorio) return false;
+    if (semChefe()) {
+      z.refeitorio = 'trato';
+      await painel([`Mesas compridas de pedra e ${refeitorio.length} goblins que param de mastigar ao mesmo tempo.`,
+        'Ninguém pula. Um deles se levanta, devagar, e aponta a colher para vocês. — Foram vocês, né? Lá na sala azul. — Ele senta de novo. — A cabeça parou de zumbir. Senta, se quiser. Tem sopa.']);
+      app.refresh();
+      return true;
+    }
     z.refeitorio = 'visto';
     const quem = herois().find((h) => ['Z3', 'corredor'].includes(salaDoPosto(h.pos))) ?? herois()[0];
     const escolha = await painel([
@@ -319,6 +336,14 @@ export function criarZorzulaPosto(app, config = {}) {
   }
 
   async function acordarDormitorio(h, t) {
+    if (semChefe()) {
+      z.dormitorio = 'quietos';
+      await painel([`${h.name} (${t.nome} ${t.total}) tropeça num balde.`,
+        'Os goblins sentam nos beliches, piscando. Nenhum corre para a porta. — É o pessoal da sala azul — diz um, e volta a deitar. Outro fica olhando, curioso, para as botas de vocês.']);
+      for (const g of dormindo) { entrarNeutro(g, { dx: 1, dy: 0 }); removeCondition(g, 'caido'); }
+      app.refresh();
+      return true;
+    }
     const quem = herois()[0];
     const escolha = await painel([`${h.name} (${t.nome} ${t.total}) tropeça num balde.`, 'Os goblins pulam dos beliches, gritam e correm para a porta: — SOCORRO! INVASÃO!'], [
       { rotulo: `Calar todo mundo (Intimidação, CD 16 — ${quem.name})`, valor: 'intimidacao', primaria: true },

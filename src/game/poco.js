@@ -99,6 +99,10 @@ export const MAPA_POCO = {
   ],
   tracosTipo: [null, null, null, null, null, null, null, null, null, "E"],
   fundo: {"nome": "poco.jpg", "url": "/mapas/fa/poco.jpg", "escala": 100, "x0": 0, "y0": 0, "giro": 0, "opacidade": 1},
+  sobreposicoes: [
+    {"id": "tendaInterior", "url": "/mapas/fa/poco-tenda-interior.webp", "x": 4, "y": 7, "w": 5, "h": 5, "ligada": true},
+    {"id": "tendaTelhado", "url": "/mapas/fa/poco-tenda-telhado.webp", "x": 4, "y": 7, "w": 5, "h": 5, "ligada": true, "frente": true, "modo": "peca"},
+  ],
 };
 
 export const POCO = {

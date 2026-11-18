@@ -185,7 +185,7 @@ def behir():
               'Na borda, a pedra está gasta e lisa, como se algo passasse por ali sempre.'),
         Z.obj(10, 8, 'ninhoDeOssos', 'Olhar o ninho', 'Uma depressão funda na parede, forrada de pedra moída, escamas azuis do tamanho '
               'de um prato e ossos queimados.'),
-        Z.obj(9, 2, 'mochilaMofada', 'Olhar a mochila', 'Uma mochila mofada, encostada na parede norte, com a costura podre.'),
+        Z.obj(9, 3, 'mochilaMofada', 'Olhar a mochila', 'Uma mochila mofada, encostada na parede norte, com a costura podre.'),
     ]
     m['terreno'] = [''.join(l) for l in t]
     pontos = {
@@ -205,7 +205,7 @@ def gruta():
         Z.obj(3, 1, 'fungoQueMuda', 'Olhar as paredes', 'O fungo das paredes muda de cor devagar, do verde ao roxo, e as pedras suam '
               'um muco transparente. De algum lugar adiante vem um borbulhar sem palavras.'),
         Z.obj(8, 4, 'pocoDeCarne', 'Olhar o poço', 'Lá embaixo, um poço de lama e restos. Bolotas de carne boiam nele, e algumas têm '
-              'olhos.', 'percepcao', 15, 'Algumas bolotas piscam. E têm boca.'),
+              'olhos.', 'procurar', 15, 'Algumas bolotas piscam. E têm boca.'),
         Z.obj(5, 11, 'pedrasDeGancho', 'Olhar as pedras', 'Estalactites e estalagmites dobradas como barro mole em ganchos, do chão e '
               'do teto. São duras como qualquer pedra.'),
     ]

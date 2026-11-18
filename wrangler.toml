@@ -60,7 +60,9 @@ tag = "v4"
 new_sqlite_classes = ["DialogoDO"]
 
 [vars]
-CODIGO_DO_SERVIDOR = "0"
+# Ligado para a publicação (2026-11-18). Para desenvolver com o navegador sorteando o código:
+# npx wrangler dev --port 8787 --local --var CODIGO_DO_SERVIDOR:0
+CODIGO_DO_SERVIDOR = "1"
 DIALOGO_MODELO = "claude-opus-5-5"
 # O gasto total do diálogo na publicação, em dólares. Estourou, os NPCs seguem com o banco e as falas à mão.
 DIALOGO_TETO_USD = "10"

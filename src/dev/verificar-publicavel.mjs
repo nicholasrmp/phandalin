@@ -3,7 +3,9 @@
 //   node src/dev/verificar-publicavel.mjs            # falha se houver arquivo ignorado dentro de `public/`
 //   node src/dev/verificar-publicavel.mjs --avisar   # só avisa, não falha
 //
-// Roda no `prebuild`, junto com o `verificar-taverna.mjs`.
+// Desde 2026-11-18 o `prebuild` não o chama mais: o build usa o `.publico/` de `montar-publico.mjs`, que copia só o que o
+// git conhece, então a arte ignorada nunca chega ao `dist/`. Este segue servindo de régua (quanto está de fora) e de
+// biblioteca (`ignoradosEmPublic`).
 //
 // POR QUE ELE EXISTE. O `.gitignore` protege o REPOSITÓRIO; ele não protege o `dist/`. O Vite copia `public/`
 // inteiro para o build, então um battlemap de terceiro largado ali viaja para o deploy mesmo estando fora do

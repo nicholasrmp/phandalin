@@ -476,5 +476,20 @@ await teste('T15/T18: o Ontharyx subjugado vale o periapto da saúde; morto depo
 });
 
 
+await teste('o forno: a brasa fica na chama pintada, e apagá-la acende a arte do forno frio (sobreposicaoApagada)', async () => {
+  const { MAPA_TALHUNDERETH } = await import(P + 'game/talhundereth-mapa.js');
+  const { montarCampo } = await import(P + 'game/campo.js');
+  const { mudarFogo, luzNaCasa } = await import(P + 'game/fogo.js');
+  const f = montarCampo(MAPA_TALHUNDERETH);
+  const luz = luzNaCasa(f, { x: 7, y: 32 });
+  assert.ok(luz, 'a brasa saiu do forno');
+  const frio = () => f.sobreposicoes.find((o) => o.id === 'fornoApagado').ligada;
+  assert.equal(frio(), false);
+  assert.ok(mudarFogo(f, luz, false));
+  assert.equal(frio(), true, 'apagou a brasa e o desenho seguiu aceso');
+  mudarFogo(f, luz, true);
+  assert.equal(frio(), false);
+});
+
 console.log(`\n${total - falhas}/${total} testes passaram.`);
 if (falhas) process.exit(1);

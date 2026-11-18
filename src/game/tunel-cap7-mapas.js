@@ -296,7 +296,7 @@ export const MAPA_TOCA_BEHIR = {
     {"x": 3, "y": 8, "id": "pedraQueimada", "rotulo": "Olhar as paredes", "texto": "A pedra aqui está raspada e queimada em listras, e o ar cheira a tempestade.", "pista": {"verbo": "lembrar", "cd": 13, "achado": "Listras assim são de um sopro de relâmpago, em linha, de bicho grande. Um behir, pelo tamanho. E ele mora perto.", "titulo": "Natureza"}, "olhar": true},
     {"x": 5, "y": 7, "id": "buracoAlto", "rotulo": "Olhar o buraco no alto", "texto": "Perto do teto, para o nordeste, uma abertura natural de poucos palmos. Na borda, a pedra está gasta e lisa, como se algo passasse por ali sempre."},
     {"x": 10, "y": 8, "id": "ninhoDeOssos", "rotulo": "Olhar o ninho", "texto": "Uma depressão funda na parede, forrada de pedra moída, escamas azuis do tamanho de um prato e ossos queimados."},
-    {"x": 9, "y": 2, "id": "mochilaMofada", "rotulo": "Olhar a mochila", "texto": "Uma mochila mofada, encostada na parede norte, com a costura podre."},
+    {"x": 9, "y": 3, "id": "mochilaMofada", "rotulo": "Olhar a mochila", "texto": "Uma mochila mofada, encostada na parede norte, com a costura podre."},
   ],
 };
 
@@ -432,7 +432,7 @@ export const MAPA_GRUTA_TAGARELA = {
   fundo: {"nome": "gruta-tagarela.jpg", "url": "/mapas/fa/gruta-tagarela.jpg", "escala": 100, "x0": 0, "y0": 0, "giro": 0, "opacidade": 1},
   interativos: [
     {"x": 3, "y": 1, "id": "fungoQueMuda", "rotulo": "Olhar as paredes", "texto": "O fungo das paredes muda de cor devagar, do verde ao roxo, e as pedras suam um muco transparente. De algum lugar adiante vem um borbulhar sem palavras."},
-    {"x": 8, "y": 4, "id": "pocoDeCarne", "rotulo": "Olhar o poço", "texto": "Lá embaixo, um poço de lama e restos. Bolotas de carne boiam nele, e algumas têm olhos.", "pista": {"verbo": "percepcao", "cd": 15, "achado": "Algumas bolotas piscam. E têm boca."}, "olhar": true},
+    {"x": 8, "y": 4, "id": "pocoDeCarne", "rotulo": "Olhar o poço", "texto": "Lá embaixo, um poço de lama e restos. Bolotas de carne boiam nele, e algumas têm olhos.", "pista": {"verbo": "procurar", "cd": 15, "achado": "Algumas bolotas piscam. E têm boca."}, "olhar": true},
     {"x": 5, "y": 11, "id": "pedrasDeGancho", "rotulo": "Olhar as pedras", "texto": "Estalactites e estalagmites dobradas como barro mole em ganchos, do chão e do teto. São duras como qualquer pedra."},
   ],
 };

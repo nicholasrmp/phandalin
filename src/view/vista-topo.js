@@ -312,14 +312,36 @@ export function pintarArestas(ctx, field, C, aMostra = false, soPortas = false) 
   ctx.lineCap = 'round';
   // `soPortas`: sobre mapa pintado, a parede já está no desenho; só a porta (que abre e fecha) precisa de traço
   const vale = (codigo) => (soPortas && codigo !== ARESTA.porta && codigo !== ARESTA.aberta ? 0 : codigo);
+  // sobre o mapa pintado, a porta vai para onde a arte a desenhou (`field.portasNaArte`)
+  const desvio = (x, y, lado) => (soPortas ? field.portasNaArte?.[`${x},${y},${lado}`] ?? 0 : 0) * C;
   for (let y = 0; y < field.h; y++) {
     for (let x = 0; x < field.w; x++) {
       const i = y * field.w + x;
-      traco(ctx, x * C, y * C, (x + 1) * C, y * C, vale(field.paredeN[i]), C, aMostra);     // a de cima
-      traco(ctx, x * C, y * C, x * C, (y + 1) * C, vale(field.paredeO[i]), C, aMostra);     // a da esquerda
+      const dn = desvio(x, y, 'N');
+      const dw = desvio(x, y, 'O');
+      traco(ctx, x * C, y * C + dn, (x + 1) * C, y * C + dn, vale(field.paredeN[i]), C, aMostra);     // a de cima
+      traco(ctx, x * C + dw, y * C, x * C + dw, (y + 1) * C, vale(field.paredeO[i]), C, aMostra);     // a da esquerda
     }
   }
   ctx.restore();
+}
+
+/**
+ * A PORTA FORA DA ARESTA (`field.portasNaArte`) de novo, POR CIMA DO VÉU, quando o grupo vê uma das casas dela. A
+ * porta na aresta fica na borda da casa que se vê; a deslocada cai DENTRO da casa de trás, que o véu cobre enquanto a
+ * porta estiver fechada — e o portão sumia de quem está diante dele.
+ */
+export function pintarPortasNaArte(ctx, field, C, ve) {
+  for (const [chave, d] of Object.entries(field.portasNaArte ?? {})) {
+    const [x, y, lado] = chave.split(',');
+    const ax = Number(x); const ay = Number(y);
+    const outra = lado === 'N' ? { x: ax, y: ay - 1 } : { x: ax - 1, y: ay };
+    if (!ve(ax, ay) && !ve(outra.x, outra.y)) continue;
+    const codigo = field.aresta(outra.x, outra.y, ax, ay);
+    if (codigo !== ARESTA.porta && codigo !== ARESTA.aberta) continue;
+    if (lado === 'N') traco(ctx, ax * C, (ay + d) * C, (ax + 1) * C, (ay + d) * C, codigo, C, false);
+    else traco(ctx, (ax + d) * C, ay * C, (ax + d) * C, (ay + 1) * C, codigo, C, false);
+  }
 }
 
 /**

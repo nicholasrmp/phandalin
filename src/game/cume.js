@@ -64,7 +64,10 @@ export const MAPA_CUME = {
     "222222222222222222",
   ],
   luzes: [
-    {"pos": {"x": 5, "y": 7}, "claro": 0, "penumbra": 40, "tipo": "fogueira"},
+    {"pos": {"x": 5, "y": 7}, "claro": 0, "penumbra": 40, "tipo": "fogueira", "sobreposicao": "fogueiraAcesa"},
+  ],
+  sobreposicoes: [
+    {"id": "fogueiraAcesa", "url": "/mapas/fa/cume-fogo.webp", "x": 2, "y": 4, "w": 7, "h": 7, "ligada": true},
   ],
   paredes: {
     n: [

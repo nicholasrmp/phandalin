@@ -54,6 +54,8 @@ export const UTIL_DOS_LIVROS = {
   // COCHILO (Xanathar): até três dormem dez minutos e saem com o descanso curto (os dados de vida que o descanso sugere)
   cochilo: { alvo: 'grupo', min: 10, efeito: 'cochilo' },
   presciencia: { alvo: 'aliado', cond: 'presciencia', min: 480, tempo: 1 },
+  // APRIMORAR PERÍCIA (Xanathar): a especialização numa perícia treinada do aliado, por uma hora de concentração
+  aprimorarPericia: { alvo: 'aliado', cond: 'periciaAprimorada', min: 60, conc: true, escolhe: 'pericia', alcance: 5 },
   // ---- a viagem (na tela da região)
   teletransporte: { alvo: 'si', efeito: 'viagem', soNaRegiao: true },
   palavraDeRecordacao: { alvo: 'si', efeito: 'viagem', soNaRegiao: true },

@@ -132,6 +132,12 @@ export const LIVRO_FTD = {
     "damage": "10d8",
     "damageType": "energético",
     "halfOnSave": true
+   },
+   {
+    "nome": "Passo Psíquico",
+    "tipo": "teleporte",
+    "alcanceFt": 60,
+    "bonus": true
    }
   ],
   "lendarias": {
@@ -165,7 +171,11 @@ export const LIVRO_FTD = {
    ]
   },
   "traits": [
+   "t_mudarDeForma",
    "acoesLendarias"
+  ],
+  "marcas": [
+   "gem"
   ],
   "blurb": "Dragão psiônico que se teletransporta pelo campo de batalha e dispara um sopro de gravidade em cone capaz de prender os inimigos no lugar. Mordida e cristais explosivos causam dano energético e derrubam grupos inteiros.",
   "lore": "Os dragões de ametista são os mais sábios e reservados entre os dragões de gema, dedicados ao estudo da magia e dos mistérios da mente. Costumam erguer covis em cavernas submersas ou lagos isolados, onde guardam cristais e conhecimento. Em geral são neutros e preferem a diplomacia e a observação a conflitos abertos. Quando ameaçados, porém, usam poderes psiônicos com precisão fria e calculada."
@@ -304,6 +314,14 @@ export const LIVRO_FTD = {
   "recursos": {
    "resistenciaLendaria": 3
   },
+  "acoesEspeciais": [
+   {
+    "nome": "Passo Psíquico",
+    "tipo": "teleporte",
+    "alcanceFt": 60,
+    "bonus": true
+   }
+  ],
   "lendarias": {
    "acoes": 3,
    "opcoes": [
@@ -332,7 +350,11 @@ export const LIVRO_FTD = {
    ]
   },
   "traits": [
+   "t_mudarDeForma",
    "acoesLendarias"
+  ],
+  "marcas": [
+   "gem"
   ],
   "blurb": "Combina mordida e garras com um sopro de radiância cintilante que o protege com PV temporários, e se teleporta pelo campo usando psiônica. Seus raios de luz estelar atingem alvos a até 18 m.",
   "lore": "Dragões de cristal são dragões de gema ligados ao brilho das estrelas e às energias da mente. Costumam fazer seus covis em cavernas geladas ou picos cheios de cristais, onde a luz se refrata em mil cores. São curiosos e brincalhões, gostam de conversar telepaticamente e de observar os céus noturnos. Apesar disso, defendem seu território com astúcia, alternando entre teleportes e explosões de luz."
@@ -635,6 +657,12 @@ export const LIVRO_FTD = {
     "damage": "12d6",
     "damageType": "psíquico",
     "halfOnSave": true
+   },
+   {
+    "nome": "Passo Psíquico",
+    "tipo": "teleporte",
+    "alcanceFt": 60,
+    "bonus": true
    }
   ],
   "lendarias": {
@@ -667,7 +695,11 @@ export const LIVRO_FTD = {
   "traits": [
    "t_alterarPercepcao",
    "escavador",
+   "t_mudarDeForma",
    "acoesLendarias"
+  ],
+  "marcas": [
+   "gem"
   ],
   "blurb": "Dragão psiônico que se teleporta pelo campo, morde com dano psíquico e solta um sopro dissonante que atrapalha ataques e testes dos alvos. Ilusões, invisibilidade e chamas verdes tornam difícil prever onde ele vai atacar.",
   "lore": "Dragões de esmeralda são dragões de gema paranoicos e reservados, que guardam segredos e conhecimento com tanto zelo quanto tesouros. Costumam fazer covis em lugares escondidos, como ruínas antigas, vulcões adormecidos ou túneis que eles mesmos escavam na rocha. Usam ilusões e telepatia para enganar visitantes e testar suas intenções antes de se revelar. Preferem observar à distância e só lutam abertamente quando acuados ou quando seu território é violado."
@@ -960,6 +992,12 @@ export const LIVRO_FTD = {
     "rounds": 1,
     "repete": false,
     "ateFimDoTurnoDele": true
+   },
+   {
+    "nome": "Passo Psíquico",
+    "tipo": "teleporte",
+    "alcanceFt": 60,
+    "bonus": true
    }
   ],
   "lendarias": {
@@ -992,7 +1030,11 @@ export const LIVRO_FTD = {
   "traits": [
    "spiderClimb",
    "escavador",
+   "t_mudarDeForma",
    "acoesLendarias"
+  ],
+  "marcas": [
+   "gem"
   ],
   "blurb": "Combina garras e mordida trovejante com um sopro sônico que incapacita grupos inteiros, e se teleporta pelo campo usando psiônica. Cuidado com o sopro em cone de 18 m e com objetos arremessados por telecinese.",
   "lore": "Dragões de safira são dragões de gema que preferem as profundezas da terra, onde escavam túneis e exploram cavernas esquecidas. Metódicos e territoriais, valorizam a ordem e o conhecimento, especialmente a história do mundo subterrâneo. Usam poderes psiônicos para se comunicar por telepatia e enfrentar invasores. Costumam ver os habitantes do Subterrâneo como ameaças a serem vigiadas de perto."
@@ -1115,6 +1157,12 @@ export const LIVRO_FTD = {
     "damage": "10d6",
     "damageType": "necrótico",
     "halfOnSave": true
+   },
+   {
+    "nome": "Passo Psíquico",
+    "tipo": "teleporte",
+    "alcanceFt": 60,
+    "bonus": true
    }
   ],
   "lendarias": {
@@ -1146,7 +1194,11 @@ export const LIVRO_FTD = {
   },
   "traits": [
    "t_fabricar",
+   "t_mudarDeForma",
    "acoesLendarias"
+  ],
+  "marcas": [
+   "gem"
   ],
   "blurb": "Combina mordida e garras com um sopro necrótico em cone que resseca e enfraquece os alvos, e se teletransporta pelo campo de batalha com poderes psiônicos. Sua Redução Essencial pode transformar em pó quem cair a 0 PV.",
   "lore": "Dragões de topázio são dragões de gema solitários e reservados, ligados a mares, litorais e ilhas rochosas. Preferem observar à distância e se irritam com intrusos que perturbam seu isolamento. Usam a mente tanto quanto as garras, comunicando-se por telepatia e manipulando a água com psiônica. A energia que exalam suga a umidade e a vitalidade de tudo o que tocam."
@@ -1262,6 +1314,9 @@ export const LIVRO_FTD = {
    }
   ],
   "traits": [],
+  "marcas": [
+   "gem"
+  ],
   "blurb": "Morde com força energética extra e solta um cone de gravidade que fere e prende os alvos no lugar. Voa pairando, nada e resiste a dano energético e psíquico.",
   "lore": "Dragões de ametista são dragões de gema ligados a poderes psiônicos e às forças que mantêm o mundo coeso. Mesmo jovens, já demonstram curiosidade intelectual e preferem conversar por telepatia antes de lutar. Vivem perto de lagos e cavernas submersas, pois respiram tanto no ar quanto na água. Costumam ser neutros, avaliando cada encontro pelo que podem aprender ou ganhar."
  },
@@ -1345,7 +1400,8 @@ export const LIVRO_FTD = {
      "dc": 19,
      "escape": 19,
      "condition": "contido",
-     "note": "é agarrado"
+     "note": "é agarrado",
+     "maxAgarrados": 1
     }
    }
   ],
@@ -1421,6 +1477,12 @@ export const LIVRO_FTD = {
     "condition": "contido",
     "rounds": 10,
     "repete": true
+   },
+   {
+    "nome": "Passo Psíquico",
+    "tipo": "teleporte",
+    "alcanceFt": 60,
+    "bonus": true
    }
   ],
   "despertar": {
@@ -1457,7 +1519,11 @@ export const LIVRO_FTD = {
   "traits": [
    "despertar",
    "t_naturezaIncomum",
+   "t_mudarDeForma",
    "acoesLendarias"
+  ],
+  "marcas": [
+   "gem"
   ],
   "blurb": "Dragão colossal que esmaga grupos inteiros com um sopro de força em cone de 90 m, se teleporta pelo campo e lança magias como parar o tempo e jaula de força. Ao chegar a 0 PV, desperta e volta com 400 PV, podendo erguer e esmagar inimigos por telecinese.",
   "lore": "Os grandes wyrms de ametista estão entre os dragões de gema mais antigos e poderosos, mentes psiônicas de intelecto quase inigualável. Costumam ser neutros e dão mais valor ao conhecimento e ao equilíbrio que à conquista. Escondem-se em covis remotos, muitas vezes ligados a outros planos, e às vezes andam entre mortais em forma pequena. Quando ameaçados, revelam reservas de poder que poucos sobrevivem para descrever."
@@ -1600,6 +1666,12 @@ export const LIVRO_FTD = {
     "damage": "14d8",
     "damageType": "energético",
     "halfOnSave": true
+   },
+   {
+    "nome": "Passo Psíquico",
+    "tipo": "teleporte",
+    "alcanceFt": 60,
+    "bonus": true
    }
   ],
   "lendarias": {
@@ -1633,7 +1705,11 @@ export const LIVRO_FTD = {
    ]
   },
   "traits": [
+   "t_mudarDeForma",
    "acoesLendarias"
+  ],
+  "marcas": [
+   "gem"
   ],
   "blurb": "Colosso psiônico que alterna mordidas de energia com teleportes e um sopro gravitacional em cone de 27 m que prende os alvos no lugar. Cristais explosivos derrubam grupos inteiros à distância.",
   "lore": "Dragões de ametista são os mais serenos e calculistas entre os dragões de gema, mentes poderosas que dominam forças psíquicas e gravitacionais. Os anciões costumam viver isolados em covis cristalinos, muitas vezes junto a lagos ou mares subterrâneos, já que respiram tanto na água quanto no ar. Preferem observar e estudar a se envolver em conflitos, mas quando provocados lutam com precisão fria. Podem assumir formas menores para circular discretamente entre outros povos."
@@ -1775,6 +1851,14 @@ export const LIVRO_FTD = {
   "recursos": {
    "resistenciaLendaria": 3
   },
+  "acoesEspeciais": [
+   {
+    "nome": "Passo Psíquico",
+    "tipo": "teleporte",
+    "alcanceFt": 60,
+    "bonus": true
+   }
+  ],
   "lendarias": {
    "acoes": 3,
    "opcoes": [
@@ -1803,7 +1887,11 @@ export const LIVRO_FTD = {
    ]
   },
   "traits": [
+   "t_mudarDeForma",
    "acoesLendarias"
+  ],
+  "marcas": [
+   "gem"
   ],
   "blurb": "Gigante psiônico que se teletransporta pelo campo de batalha, morde e arranha com força e solta um sopro radiante em cone de 27 m que ainda lhe concede PV temporários. Pode fulminar alvos distantes com um raio de luz estelar como ação lendária.",
   "lore": "Os dragões de cristal são dragões-gema de temperamento curioso e brincalhão, fascinados pelas estrelas e pelos mistérios do cosmos. Costumam fazer seus covis em cavernas geladas ou montanhas cheias de cristais, onde observam o céu noturno. Usam poderes psiônicos para se comunicar por telepatia e, às vezes, assumem forma humanoide para circular entre outros povos. Um ancião acumula séculos de conhecimento e prefere a conversa ao combate, mas reage com fúria brilhante quando ameaçado."
@@ -2108,6 +2196,21 @@ export const LIVRO_FTD = {
      "tipo": "mover",
      "metade": false,
      "semOportunidade": false
+    },
+    {
+     "nome": "Aura Fervente",
+     "custo": 3,
+     "tipo": "postura",
+     "condicao": "auraFervente",
+     "data": {
+      "auraNoInicio": {
+       "raioFt": 20,
+       "dc": 24,
+       "save": "con",
+       "dano": "9d8",
+       "tipo": "fogo"
+      }
+     }
     }
    ]
   },
@@ -2251,6 +2354,17 @@ export const LIVRO_FTD = {
     "damage": "16d6",
     "damageType": "psíquico",
     "halfOnSave": true
+   },
+   {
+    "nome": "Passo Psíquico",
+    "tipo": "teleporte",
+    "alcanceFt": 60,
+    "bonus": true
+   },
+   {
+    "nome": "Forma Etérea",
+    "tipo": "etereo",
+    "porDia": 1
    }
   ],
   "lendarias": {
@@ -2283,7 +2397,11 @@ export const LIVRO_FTD = {
   "traits": [
    "escavador",
    "t_distorcerPercepcao1Dia",
+   "t_mudarDeForma",
    "acoesLendarias"
+  ],
+  "marcas": [
+   "gem"
   ],
   "blurb": "Combina mordida psíquica e garras com um sopro que atordoa mentes e atrapalha ataques e testes, enquanto se teleporta pelo campo e confunde os inimigos com ilusões. Ainda lança chamas verdes como ação lendária.",
   "lore": "Dragões de esmeralda são dragões de gema psiônicos, desconfiados e reservados, que vigiam o mundo escondidos. Os anciões cavam covis profundos sob a rocha e os protegem com ilusões que enganam qualquer intruso. Preferem observar e manipular a lutar abertamente, muitas vezes disfarçados de criaturas pequenas. Quando ameaçados, desorientam a mente dos invasores antes de atacar."
@@ -2581,6 +2699,12 @@ export const LIVRO_FTD = {
     "rounds": 1,
     "repete": false,
     "ateFimDoTurnoDele": true
+   },
+   {
+    "nome": "Passo Psíquico",
+    "tipo": "teleporte",
+    "alcanceFt": 60,
+    "bonus": true
    }
   ],
   "lendarias": {
@@ -2613,7 +2737,11 @@ export const LIVRO_FTD = {
   "traits": [
    "spiderClimb",
    "escavador",
+   "t_mudarDeForma",
    "acoesLendarias"
+  ],
+  "marcas": [
+   "gem"
   ],
   "blurb": "Gigante psiônico que cava, escala e se teleporta pelo campo de batalha, mordendo com dano trovejante e soltando um sopro sônico que deixa grupos inteiros incapacitados. À distância, arremessa objetos com telecinese e lança magias como imobilizar monstro.",
   "lore": "Os dragões de safira são dragões de gema ligados a poderes da mente, de tendência leal e neutra. Vivem nas profundezas da terra, abrindo túneis na rocha e guardando complexos subterrâneos onde acumulam conhecimento e tesouros. Desconfiados e territoriais, enxergam intrusos como ameaças e preferem conversar por telepatia antes de decidir se atacam. Os anciões dominam a psiônica a ponto de se teleportar e mover objetos com o pensamento, e podem assumir formas menores para circular entre outros povos."
@@ -2879,6 +3007,12 @@ export const LIVRO_FTD = {
     "damage": "14d6",
     "damageType": "necrótico",
     "halfOnSave": true
+   },
+   {
+    "nome": "Passo Psíquico",
+    "tipo": "teleporte",
+    "alcanceFt": 60,
+    "bonus": true
    }
   ],
   "lendarias": {
@@ -2910,7 +3044,11 @@ export const LIVRO_FTD = {
   },
   "traits": [
    "t_fabricar",
+   "t_mudarDeForma",
    "acoesLendarias"
+  ],
+  "marcas": [
+   "gem"
   ],
   "blurb": "Um dragão psiônico colossal que drena a umidade e a vida dos inimigos com um sopro necrótico enfraquecedor, teleporta-se pelo campo e pode reduzir alvos a pó com uma descarga de energia vital.",
   "lore": "Dragões de topázio são dragões de gema ligados ao mar e à entropia, frequentemente solitários e pouco sociáveis. Vivem em covis costeiros ou submersos, entre rochedos batidos pelas ondas, e respiram tanto ar quanto água. Os anciões dominam poderes psiônicos refinados, comunicam-se por telepatia e podem assumir formas menores para observar o mundo sem serem notados. Preferem ser deixados em paz, mas reagem com crueldade fria a quem invade seu território."
@@ -2974,6 +3112,19 @@ export const LIVRO_FTD = {
     "Pancada"
    ]
   },
+  "acoesEspeciais": [
+   {
+    "nome": "Explosão de Relâmpago",
+    "tipo": "teleporte",
+    "alcanceFt": 30,
+    "danoAoChegar": {
+     "raioFt": 5,
+     "dano": "1d6",
+     "tipo": "elétrico"
+    },
+    "bonus": true
+   }
+  ],
   "aura": {
    "raioFt": 5,
    "quando": "inicioDoAlvo",
@@ -3081,7 +3232,8 @@ export const LIVRO_FTD = {
      "dc": 20,
      "escape": 20,
      "condition": "contido",
-     "note": "é agarrado"
+     "note": "é agarrado",
+     "maxAgarrados": 1
     }
    },
    {
@@ -3148,7 +3300,11 @@ export const LIVRO_FTD = {
   },
   "traits": [
    "despertar",
+   "t_mudarDeForma",
    "acoesLendarias"
+  ],
+  "marcas": [
+   "metallic"
   ],
   "blurb": "Um dragão divino colossal que morde, rasga e varre com a cauda a grande distância, além de soprar chamas radiantes num cone gigantesco ou curar e reviver aliados. Ao cair a 0 PV, volta com 500 PV e libera ações míticas devastadoras.",
   "lore": "O Dragão de Platina é o pai e protetor dos dragões metálicos, venerado como deus nos Sete Céus do Monte Celestia. Só em crises extremas, e diante de um sacrifício enorme de um devoto, ele envia ao mundo um aspecto físico que carrega sua vontade e boa parte de seu poder. Essa manifestação supera em tamanho os dragões anciões e mistura traços dos cinco tipos metálicos em escamas de platina. Também gosta de andar disfarçado como sábio, monge ou pássaro, muitas vezes acompanhado de sete dragões de ouro anciões em forma de canários. Em batalha, é implacável com os inimigos e generoso com os aliados."
@@ -3242,7 +3398,8 @@ export const LIVRO_FTD = {
      "dc": 20,
      "escape": 20,
      "condition": "contido",
-     "note": "é agarrado"
+     "note": "é agarrado",
+     "maxAgarrados": 1
     }
    },
    {
@@ -3271,6 +3428,23 @@ export const LIVRO_FTD = {
   "recursos": {
    "resistenciaLendaria": 5
   },
+  "acoesEspeciais": [
+   {
+    "nome": "Chamas Cromáticas",
+    "recharge": [
+     5,
+     6
+    ],
+    "tipo": "area",
+    "shape": "cone",
+    "areaFt": 300,
+    "save": "dex",
+    "dc": 27,
+    "damage": "11d12",
+    "damageType": "ácido",
+    "halfOnSave": true
+   }
+  ],
   "despertar": {
    "pv": 500
   },
@@ -3292,9 +3466,11 @@ export const LIVRO_FTD = {
    ]
   },
   "traits": [
-   "t_chamasCromaticas",
    "despertar",
    "acoesLendarias"
+  ],
+  "marcas": [
+   "chromatic"
   ],
   "blurb": "Colosso de cinco cabeças que morde, agarra e derruba com cauda enquanto cospe chamas cromáticas num cone gigantesco. Ao chegar a 0 PV ela volta com 500 PV e ganha ações míticas devastadoras.",
   "lore": "Tiamat é a mãe dos dragões cromáticos e reúne em si todos os vícios dessa linhagem. Ela vive presa, ou talvez por vontade própria, em Avernus, a primeira camada dos Nove Infernos. Seguidores sedentos de poder podem sacrificar um tesouro digno de dragões anciões para que ela projete seu aspecto no Plano Material. Essa manifestação tem cinco cabeças, cada uma com a cor e o temperamento de um dragão cromático, e percorre o mundo saqueando riquezas e esmagando quem se opuser."
@@ -3377,7 +3553,8 @@ export const LIVRO_FTD = {
      "dc": 20,
      "escape": 20,
      "condition": "contido",
-     "note": "é agarrado"
+     "note": "é agarrado",
+     "maxAgarrados": 1
     }
    },
    {
@@ -3465,6 +3642,9 @@ export const LIVRO_FTD = {
    "t_naturezaIncomum",
    "acoesLendarias"
   ],
+  "marcas": [
+   "chromatic"
+  ],
   "blurb": "Colosso dracônico que agarra e despedaça com garras e mordida, e derrete grupos inteiros com um cone de ácido de 90 m. Ao cair a 0 PV, desperta, recupera vida e sopro e ganha ações míticas.",
   "lore": "As grandes serpes cromáticas são dragões que viveram tanto que transcenderam a idade ancestral, tornando-se forças quase divinas. A grande serpe negra é cruel e caótica, reinando sobre pântanos pútridos e ruínas alagadas onde tudo apodrece. Não precisa comer nem beber e passa séculos acumulando poder e servos. Enxerga a verdade de tudo à sua volta e raramente é pega de surpresa."
  },
@@ -3546,7 +3726,8 @@ export const LIVRO_FTD = {
      "dc": 20,
      "escape": 20,
      "condition": "contido",
-     "note": "é agarrado"
+     "note": "é agarrado",
+     "maxAgarrados": 1
     }
    },
    {
@@ -3634,6 +3815,9 @@ export const LIVRO_FTD = {
    "t_naturezaIncomum",
    "acoesLendarias"
   ],
+  "marcas": [
+   "chromatic"
+  ],
   "blurb": "Colosso voador que agarra com as garras, derruba com a cauda e devasta áreas enormes com um sopro elétrico em cone de 90 m. Ao cair a 0 PV pela primeira vez, desperta com 425 PV e ganha ações míticas.",
   "lore": "Os grandes wyrms são dragões cromáticos que alcançaram um poder quase divino, muito além dos anciões comuns. O azul domina desertos e tempestades, e sua energia elétrica parece responder à sua vontade. Não precisa comer nem beber, e dedica seus séculos a planos de dominação e à guarda de tesouros lendários. Quem o enfrenta descobre que derrubá-lo uma vez não basta, pois sua essência cromática o reergue ainda mais furioso."
  },
@@ -3716,7 +3900,8 @@ export const LIVRO_FTD = {
      "dc": 20,
      "escape": 20,
      "condition": "contido",
-     "note": "é agarrado"
+     "note": "é agarrado",
+     "maxAgarrados": 1
     }
    },
    {
@@ -3794,6 +3979,9 @@ export const LIVRO_FTD = {
    "despertar",
    "t_naturezaIncomum",
    "acoesLendarias"
+  ],
+  "marcas": [
+   "metallic"
   ],
   "blurb": "Colosso dracônico que esmaga com mordida, garras e cauda e pode fazer grupos inteiros desmaiarem com seu sopro de gás num cone de 90 m. Ao cair a 0 PV, desperta seu poder metálico e volta à luta com 450 PV e um rugido que incapacita.",
   "lore": "Os grandes wyrms de latão são dragões metálicos de idade quase mítica, que alcançaram um poder muito além dos dragões anciões. Costumam ser falantes e curiosos, preferindo a conversa e a negociação ao combate. Não precisam comer nem beber, e muitas vezes passeiam entre os povos menores disfarçados de pessoas comuns. Quando enfim lutam, revelam uma força avassaladora e uma vontade férrea de proteger o que valorizam."
@@ -3877,7 +4065,8 @@ export const LIVRO_FTD = {
      "dc": 20,
      "escape": 20,
      "condition": "contido",
-     "note": "é agarrado"
+     "note": "é agarrado",
+     "maxAgarrados": 1
     }
    },
    {
@@ -3955,6 +4144,9 @@ export const LIVRO_FTD = {
    "despertar",
    "t_naturezaIncomum",
    "acoesLendarias"
+  ],
+  "marcas": [
+   "metallic"
   ],
   "blurb": "Colosso dracônico que esmaga com mordida, garras e cauda e varre o campo com um sopro elétrico ou um gás que faz dormir em cones de 90 m. Ao cair a 0 PV, desperta com 450 PV e ganha ações míticas.",
   "lore": "Os grandes wyrms de bronze são dragões metálicos de idade lendária, guardiões ordeiros e benevolentes que já transcenderam a necessidade de comer ou beber. Vivem perto de costas e mares, nadando e escavando com a mesma facilidade com que voam. Costumam observar o mundo disfarçados em formas pequenas, intervindo contra tiranias e ameaças à ordem. Quando enfrentam um inimigo digno, uma centelha de poder ancestral pode despertar neles, tornando-os ainda mais temíveis."
@@ -4038,7 +4230,8 @@ export const LIVRO_FTD = {
      "dc": 20,
      "escape": 20,
      "condition": "contido",
-     "note": "é agarrado"
+     "note": "é agarrado",
+     "maxAgarrados": 1
     }
    },
    {
@@ -4116,6 +4309,9 @@ export const LIVRO_FTD = {
    "despertar",
    "t_naturezaIncomum",
    "acoesLendarias"
+  ],
+  "marcas": [
+   "metallic"
   ],
   "blurb": "Dragão colossal que agarra com as garras, derruba com a cauda e varre o campo com um cone de 90 m de ácido ou de gás que faz dormir. Ao chegar a 0 PV, desperta seu poder metálico, volta com 450 PV e ganha ações míticas.",
   "lore": "As grandes serpes são dragões que atingiram um estágio de poder quase divino, muito além da velhice comum da espécie. A de cobre conserva o humor e a astúcia de sua linhagem, mas agora tem a sabedoria de eras. Costuma andar disfarçada em forma pequena entre os mortais, observando e conversando. Quando luta de verdade, é uma força da natureza difícil de derrubar."
@@ -4219,6 +4415,9 @@ export const LIVRO_FTD = {
    ]
   },
   "traits": [],
+  "marcas": [
+   "gem"
+  ],
   "blurb": "Morde com alcance de 3 m somando dano radiante e solta um cone ofuscante de luz que fere quem estiver à frente e ainda lhe dá PV temporários. Voa, escala e cava, o que o torna difícil de encurralar.",
   "lore": "Dragões de cristal pertencem à família dos dragões de gema, criaturas de mente psiônica e temperamento caótico, porém curioso. Os filhotes costumam se instalar em cavernas geladas ou grutas cheias de cristais, onde a luz refletida os esconde. São brincalhões e falam com outros seres por telepatia, gostando de observar e testar visitantes. Mesmo jovens, já colecionam pedras brilhantes e reagem com fúria luminosa quando ameaçados."
  },
@@ -4302,7 +4501,8 @@ export const LIVRO_FTD = {
      "dc": 19,
      "escape": 19,
      "condition": "contido",
-     "note": "é agarrado"
+     "note": "é agarrado",
+     "maxAgarrados": 1
     }
    }
   ],
@@ -4378,6 +4578,12 @@ export const LIVRO_FTD = {
     "condition": "contido",
     "rounds": 10,
     "repete": true
+   },
+   {
+    "nome": "Passo Psíquico",
+    "tipo": "teleporte",
+    "alcanceFt": 60,
+    "bonus": true
    }
   ],
   "despertar": {
@@ -4414,7 +4620,11 @@ export const LIVRO_FTD = {
   "traits": [
    "despertar",
    "t_naturezaIncomum",
+   "t_mudarDeForma",
    "acoesLendarias"
+  ],
+  "marcas": [
+   "gem"
   ],
   "blurb": "Colosso psiônico que esmaga grupos com um cone de força de 90 m, prende vítimas nas garras e se teleporta pelo campo. Ao cair a 0 PV, desperta com 400 PV e passa a arremessar todos ao redor com telecinese em massa.",
   "lore": "As grandes serpes de cristal estão entre os dragões de gema mais antigos, mentes vastas que cruzaram eras estudando os mistérios da consciência e da magia. Sem precisar comer nem beber, dedicam-se à contemplação e a planos de longo prazo, muitas vezes ocultas sob forma humanoide. Raramente lutam por impulso, mas, quando provocadas, distorcem o próprio tempo e o espaço contra os inimigos. Derrotar uma delas exige vencê-la duas vezes, pois sua gema interior reacende quando o corpo parece prestes a ceder."
@@ -4561,8 +4771,50 @@ export const LIVRO_FTD = {
   "multiattack": {
    "count": 2
   },
+  "breath": {
+   "name": "Sopro Prismático",
+   "kind": "save",
+   "shape": "cone",
+   "areaFt": 60,
+   "save": "dex",
+   "dc": 17,
+   "damage": "6d10",
+   "damageType": "ácido",
+   "tiposAEscolher": [
+    "ácido",
+    "frio",
+    "fogo",
+    "elétrico",
+    "veneno"
+   ],
+   "halfOnSave": true,
+   "origem": "sopro",
+   "recharge": [
+    4,
+    5,
+    6
+   ]
+  },
+  "vantagemRacial": [
+   {
+    "nome": "Múltiplas Cabeças",
+    "condicoes": [
+     "cego",
+     "enfeiticado",
+     "surdo",
+     "amedrontado",
+     "atordoado",
+     "inconsciente"
+    ]
+   }
+  ],
+  "motorDoLivro": {
+   "cabecasReativas": {
+    "nome": "Cabeças Reativas",
+    "cabecas": 5
+   }
+  },
   "traits": [
-   "t_soproPrismatico",
    "t_multiplasCabecas",
    "t_cabecasReativas",
    "sempreAlerta"
@@ -5562,6 +5814,13 @@ export const LIVRO_FTD = {
     "luzesDancantes": 13
    }
   },
+  "motorDoLivro": {
+   "palavrasDesarmantes": {
+    "nome": "Palavras Desarmantes",
+    "alcanceFt": 60,
+    "dados": "1d6"
+   }
+  },
   "traits": [
    "t_palavrasDesarmantes"
   ],
@@ -5944,9 +6203,15 @@ export const LIVRO_FTD = {
   "recursos": {
    "resistenciaLendaria": 1
   },
-  "traits": [
-   "t_toqueCurativo1Dia"
+  "acoesEspeciais": [
+   {
+    "nome": "Toque Curativo (1/Dia)",
+    "porDia": 1,
+    "tipo": "cura",
+    "dados": "40"
+   }
   ],
+  "traits": [],
   "blurb": "Guerreiro sagrado que golpeia três vezes por turno com uma espada longa carregada de energia radiante, capaz de cegar quem atinge. Seu sopro radiante queima inimigos e, ao mesmo tempo, cura aliados escolhidos.",
   "lore": "Este draconato é um campeão devotado a Bahamut, o Dragão de Platina, e carrega parte do poder dele. Ele ganhou asas e um sopro de luz que tanto fere quanto restaura. Costuma agir como protetor dos fracos e caçador do mal, liderando ou apoiando grupos de heróis. Não conhece o medo e prefere a linha de frente, onde pode proteger os companheiros."
  },
@@ -6536,6 +6801,11 @@ export const LIVRO_FTD = {
     "imunizaAoPassar": true
    }
   ],
+  "motorDoLivro": {
+   "adaptarAoDano": {
+    "nome": "Adaptação Rápida"
+   }
+  },
   "traits": [
    "aparenciaFalsa",
    "t_adaptacaoRapida"
@@ -6608,6 +6878,14 @@ export const LIVRO_FTD = {
     "Dente de Ovo"
    ]
   },
+  "acoesEspeciais": [
+   {
+    "nome": "Movimento Rápido",
+    "tipo": "disparada",
+    "doDeslocamento": true,
+    "bonus": true
+   }
+  ],
   "traits": [],
   "blurb": "Pequeno e veloz, ataca duas vezes com seu dente de ovo, que é especialmente devastador contra objetos como cascas de ovos. Usa ação bônus para disparar ou se desvencilhar, escapando antes que o inimigo reaja.",
   "lore": "O caçador de ovos é uma monstruosidade que se alimenta de ovos de dragão, e seus filhotes já nascem famintos por eles. Esgueiram-se furtivamente por ninhos e covis, escalando paredes e cavando na terra para alcançar as ninhadas. Respiram tanto no ar quanto na água, o que lhes permite invadir até covis submersos. Não conhecem o medo e atacam com fúria instintiva quem se interpõe entre eles e a presa."
@@ -6737,6 +7015,13 @@ export const LIVRO_FTD = {
      "custo": 1,
      "tipo": "golpe",
      "arma": "Tentáculo"
+    },
+    {
+     "nome": "Despedaçar Concentração",
+     "custo": 2,
+     "tipo": "quebrarConcentracao",
+     "soAgarrado": true,
+     "damage": "3d12"
     }
    ]
   },
@@ -6853,6 +7138,9 @@ export const LIVRO_FTD = {
   "traits": [
    "escavador"
   ],
+  "marcas": [
+   "gem"
+  ],
   "blurb": "Morde a até 3 m somando dano psíquico e solta um cone de dissonância mental que fere e atrapalha ataques e testes dos alvos. Cava túneis e pode sumir sob a rocha.",
   "lore": "Dragões esmeralda são dragões de gema, criaturas psiônicas ligadas à mente e aos segredos. Mesmo filhotes já falam por telepatia e usam pequenas ilusões para confundir intrusos. Costumam viver em cavernas e túneis escavados por eles mesmos, longe de olhares curiosos. São desconfiados e preferem observar e enganar antes de lutar abertamente."
  },
@@ -6936,7 +7224,8 @@ export const LIVRO_FTD = {
      "dc": 19,
      "escape": 19,
      "condition": "contido",
-     "note": "é agarrado"
+     "note": "é agarrado",
+     "maxAgarrados": 1
     }
    }
   ],
@@ -7012,6 +7301,12 @@ export const LIVRO_FTD = {
     "condition": "contido",
     "rounds": 10,
     "repete": true
+   },
+   {
+    "nome": "Passo Psíquico",
+    "tipo": "teleporte",
+    "alcanceFt": 60,
+    "bonus": true
    }
   ],
   "despertar": {
@@ -7048,7 +7343,11 @@ export const LIVRO_FTD = {
   "traits": [
    "despertar",
    "t_naturezaIncomum",
+   "t_mudarDeForma",
    "acoesLendarias"
+  ],
+  "marcas": [
+   "gem"
   ],
   "blurb": "Dragão colossal que alterna mordidas e garras com teletransporte psíquico e magias devastadoras como parar o tempo. Seu sopro de força esmaga tudo num cone enorme, e ao cair a 0 PV ele desperta com 400 PV novos.",
   "lore": "Grandes wyrms esmeralda são dragões de gema no ápice do poder, mentes psiônicas antigas que acumulam conhecimento e segredos. São neutros e preferem observar e manipular de longe, muitas vezes disfarçados em formas pequenas. Raramente lutam sem motivo, mas quando o fazem dominam o campo com telecinese e magia. Sua essência cristalina pode despertar quando estão à beira da morte, tornando-os quase invencíveis."
@@ -7250,6 +7549,31 @@ export const LIVRO_FTD = {
     "Garra",
     "Garra"
    ]
+  },
+  "acoesEspeciais": [
+   {
+    "nome": "Dardo de Cristal",
+    "tipo": "golpeBonus",
+    "bonus": true,
+    "golpe": {
+     "name": "Dardo de Cristal",
+     "bonus": 5,
+     "damage": "1d10+2",
+     "type": "energético",
+     "reachFt": 5,
+     "ranged": true,
+     "rangeFt": 30,
+     "longRangeFt": 30,
+     "nomeEn": "Crystal Dart"
+    }
+   }
+  ],
+  "motorDoLivro": {
+   "eloProtetor": {
+    "nome": "Elo Protetor",
+    "alcanceFt": 30,
+    "dados": "3d6"
+   }
   },
   "traits": [
    "spiderClimb",
@@ -7505,7 +7829,8 @@ export const LIVRO_FTD = {
      "dc": 20,
      "escape": 20,
      "condition": "contido",
-     "note": "é agarrado"
+     "note": "é agarrado",
+     "maxAgarrados": 1
     }
    },
    {
@@ -7583,6 +7908,9 @@ export const LIVRO_FTD = {
    "despertar",
    "t_naturezaIncomum",
    "acoesLendarias"
+  ],
+  "marcas": [
+   "metallic"
   ],
   "blurb": "Um dragão colossal que agarra com as garras, derruba com a cauda e varre o campo com um sopro de fogo em cone de 90 m ou um gás que faz desmaiar. Ao chegar a 0 PV, desperta seu poder metálico, volta com 450 PV e ganha ações míticas.",
   "lore": "O grande wyrm dourado é um dos dragões metálicos mais antigos e poderosos que existem, um ser quase divino que já ultrapassou as necessidades de comer e beber. Costuma agir como guardião da justiça e da ordem, observando o mundo com paciência e sabedoria acumuladas ao longo de eras. Muitas vezes caminha entre os povos menores disfarçado de pessoa comum, julgando seus atos de perto. Quando enfim entra em combate, só é derrotado por heróis capazes de enfrentá-lo duas vezes, já que seu despertar metálico o faz renascer em plena fúria."
@@ -7665,7 +7993,8 @@ export const LIVRO_FTD = {
      "dc": 20,
      "escape": 20,
      "condition": "contido",
-     "note": "é agarrado"
+     "note": "é agarrado",
+     "maxAgarrados": 1
     }
    },
    {
@@ -7753,6 +8082,9 @@ export const LIVRO_FTD = {
    "t_naturezaIncomum",
    "acoesLendarias"
   ],
+  "marcas": [
+   "chromatic"
+  ],
   "blurb": "Colosso dracônico que agarra e despedaça com garras e mordida, varre o campo com a cauda e exala um cone de veneno de 90 m. Ao cair a 0 PV, desperta com novas forças e ações míticas.",
   "lore": "Os grandes wyrms são dragões cromáticos que atingiram um poder quase divino, muito além dos anciões comuns. O verde é mestre da manipulação, tratando reinos inteiros como peças de um jogo de intrigas. Prefere florestas antigas e ruínas cobertas de vegetação, onde nada acontece sem que ele saiba. Não precisa comer nem beber e só se revela quando a vitória já está garantida."
  },
@@ -7812,7 +8144,14 @@ export const LIVRO_FTD = {
     "bonus": 8,
     "damage": "2d6+5",
     "type": "concussão",
-    "reachFt": 10
+    "reachFt": 10,
+    "onHit": {
+     "semResistencia": true,
+     "dc": 16,
+     "escape": 16,
+     "condition": "contido",
+     "note": "é agarrado"
+    }
    }
   ],
   "multiattack": {
@@ -7895,6 +8234,21 @@ export const LIVRO_FTD = {
     "damage": "1d4+3",
     "type": "perfurante",
     "reachFt": 5
+   }
+  ],
+  "acoesEspeciais": [
+   {
+    "nome": "Pó de Escamas",
+    "tipo": "area",
+    "shape": "raio",
+    "areaFt": 5,
+    "save": "dex",
+    "dc": 13,
+    "condition": "contornadoDeLuz",
+    "rounds": 100,
+    "repete": false,
+    "bonus": true,
+    "porDia": 1
    }
   ],
   "traits": [
@@ -8012,6 +8366,21 @@ export const LIVRO_FTD = {
   "recursos": {
    "resistenciaLendaria": 3
   },
+  "acoesEspeciais": [
+   {
+    "nome": "Presença Drenante",
+    "tipo": "area",
+    "shape": "raio",
+    "areaFt": 60,
+    "save": "wis",
+    "dc": 19,
+    "condition": "esmorecido",
+    "rounds": 1,
+    "repete": false,
+    "ateFimDoTurnoDele": true,
+    "imunizaAoPassar": true
+   }
+  ],
   "lendarias": {
    "acoes": 3,
    "opcoes": [
@@ -8047,7 +8416,6 @@ export const LIVRO_FTD = {
    ]
   },
   "traits": [
-   "t_presencaDrenante",
    "t_reconstrucao",
    "acoesLendarias"
   ],
@@ -8465,7 +8833,8 @@ export const LIVRO_FTD = {
      "dc": 20,
      "escape": 20,
      "condition": "contido",
-     "note": "é agarrado"
+     "note": "é agarrado",
+     "maxAgarrados": 1
     }
    },
    {
@@ -8552,6 +8921,9 @@ export const LIVRO_FTD = {
    "despertar",
    "t_naturezaIncomum",
    "acoesLendarias"
+  ],
+  "marcas": [
+   "chromatic"
   ],
   "blurb": "Colosso de fogo que agarra com as garras, derruba com a cauda e varre o campo com um sopro flamejante em cone de 90 m. Ao chegar a 0 PV, desperta e volta com 425 PV, sopro recarregado e novos poderes míticos.",
   "lore": "O grande wyrm vermelho é um dragão cromático que superou a velhice comum e se tornou uma força quase divina. Já não precisa comer nem beber e passa os séculos guardando seu tesouro e cultivando o próprio orgulho. É cruel, vaidoso e não tolera rivais. Quando parece derrotado, sua essência cromática desperta e o devolve à luta com fúria renovada."
@@ -8666,6 +9038,9 @@ export const LIVRO_FTD = {
    "spiderClimb",
    "escavador"
   ],
+  "marcas": [
+   "gem"
+  ],
   "blurb": "Escava e escala paredes para surgir de onde ninguém espera, mordendo com estalos sônicos. Seu sopro de som agudo causa dano trovejante e pode deixar vários inimigos incapacitados.",
   "lore": "Dragões de safira são dragões de gema ligados à mente e ao subterrâneo, com escamas azuis cintilantes. Os filhotes vivem em cavernas e túneis profundos, que ampliam escavando a própria rocha. São curiosos, desconfiados e territoriais, usando telepatia para sondar quem se aproxima. Gostam de colecionar saberes e objetos antigos, e preferem negociar a lutar quando a vantagem não é clara."
  },
@@ -8749,7 +9124,8 @@ export const LIVRO_FTD = {
      "dc": 19,
      "escape": 19,
      "condition": "contido",
-     "note": "é agarrado"
+     "note": "é agarrado",
+     "maxAgarrados": 1
     }
    }
   ],
@@ -8825,6 +9201,12 @@ export const LIVRO_FTD = {
     "condition": "contido",
     "rounds": 10,
     "repete": true
+   },
+   {
+    "nome": "Passo Psíquico",
+    "tipo": "teleporte",
+    "alcanceFt": 60,
+    "bonus": true
    }
   ],
   "despertar": {
@@ -8861,7 +9243,11 @@ export const LIVRO_FTD = {
   "traits": [
    "despertar",
    "t_naturezaIncomum",
+   "t_mudarDeForma",
    "acoesLendarias"
+  ],
+  "marcas": [
+   "gem"
   ],
   "blurb": "Colosso psiônico que esmaga grupos inteiros com um sopro de força em cone de 90 m, agarra com as garras e se teleporta pelo campo. Ao cair a 0 PV, desperta seu poder de gema e volta com 400 PV, podendo erguer e arremessar todos telecineticamente.",
   "lore": "Os grandes wyrms de safira são dragões de gema que atingiram o ápice da idade e do poder mental. Vivem nas profundezas da terra e entre planos, guardando segredos e conhecimentos antigos. Pensam com frieza e neutralidade, preferindo observar e calcular antes de agir. Quando provocados, usam psiônicos capazes de dobrar o tempo e a gravidade."
@@ -8945,7 +9331,8 @@ export const LIVRO_FTD = {
      "dc": 20,
      "escape": 20,
      "condition": "contido",
-     "note": "é agarrado"
+     "note": "é agarrado",
+     "maxAgarrados": 1
     }
    },
    {
@@ -9024,6 +9411,9 @@ export const LIVRO_FTD = {
    "t_naturezaIncomum",
    "acoesLendarias"
   ],
+  "marcas": [
+   "metallic"
+  ],
   "blurb": "Colosso dracônico que morde, agarra com as garras e varre com a cauda, enquanto seus sopros em cone de 90 m congelam ou derrubam inconscientes grupos inteiros. Ao cair a 0 PV, desperta seu poder metálico, volta com 450 PV e ganha ações míticas.",
   "lore": "As grandes serpes metálicas são dragões que atravessaram eras e alcançaram um poder quase divino. A de prata costuma ser uma guardiã ordeira e benevolente, que valoriza a justiça e a proteção dos fracos. Muitas vezes caminha entre os povos menores disfarçada de forma humana, observando e aconselhando. Não precisa comer nem beber, e quando enfim se lança à batalha, poucos sobrevivem para contar."
  },
@@ -9089,6 +9479,21 @@ export const LIVRO_FTD = {
      "damage": "1d6+3",
      "type": "perfurante"
     }
+   }
+  ],
+  "acoesEspeciais": [
+   {
+    "nome": "Pó de Escamas",
+    "tipo": "area",
+    "shape": "raio",
+    "areaFt": 10,
+    "save": "dex",
+    "dc": 13,
+    "condition": "contornadoDeLuz",
+    "rounds": 100,
+    "repete": false,
+    "bonus": true,
+    "porDia": 1
    }
   ],
   "traits": [
@@ -9198,6 +9603,9 @@ export const LIVRO_FTD = {
    }
   ],
   "traits": [],
+  "marcas": [
+   "gem"
+  ],
   "blurb": "Morde com presas que drenam a vitalidade e exala um cone de energia necrótica que resseca e enfraquece os inimigos, cortando a força de seus golpes. Também pode lançar Perdição com seus poderes psiônicos.",
   "lore": "Dragões de topázio são dragões de gema, criaturas de mente psiônica ligadas aos mistérios do plano material. Mesmo jovens, preferem viver perto de mares e costas, nadando com facilidade e respirando sob a água. São solitários e desconfiados, guardando seu território com intimidação mais do que com conversa. Quando provocados, secam a vida dos intrusos com seu sopro amarelado."
  },
@@ -9281,7 +9689,8 @@ export const LIVRO_FTD = {
      "dc": 19,
      "escape": 19,
      "condition": "contido",
-     "note": "é agarrado"
+     "note": "é agarrado",
+     "maxAgarrados": 1
     }
    }
   ],
@@ -9357,6 +9766,12 @@ export const LIVRO_FTD = {
     "condition": "contido",
     "rounds": 10,
     "repete": true
+   },
+   {
+    "nome": "Passo Psíquico",
+    "tipo": "teleporte",
+    "alcanceFt": 60,
+    "bonus": true
    }
   ],
   "despertar": {
@@ -9393,7 +9808,11 @@ export const LIVRO_FTD = {
   "traits": [
    "despertar",
    "t_naturezaIncomum",
+   "t_mudarDeForma",
    "acoesLendarias"
+  ],
+  "marcas": [
+   "gem"
   ],
   "blurb": "Dragão colossal que esmaga grupos inteiros com um sopro de força em cone enorme, agarra presas com as garras e se teletransporta enquanto lança magias psiônicas devastadoras como parar o tempo e jaula de força. Ao cair a 0 PV, desperta e volta com 400 PV.",
   "lore": "As grandes serpes de topázio são os dragões de gema mais antigos e poderosos dessa linhagem, ligados à mente e à energia psiônica. Ponderadas e reservadas, preferem observar e calcular antes de agir, guardando segredos acumulados ao longo de eras. Podem cavar, nadar e voar, e muitas vezes caminham entre os mortais sob formas pequenas e discretas. Quando provocadas, revelam um poder telecinético capaz de remodelar o campo de batalha."
@@ -9476,7 +9895,8 @@ export const LIVRO_FTD = {
      "dc": 20,
      "escape": 20,
      "condition": "contido",
-     "note": "é agarrado"
+     "note": "é agarrado",
+     "maxAgarrados": 1
     }
    },
    {
@@ -9563,6 +9983,9 @@ export const LIVRO_FTD = {
    "despertar",
    "t_naturezaIncomum",
    "acoesLendarias"
+  ],
+  "marcas": [
+   "chromatic"
   ],
   "blurb": "Colosso dracônico que agarra com as garras, derruba com a cauda e varre o campo com um sopro gélido em cone de 90 m. Ao chegar a 0 PV, desperta, volta com 425 PV e ganha ações míticas.",
   "lore": "As grandes serpes são dragões cromáticos que alcançaram um poder quase divino, muito além dos anciões comuns. A branca domina regiões de gelo eterno, onde escava, nada e voa com igual facilidade. Não precisa comer nem beber, e sua fúria fria é guiada por uma inteligência antiga e cruel. Quando parece derrotada, desperta sua essência cromática e retorna ainda mais perigosa."
@@ -9696,6 +10119,9 @@ export const LIVRO_FTD = {
    }
   ],
   "traits": [],
+  "marcas": [
+   "gem"
+  ],
   "blurb": "Combina mordida com dano energético e duas garras, e seu sopro de singularidade causa muito dano energético num cone e prende os alvos no lugar. Teleporta-se com piscar e anula magias, sendo difícil de cercar.",
   "lore": "Dragões de ametista são dragões de gema de natureza psiônica, conhecidos pela mente afiada e pelo interesse em segredos arcanos. Os jovens já falam por telepatia e preferem resolver conflitos com diplomacia calculada antes de recorrer às garras. Anfíbios, costumam fazer covis em cavernas submersas ou lagos profundos ricos em cristais. São neutros e pragmáticos, fazendo alianças apenas quando lhes trazem vantagem."
  },
@@ -9825,6 +10251,9 @@ export const LIVRO_FTD = {
    }
   },
   "traits": [],
+  "marcas": [
+   "gem"
+  ],
   "blurb": "Combina mordida radiante e garras com um sopro cintilante em cone que fere vários alvos e lhe concede PV temporários. Também usa psiônica para hipnotizar grupos inteiros.",
   "lore": "Dragões de cristal são dragões de gema curiosos e brincalhões, ligados à luz e à mente. Os jovens costumam montar covis em cavernas geladas ou picos cobertos de neve, onde o brilho das estrelas reflete nas paredes cristalinas. Gostam de conversar por telepatia e às vezes aceitam aprendizes, mas se ofendem fácil quando alguém zomba deles. Defendem seu território com rajadas de luz ofuscante."
  },
@@ -10157,6 +10586,9 @@ export const LIVRO_FTD = {
   "traits": [
    "escavador"
   ],
+  "marcas": [
+   "gem"
+  ],
   "blurb": "Combina mordida de alcance longo e garras com um sopro psíquico que fere e atrapalha ataques e testes dos alvos. Usa ilusões e invisibilidade para surgir de onde menos se espera, inclusive de túneis na rocha.",
   "lore": "Dragões de esmeralda são dragões de gema, criaturas de mente afiada e poderes psiônicos. Os jovens costumam escavar covis em rocha profunda ou em ruínas esquecidas, protegendo seus segredos com paranoia. Preferem observar à distância, lendo pensamentos e enganando intrusos com imagens falsas antes de decidir se lutam. Quando atacam, buscam confundir o inimigo e desaparecer pelos próprios túneis."
  },
@@ -10406,6 +10838,9 @@ export const LIVRO_FTD = {
    "spiderClimb",
    "escavador"
   ],
+  "marcas": [
+   "gem"
+  ],
   "blurb": "Escala paredes e escava rocha para emboscar, alternando mordidas trovejantes e garras com um sopro sônico que deixa quem estiver no cone incapacitado. Também usa psiônica para paralisar e assustar alvos.",
   "lore": "Dragões de safira são dragões de gema metódicos e territoriais que fazem seus covis em cavernas profundas no subterrâneo. Os jovens já dominam a telepatia e defendem com ferocidade os túneis que escavam. São curiosos sobre a história e o conhecimento dos povos da superfície e das profundezas. Preferem negociar e manipular a lutar, mas reagem com violência a quem invade seu território."
  },
@@ -10646,6 +11081,9 @@ export const LIVRO_FTD = {
    }
   ],
   "traits": [],
+  "marcas": [
+   "gem"
+  ],
   "blurb": "Ataca com mordida e garras que somam energia necrótica, e seu sopro ressecante causa dano necrótico em cone e deixa os alvos enfraquecidos, cortando pela metade o dano de suas armas de Força.",
   "lore": "Os dragões de topázio são dragões de gema ligados à energia psiônica, reservados e de temperamento imprevisível. Preferem regiões costeiras e águas profundas, onde caçam e guardam seus tesouros longe de olhares curiosos. Os jovens já falam por telepatia e usam poderes mentais para enfraquecer quem os incomoda. Costumam evitar companhia e reagem com hostilidade a intrusos em seu território."
  }
@@ -10654,7 +11092,7 @@ export const LIVRO_FTD = {
 export const TRACOS_FTD = {
  "t_mudarDeForma": {
   "name": "Mudar de Forma",
-  "desc": "Assume a forma de qualquer criatura Média ou Pequena, mantendo suas estatísticas exceto o tamanho. Volta ao normal se cair a 0 PV ou usar uma ação para isso."
+  "desc": "Com a ação bônus, toma a forma de outra criatura e guarda os números dela. No jogo, só o nome."
  },
  "t_alterarPercepcao": {
   "name": "Alterar Percepção",
@@ -10675,14 +11113,6 @@ export const TRACOS_FTD = {
  "t_formaCromatica": {
   "name": "Forma Cromática",
   "desc": "Ao surgir, assume a forma do sopro do criador: ácido, frio, fogo, elétrico ou veneno. A forma define CA, resistência a dano, traços e o tipo de dano dos ataques."
- },
- "t_chamasCromaticas": {
-  "name": "Chamas Cromáticas",
-  "desc": "Recarga 5–6. Cone de 90 m: teste de resistência de Destreza CD 27, sofrendo 71 (11d12) de dano ácido, frio, fogo, elétrico ou veneno (à escolha dela), ou metade se passar."
- },
- "t_soproPrismatico": {
-  "name": "Sopro Prismático",
-  "desc": "Recarga 4–6. Cone de 18 m: teste de resistência de Destreza CD 17, sofrendo 33 (6d10) de dano ácido, de frio, fogo, elétrico ou veneno (à escolha dela) na falha, ou metade no sucesso."
  },
  "t_multiplasCabecas": {
   "name": "Múltiplas Cabeças",
@@ -10736,10 +11166,6 @@ export const TRACOS_FTD = {
   "name": "Palavras Desarmantes",
   "desc": "3/dia. Quando uma criatura visível a até 18 m rola dano, o orador rola 1d6 e subtrai o resultado desse dano."
  },
- "t_toqueCurativo1Dia": {
-  "name": "Toque Curativo (1/Dia)",
-  "desc": "Toca outra criatura a até 1,5 m, que recupera 40 PV e se livra de todas as doenças e venenos."
- },
  "t_defesaMental": {
   "name": "Defesa Mental",
   "desc": "Sem armadura, soma seu modificador de Inteligência à CA."
@@ -10763,10 +11189,6 @@ export const TRACOS_FTD = {
  "t_eloProtetor": {
   "name": "Elo Protetor",
   "desc": "Quando outra criatura visível a até 9 m vai sofrer dano, o espreitador reduz esse dano em 10 (3d6) e sofre ele mesmo a quantia reduzida."
- },
- "t_presencaDrenante": {
-  "name": "Presença Drenante",
-  "desc": "Criaturas escolhidas a até 18 m fazem teste de Sabedoria CD 19; quem falha tem deslocamento reduzido à metade e desvantagem em ataques até o fim do próximo turno. Quem passa fica imune por 24 horas."
  },
  "t_reconstrucao": {
   "name": "Reconstrução",

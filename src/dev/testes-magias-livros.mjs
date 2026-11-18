@@ -45,11 +45,12 @@ function conjurador(c, ...ids) {
 }
 
 await teste('o PHB entrou como dado: só a magia que o jogo faz está no jogo; a outra fica na fila', async () => {
-  const doPhb = Object.values(SPELLS).filter((s) => s.fonte === 'phb');
+  // (a ação INTERNA que uma magia do PHB concede, a travessia da Caminhar em Árvores, não é magia do catálogo)
+  const doPhb = Object.values(SPELLS).filter((s) => s.fonte === 'phb' && !s.interna);
   assert.ok(doPhb.length >= 90, `${doPhb.length}`);
   assert.ok(doPhb.every((s) => s.desc && s.name && s.level >= 1 && !s.semMotor), 'nenhuma sem efeito no catálogo');
   const fila = JSON.parse((await import('node:fs')).readFileSync(new URL('./magias/phb-pendente.json', import.meta.url), 'utf8'));
-  for (const id of ['desejo', 'moldarRochas', 'conjurarElemental', 'controlarOClima']) {
+  for (const id of ['portal', 'moldarRochas', 'conjurarElemental', 'controlarOClima']) {
     assert.ok(!SPELLS[id], `${id} não está no jogo`);
     assert.ok(fila.some((p) => p.magia === id && p.motivo), `${id} está na fila, com o motivo`);
   }
@@ -311,6 +312,95 @@ await teste('a lista de cada classe tem toda magia que o livro lhe dá e o motor
   }
   assert.ok(listaDaClasse('bruxo', 5, 'arquifada').magias.includes('dominarPessoa'), 'a arquifada dá o Dominar Pessoa');
   assert.ok(listaDaClasse('paladino', 4).magias.includes('auraDeVida'), 'o paladino aprende a Aura de Vida');
+});
+
+// ---------------------------------------------------------------- a fila do PHB (2026-11-16)
+await teste('Forma Etérea: ninguém mira nem fere quem está no etéreo; ele não volta sozinho, e a ação o traz atravessando parede', () => {
+  const { enc, party, foes } = montar({ foes: [['ogro', { x: 10, y: 3 }]] });
+  const mago = conjurador(party[3], 'formaEterea');
+  assert.ok(enc.castSpell(mago, 'formaEterea', {}).ok);
+  assert.ok(hasCondition(mago, 'etereo'));
+  assert.equal(enc.canAttack(foes[0], mago).ok, false, 'o ogro não o alcança');
+  // começo de outro turno do grupo: o Piscar voltaria, a Forma Etérea não
+  enc.fimDoTurnoDoLado('party'); enc.beginSide('foes'); enc.fimDoTurnoDoLado('foes'); enc.beginSide('party');
+  assert.ok(hasCondition(mago, 'etereo'), 'continua no etéreo');
+  enc.field.porAresta(3, 9, 4, 9, 1);
+  mago.actionUsed = false;
+  assert.equal(enc.canCast(mago, 'voltarDoEtereo', { point: { x: 12, y: 9 } }).ok, false, 'longe demais');
+  const r = enc.castSpell(mago, 'voltarDoEtereo', { point: { x: 5, y: 9 } });
+  assert.ok(r.ok, r.why);
+  assert.ok(!hasCondition(mago, 'etereo'));
+  assert.deepEqual([mago.pos.x, mago.pos.y], [5, 9], 'voltou do outro lado da parede');
+});
+
+await teste('Muralha Prismática: quem entra passa pelas sete camadas (cinco de 10d6), o lado de quem conjurou passa sem nada, e o brilho cega de perto', () => {
+  const { enc, party, foes } = montar({ foes: [['bandido', { x: 12, y: 5 }], ['bandido', { x: 1, y: 14 }]] });
+  const mago = conjurador(party[3], 'muralhaPrismatica');
+  foes[0].hp = foes[0].maxHp = 999;
+  // a parede que passaria pelo espaço de alguém não sai (no livro a magia falha)
+  assert.match(enc.canCast(mago, 'muralhaPrismatica', { point: { x: 12, y: 5 } }).why ?? '', /espaço de alguém/);
+  const r = enc.castSpell(mago, 'muralhaPrismatica', { point: { x: 10, y: 6 } });
+  assert.ok(r.ok, r.why);
+  const zona = enc.zonas.find((z) => z.prismatica);
+  assert.ok(zona && zona.casas.size >= 10, 'a parede reta');
+  assert.ok(!enc.field.hasLineOfSight({ x: 12, y: 6 }, { x: 8, y: 6 }), 'opaca');
+  // o bandido de perto testou Constituição contra o brilho (CD 99: ficou cego)
+  assert.ok(hasCondition(foes[0], 'cego'), 'o brilho cegou o bandido perto');
+  assert.ok(!hasCondition(foes[1], 'cego'), 'o bandido longe não vê o brilho de perto');
+  // o bandido atravessa: cinco tipos de dano, e a anil e a violeta pegam
+  const antes = foes[0].hp;
+  // (a parede sai de través para quem conjura, em escada: (10,5) é dela e (11,5) não)
+  foes[0].pos = { ...foes[0].pos, x: 11, y: 5 };
+  const caminho = [{ x: 11, y: 5 }, { x: 10, y: 5 }];
+  foes[0].movementLeftFt = 30;
+  enc.moveAlong(foes[0], caminho);
+  assert.ok(antes - foes[0].hp >= 50, `sofreu ${antes - foes[0].hp}`);
+  assert.ok(hasCondition(foes[0], 'petrificando') && hasCondition(foes[0], 'violetaPrismatica'));
+  // o aliado de quem conjurou passa sem nada
+  const aliado = party[0];
+  const pvAliado = aliado.hp;
+  aliado.pos = { ...aliado.pos, x: 9, y: 7 };
+  aliado.movementLeftFt = 30;
+  enc.moveAlong(aliado, [{ x: 9, y: 7 }, { x: 10, y: 7 }]);
+  assert.equal(aliado.hp, pvAliado);
+  // a violeta no começo do turno do bandido: Sabedoria contra 99, e ele vai para outro plano
+  enc.fimDoTurnoDoLado('party'); enc.beginSide('foes');
+  assert.ok(hasCondition(foes[0], 'banidoDoPlano'), 'banido pela violeta');
+});
+
+await teste('Desejo: a cura do grupo inteiro, ou a resistência de até dez; e o desgaste cobra cada magia até o descanso longo', async () => {
+  const { enc, party } = montar();
+  const mago = conjurador(party[3], 'desejo', 'misselMagico');
+  for (const h of party) h.hp = 1;
+  assert.ok(enc.castSpell(mago, 'desejo', { opcao: 'cura' }).ok);
+  assert.ok(party.every((h) => h.hp === h.maxHp), party.map((h) => `${h.hp}/${h.maxHp}`).join(' '));
+  assert.ok(mago.estresseDoDesejo);
+  const pv = mago.hp;
+  mago.actionUsed = false;
+  enc.castSpell(mago, 'misselMagico', { target: party[0], targets: [party[0], party[0], party[0]], point: party[0].pos, circulo: 1 });
+  assert.ok(mago.hp < pv, 'o Míssil Mágico custou necrótico');
+  const { descansoLongo } = await import(P + 'rules/descanso.js');
+  descansoLongo(mago);
+  assert.ok(!mago.estresseDoDesejo, 'o descanso longo tira o desgaste');
+  const b = montar();
+  const m2 = conjurador(b.party[3], 'desejo');
+  assert.ok(b.enc.castSpell(m2, 'desejo', { opcao: 'res:fogo' }).ok);
+  assert.ok(b.party.every((h) => hasCondition(h, 'resistenciaDoDesejo')));
+  assert.equal(b.enc.danoPorTipo(b.party[0], 20, 'fogo'), 10);
+  m2.semDesejo = true;
+  m2.actionUsed = false;
+  assert.match(b.enc.canCast(m2, 'desejo', { opcao: 'cura' }).why ?? '', /para sempre/);
+});
+
+await teste('A fila do PHB não tem mais "o motor ainda não faz": o resto leva 1 minuto ou mais, ou só se narraria', async () => {
+  const fila = JSON.parse((await import('node:fs')).readFileSync(new URL('./magias/phb-pendente.json', import.meta.url), 'utf8'));
+  assert.deepEqual(fila.filter((p) => /motor ainda não faz/.test(p.motivo)).map((p) => p.en), []);
+  for (const en of ['Gate', 'Demiplane', "Leomund's Secret Chest", 'Sequester']) assert.match(fila.find((p) => p.en === en)?.motivo ?? '', /só se narraria/, en);
+  for (const en of ['Clone', 'Simulacrum', 'Teleportation Circle']) assert.match(fila.find((p) => p.en === en)?.motivo ?? '', /1 minuto ou mais/, en);
+  // e a Forma Etérea do monstro continua sendo a fuga para o etéreo, e não uma magia que a IA não conjura
+  const z = makeMonster('zuggtmoy', { x: 1, y: 1 });
+  assert.ok(z.acoesEspeciais?.some((a) => a.tipo === 'etereo'));
+  assert.ok(!JSON.stringify(z.spellcasting ?? {}).includes('formaEterea'));
 });
 
 console.log(`\n${total - falhas}/${total} testes passaram.`);

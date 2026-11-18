@@ -24,7 +24,7 @@
 
 import { mapaDo } from '../game/encounter.js';
 import { montarCampo } from '../game/campo.js';
-import { ARESTA } from '../core/grid.js';
+import { ARESTA, RESTRICOES } from '../core/grid.js';
 import { MANSAO } from '../game/mansao.js';
 import { ANDARES } from '../game/casadamorte.js';
 import { CRIPTAS, SEGREDO_SANTUARIO, SEGREDO_PRISAO, PONTE } from '../game/casadamorte-porao-cena.js';
@@ -92,8 +92,11 @@ const CENAS = [
   'covilAgatha', 'cavernaDoPoco', 'acampamentoSawplee', 'telhadoGigante', 'giganteTerreo', 'zorzulaPosto', 'zorzulaMinas', 'santuarioIndigo', 'casaMarthungrim', 'minaHardyhammer', 'largoDaVaca', 'santuarioInfectado', 'tunelGrells', 'tunelBehir', 'tunelGruta', 'illithinoch', 'fendaTrincheiras', 'fendaOco', 'fendaLabirinto', 'labirintoSalgado', 'covilLowarnizel', 'pocaSalgada', 'vazioCupula', 'vazioPonte', 'vazioCharco', 'vazioNematodeo', 'vazioMiasma', 'vazioEstatua', 'vazioCampo', 'vazioAnima', 'talhundereth', 'criptaTalhund',
   'casaDaMorte1', 'casaDaMorte2', 'casaDaMorte3', 'casaDaMorte4', 'casaDaMortePorao1', 'casaDaMortePorao2',
 ];
-const BARRA = new Set([ARESTA.parede, ARESTA.porta, ARESTA.seteira]);
-const NOME_DA_ARESTA = { 0: 'nada', 1: 'parede', 2: 'porta', 3: 'vão aberto', 4: 'seteira' };
+// O que barra o PASSO sai da tabela do motor (`core/grid.js RESTRICOES`), e não de uma lista à mão: a lista antiga só
+// conhecia parede, porta e seteira, e a janela e a parede invisível (que barram o passo) contavam como vão — a primeira
+// janela vinda do Foundry fez duas portas do térreo do Gigante "não separarem nada" (2026-11-13).
+const BARRA = new Set(Object.entries(RESTRICOES).filter(([, r]) => r.passo === 2).map(([n]) => Number(n)));
+const NOME_DA_ARESTA = { 0: 'nada', 1: 'parede', 2: 'porta', 3: 'vão aberto', 4: 'seteira', 5: 'etérea', 6: 'invisível', 7: 'moita', 8: 'janela' };
 
 /** Todas as arestas do mapa, uma vez cada: `{ x, y, lado, a, b, codigo }`, com `a`/`b` as duas casas. */
 function arestas(campo) {

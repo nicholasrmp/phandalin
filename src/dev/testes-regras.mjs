@@ -23,6 +23,7 @@ import { criarPersonagem } from '../rules/progressao.js';
 import { CLASSES } from '../rules/classes/index.js';
 import { marcarTreinoDeArmadura, quantosNaMochila, WEAPONS, garantirInventario, itemDeId } from '../rules/equipment.js';
 import { Battlefield, distanceFt, SUPERFICIES } from '../core/grid.js';
+import { Fx } from '../view/fx.js';
 import { takeMonsterTurn, contornaZonas, runAutoSummons, encerrarTurnoComInvocados } from '../rules/ai.js';
 import { makeRng } from '../core/rng.js';
 import {
@@ -1033,7 +1034,8 @@ teste('grimório do mago: 6 no 1º nível, 8 no 2º, só magia de mago', () => {
 teste('toda magia declara a fonte', () => {
   // as dos livros (`magias-livro-<livro>.js`) declaram o livro de onde vieram
   // as AÇÕES DAS RAÇAS dos livros (`racas-motor.js`) trazem o livro da raça: o Volo e o Mordenkainen entram aqui
-  for (const s of Object.values(SPELLS)) assert.ok(['srd', 'propria', 'phb', 'xge', 'tce', 'scag', 'dmg', 'ftd', 'bgg', 'vgm', 'mtf'].includes(s.fonte), s.id);
+  // e as duas do Jim Darkmagic são do Acquisitions Incorporated (`magias-livro-ai.js`)
+  for (const s of Object.values(SPELLS)) assert.ok(['srd', 'propria', 'phb', 'xge', 'tce', 'scag', 'dmg', 'ftd', 'bgg', 'vgm', 'mtf', 'ai'].includes(s.fonte), s.id);
 });
 
 teste('mira: quantos alvos a magia escolhe, com o círculo', () => {
@@ -9600,11 +9602,24 @@ teste('o catalogo nao deixa a classificacao calar: todo kind e todo `familiaSono
   }
 });
 
-teste('Brisa das Cinzas: o primeiro dano ao zumbi das cinzas faz os vivos colados nele rolar CON CD 10; o segundo não', () => {
+teste('o zumbi das cinzas é o do Obelisco: o bloco do zumbi, e ao morrer só uma nuvem de cinza, sem regra', () => {
   const { enc, party, foes } = montar({ nivel: 3, foes: [['zumbiDasCinzas', { x: 5, y: 5 }]] });
   const zumbi = foes[0];
-  assert.ok(zumbi.traits.includes('brisaDasCinzas'), 'o bloco carrega o traço');
+  assert.ok(!zumbi.traits.includes('brisaDasCinzas'), 'a Brisa das Cinzas é da Mina');
   assert.equal(MONSTERS.zumbiDasCinzas.xp, MONSTERS.zumbi.xp, 'é o zumbi do SRD, com o mesmo XP');
+  const colado = party[0];
+  colado.pos = { x: 4, y: 5 };
+  zumbi.traits = zumbi.traits.filter((t) => t !== 'undeadFortitude');
+  enc.applyDamage(zumbi, 999, 'radiante', colado);
+  assert.ok(zumbi.dead);
+  assert.equal(colado.conditions.length, 0, 'a nuvem não faz nada a quem está colado');
+  assert.ok(enc.log.some((l) => l.text?.includes('nuvem de cinza')), 'mas se vê');
+});
+
+teste('Brisa das Cinzas (o traço da Mina, no motor): o primeiro dano faz os vivos colados rolar CON CD 10; o segundo não', () => {
+  const { enc, party, foes } = montar({ nivel: 3, foes: [['zumbi', { x: 5, y: 5 }]] });
+  const zumbi = foes[0];
+  zumbi.traits = [...zumbi.traits, 'brisaDasCinzas'];
   const colado = party[0];
   const longe = party[1];
   colado.pos = { x: 4, y: 5 };
@@ -10442,6 +10457,39 @@ teste('nenhuma magia, nem característica, divide desenho e cor com outra', () =
     else vistos.set(g, k);
   }
   assert.deepEqual(iguais, []);
+});
+
+teste('quem VOA não para no pé de um degrau: a regra 4 da IA mede o caminho até o alvo voando (os profetas da Ânima)', () => {
+  // Um platô de 2 níveis (3 m) a leste, com uma parede de verdade em x=10 que só abre no alto (y=0 e 1), a mais de um
+  // turno do lobo. A pé, o degrau é parede; voando, sobe-se. Sem medir o caminho voando, o lobo parava encostado na
+  // parede, o ponto mais perto do herói em linha reta, e ficava ali para sempre.
+  const linhas = Array.from({ length: 24 }, (_, y) => Array.from({ length: 20 }, (_, x) => (x === 10 && y >= 2 ? '#' : '.')).join(''));
+  const field = new Battlefield(20, 24, linhas);
+  for (let y = 0; y < 24; y++) for (let x = 11; x < 20; x++) field.heights[y * 20 + x] = 2;
+  const [heroi] = makeParty({ nivel: 3 });
+  heroi.pos = { x: 15, y: 22, f: 1 };
+  const lobo = makeMonster('lobo', { x: 2, y: 22 });
+  lobo.flyFt = 40;
+  const enc = new Encounter({ battlefield: field, party: [heroi], foes: [lobo], rng: makeRng(4) });
+  enc.firstSide = 'foes'; enc.round = 1; enc.beginSide('foes');
+  const hp = heroi.hp;
+  for (let i = 0; i < 12 && heroi.hp === hp; i++) { if (i) { enc.round += 1; enc.beginSide('foes'); } takeMonsterTurn(enc, lobo); }
+  const noAlto = field.heights[lobo.pos.y * 20 + lobo.pos.x] === 2;
+  assert.ok(noAlto || heroi.hp < hp, `o lobo ficou em ${lobo.pos.x},${lobo.pos.y}, no chão`);
+  assert.equal(field.voando, false, 'o campo volta ao normal');
+});
+
+teste('um quadro de tempo NEGATIVO não derruba o caminhar (o primeiro quadro do requestAnimationFrame)', () => {
+  // O `now` do primeiro quadro pode vir antes do `performance.now()` lido ao montar o laço. Com dt < 0, a curva do
+  // passo dava NaN e `path[NaN].x` lançava dentro do render: no build de publicação, metade das arenas congelava.
+  const fx = new Fx();
+  fx.walk({ id: 'a' }, [{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 2, y: 0 }]);
+  fx.walk({ id: 'b' }, [{ x: 0, y: 1 }, { x: 1, y: 1 }], { andar: 'rastejar' });
+  fx.update(-0.004);
+  fx.update(Number.NaN);
+  assert.deepEqual([fx.positions.get('a').x, fx.positions.get('b').x], [0, 0]);
+  fx.update(0.2);
+  assert.ok(fx.positions.get('a').x > 0, 'e depois anda');
 });
 
 console.log(`\n${total - falhas}/${total} passaram`);

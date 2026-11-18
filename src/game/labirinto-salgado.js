@@ -930,13 +930,11 @@ export function criarLabirintoSalgado(app, config = {}) {
         const r = rolarPericia(enc.rng, c, 'atuacao');
         if (r.total >= 13) { await painel(`${c.name} (${SKILL_NAME.atuacao} ${r.total}) toca. As sombras velhas se apagam, e sombras novas dançam a música de ${c.name}.`); return; }
         const n = 1 + enc.rng.die(4);
-        const espectros = Array.from({ length: n }, (_, i) => {
-          const m = makeMonster('wraith', { ...P.sombras });
-          const q = enc.casaLivreMaisProxima({ ...P.sombras });
-          if (q) m.pos = { ...m.pos, x: q.x, y: q.y };
+        const espectros = enc.espalharFora(Array.from({ length: n }, (_, i) => {
+          const m = makeMonster('wraith', { ...P.sombras }, { nameSuffix: n > 1 ? String(i + 1) : '' });
           m.chaveDoLabirinto = `espectro${i + 1}`;
           return m;
-        });
+        }), P.sombras);
         await painel(`${c.name} (${SKILL_NAME.atuacao} ${r.total}) desafina. As sombras param de dançar, encorpam, e saem do nicho: ${n} espectros, fazendo barulho de mais.`, [{ rotulo: 'Às armas!', valor: 'luta', primaria: true }]);
         luta(espectros);
       } });
@@ -1132,6 +1130,11 @@ export function criarLabirintoSalgado(app, config = {}) {
     porPorta,
     descarregar,
     async iniciar() {
+      // O PORTAL de B1, que o Detectar Portal sente (`combat.js`): o de Illithinoch até fechar, e o segundo depois da Refração
+      enc.field.portais = [
+        ...(t.feito.portalFechado ? [] : [{ ...P.portal, nome: 'o portal de Illithinoch, em B1' }]),
+        ...(t.feito.refracaoVencida ? [{ ...P.portal, nome: 'o segundo portal, em B1' }] : []),
+      ];
       for (const [nome, aberta] of Object.entries(t.portas)) if (aberta) porPorta(nome, true);
       if (t.feito.secretaAchada) abrirSecreta();
       if (t.feito.capa) enc.field.alternarSobreposicao?.('capaTirada', true);
@@ -1249,9 +1252,8 @@ export function criarCovilLowarnizel(app, config = {}) {
     jj.name = 'Jitterjaws';
     jj.chaveDoLabirinto = 'jitterjaws';
     const quem = [shalfi, ...(t.mortos.includes('jitterjaws') ? [] : [jj])];
-    for (const f of quem) {
-      const q = enc.casaLivreMaisProxima(PC.lowarnizel);
-      if (q) f.pos = { ...f.pos, x: q.x, y: q.y };
+    // com a pegada de cada um: sem o `f`, a fusão de carne (3x3) nascia em cima do dragão (2x2)
+    for (const f of enc.espalharFora(quem, PC.lowarnizel)) {
       f.side = 'foes';
       enc.addCombatant(f);
     }

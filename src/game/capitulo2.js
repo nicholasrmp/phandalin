@@ -255,7 +255,7 @@ export function criarCapitulo2(app, config) {
       paginas: [{
         titulo: 'A trilha dos goblins',
         texto: [
-          'A trilha corre para noroeste pelo mato, uns sete quilômetros. Pegadas pequenas, muitas, indo e vindo — e o rastro de dois corpos grandes arrastados.',
+          'A trilha corre para noroeste pelo mato, uns oito quilômetros. Pegadas pequenas, muitas, indo e vindo — e o rastro de dois corpos grandes arrastados.',
           `${herois()[0]?.name ?? 'Quem vai na frente'} vai na frente, de olho no chão.`,
         ],
       }],

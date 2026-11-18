@@ -42,6 +42,9 @@ export const MAPA_POCA = {
   paredes: { n: Array.from({ length: L }, () => '.'.repeat(L)), o: Array.from({ length: L }, () => '.'.repeat(L)) },
   luzes: [],
   interativos: [],
+  // A arte é NOSSA (gerada no OpenArt, `src/dev/importar-fundo.py`), então entra no repositório. Sem o arquivo no
+  // disco, a cena abre com o ladrilho de água de sempre.
+  fundo: { nome: 'poca-salgada.webp', url: '/mapas/poca-salgada.webp', escala: 100, x0: 0, y0: 0, giro: 0, opacidade: 1 },
 };
 export const PONTOS_POCA = {
   grupo: [{ x: 12, y: 12 }, { x: 13, y: 12 }, { x: 12, y: 13 }, { x: 14, y: 13 }],

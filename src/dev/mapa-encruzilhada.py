@@ -157,6 +157,13 @@ def montar():
     for a, bb in [((4, 40), (5, 40)), ((4, 41), (5, 41)), ((5, 53), (5, 54)), ((6, 53), (6, 54)), ((5, 61), (5, 62)),
                   ((6, 61), (6, 62)), ((53, 37), (53, 38)), ((54, 37), (54, 38))]:
         Z.por_aresta(paredes, a, bb, '+')
+    # OS CUBÍCULOS DE G21 E A DESPENSA DO SUDESTE: o chão escuro da arte os fez rocha pela cor, e as duas portas que a FA
+    # trouxe como porta abriam em pedra; outras duas a parede que encosta no batente engoliu (revisão de 2026-11-13). Os
+    # quartos estão desenhados, com cama, caixote e barril: viram laje, e as portas que faltavam voltam.
+    pinta([(x, y) for y in range(56, 66) for x in (63, 64)] + [(x, y) for y in (66, 67) for x in range(61, 65)], 'L')
+    pinta([(x, y) for y in (84, 85) for x in (55, 56)] + [(x, y) for y in range(84, 88) for x in range(57, 61)], 'L')
+    for a, bb in [((62, 65), (63, 65)), ((54, 84), (55, 84))]:
+        Z.por_aresta(paredes, a, bb, '+')
     # A SETEIRA entre G24 e G23: a parede leste de G24
     for y in range(46, 51):
         Z.por_aresta(paredes, (58, y), (59, y), 'J')

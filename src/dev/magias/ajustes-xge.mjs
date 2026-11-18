@@ -234,4 +234,88 @@ export const AJUSTES_XGE = {
     onFail: { condition: 'atordoado', repete: true },
     nota: 'Os alvos são o escolhido e os inimigos mais perto dele, até dez.',
   },
+  // ---------------------------------------------------------------- a fila do Xanathar, segunda leva (2026-11-12)
+  // O que a fila tinha de LUTA e cabia nos moldes do motor: a zona que prende e anda (a Teia que se move), a zona que fere
+  // e anda (o Redemoinho do Pó maior), o chão que vira lama, o terreno difícil do truque, e o dragão de sombras.
+  'Mold Earth': {
+    kind: 'save', shape: 'square', areaFt: 5, soZona: true,
+    zona: { rodadas: 600, quando: 'nunca', aoEntrar: false, dificil: true, semTeste: true },
+    nota: 'No jogo é só o terreno difícil (a terra solta num quadrado de 1,5 m, por 1 hora); cavar e desenhar no chão não existem.',
+  },
+  'Watery Sphere': {
+    kind: 'save', save: 'str', shape: 'sphere', areaFt: 5, emVoltaDaCasa: true, onFail: { condition: 'contido' }, reuso: 'acao',
+    zona: { rodadas: 10, quando: 'fim', aoEntrar: true, dificil: false, movel: 30 },
+    concentration: true, duracaoRodadas: 10,
+    nota: 'Quem fica contido sai com Atletismo, como da Teia. A esfera anda 9 m com a ação, mas não leva quem ela prendeu, e soltar a água no fim não existe no jogo.',
+  },
+  Whirlwind: {
+    kind: 'save', save: 'dex', shape: 'sphere', areaFt: 10, damage: '10d6', damageType: 'concussão', halfOnSave: true, reuso: 'acao',
+    zona: { rodadas: 10, quando: 'inicio', aoEntrar: true, dificil: false, semTeste: true, movel: 30, dano: { dados: '10d6', tipo: 'concussão', save: 'dex', metade: true } },
+    concentration: true, duracaoRodadas: 10,
+    nota: 'O redemoinho anda 9 m com a ação e fere quem está nele ou entra nele; prender e arrastar quem falha, e o arremesso de quem escapa, não existem no jogo.',
+  },
+  'Transmute Rock': {
+    kind: 'save', save: 'str', shape: 'square', areaFt: 40, onFail: { condition: 'contido' },
+    zona: { rodadas: 600, quando: 'nunca', aoEntrar: false, dificil4: true },
+    nota: 'No jogo é só a Rocha em Lama, e vale em qualquer chão: cada passo custa quatro vezes, e quem estava no chão ao conjurar afunda (contido, sai com Atletismo). A Lama em Rocha não existe no jogo.',
+  },
+  'Illusory Dragon': {
+    kind: 'livro', efeito: 'dragaoIlusorio', mira: 'casa', save: 'wis', opcoes: [
+      { id: 'ácido', rotulo: 'Ácido' }, { id: 'frio', rotulo: 'Frio' }, { id: 'fogo', rotulo: 'Fogo' }, { id: 'elétrico', rotulo: 'Elétrico' },
+      { id: 'necrótico', rotulo: 'Necrótico' }, { id: 'veneno', rotulo: 'Veneno' },
+    ],
+    concentration: true, duracaoRodadas: 10,
+    nota: 'O dragão é uma sombra no ponto escolhido: ao surgir, cada inimigo que o vê a até 36 m testa Sabedoria ou fica amedrontado. O sopro (ação bônus) sai de quem conjura, e não do dragão, e o dragão não anda no tabuleiro.',
+  },
+  // ---------------------------------------------------------------- a fila do Xanathar (2026-11-16)
+  'Beast Bond': {
+    kind: 'livro', efeito: 'vinculoBestial', alvo: 'criatura', concentration: true, duracaoRodadas: 100, familiaSonora: 'utilidade',
+    nota: 'A fera tem de ser aliada; o elo telepático que a deixa entender quem conjurou é dela, e não muda nada no tabuleiro.',
+  },
+  'Mass Polymorph': {
+    kind: 'livro', efeito: 'metamorfose', massa: 10, concentration: true, duracaoRodadas: 600,
+    opcoes: [{ id: 'inimigos', rotulo: 'Os inimigos', detalhe: 'até dez, viram rã (Sabedoria resiste)' }, { id: 'aliados', rotulo: 'Os aliados', detalhe: 'até dez, viram a fera mais forte que o nível deixa' }],
+    nota: 'Todos os alvos são do mesmo lado, os mais perto: o inimigo vira rã e o aliado, a fera mais forte que o nível dele deixa.',
+  },
+  Scatter: {
+    kind: 'livro', efeito: 'dispersao', save: 'wis', familiaSonora: 'utilidade',
+    opcoes: [{ id: 'inimigos', rotulo: 'Espalhar os inimigos', detalhe: 'até cinco a 9 m, para longe do grupo (Sabedoria resiste)' }, { id: 'aliados', rotulo: 'Tirar os aliados', detalhe: 'até cinco a 9 m, para longe dos inimigos' }],
+    nota: 'Quem conjura escolhe um lado; o jogo põe cada um na casa livre e à vista, a até 36 m, mais longe do outro lado.',
+  },
+  'Bones of the Earth': {
+    kind: 'livro', efeito: 'ossosDaTerra', mira: 'casa', pontosLivres: 6, rangeFt: 120, familiaSonora: 'utilidade',
+    nota: 'Os pilares nascem só em chão livre: o que ergue quem está em cima e o que esmaga no teto não existem no jogo, e os pilares não se quebram. No círculo maior, os dois pilares a mais não existem.',
+  },
+  'Summon Lesser Demons': {
+    kind: 'livro', efeito: 'demoniosMenores', rangeFt: 60, concentration: true, duracaoRodadas: 600, familiaSonora: 'invocacao',
+    nota: 'O d6 escolhe: dois quasits, quatro dretches ou oito manes. Eles atacam qualquer um que não seja demônio, de qualquer lado. O círculo de sangue que protege quem conjura não existe no jogo.',
+  },
+  'Summon Greater Demon': {
+    kind: 'livro', efeito: 'demonioMaior', rangeFt: 60, concentration: true, duracaoRodadas: 600, familiaSonora: 'invocacao',
+    nota: 'O demônio é o mais forte que o círculo deixa (barlgura, vrock, hezrou, glabrezu, yochlol). Passando no Carisma do fim de um turno dele, vira hostil a todos. O nome verdadeiro e o círculo de sangue não existem no jogo.',
+  },
+  'Wrath of Nature': {
+    kind: 'livro', efeito: 'iraDaNatureza', shape: 'square', areaFt: 60, rangeFt: 120, concentration: true, duracaoRodadas: 10, familiaSonora: 'invocacao',
+    nota: 'O mato que deixa o chão difícil só para os inimigos não existe no jogo: o motor não tem terreno difícil de um lado só. As árvores que açoitam são as do mapa; as raízes prendem, no fim de cada turno de quem conjura, o inimigo da área mais perto dele.',
+  },
+  // ---------------------------------------------------------------- as três que sobravam (2026-11-16)
+  'Skill Empowerment': {
+    kind: 'livro', efeito: 'aprimorarPericia', alvo: 'criatura', concentration: true, duracaoRodadas: 600, familiaSonora: 'reforco',
+    opcoes: Object.entries({
+      acrobacia: 'Acrobacia', adestrarAnimais: 'Adestrar Animais', arcanismo: 'Arcanismo', atletismo: 'Atletismo', atuacao: 'Atuação',
+      enganacao: 'Enganação', furtividade: 'Furtividade', historia: 'História', intimidacao: 'Intimidação', intuicao: 'Intuição',
+      investigacao: 'Investigação', medicina: 'Medicina', natureza: 'Natureza', percepcao: 'Percepção', persuasao: 'Persuasão',
+      prestidigitacao: 'Prestidigitação', religiao: 'Religião', sobrevivencia: 'Sobrevivência',
+    }).map(([id, rotulo]) => ({ id, rotulo })),
+    nota: 'Na luta, a perícia é uma das opções; explorando, o jogo pergunta entre as que o alvo tem treinadas.',
+  },
+  'Control Winds': {
+    kind: 'livro', efeito: 'controlarVentos', shape: 'square', areaFt: 100, rangeFt: 300, concentration: true, duracaoRodadas: 600, familiaSonora: 'utilidade',
+    opcoes: [{ id: 'rajadas', rotulo: 'Rajadas', detalhe: 'desvantagem na arma à distância pelo cubo' }, { id: 'descendente', rotulo: 'Corrente descendente', detalhe: 'a mesma desvantagem, e quem voa cai' }, { id: 'ascendente', rotulo: 'Corrente ascendente', detalhe: 'a queda dentro dela fere a metade' }],
+    nota: 'As rajadas são sempre as fortes, e o deslocamento dobrado contra o vento não existe no jogo (o motor não tem terreno de uma direção só); o pulo mais alto da corrente ascendente também não.',
+  },
+  'Soul Cage': {
+    kind: 'reacao', gatilho: 'morteHumanoide', duracaoRodadas: 4800, familiaSonora: 'utilidade',
+    nota: 'Sai sozinha, como a Queda Suave, quando não há alma presa. Roubar Vida e Emprestar Experiência são ações bônus; perguntar à alma e os olhos do morto só se narrariam e não existem no jogo.',
+  },
 };

@@ -283,3 +283,10 @@ Três itens da 6.4 saíram da lista lendo de novo o livro, palavra por palavra, 
   heróis prontos já têm o seu, escrito para eles; o herói CRIADO saía com o motivo vazio, e era o único sem frase na
   apresentação do grupo na carroça (capítulo 1). Agora ele sai com o do antecedente que escolheu (`criador.js
   MOTIVO_DO_ANTECEDENTE`), com as nossas palavras.
+
+## Os zumbis das cinzas (2026-11-13)
+
+O Obelisco usa o bloco do zumbi do SRD e acrescenta só uma nuvem de cinza ao morrer, que dura cinco minutos e não tapa a
+vista. A Brisa das Cinzas (desvantagem em tudo para quem está colado, Constituição CD 10) era da Mina. Aplicado o do
+Obelisco (`monsters/mortosvivos.js zumbiDasCinzas`): o traço fica no motor, sem bloco que o use, e a nuvem é só a frase
+no registro. Fica mais fácil que antes, e é o livro.

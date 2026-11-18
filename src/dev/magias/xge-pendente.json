@@ -1,184 +1,79 @@
 [
  {
-  "magia": "vinculoComBesta",
-  "en": "Beast Bond",
-  "circulo": 1,
-  "motivo": "o motor ainda não faz o que ela faz",
-  "rascunho": null
- },
- {
-  "magia": "ossosDaTerra",
-  "en": "Bones of the Earth",
-  "circulo": 6,
-  "motivo": "o motor ainda não faz o que ela faz",
-  "rascunho": "save"
- },
- {
   "magia": "cerimonia",
   "en": "Ceremony",
   "circulo": 1,
-  "motivo": "o motor ainda não faz o que ela faz",
+  "motivo": "leva 1 minuto ou mais para conjurar: não cabe num turno de luta, e fora da luta o jogo não tem o que ela muda",
   "rascunho": null
- },
- {
-  "magia": "controlarVentos",
-  "en": "Control Winds",
-  "circulo": 5,
-  "motivo": "o motor ainda não faz o que ela faz",
-  "rascunho": "save"
  },
  {
   "magia": "criarHomunculo",
   "en": "Create Homunculus",
   "circulo": 6,
-  "motivo": "o motor ainda não faz o que ela faz",
+  "motivo": "leva 1 minuto ou mais para conjurar: não cabe num turno de luta, e fora da luta o jogo não tem o que ela muda",
   "rascunho": null
  },
  {
   "magia": "bosqueDruidico",
   "en": "Druid Grove",
   "circulo": 6,
-  "motivo": "o motor ainda não faz o que ela faz",
+  "motivo": "leva 1 minuto ou mais para conjurar: não cabe num turno de luta, e fora da luta o jogo não tem o que ela muda",
   "rascunho": null
  },
  {
   "magia": "encontrarMontariaMaior",
   "en": "Find Greater Steed",
   "circulo": 4,
-  "motivo": "o motor ainda não faz o que ela faz",
+  "motivo": "leva 1 minuto ou mais para conjurar: não cabe num turno de luta, e fora da luta o jogo não tem o que ela muda",
   "rascunho": null
- },
- {
-  "magia": "dragaoIlusorio",
-  "en": "Illusory Dragon",
-  "circulo": 8,
-  "motivo": "o motor ainda não faz o que ela faz",
-  "rascunho": "save"
  },
  {
   "magia": "chamadoInfernal",
   "en": "Infernal Calling",
   "circulo": 5,
-  "motivo": "o motor ainda não faz o que ela faz",
-  "rascunho": null
- },
- {
-  "magia": "metamorfoseEmMassa",
-  "en": "Mass Polymorph",
-  "circulo": 9,
-  "motivo": "o motor ainda não faz o que ela faz",
+  "motivo": "leva 1 minuto ou mais para conjurar: não cabe num turno de luta, e fora da luta o jogo não tem o que ela muda",
   "rascunho": null
  },
  {
   "magia": "fortalezaPoderosa",
   "en": "Mighty Fortress",
   "circulo": 8,
-  "motivo": "o motor ainda não faz o que ela faz",
-  "rascunho": null
- },
- {
-  "magia": "moldarTerra",
-  "en": "Mold Earth",
-  "circulo": 0,
-  "motivo": "o motor ainda não faz o que ela faz",
-  "rascunho": null
- },
- {
-  "magia": "dispersar",
-  "en": "Scatter",
-  "circulo": 6,
-  "motivo": "o motor ainda não faz o que ela faz",
+  "motivo": "leva 1 minuto ou mais para conjurar: não cabe num turno de luta, e fora da luta o jogo não tem o que ela muda",
   "rascunho": null
  },
  {
   "magia": "moldarAgua",
   "en": "Shape Water",
   "circulo": 0,
-  "motivo": "o motor ainda não faz o que ela faz",
-  "rascunho": null
- },
- {
-  "magia": "aprimorarPericia",
-  "en": "Skill Empowerment",
-  "circulo": 5,
-  "motivo": "o motor ainda não faz o que ela faz",
+  "motivo": "só se narraria: o tabuleiro ainda não guarda o que ela muda",
   "rascunho": null
  },
  {
   "magia": "escritaCeleste",
   "en": "Skywrite",
   "circulo": 2,
-  "motivo": "o motor ainda não faz o que ela faz",
+  "motivo": "só se narraria: o tabuleiro ainda não guarda o que ela muda",
   "rascunho": null
  },
  {
   "magia": "armadilha",
   "en": "Snare",
   "circulo": 1,
-  "motivo": "o motor ainda não faz o que ela faz",
+  "motivo": "leva 1 minuto ou mais para conjurar: não cabe num turno de luta, e fora da luta o jogo não tem o que ela muda",
   "rascunho": "save"
- },
- {
-  "magia": "gaiolaDeAlmas",
-  "en": "Soul Cage",
-  "circulo": 6,
-  "motivo": "o motor ainda não faz o que ela faz",
-  "rascunho": "heal"
- },
- {
-  "magia": "invocarDemonioMaior",
-  "en": "Summon Greater Demon",
-  "circulo": 4,
-  "motivo": "o motor ainda não faz o que ela faz",
-  "rascunho": null
- },
- {
-  "magia": "invocarDemoniosMenores",
-  "en": "Summon Lesser Demons",
-  "circulo": 3,
-  "motivo": "o motor ainda não faz o que ela faz",
-  "rascunho": null
  },
  {
   "magia": "temploDosDeuses",
   "en": "Temple of the Gods",
   "circulo": 7,
-  "motivo": "o motor ainda não faz o que ela faz",
+  "motivo": "leva 1 minuto ou mais para conjurar: não cabe num turno de luta, e fora da luta o jogo não tem o que ela muda",
   "rascunho": null
  },
  {
   "magia": "servoMinusculo",
   "en": "Tiny Servant",
   "circulo": 3,
-  "motivo": "o motor ainda não faz o que ela faz",
+  "motivo": "leva 1 minuto ou mais para conjurar: não cabe num turno de luta, e fora da luta o jogo não tem o que ela muda",
   "rascunho": null
- },
- {
-  "magia": "transmutarRocha",
-  "en": "Transmute Rock",
-  "circulo": 5,
-  "motivo": "o motor ainda não faz o que ela faz",
-  "rascunho": "save"
- },
- {
-  "magia": "esferaAquosa",
-  "en": "Watery Sphere",
-  "circulo": 4,
-  "motivo": "o motor ainda não faz o que ela faz",
-  "rascunho": "save"
- },
- {
-  "magia": "redemoinho",
-  "en": "Whirlwind",
-  "circulo": 7,
-  "motivo": "o motor ainda não faz o que ela faz",
-  "rascunho": "save"
- },
- {
-  "magia": "furiaDaNatureza",
-  "en": "Wrath of Nature",
-  "circulo": 5,
-  "motivo": "o motor ainda não faz o que ela faz",
-  "rascunho": "attack"
  }
 ]

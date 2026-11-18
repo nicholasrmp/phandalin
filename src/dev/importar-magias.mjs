@@ -12,6 +12,17 @@
 import fs from 'node:fs';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
+/** As magias que mudariam o mundo de um jeito que o tabuleiro ainda não guarda: ficam fora do jogo (a regra do dono). */
+const SO_SE_NARRARIAM = new Set(['Stone Shape', 'Move Earth', 'Control Water', 'Control Weather', 'Creation', 'Hallucinatory Terrain',
+  'Mirage Arcane', 'Project Image', 'Programmed Illusion', 'Dream',
+  // as de CONVERSA do Acquisitions Incorporated (lembrar outra fala, o serviço do enfeitiçado): numa luta não fazem nada
+  'Fast Friends', 'Gift of Gab',
+  // as de UMA AÇÃO do PHB que só abrem o que o jogo não tem: o semiplano vazio, o portal para outro plano, o baú guardado
+  // no etéreo, o esconderijo mágico de um objeto (2026-11-16)
+  'Demiplane', 'Gate', "Leomund's Secret Chest", 'Sequester',
+  // as do Xanathar que só mudariam o que o tabuleiro não guarda: a forma da água, as letras no céu
+  'Shape Water', 'Skywrite']);
+
 const RAIZ = fileURLToPath(new URL('../../', import.meta.url));
 const LIVRO = (process.argv[2] ?? 'phb').toLowerCase();
 const lerJson = (p, reserva) => { try { return JSON.parse(fs.readFileSync(p, 'utf8')); } catch { return reserva; } };
@@ -140,8 +151,12 @@ export async function notasDasMagias(SPELLS, novas) {
   const timbre = (fam) => { const { nome, opts } = conjuracaoSoundFor(fam); return `${nome}${nome === 'castUtility' ? `/${opts.escola}` : ''}`; };
   const uso = new Map();
   const conta = (t, n) => uso.set(t, (uso.get(t) ?? 0) + 1);
+  // A NOTA QUE JÁ EXISTIA FICA (2026-11-16): antes, toda rodada do importador sorteava de novo a nota de todas as magias do
+  // livro, e a que o jogador já tinha aprendido mudava de altura. Agora a magia que já tinha nota, no mesmo timbre, a mantém,
+  // e só a nova (ou a que mudou de timbre) ganha uma.
+  const antiga = (id) => (SPELLS[id] && !SPELLS[id].semMotor && SPELLS[id].tom != null ? SPELLS[id] : null);
   for (const sp of Object.values(SPELLS)) {
-    if (sp.semMotor || novas[sp.id]) continue;
+    if (sp.semMotor || (novas[sp.id] && !antiga(sp.id))) continue;
     const fam = familiaDaMagia(sp);
     conta(`${timbre(fam)}@${conjuracaoSoundFor(fam).opts.semitom ?? 0}`);
   }
@@ -149,6 +164,8 @@ export async function notasDasMagias(SPELLS, novas) {
     const sp = novas[id];
     delete sp.tom;
     if (sp.semMotor) continue;
+    const velha = antiga(id);
+    if (velha && timbre(familiaDaMagia({ ...sp, tom: velha.tom })) === timbre(familiaDaMagia(velha))) { sp.tom = velha.tom; continue; }
     const fam = familiaDaMagia(sp);
     const opcoes = fam.familia === 'dano' ? GRAUS_DO_DANO : conjuracaoSoundFor(fam).opts.semitom != null && fam.familia !== 'sopro' ? [...GRAUS, ...GRAUS_EXTRA] : [0];
     if (opcoes.length < 2) continue;
@@ -215,11 +232,16 @@ if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
     // A MAGIA QUE O JOGO NÃO FAZ FICA FORA DO JOGO (pedido do dono, 2026-11-09): a sem efeito e a que só se narraria não
     // entram em `SPELLS` nem no de-para — o conjurador do bestiário volta a tê-la como "magia que ainda não temos", e
     // nenhuma lista de classe a oferece. Ficam na fila, com o motivo, para quando o motor as fizer.
-    if ((!temMotor && !fora) || fora?.efeito === 'narra') {
+    // AS QUE SÓ SE NARRARIAM, pela regra do dono (`rules/utilidade-livros.js`, o cabeçalho): moldar a rocha, mover a terra e a
+    // água, as ilusões que o tabuleiro não mostra. Ditas aqui pelo nome, para a fila do bestiário saber que não são dívida.
+    const narrada = !temMotor && SO_SE_NARRARIAM.has(s.name);
+    if ((!temMotor && !fora) || fora?.efeito === 'narra' || narrada) {
       pendente.push({ magia: id, en: s.name, circulo: s.level,
-        motivo: fora?.efeito === 'narra' ? 'só se narraria: o tabuleiro ainda não guarda o que ela muda'
+        motivo: fora?.efeito === 'narra' || narrada ? 'só se narraria: o tabuleiro ainda não guarda o que ela muda'
           : demorada ? 'a mecânica está na tabela; leva 1 minuto ou mais para conjurar, e espera a preparação fora da luta'
-            : 'o motor ainda não faz o que ela faz', rascunho: mecanica(s)?.kind ?? null });
+            // a de 1 minuto ou mais SEM tabela e sem uso fora da luta (`utilidade-livros.js`): fica fora do jogo pela regra
+            : ['minute', 'hour'].includes(s.time?.[0]?.unit) ? 'leva 1 minuto ou mais para conjurar: não cabe num turno de luta, e fora da luta o jogo não tem o que ela muda'
+              : 'o motor ainda não faz o que ela faz', rascunho: mecanica(s)?.kind ?? null });
       if (dePara[en] === id) delete dePara[en];
       continue;
     }

@@ -580,6 +580,12 @@ const ARTE_DA_ZONA = {
   // casa para a outra. `escala` é quantas casas a textura cobre antes de repetir: em 2 dá cerca de
   // quatro blocos por casa, que é pedra de parede e não paralelepípedo de rua.
   muralhaDePedra: [{ nome: 'pedra', alfa: 0.97, respira: 0.03, porCasa: true, escala: 2 }],
+  // o CONTROLAR VENTOS: o vento que já é da Muralha de Vento, mais leve (o cubo é grande e não é parede)
+  controlarVentos: [{ nome: 'vento', alfa: 0.45, gira: 0.04 }],
+  // a FÚRIA DA NATUREZA (a zona só marca a área; o que ela faz mora nos turnos de quem a conjurou)
+  iraDaNatureza: [{ nome: 'vinhas', alfa: 0.75 }],
+  // a MURALHA PRISMÁTICA: as sete cores, opaca; a arte do Padrão Hipnótico, que já tem o arco-íris, sem gasto de geração
+  muralhaPrismatica: [{ nome: 'hipnose', alfa: 0.95, gira: 0.01, respira: 0.05 }],
   nuvemMortal: [{ nome: 'nuvem-mortal', alfa: 0.85, gira: 0.01, respira: 0.08 }],
   guardiaoDaFe: [{ nome: 'bencao', alfa: 0.7, respira: 0.1 }],
   nevoaObscurecente: [{ nome: 'nevoa', alfa: 0.85, gira: 0.008, respira: 0.08 }],
@@ -856,6 +862,11 @@ export class Fx {
   }
 
   update(dt) {
+    // TEMPO DE QUADRO NEGATIVO OU NaN NÃO ANDA PARA TRÁS. O primeiro `now` do requestAnimationFrame pode vir
+    // ANTES do `performance.now()` lido ao montar o laço, e o `dt` sai negativo: o caminhar ia a k < 0, a curva
+    // `(k / 0.86) ** 2.1` dava NaN, o índice do passo virava NaN e `path[NaN].x` derrubava o render (achado no
+    // build de publicação, 2026-11-18, em metade das arenas). Com `it.t` começando em 0 e só crescendo, k fica em [0, 1].
+    if (!Number.isFinite(dt) || dt < 0) dt = 0;
     this.offsets.clear();
     this.positions.clear();
     this.camera.dx = 0;

@@ -29,6 +29,17 @@ import { MAPA_ARENA, PARTIDA_ARENA, buildFoes, reinforcementsFor } from '../game
  */
 export function playCharacter(enc, c) {
   const foes = enc.enemiesOf(c);
+  // A CRIATURA QUE REGENERA CAÍDA (o troll, o vegepigmeu): só o dano que corta a regeneração a mata, e quem tem uma magia
+  // desse tipo a usa nela (antes o grupo simulado parava de mirar em quem estava a 0 PV, e a luta não acabava nunca)
+  {
+    const caidos = enc.combatants.filter((f) => f.side !== c.side && f.caidoRegenerando && !f.dead && f.pos && !f.regenDoLivroBloqueada);
+    for (const f of caidos) {
+      const corta = f.regeneracao?.bloqueia ?? [];
+      const magia = magiasProntas(c).find((id) => { const sp = getSpell(id); return sp && corta.includes(sp.damageType) && (sp.level === 0 || (c.spellcasting?.slots?.[sp.level] ?? 0) > 0) && distanceFt(c.pos, f.pos) <= (sp.rangeFt ?? 60); });
+      if (magia && !c.actionUsed && !conditionEffects(c).incapacitated && enc.castSpell(c, magia, { target: f, point: f.pos }).ok) { enc.endTurn(c); return; }
+    }
+  }
+
   if (foes.length === 0) { enc.endTurn(c); return; }
   if (conditionEffects(c).incapacitated) { enc.endTurn(c); return; }
   // A MEDUSA: com uma no campo, o grupo da simulação não a olha (é o que a mesa faz, e o que o livro sugere).
@@ -165,6 +176,8 @@ export function playCharacter(enc, c) {
       if (s.level > 0 && !c.spellcasting.slots[s.level]) continue;
       const alvo = centroPara(s);
       if (!alvo) continue;
+      // a magia que o alvo não sente (o fogo no titivilus, imune): a mesa troca de magia, e o grupo simulado também
+      if (s.damageType && enc.danoPorTipo(alvo, 10, s.damageType, true) === 0) continue;
       enc.castSpell(c, sid, { target: alvo, point: alvo.pos });
       enc.endTurn(c);
       return;
@@ -221,11 +234,20 @@ export function playCharacter(enc, c) {
     if (!best || nota < best.nota || (nota === best.nota && d < best.d)) best = { cego, nota, d, node };
   }
   if (best && best.cego === 1) {
-    const longe = enc.field.reachable(c.pos, 300, (x, y) => enc.occupied(x, y, c), () => true, c.pos.f ?? 1, enc.atravessaPara(c));
+    // 2000 pés, e não 300: no Castelo o caminho que contorna até ver o goblin da torre passava disso, e o grupo ficava
+    // parado a 10 pés dele por vinte rodadas (o teste das cenas no navegador, 2026-11-13).
+    const longe = enc.field.reachable(c.pos, 2000, (x, y) => enc.occupied(x, y, c), () => true, c.pos.f ?? 1, enc.atravessaPara(c));
     let mira = null;
     for (const node of longe.values()) {
       if (node.parar === false || !enxerga(node)) continue;
       if (!mira || node.cost < mira.cost) mira = node;
+    }
+    // E se nenhuma casa enxerga o alvo (ele está num canto que só se vê de perto), anda-se até encostar nele.
+    if (!mira) {
+      for (const node of longe.values()) {
+        if (node.parar === false || distanceFt({ x: node.x, y: node.y }, nearest.pos) > 5) continue;
+        if (!mira || node.cost < mira.cost) mira = node;
+      }
     }
     if (mira) {
       // O caminho até lá, cortado no que cabe neste turno.

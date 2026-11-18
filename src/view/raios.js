@@ -28,18 +28,18 @@ function cruzamento(ox, oy, dx, dy, c, e) {
   const t = (qx * sy - qy * sx) / den;
   const u = (qx * dy - qy * dx) / den;
   if (t <= EPS || u < -EPS || u > 1 + EPS) return Infinity;
+  // se o cruzamento só raspa a ponta do segmento (a regra decide de outro jeito, ver `tracoBarraNoCruzamento`)
+  const L = Math.hypot(sx, sy) || 1e-12;
+  cruzamento.ponta = u * L < 0.01 ? 0 : (1 - u) * L < 0.01 ? 1 : -1;
   return t;
 }
 
-/** O traço cruzado em `t` barra mesmo? A exceção da porta, igual à de `Battlefield.cortadoPorTraco`. */
-function tracoBarra(field, ox, oy, dx, dy, t) {
+/** O traço cruzado em `t` barra mesmo? A mesma decisão da regra (`Battlefield.tracoBarraNoCruzamento`). */
+function tracoBarra(field, seg, ox, oy, dx, dy, t, ponta) {
   const e = 0.02;
-  const ax = Math.floor(ox + (t - e) * dx);
-  const ay = Math.floor(oy + (t - e) * dy);
-  const bx = Math.floor(ox + (t + e) * dx);
-  const by = Math.floor(oy + (t + e) * dy);
-  if (ax === bx && ay === by) return true;
-  return !field.passa(ax, ay, bx, by, 'visao');
+  const antes = { x: Math.floor(ox + (t - e) * dx), y: Math.floor(oy + (t - e) * dy) };
+  const depois = { x: Math.floor(ox + (t + e) * dx), y: Math.floor(oy + (t + e) * dy) };
+  return field.tracoBarraNoCruzamento(seg, antes, depois, 'visao', ponta);
 }
 
 /** Até onde vai UM raio, em casas (no máximo `raio`). */
@@ -67,8 +67,9 @@ function lancar(field, idx, ox, oy, ang, raio) {
           if (vistos.has(seg)) continue;
           vistos.add(seg);
           const t = cruzamento(ox, oy, dx, dy, seg[0], seg[1]);
+          const ponta = cruzamento.ponta;
           // o traço de janela, invisível ou moita não para o raio (`grid.segmentoBarra`, o mesmo da regra)
-          if (t < melhor && segmentoBarra(seg) && tracoBarra(field, ox, oy, dx, dy, t)) melhor = t;
+          if (t < melhor && segmentoBarra(seg) && tracoBarra(field, seg, ox, oy, dx, dy, t, ponta)) melhor = t;
         }
       }
     }

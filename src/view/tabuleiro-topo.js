@@ -136,6 +136,13 @@ export const COR_DA_ZONA = {
   // a imagem não chegou, e por isso é cheia e opaca, como a pedra que vai cobri-la.
   muralhaDePedra: { fill: 'rgba(96,92,88,.92)', stroke: 'rgba(168,160,150,.95)' },
   muralhaDeForca: { fill: 'rgba(170,140,255,.14)', stroke: 'rgba(206,186,255,.75)' },
+  muralhaPrismatica: { fill: 'rgba(214,170,255,.6)', stroke: 'rgba(255,236,170,.9)' },
+  controlarVentos: { fill: 'rgba(214,236,248,.10)', stroke: 'rgba(240,250,255,.5)' },
+  // o CUBO DE FORÇA é invisível no livro, e invisível no tabuleiro seria injogável: um brilho fraco, como a Muralha de Força
+  cuboDeForca: { fill: 'rgba(170,140,255,.10)', stroke: 'rgba(206,186,255,.6)' },
+  esferaDaAniquilacao: { fill: 'rgba(8,4,12,.92)', stroke: 'rgba(120,90,170,.8)' },
+  garrafaDaFumaca: { fill: 'rgba(120,120,120,.6)', stroke: 'rgba(170,170,170,.5)' },
+  iraDaNatureza: { fill: 'rgba(70,130,60,.14)', stroke: 'rgba(110,200,100,.5)' },
   muralhaDeGelo: { fill: 'rgba(150,210,240,.30)', stroke: 'rgba(222,244,255,.85)' },
   muralhaDeEspinhos: { fill: 'rgba(92,78,46,.34)', stroke: 'rgba(150,120,70,.7)' },
   nuvemMortal: { fill: 'rgba(90,150,70,.32)', stroke: 'rgba(143,214,90,.65)' },
@@ -491,6 +498,20 @@ export class TabuleiroTopo {
    */
   portaDoPonto(e) {
     const { px, py } = this.pontoDoEvento(e);
+    // a porta que o mapa pintado desenha fora da aresta (`portasNaArte`) se clica onde ela aparece
+    const naArte = this.imgFundo?.complete && this.imgFundo.naturalWidth ? this.field.portasNaArte : null;
+    for (const [chave, d] of Object.entries(naArte ?? {})) {
+      const [x, y, lado] = chave.split(',');
+      const cx = (px - this.ox) / this.casa; const cy = (py - this.oy) / this.casa;
+      const ax = Number(x); const ay = Number(y);
+      const perto = lado === 'N'
+        ? Math.abs(cy - (ay + d)) <= 0.2 && cx >= ax && cx <= ax + 1
+        : Math.abs(cx - (ax + d)) <= 0.2 && cy >= ay && cy <= ay + 1;
+      if (!perto) continue;
+      const outra = lado === 'N' ? { x: ax, y: ay - 1 } : { x: ax - 1, y: ay };
+      const codigo = this.field.aresta(outra.x, outra.y, ax, ay);
+      if (codigo === ARESTA.porta || codigo === ARESTA.aberta) return { a: outra, b: { x: ax, y: ay } };
+    }
     const a = V.arestaNoPonto(this.field.w, this.field.h, this.casa, px - this.ox, py - this.oy);
     if (!a || a.d > 0.2) return null;
     const outra = a.lado === 'N' ? { x: a.x, y: a.y - 1 } : { x: a.x - 1, y: a.y };
@@ -591,6 +612,12 @@ export class TabuleiroTopo {
     // `desenharEscuridao` é herdada inteira; o que muda de vista são as três peças de geometria logo abaixo.
     if (this._visao) this.desenharEscuridao(ctx, aVista);
     else this.desenharAmbienteAoLuz(ctx);
+    if (this._visao && this.field.portasNaArte && this.imgFundo?.complete && this.imgFundo.naturalWidth) {
+      ctx.save();
+      ctx.translate(this.ox, this.oy);
+      V.pintarPortasNaArte(ctx, this.field, C, (x, y) => this._visao.has(`${x},${y}`));
+      ctx.restore();
+    }
     // por cima do véu: onde o inimigo foi visto por último, o selo de cada alvo escolhido e a cruz do impossível
     this.desenharContatosPerdidos(ctx);
     this.desenharLeituraPorCima(ctx);
@@ -1919,6 +1946,8 @@ export class TabuleiroTopo {
     // O círculo escolhido conta: a Névoa em círculo maior tem área maior.
     const circulo = this.overlay.mode?.circulo ?? m.spell.level;
     const extra = { escalas: m.dobras ?? null, opcao: m.opcao ?? null };
+    // a MENTE MANIFESTA: a prévia sai de onde a magia vai sair (`combat.js naMente`)
+    if (this.enc.naMente && !this.enc._naMente && this.enc.usaMente?.(actor, m.spell.id)) return this.enc.naMente(actor, m.spell.id, () => this.areaDaMira());
     const casas = this.enc.casasDaZona(actor, m.spell, this.enc.areaDaMagia(actor, m.spell, this.hover, circulo, extra) ?? []);
     if (!casas.length) return null;
     const ok = this.enc.canCast(actor, m.spell.id, { point: this.hover, circulo, ...extra }).ok;

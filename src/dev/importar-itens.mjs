@@ -42,7 +42,11 @@ const pendente = { _nota: `Os itens do ${FONTE} que não entraram no jogo, e por
 const semTabela = [];
 const MECANICA = ['passivo', 'conjura', 'recarregavel', 'consumivel', 'condicao', 'rodadas', 'remove', 'curaDoenca', 'acao', 'cura', 'pilha',
   // a arma e a armadura que se equipam pela `base` (`items/index.js armaNomeada`), com o poder delas (`combat.js poderDaArma`)
-  'base', 'bonusAtaque', 'bonusDano', 'poder', 'propsExtra', 'alcance', 'acBonusArmadura'];
+  'base', 'bonusAtaque', 'bonusDano', 'poder', 'propsExtra', 'alcance', 'acBonusArmadura',
+  // o PERGAMINHO DE PROTEÇÃO: o tipo de criatura que a barreira barra
+  'tipoBarrado',
+  // a LÂMINA LUNAR: a sintonia de elfo
+  'sintoniaElfo'];
 for (const en of Object.keys(pt).sort()) {
   if (ja[en]) continue;
   const aj = AJUSTES[en];

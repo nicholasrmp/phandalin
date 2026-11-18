@@ -202,6 +202,12 @@ export function mapaDo(variante) {
       frente: { cor: { verde: 12, escuro: 92 } },
       // Os goblins estão escondidos: rola-se surpresa no começo (combat.js).
       emboscada: { emboscadores: 'foes' },
+      // o que a chegada descreve em volta dos cavalos (`capitulo1.js`), para olhar de graça
+      interativos: [
+        { x: 16, y: 7, id: 'flechasPretas', rotulo: 'Olhar as flechas', texto: 'Flechas curtas de penas pretas, cravadas na terra e no barranco. Ponta de pedra lascada, haste torta: trabalho de goblin.' },
+        { x: 16, y: 10, id: 'traposRasgados', rotulo: 'Olhar os trapos', texto: 'Trapos rasgados e pisoteados, e na terra fofa da beira da estrada o sulco de duas coisas pesadas arrastadas para o mato.' },
+        { x: 17, y: 9, id: 'bagagemRevirada', rotulo: 'Olhar a bagagem', texto: 'O que saiu dos alforjes, espalhado pela estrada: roupa, uma panela amassada, um saco de feijão rasgado. No meio de tudo, um tubo de couro de guardar mapa, aberto e vazio.' },
+      ],
     };
   }
   if (variante === 'rua') {
@@ -352,8 +358,8 @@ export function mapaDo(variante) {
       // O encaixe medido é IoU 0,695 (`encaixar-fa.py`): a mesma caverna, plantas desenhadas à parte, então a
       // parede dele não cai exatamente na nossa. Quem manda continua sendo a NOSSA camada de regra.
       // A arte NÃO É NOSSA e não se publica: a licença da FA proíbe embutir em video game, o arquivo fica só no
-      // disco de quem o baixou (`/mapas/`, no `.gitignore`) e o `verificar-publicavel.mjs` falha o build se ele
-      // estiver em `public/`. Sem o arquivo, a cena abre com o ladrilho de sempre.
+      // disco de quem o baixou (`/mapas/`, no `.gitignore`) e o build não o leva (`montar-publico.mjs` copia só o
+      // que o git conhece). Sem o arquivo, a cena abre com o ladrilho de sempre.
       fundo: { nome: 'ondaeco.webp', url: '/mapas/fa/ondaeco.webp', escala: 100, x0: 0, y0: 0, giro: 0, opacidade: 1 },
       cena: 'ondaEco',
     };
@@ -506,6 +512,12 @@ export function mapaDo(variante) {
       objetos: [],
       grupo: [{ x: 7, y: 7 }, { x: 8, y: 7 }, { x: 7, y: 8 }, { x: 8, y: 8 }],
       olhar: { dx: 0, dy: -1 },
+      // o que a visita descreve (`conyberry.js`), para olhar de graça no meio da luta
+      interativos: [
+        { x: 7, y: 4, id: 'mesaDaAgatha', rotulo: 'Olhar a mesa', texto: 'Pratos, copos e talheres de madeira clara, cada um no lugar, sem um grão de poeira em cima. A mesa está posta para alguém que não vem há cem anos.' },
+        { x: 10, y: 5, id: 'bauDaAgatha', rotulo: 'Olhar o baú', texto: 'Um baú fechado, de madeira clara entalhada com folhas e pássaros. É frio ao toque, como pedra no inverno.' },
+        { x: 6, y: 7, id: 'bauDaAgatha2', rotulo: 'Olhar o baú', texto: 'O outro baú, gêmeo do primeiro. Na tampa, o entalhe de um rosto de mulher, gasto de tanto alguém passar a mão.' },
+      ],
       cena: 'agatha',
     };
   }

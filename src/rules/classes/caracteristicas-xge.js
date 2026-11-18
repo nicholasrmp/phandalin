@@ -45,7 +45,7 @@ export const TEXTO_XGE = {
  },
  "consultTheSpirits": {
   "nome": "Consultar os Espíritos",
-  "desc": "Você conjura augúrio ou clarividência sem gastar espaço de magia nem componentes materiais, usando Sabedoria como atributo de conjuração. Na clarividência, o sensor é um espírito ancestral invisível. Uma vez por descanso curto ou longo."
+  "desc": "Você conjura augúrio ou clarividência sem gastar espaço de magia nem componentes materiais, usando Sabedoria como atributo de conjuração. Na clarividência, o sensor é um espírito ancestral invisível. Uma vez por descanso curto ou longo. O Augúrio e a Clarividência aparecem no menu de magia fora da luta, sem espaço; o sensor ser um espírito é só aparência."
  },
  "vengefulAncestors": {
   "nome": "Ancestrais Vingativos",
@@ -73,7 +73,7 @@ export const TEXTO_XGE = {
  },
  "warriorOfTheGods": {
   "nome": "Guerreiro dos Deuses",
-  "desc": "Magias cujo único efeito é trazê-lo de volta à vida (não como morto-vivo), como reviver os mortos, dispensam componentes materiais quando lançadas em você."
+  "desc": "Magias cujo único efeito é trazê-lo de volta à vida (não como morto-vivo), como reviver os mortos, dispensam componentes materiais quando lançadas em você. O jogo não cobra componente material de magia nenhuma (o diamante do Revivificar inclusive), então quem traz o Zelote de volta à vida já não paga nada, como o livro dá."
  },
  "fanaticalFocus": {
   "nome": "Foco Fanático",
@@ -225,7 +225,7 @@ export const TEXTO_XGE = {
  },
  "skirmisher": {
   "nome": "Escaramuçador",
-  "desc": "Quando um inimigo termina o turno a até 1,5 m de você, use sua reação para se deslocar até metade do seu deslocamento. Esse movimento não provoca ataques de oportunidade."
+  "desc": "Quando um inimigo termina o turno a até 1,5 m de você, use sua reação para se deslocar até metade do seu deslocamento. Esse movimento não provoca ataques de oportunidade. A reação sai sozinha, e só quando o batedor está com metade dos PV ou menos: ele vai para a casa mais longe dos inimigos."
  },
  "survivalist": {
   "nome": "Sobrevivencialista",
@@ -245,11 +245,11 @@ export const TEXTO_XGE = {
  },
  "earForDeceit": {
   "nome": "Ouvido para Mentiras",
-  "desc": "Em testes de Sabedoria (Intuição) para perceber se uma criatura está mentindo, qualquer resultado de 7 ou menos no d20 conta como 8."
+  "desc": "Em testes de Sabedoria (Intuição) para perceber se uma criatura está mentindo, qualquer resultado de 7 ou menos no d20 conta como 8. Vale em todo teste de Intuição, não só no de perceber mentira."
  },
  "eyeForDetail": {
   "nome": "Olho para Detalhes",
-  "desc": "Com uma ação bônus, você faz um teste de Sabedoria (Percepção) para encontrar criaturas ou objetos escondidos, ou um teste de Inteligência (Investigação) para achar ou decifrar pistas."
+  "desc": "Com uma ação bônus, você faz um teste de Sabedoria (Percepção) para encontrar criaturas ou objetos escondidos, ou um teste de Inteligência (Investigação) para achar ou decifrar pistas. Na luta, a Percepção acha quem se escondeu; a Investigação de pistas é o verbo Investigar, fora da luta."
  },
  "insightfulFighting": {
   "nome": "Combate Perspicaz",
@@ -257,11 +257,11 @@ export const TEXTO_XGE = {
  },
  "steadyEye": {
   "nome": "Olhar Firme",
-  "desc": "Se você se deslocar no máximo metade do seu deslocamento no turno, tem vantagem em testes de Sabedoria (Percepção) e Inteligência (Investigação) nesse turno."
+  "desc": "Se você se deslocar no máximo metade do seu deslocamento no turno, tem vantagem em testes de Sabedoria (Percepção) e Inteligência (Investigação) nesse turno. Fora da luta não há turno, e a vantagem vale sempre (também +5 na Percepção passiva)."
  },
  "unerringEye": {
   "nome": "Olhar Infalível",
-  "desc": "Com uma ação, desde que não esteja cego nem surdo, você percebe ilusões, metamorfos fora da forma original e outras magias que enganam os sentidos a até 9 m, sem descobrir o que está oculto. Usos iguais ao seu modificador de Sabedoria (mínimo 1), recuperados em descanso longo."
+  "desc": "Com uma ação, desde que não esteja cego nem surdo, você percebe ilusões, metamorfos fora da forma original e outras magias que enganam os sentidos a até 9 m, sem descobrir o que está oculto. Usos iguais ao seu modificador de Sabedoria (mínimo 1), recuperados em descanso longo. O registro diz o que é ilusão (as cópias, as imagens, o borrão) e quem não está na forma de verdade, sem desfazer nada."
  },
  "eyeForWeakness": {
   "nome": "Olho para Fraquezas",
@@ -277,7 +277,7 @@ export const TEXTO_XGE = {
  },
  "insightfulManipulator": {
   "nome": "Manipulador Perspicaz",
-  "desc": "Fora de combate, após 1 minuto observando ou interagindo com uma criatura, você descobre se ela é igual, superior ou inferior a você em duas características à sua escolha: Inteligência, Sabedoria, Carisma ou níveis de classe. A critério do Mestre, você também pode descobrir um traço de personalidade ou fato do passado dela."
+  "desc": "Fora de combate, após 1 minuto observando ou interagindo com uma criatura, você descobre se ela é igual, superior ou inferior a você em duas características à sua escolha: Inteligência, Sabedoria, Carisma ou níveis de classe. A critério do Mestre, você também pode descobrir um traço de personalidade ou fato do passado dela. No botão direito sobre quem conversa, fora da luta: \"Medir a mente\" (Inteligência e Sabedoria) e \"Medir a presença\" (Carisma e níveis de classe), maior, igual ou menor que as do herói. O livro deixa escolher quaisquer duas; aqui são esses dois pares."
  },
  "misdirection": {
   "nome": "Desorientação",
@@ -409,7 +409,7 @@ export const TEXTO_XGE = {
  },
  "detectPortal": {
   "nome": "Detectar Portal",
-  "desc": "Com uma ação, você descobre a direção e a distância do portal planar mais próximo em até 1,6 km. Uma vez por descanso curto ou longo."
+  "desc": "Com uma ação, você descobre a direção e a distância do portal planar mais próximo em até 1,6 km. Uma vez por descanso curto ou longo. A ação do botão: a distância e a direção do portal planar mais perto (o do mapa, a fenda para o Reino Distante, o Portal Arcano). Uma vez por descanso curto."
  },
  "planarWarrior": {
   "nome": "Guerreiro Planar",
@@ -461,11 +461,11 @@ export const TEXTO_XGE = {
  },
  "walkerInDreams": {
   "nome": "Andarilho dos Sonhos",
-  "desc": "Ao terminar um descanso curto, conjure sonho (você é o mensageiro), vidência ou círculo de teletransporte sem gastar espaço de magia nem componentes materiais. O círculo leva ao último local onde você terminou um descanso longo neste plano; se não houver, a magia falha sem ser gasta. Uma vez por descanso longo."
+  "desc": "Ao terminar um descanso curto, conjure sonho (você é o mensageiro), vidência ou círculo de teletransporte sem gastar espaço de magia nem componentes materiais. O círculo leva ao último local onde você terminou um descanso longo neste plano; se não houver, a magia falha sem ser gasta. Uma vez por descanso longo. Depois de um descanso curto, a Vidência no menu de magia fora da luta, sem espaço, uma vez por descanso longo. O Sonho e o Círculo de Teletransporte não estão no jogo."
  },
  "speechOfTheWoods": {
   "nome": "Fala da Floresta",
-  "desc": "Você aprende a falar, ler e escrever Silvestre. Bestas entendem o que você diz e você compreende seus sons e gestos, o que permite obter informações simples delas, mas não garante que sejam amigáveis."
+  "desc": "Você aprende a falar, ler e escrever Silvestre. Bestas entendem o que você diz e você compreende seus sons e gestos, o que permite obter informações simples delas, mas não garante que sejam amigáveis. Vale como um Falar com Animais que nunca acaba: o \"Falar com o animal\" do botão direito e a vantagem em Lidar com Animais. O silvestre não entra: o jogo não tem idiomas."
  },
  "spiritTotem": {
   "nome": "Totem Espiritual",
@@ -637,7 +637,7 @@ export const TEXTO_XGE = {
  },
  "eyesOfTheGrave": {
   "nome": "Olhos da Sepultura",
-  "desc": "Com uma ação, até o fim do seu próximo turno você sabe onde estão os mortos-vivos a até 18 m que não tenham cobertura total nem proteção contra adivinhação, sem saber quem são ou o que podem fazer. Usos iguais ao seu modificador de Sabedoria (mínimo 1), recuperados em descanso longo."
+  "desc": "Com uma ação, até o fim do seu próximo turno você sabe onde estão os mortos-vivos a até 18 m que não tenham cobertura total nem proteção contra adivinhação, sem saber quem são ou o que podem fazer. Usos iguais ao seu modificador de Sabedoria (mínimo 1), recuperados em descanso longo. O registro diz quantos e quem são, e o morto-vivo escondido deixa de estar."
  },
  "pathToTheGrave": {
   "nome": "Canalizar Divindade: Caminho para a Sepultura",

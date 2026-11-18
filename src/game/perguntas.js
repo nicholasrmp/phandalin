@@ -18,6 +18,9 @@
 //
 // Puro: roda em Node, sem tabuleiro e sem interface. `src/dev/testes-perguntas.mjs` prova a classificação.
 
+import { ASSUNTOS_NOVOS as ASSUNTOS_DA_VILA_DO_OBELISCO } from './npc-saber-obelisco-vila.js';
+import { ASSUNTOS_NOVOS as ASSUNTOS_DO_REINO } from './npc-saber-obelisco-reino.js';
+
 /** Sem acento, sem pontuação, em minúsculas e com um espaço entre palavras. */
 export function normal(t) {
   return String(t ?? '')
@@ -90,6 +93,20 @@ export const ASSUNTOS = {
   orcs: { nome: 'os orcs do Cume da Wyvern', chaves: ['orcs', 'orc', 'cume da wyvern', 'wyvern', 'brughor'] },
 };
 
+// OS ASSUNTOS DO OBELISCO (capítulos 5 a 8), das fichas de `npc-saber-obelisco-*.js`. O que os dois arquivos têm em comum (o
+// obelisco, os fragmentos, a Gwyn...) vira um assunto só, com as chaves dos dois.
+// Uma chave vale num assunto só (senão é empate para sempre): a que outro assunto já tem fica com quem chegou antes, e os da Mina
+// Perdida chegam primeiro ("o que é aquele bicho de um olho só" continua sendo o olho da fenda, e não os nothics do Obelisco).
+const chaveUsada = new Set(Object.values(ASSUNTOS).flatMap((a) => a.chaves.map(normal)));
+for (const novos of [ASSUNTOS_DA_VILA_DO_OBELISCO, ASSUNTOS_DO_REINO]) {
+  for (const [id, a] of Object.entries(novos)) {
+    const livres = [...new Map(a.chaves.map((c) => [normal(c), c])).values()].filter((c) => !chaveUsada.has(normal(c)));
+    for (const c of livres) chaveUsada.add(normal(c));
+    if (ASSUNTOS[id]) ASSUNTOS[id] = { ...ASSUNTOS[id], chaves: [...ASSUNTOS[id].chaves, ...livres] };
+    else ASSUNTOS[id] = { nome: a.nome, chaves: livres };
+  }
+}
+
 // ---------------------------------------------------------------- achar ----
 const LIMITE = 3;        // menos que isto é ruído: "o", "e", "de" não escolhem assunto nenhum
 
@@ -110,8 +127,11 @@ export function assuntoDe(pergunta, { entre = null } = {}) {
     for (const chave of a.chaves) {
       const c = normal(chave);
       if (!c) continue;
-      // a chave inteira, cercada de espaço: "mina" não casa dentro de "caminhada"
-      const peso = t.includes(` ${c} `) || (t.includes(` ${c}`) && t.endsWith(`${c} `)) ? c.length + 2 : t.includes(c) ? c.length : 0;
+      // a chave inteira, cercada de espaço: "mina" não casa dentro de "caminhada". Pedaço de palavra só vale se a chave for
+      // longa, ou se ela abrir uma palavra ("mapas" acha "mapa"): a curta no meio de outra ("ilha" em "trilha", em "milhas")
+      // trazia assunto que ninguém perguntou
+      const peso = t.includes(` ${c} `) || (t.includes(` ${c}`) && t.endsWith(`${c} `)) ? c.length + 2
+        : t.includes(` ${c}`) || (c.length > 5 && t.includes(c)) ? c.length : 0;
       if (peso > nota) { nota = peso; achada = c; }
     }
     if (nota >= LIMITE) notas.push({ id, nota, nome: a.nome, chave: achada });

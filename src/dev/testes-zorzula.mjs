@@ -672,6 +672,57 @@ await teste('luta fácil: dois goblins psíquicos sobem na quarta rodada, e se r
   assert.equal(s2.enc.reinforcements(4), null, 'com um herói no chão, não vem reforço');
 });
 
+await teste('os Sawplee sem o chefe: a trégua na saída, ninguém briga no posto, e a vila resmunga na volta', async () => {
+  // a trégua: sem teste (o livro a chama de fácil), uma vez só
+  const st = montar('santuarioIndigo', { seed: 3 });
+  await st.cena.iniciar();
+  st.z().santuario = 'vencido';
+  escolher('paz');
+  await st.cena.pazComOsSawplee();
+  assert.equal(st.z().pazSawplee, true);
+  assert.ok(st.app.campanha.vila.pistas.some((p) => /trégua com os Sawplee/.test(p)));
+  escolher('nada');
+  await st.cena.pazComOsSawplee();
+  assert.equal(st.z().pazSawplee, true, 'decidida, não se pergunta de novo');
+  // no posto, depois do Ruxithid: os vigias abrem e o refeitório não pula
+  const camp = { obelisco5: { iniciado: true, cenas: {}, pistas: [], feito: {}, zorzula: { santuario: 'vencido', chegou: true } }, vila: { pistas: [], missoes: {} } };
+  const s = montar('zorzulaPosto', { seed: 4, campanha: camp });
+  await s.cena.iniciar();
+  await s.cena.interacoes(PT.portao[0], 'laje', s.party[0]).find((o) => /vigias/.test(o.rotulo)).fazer();
+  assert.equal(s.z().portao, 'aberto', 'os vigias abrem sem teste');
+  escolher('luta');                                  // com o chefe vivo, isto começaria a briga
+  s.party.forEach((h, i) => { h.pos = { x: 13 + i, y: 7 }; });
+  await s.cena.depoisDeMover(s.party[0]);
+  assert.equal(s.z().refeitorio, 'trato');
+  assert.ok(s.cena.explorando && s.cena.elenco.refeitorio.every((g) => g.side === 'neutro'), 'ninguém brigou');
+  naoEscolher();
+  // a volta: a vila resmunga, mas aceita
+  const { criarCapitulo5NaVila } = await import(P + 'game/obelisco5-vila.js');
+  const grupo = makeParty({ nivel: 7 });
+  const c2 = { aventuraConcluida: true, obelisco5: { iniciado: true, cenas: {}, pistas: [], feito: {}, pagamento: { agora: 50, fim: 150 }, zorzula: { refensSalvos: true, pazSawplee: true } },
+    vila: { dia: 1, tempo: 0, missoes: {}, pistas: [], feito: {} } };
+  const registro = [];
+  await criarCapitulo5NaVila({ app: { root: {} }, camp: c2, v: c2.vila, vivos: () => grupo, rng: makeRng(1), registro, missao() {}, concluir() {}, pista() {}, falar: async () => 'simples' }).chegada();
+  assert.ok(registro.some((l) => /trégua com os Sawplee/.test(l)));
+});
+
+await teste('o portão do posto: uma passagem só, e a porta desenhada onde a arte a pinta (revisão de 2026-11-13)', () => {
+  const f = montarCampo(mapaDo('zorzulaPosto'));
+  // a FA deixava parede entre as duas folhas, no meio da passagem: o portão virava duas faixas de uma casa
+  assert.ok(f.passa(15, 3, 16, 3, 'passo'), 'dentro do portão se passa de uma folha para a outra');
+  // as portas ficam na aresta de cima (a regra), e o desenho e o clique vão ao meio da casa 3, onde a arte pinta a barra
+  for (const x of [15, 16]) {
+    assert.equal(f.aresta(x, 2, x, 3), ARESTA.porta, `porta em ${x},3`);
+    assert.ok(Math.abs(f.portasNaArte[`${x},3,N`] - 0.49) < 0.01);
+  }
+  // toda entrada de `portasNaArte` aponta para uma porta de verdade
+  for (const chave of Object.keys(f.portasNaArte)) {
+    const [x, y, lado] = chave.split(',');
+    const outra = lado === 'N' ? [Number(x), Number(y) - 1] : [Number(x) - 1, Number(y)];
+    assert.equal(f.aresta(...outra, Number(x), Number(y)), ARESTA.porta, `${chave} aponta para uma porta`);
+  }
+});
+
 
 console.log(`\n${total - falhas}/${total} testes passaram.`);
 if (falhas) process.exit(1);

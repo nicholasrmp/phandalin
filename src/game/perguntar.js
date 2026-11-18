@@ -4,6 +4,7 @@
 import { FICHAS, idDaFicha, fatosLiberados } from './npc-saber.js';
 import { bancoVazio, buscarNoBanco, guardarNoBanco, responderSemModelo, perguntaDeManobra, MAX_MEMORIA, MAX_PERGUNTA, MAX_FALA } from './dialogo-ia.js';
 import { assuntoDe, normal } from './perguntas.js';
+import { estagioDoObelisco } from './npc-saber-comum.js';
 
 export const podePerguntar = (npc) => Boolean(idDaFicha(npc));
 
@@ -68,7 +69,22 @@ export const estadoDoSaber = (ctx) => ({
   ...ctx.flags,
   zona: Boolean(ctx.zona?.()),
   mapaAchado: Boolean(ctx.app?.campanha?.castelo?.mapa),
+  // O OBELISCO (capítulos 5 a 8): o capítulo em que a vila está e os marcos dele, para os fatos das fichas do Obelisco
+  // (`npc-saber-obelisco-*.js`) esperarem a hora certa. Os ramos da campanha vão junto, para o fato que pergunta por uma cena.
+  ...estadoDoObelisco(ctx.app?.campanha),
 });
+
+/** O pedaço do estado do saber que vem do Obelisco. */
+export function estadoDoObelisco(camp) {
+  return {
+    estagio: estagioDoObelisco(camp),
+    refracaoVencida: Boolean(camp?.obelisco8?.feito?.refracaoVencida),
+    portalAberto: Boolean(camp?.obelisco7?.portalAberto),
+    marco9: Boolean(camp?.obelisco6?.marco9),
+    pagoFim: Boolean(camp?.obelisco5?.feito?.pagoFim),
+    o5: camp?.obelisco5 ?? {}, o6: camp?.obelisco6 ?? {}, o7: camp?.obelisco7 ?? {}, o8: camp?.obelisco8 ?? {},
+  };
+}
 
 /** O NPC se cansa: uma conversa não é um interrogatório sem fim, e cada pergunta com memória custa uma chamada. */
 export const MAX_PERGUNTAS_POR_CONVERSA = 15;

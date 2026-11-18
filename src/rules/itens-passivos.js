@@ -24,6 +24,8 @@
 //     iniciativa: true,         // vantagem na iniciativa (o jogo rola uma por lado: basta um herói)
 //     cdMagia: 1, ataqueMagia: 1,            // na CD e no ataque de magia
 //     soClasse: 'bruxo',        // o bônus de magia só vale para esta classe (o cetro do guardião do pacto)
+//     flagelo: ['elementalDoAr'],   // os ANÉIS DE COMANDO: vantagem contra estes, e eles com desvantagem contra quem o usa
+//     sobreAgua: true, semDanoDeQueda: true,   // o anel da água anda sobre ela; o do ar cai devagar, sem dano
 //   }
 // Vale se o item está na mochila e, quando pede sintonia, sintonizado. Dois iguais não somam.
 //
@@ -95,6 +97,9 @@ export function somaDosPassivos(c) {
     // NADA com o deslocamento de andar (a Armadura do Marinheiro): a água funda não é terreno difícil (`combat.js nadador`)
     if (p.nado) s.nado = true;
     if (p.liberdade) s.liberdade = true;
+    juntar('flagelo', p.flagelo);
+    if (p.sobreAgua) s.sobreAgua = true;
+    if (p.semDanoDeQueda) s.semDanoDeQueda = true;
     if (p.iniciativa) s.iniciativa = dados.name;
     if (!p.soClasse || p.soClasse === classeDe(c)) { somar('cdMagia', p.cdMagia); somar('ataqueMagia', p.ataqueMagia); }
   }

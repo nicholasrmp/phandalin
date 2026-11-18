@@ -33,6 +33,9 @@ async function nova(seed = 7, { campanha = {} } = {}) {
   field.luz = new Uint8Array(field.w * field.h);
   mapa.luz.forEach((linha, y) => { for (let x = 0; x < field.w; x++) field.luz[y * field.w + x] = Number(linha[x] ?? 0); });
   field.luzes = (mapa.luzes ?? []).map((f) => ({ ...f }));
+  // as peças de arte, como o `montarCampo` as copia: a ponte que cai e o fosso que abre acendem a peça deles
+  field.sobreposicoes = (mapa.sobreposicoes ?? []).map((o) => ({ ...o, ligada: Boolean(o.ligada) }));
+  field.alternarSobreposicao = (id, ligada) => { const o = field.sobreposicoes.find((q) => q.id === id); if (!o || o.ligada === ligada) return false; o.ligada = ligada; return true; };
   const party = makeParty({ nivel: 3 });
   party.forEach((c, i) => { c.pos = { ...mapa.grupo[i] }; c.facingVec = { ...mapa.olhar }; });
   const foes = buildFoes('mansao');
@@ -419,6 +422,7 @@ await teste('o fosso é REGIÃO do mapa: quem atravessa o corredor para nele, vo
     assert.ok(hp - b.hp <= 12, 'no máximo 2d6');
     if (hp > b.hp) assert.ok(hasCondition(b, 'caido'), 'quem caiu fica no chão');
     assert.equal(S.field.surfaceAt(23, 10), 'fosso', 'o buraco abriu');
+    if (S.field.sobreposicoes.some((o) => o.id === 'fossoAberto')) assert.equal(S.field.sobreposicoes.find((o) => o.id === 'fossoAberto').ligada, true, 'o desenho do fosso abriu junto');
     assert.equal(S.field.regioes.find((r) => r.id === 'fosso').desligada, true, 'e a tampa não pega mais ninguém');
     await S.cena.depoisDeMover(b);   // o painel e o XP
     assert.ok(a.pos.x === 25 && a.pos.y === 9, 'o aliado não mexeu');
@@ -452,9 +456,11 @@ await teste('a ponte do sul é REGIÃO do mapa: cede com quem pisa, e todo mundo
   assert.ok(b.hp < hpB && a.hp < hpA, 'os dois em cima levam o dano');
   assert.ok(hasCondition(a, 'caido') && hasCondition(b, 'caido'), 'e caem');
   assert.equal(S.field.surfaceAt(10, 14), 'entulho', 'a ponte virou entulho');
+  if (S.field.sobreposicoes.some((o) => o.id === 'ponteSulCaida')) assert.equal(S.field.sobreposicoes.find((o) => o.id === 'ponteSulCaida').ligada, true, 'o desenho da ponte caiu junto');
   await S.cena.depoisDeMover(b);
   const D = await nova(7, { campanha: S.app.campanha });
   assert.equal(D.field.surfaceAt(10, 14), 'entulho', 'de volta, a ponte continua caída');
+  if (D.field.sobreposicoes.some((o) => o.id === 'ponteSulCaida')) assert.equal(D.field.sobreposicoes.find((o) => o.id === 'ponteSulCaida').ligada, true, 'de volta, o desenho também');
 });
 
 await teste('a cripta tem três sarcófagos (de duas casas); o tesouro é o bracelete do Obelisco, no da mulher', async () => {

@@ -404,6 +404,17 @@ export const PHANDELVER_ITEMS = {
     + '1d3 cargas a cada amanhecer. No jogo: sintonizada, a ação aparece na barra; as cargas voltam no descanso longo, e a '
     + 'pegada não cresce.',
     { tipo: 'maravilhoso', peso: 1, valor: 0, sintonia: true, conjura: { cargas: 3, recarga: '1d3', magias: { aumentoDaCapa: { custo: 1 } } } }),
+  // AS TRÊS ARMAS FINAS DO ARSENAL DA MANSÃO (R6): comuns no golpe, o dobro no preço. Sem raridade, de propósito: arma
+  // com raridade conta como MÁGICA no combate (`combat.js`, `p.weapon?.raridade`), e estas não são.
+  espadaCurtaCravejada: nomeado('espadaCurtaCravejada', 'Espada curta cravejada', null,
+    'Uma espada curta bem forjada, com pedras semipreciosas no pomo e na guarda. Golpeia como qualquer espada curta; vendida, vale o dobro.',
+    { tipo: 'arma', art: 'espada', peso: 2, base: 'espadaCurta', valor: 20 }),
+  bestaLeveDePrata: nomeado('bestaLeveDePrata', 'Besta leve marchetada', null,
+    'Uma de um par de bestas leves com a madeira marchetada de prata. Atira como qualquer besta leve; vendida, vale o dobro.',
+    { tipo: 'arma', art: 'arco', peso: 5, base: 'bestaLeve', valor: 50, pilha: true }),
+  // os olhos da estátua de Dumathoin na Onda Eco: o Obelisco os faz verdadeiros (a Mina dizia vidro)
+  olhoDeDumathoin: nomeado('olhoDeDumathoin', 'Esmeralda do olho de Dumathoin', 'comum', 'Uma esmeralda do tamanho de um ovo de galinha, lapidada em cúpula para servir de olho a uma estátua.',
+    { tipo: 'tesouro', art: 'item-gemaElemental', peso: 0, valor: 5000, pilha: true }),
   esmeraldaDosGithyanki: nomeado('esmeraldaDosGithyanki', 'Esmeralda grande', 'comum', 'Uma esmeralda do tamanho de um polegar, sem lapidar.',
     { tipo: 'tesouro', art: 'item-gemaElemental', peso: 0, valor: 900, pilha: true }),
   caixaDeMusicaDePlatina: nomeado('caixaDeMusicaDePlatina', 'Caixa de música de platina', 'comum',

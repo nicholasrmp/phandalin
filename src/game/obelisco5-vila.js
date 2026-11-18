@@ -102,7 +102,9 @@ export function criarCapitulo5NaVila(ctx) {
         'Os três reféns entram na vila apoiados em vocês. Alguém grita um nome, outro corre, e em pouco tempo meia Phandalin está na rua.',
         'O Harbin abraça o Dareth com força demais e depois, envergonhado, conta as moedas duas vezes. — O combinado. Cada centavo. — Ele hesita. — E… obrigado.',
         'No meio da festa, o homem do retrato da mulher orc procura o rosto dela entre os três. Não está. Ele não diz nada, e volta para casa.',
+        ...(o5.zorzula.pazSawplee ? ['Quando a notícia da trégua com os goblins corre, a festa azeda um pouco. — Deixaram eles VIVOS? — reclama a Qelline, e o Toblen concorda. O Harbin, que só quer paz, encerra a conversa: — Se não voltarem aqui, para mim está bom.'] : []),
       ] }] });
+      if (o5.zorzula.pazSawplee) ctx.registro.push('A vila não gosta, mas aceita a trégua com os Sawplee.');
       pagarCada(vivos(), fim);
       ctx.registro.push(`O Harbin paga ${fim} po a cada um: o resto do contrato.`);
       ctx.concluir?.('sawplee');

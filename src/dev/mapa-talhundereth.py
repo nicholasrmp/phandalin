@@ -152,9 +152,11 @@ def montar():
     for l in luzes:
         if (l['pos']['x'], l['pos']['y']) == (22, 39):
             l['semChama'] = True
-        # a brasa do forno: a FA a pôs no tijolo, aqui ela fica na boca do forno, do lado da cozinha
+        # a brasa do forno: a FA a pôs no tijolo (8,32); aqui ela fica na metade oeste da chama pintada, que se alcança da
+        # cozinha. Estava em (6,31), duas casas fora do fogo (revisão de 2026-11-13). Apagada, ela liga a arte do forno frio.
         if (l['pos']['x'], l['pos']['y']) == (8, 32):
-            l['pos'] = {'x': 6, 'y': 31}
+            l['pos'] = {'x': 7, 'y': 32}
+            l['sobreposicaoApagada'] = 'fornoApagado'
 
     salas = {}
     for y, l in enumerate(terreno):

@@ -353,6 +353,21 @@ for (x, y, claro, penumbra, tipo) in [
         luz['sobreposicao'] = SOBREPOSICOES[len(LUZES)]['id']       # a peça da Mansão acesa, na ordem das luzes
     LUZES.append(luz)
 
+# O QUE O ROTEIRO QUEBRA, PINTADO (revisão de 2026-11-13): as duas pontes que caem e o fosso coberto que se abre já mudavam a
+# regra (`capitulo3-mansao.js quebrarPonte`, `marcarFosso`) e deixavam o desenho intacto — a ponte inteira por cima do
+# entulho. A FA dá as três peças (`Overlays/BrokenBridge1`, `BrokenBridge2`, `PitTrap`), nas casas que a cena do Foundry
+# lhes dá. Nascem desligadas; quem as acende é o roteiro. Sem o arquivo no disco, a peça não entra.
+_FA_MANSAO = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+                          'mapas', 'RedbrandHideout', 'FA_Battlemaps', 'RedbrandHideout_30x20', 'WebP', 'Overlays')
+_PUBLICO = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 'public', 'mapas', 'fa')
+for (_id, _arq, _x, _y, _w, _h) in [('ponteNorteCaida', 'BrokenBridge1', 10, 7, 3, 3), ('ponteSulCaida', 'BrokenBridge2', 10, 13, 3, 3),
+                                    ('fossoAberto', 'PitTrap', 21, 9, 4, 2)]:
+    _destino = os.path.join(_PUBLICO, f'mansao-{_id}.webp')
+    if not os.path.exists(_destino) and os.path.exists(os.path.join(_FA_MANSAO, f'{_arq}.webp')):
+        open(_destino, 'wb').write(open(os.path.join(_FA_MANSAO, f'{_arq}.webp'), 'rb').read())
+    if os.path.exists(_destino):
+        SOBREPOSICOES.append({'id': _id, 'url': f'/mapas/fa/mansao-{_id}.webp', 'x': _x, 'y': _y, 'w': _w, 'h': _h, 'ligada': False})
+
 # Candeeiros nas paredes de TRÁS de cada sala (as arestas N e O, que ficam atrás da casa na câmera). Só nas salas com luz.
 for (x, y, lado) in [(4, 2, 'N'), (8, 2, 'N'), (13, 2, 'N'), (17, 2, 'N'), (21, 2, 'N'), (3, 7, 'N'), (4, 15, 'N'),
                      (17, 12, 'N'), (24, 13, 'N'), (16, 7, 'O'), (2, 3, 'O'), (2, 9, 'O'), (2, 16, 'O')]:

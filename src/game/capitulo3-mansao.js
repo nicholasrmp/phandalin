@@ -18,24 +18,24 @@
 //             a parede); pela beirada dá para se espremer com Acrobacia CD 10,
 //             ou saltar por cima. Quem cai: Destreza CD 15
 //             para se agarrar; senão 2d6 e caído. 100 XP por passar.
-//   área 4    três esqueletos atacam quem chega a 6 m da porta das jaulas ou
+//   área 4    seis esqueletos (o Obelisco; na Mina, três) atacam quem chega a 6 m da porta das jaulas ou
 //             da do depósito de armas — menos quem veste o manto vermelho ou
 //             diz a senha. Nos três sarcófagos, um anel de platina cada.
-//   área 5    dois Marcarrubra e a família Dendrar nas jaulas (abrir: chave,
+//   área 5    três Rufiões Marcarrubra (o Obelisco; na Mina, dois) e a família Dendrar nas jaulas (abrir: chave,
 //             ferramentas CD 10 ou Força 22). Luta na cripta os põe de tocaia.
 //   área 8    a fenda, duas pontes e o vigia de um olho só, que prefere
 //             negociar a lutar (prometam comida). A ponte do sul quebra com
 //             qualquer um em cima (Investigação CD 15 percebe). No fundo, o
 //             baú do vigia, com a espada Talon.
-//   área 9    três bugbears e Droop, o goblin, que desmaia quando o grupo
+//   área 9    quatro bugbears (o Obelisco) e Droop, o goblin, que desmaia quando o grupo
 //             entra — e que qualquer herói encostado nele acorda com uma ação,
 //             como o livro manda (antes só o saque do Nosk o acordava, e quem
 //             não revirasse nada ficava com o informante dormindo para
-//             sempre). Nosk carrega a chave. O terceiro bugbear dorme e só
-//             levanta na quarta rodada (decisão nossa, de equilíbrio). Quem
+//             sempre). Nosk carrega a chave. Os quatro estão de pé: o bugbear
+//             que dormia até a quarta rodada era decisão nossa, trocada pelo livro em 2026-11-08. Quem
 //             veste o manto vermelho pode tentar enganá-los (Enganação CD 15,
 //             "o Cajavidro nos mandou") e apertar um deles (Intimidação CD 15).
-//   área 10   quatro Marcarrubra bêbados no jogo de pedrinhas: quem entra os
+//   área 10   quatro bêbados no jogo de pedrinhas, dois Rufiões e dois bandidos (o Obelisco): quem entra os
 //             pega de surpresa (sem teste). De manto vermelho, dá para se
 //             passar por recruta (Enganação CD 10) e conversar antes.
 //   área 11   ZEOND, o quasit do Cajavidro, é o alarme dele (o Obelisco; na
@@ -53,8 +53,8 @@
 //             some pela parede — não fica para segurar a sala sozinho.
 //             Avisado, ele foge no tabuleiro pela porta secreta do quarto, pelo
 //             depósito (7) e pela caverna (8) até a porta secreta da cisterna
-//             (1), seis casas por vez que o grupo anda; os dois guarda-costas
-//             ficam no quarto. Quem o alcança o vê beber um frasco e sumir
+//             (1), seis casas por vez que o grupo anda. O quarto é só dele, como
+//             no livro (os dois guarda-costas nossos saíram em 2026-11-08). Quem o alcança o vê beber um frasco e sumir
 //             (invisível): a luta é dele. Pela passagem secreta do 7, ou com o
 //             familiar resolvido, dá para pegá-lo de surpresa. Com 8 PV ou menos,
 //             ele se rende.
@@ -281,6 +281,7 @@ export function criarMansao(app, config) {
       f.surfaces[i] = SUPERFICIES.indexOf('fosso');
       f.heights[i] = 0;                   // seis metros abaixo do corredor (o texto da cena diz isso)
     }
+    f.alternarSobreposicao?.('fossoAberto', true);       // e o desenho abre junto (a peça da FA, quando há)
     f.versao = (f.versao ?? 0) + 1;
     // aberto, ninguém mais cai pela tampa: a região (`encounter.js`) se desliga
     alternarRegiao(f, 'fosso', false);
@@ -298,6 +299,7 @@ export function criarMansao(app, config) {
       f.tiles[i] = 2;
     }
     f.objetos = (f.objetos ?? []).filter((o) => !(o.tipo === 'ponte' && o.y === y));
+    f.alternarSobreposicao?.(lado === 'sul' ? 'ponteSulCaida' : 'ponteNorteCaida', true);   // as tábuas penduradas da FA
     f.versao = (f.versao ?? 0) + 1;
     salvo[FLAG_PONTE[lado]] = true;
     if (lado === 'sul') alternarRegiao(f, 'ponteSul', false);
@@ -1786,6 +1788,18 @@ export function criarMansao(app, config) {
           // O próprio `detalhe` do botão já dizia "uma dúzia pendurada na porta", e o texto falava de pilha
           // dobrada num canto: duas verdades para o mesmo monte de pano. O livro os pendura nos ganchos.
           await painel(`Armas enfileiradas para um bando maior do que este, e uma dúzia de mantos vermelhos pendurados nos ganchos de ferro atrás da porta, ombro a ombro, como numa antessala de teatro. ${c.name} pega ${n}.`);
+        },
+      });
+    }
+    // As três armas finas das prateleiras (revisão de 2026-11-13: o livro as põe no arsenal, e o jogo só dava os mantos).
+    if ((sup === 'mantimentos' || sup === 'armeiro') && dentro(tile, 17, 2, 18, 4) && salvo.trancadaAberta && !salvo.armasFinas) {
+      ops.push({
+        rotulo: 'Escolher as armas boas', icone: 'acao-procurar', detalhe: 'nas prateleiras', motivo: longe(5),
+        fazer: async () => {
+          salvo.armasFinas = true;
+          guardar(c, 'espadaCurtaCravejada', 1);
+          guardar(c, 'bestaLeveDePrata', 2);
+          await painel(`Lanças, espadas, bestas e aljavas cheias, para um bando que os Marcarrubra ainda não têm. No meio do comum, três peças feitas com capricho: uma espada curta com pedras no pomo e duas bestas leves gêmeas, com prata embutida na madeira. ${c.name} as separa: valem o dobro de uma arma qualquer.`);
         },
       });
     }

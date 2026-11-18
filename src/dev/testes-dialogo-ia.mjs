@@ -401,5 +401,41 @@ await teste('o tom da frase: ameaça, oferta e mentira sugerem o teste; pergunta
   for (const p of ['onde fica o castelo?', 'quem é você', 'qual é a senha da cripta']) assert.equal(tomDe(p), null, p);
 });
 
+// ---------------------------------------------------------------- o Obelisco (capítulos 5 a 8) ----
+await teste('o Obelisco: cada NPC acha a ficha pelo nome que a cena lhe dá, antes do bloco (o Jomlus não é o espectador da Onda Eco)', async () => {
+  const casos = [
+    [{ name: 'Jomlus', defId: 'spectator' }, 'jomlus'], [{ defId: 'spectator' }, 'espectador'], [{ name: 'Greska', defId: 'plebeu' }, 'grista'],
+    [{ name: 'Wheel-of-Fortune', defId: 'plebeu' }, 'wheel'], [{ id: 'ander', name: 'Ander' }, 'ander'], [{ defId: 'oshundo' }, 'oshundo'],
+    [{ name: 'Shalghast', defId: 'devoradorDeMentes' }, 'devoradoresDaEntrada'], [{ name: 'Wramble', defId: 'plebeu' }, 'refensCupula'],
+    [{ name: 'Hjoldak Hollowhelm', defId: 'ashenwightPsionico' }, 'hjoldak'], [{ name: 'Zoklork', defId: 'xorn' }, 'zoklork'],
+    [{ defId: 'plebeu', name: 'Fulano' }, null],
+  ];
+  for (const [npc, esperado] of casos) assert.equal(idDaFicha(npc), esperado, JSON.stringify(npc));
+});
+
+await teste('o Obelisco: o que o morador sabe espera o capítulo, e a vila só lista quem está lá', async () => {
+  const { estadoDoObelisco } = await import('../game/perguntar.js');
+  const { quemConversaNaVila } = await import('../game/conversa-livre.js');
+  const harbin = FICHAS.harbin;
+  const antes = fatosLiberados(harbin, estadoDoObelisco({}));
+  const cap5 = fatosLiberados(harbin, estadoDoObelisco({ aventuraConcluida: true }));
+  assert.ok(cap5.length > antes.length, 'o capítulo 5 não liberou nada ao Harbin');
+  assert.deepEqual(quemConversaNaVila({}, 0), [], 'antes do Obelisco a vila não tem o botão');
+  const cinco = quemConversaNaVila({ aventuraConcluida: true }, 5).map((x) => x.ficha);
+  assert.ok(cinco.includes('harbin') && !cinco.includes('gwyn') && !cinco.includes('pip'), cinco.join());
+  const oito = quemConversaNaVila({ obelisco5: { feito: { gwyn: true } }, obelisco6: { feito: { pipRecompensa: true } } }, 8);
+  assert.ok(oito.some((x) => x.ficha === 'gwyn') && oito.some((x) => x.ficha === 'pip'));
+  assert.match(oito.find((x) => x.ficha === 'halia').detalhe, /pela porta/);
+});
+
+await teste('o Obelisco: quem não tem árvore ganha a conversa de um nó, com a saudação dele', async () => {
+  const { arvoreLivre } = await import('../game/conversa-livre.js');
+  const a = arvoreLivre({ name: 'Hjoldak Hollowhelm', falas: ['Finalmente, ar!'] });
+  assert.equal(a.nos.oi.fala, 'Finalmente, ar!');
+  assert.equal(a.nos.oi.opcoes.length, 1);
+  const b = arvoreLivre({ name: 'Gwyn', ficha: 'gwyn' });
+  assert.ok(b.nos.oi.fala && b.nos.oi.fala !== '…', 'sem saudação, a fala do quem é da ficha');
+});
+
 console.log(`\n${total - falhas}/${total} passaram`);
 process.exit(falhas ? 1 : 0);

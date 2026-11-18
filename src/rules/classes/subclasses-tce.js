@@ -25,7 +25,7 @@ export const SUBCLASSES_TCE = {
       chave: 'Barbarian|Path of Wild Magic',
       fonte: 'tce',
       niveis: { 3: ['magicAwareness', 'barbarianWildSurge'], 6: ['bolsteringMagic'], 10: ['unstableBacklash'], 14: ['controlledSurge'] },
-      recursos: { bolsteringMagic: (n) => (n >= 6 ? pb(n) : 0) },
+      recursos: { bolsteringMagic: (n) => (n >= 6 ? pb(n) : 0), magicAwareness: (n) => pb(n) },
     },
   },
   bardo: {
@@ -81,6 +81,7 @@ export const SUBCLASSES_TCE = {
       recursos: {
         psionicEnergy: (n) => 2 * pb(n), psionicRecover: () => 1, psiPoweredLeap: (n) => (n >= 7 ? 1 : 0),
         bulwarkOfForce: (n) => (n >= 15 ? 1 : 0), telekineticMaster: (n) => (n >= 18 ? 1 : 0),
+        telekineticMovement: () => 1,
       },
       voltamNoCurto: ['psionicRecover', 'psiPoweredLeap'],
       escalas: { dadoPsionico: ate([[1, 'd6'], [5, 'd8'], [11, 'd10'], [17, 'd12']]) },
@@ -287,7 +288,11 @@ export const SUBCLASSES_TCE = {
       chave: 'Wizard|Order of Scribes',
       fonte: 'tce',
       niveis: { 2: ['wizardlyQuill', 'awakenedSpellbook'], 6: ['manifestMind'], 10: ['masterScrivener'], 14: ['oneWithTheWord'] },
-      recursos: { masterScrivener: (n) => (n >= 10 ? 1 : 0) },
+      recursos: {
+        masterScrivener: (n) => (n >= 10 ? 1 : 0),
+        // a MENTE MANIFESTA: as magias do lugar dela (o bônus de proficiência) e o pôr (uma vez), por descanso longo
+        manifestMind: (n) => (n >= 6 ? pb(n) : 0), invocarMente: (n) => (n >= 6 ? 1 : 0),
+      },
     },
   },
 };
@@ -304,7 +309,7 @@ export const RECURSOS_TCE = {
   infectiousFury: M('Infectious Fury', 'passiva', { nota: 'No jogo sai sozinha, no primeiro acerto de arma natural do turno, e o efeito é o dano psíquico.' }),
   callTheHunt: M('Call the Hunt', 'passiva', { nota: 'No jogo sai sozinho ao entrar em Fúria, com os aliados mais perto.' }),
   // ---- Caminho da Magia Selvagem
-  magicAwareness: S('Magic Awareness', 'acao', 'o jogo não mostra magia nem item mágico à distância'),
+  magicAwareness: M('Magic Awareness', 'acao', { nota: 'O registro diz quem mantém que magia (com a escola), quem leva item mágico e que zona de magia está perto.' }),
   barbarianWildSurge: M('Wild Surge', 'passiva', { nota: 'As oito do livro estão no jogo; as que andam com o bárbaro (as flores, as luzes) valem para quem está perto dele no começo de cada turno.' }),
   bolsteringMagic: M('Bolstering Magic', 'acao', { nota: 'Vale nas jogadas de ataque; o +1d3 nos testes de atributo não existe no jogo.' }),
   unstableBacklash: M('Unstable Backlash', 'reacao', { nota: 'No jogo sai sozinho, no golpe de 10 ou mais.' }),
@@ -343,7 +348,7 @@ export const RECURSOS_TCE = {
   psionicPower: M('Psionic Power', 'bonus'),
   protectiveField: M('Protective Field', 'reacao', { nota: 'No jogo a reação sai sozinha, no golpe de 8 ou mais, ou no que derrubaria.' }),
   psionicStrike: M('Psionic Strike', 'livre', { nota: 'No jogo é um interruptor: ligado, o primeiro golpe de arma do turno gasta um dado.' }),
-  telekineticMovement: S('Telekinetic Movement', 'acao', 'o jogo não tem mover outra criatura para uma casa escolhida'),
+  telekineticMovement: M('Telekinetic Movement', 'acao', { nota: 'Ctrl+clique marca a criatura aliada, e o clique escolhe a casa de chegada. O objeto solto e o objeto Miúdo que vai para a mão não entram: o tabuleiro não tem objeto solto.' }),
   telekineticAdept: M('Telekinetic Adept', 'bonus', { junta: ['Psi-Powered Leap', 'Telekinetic Thrust'], nota: 'O Impulso Telecinético, no jogo, deixa o alvo caído.' }),
   guardedMind: M('Guarded Mind', 'passiva', { nota: 'No jogo o dado se gasta sozinho, no começo do turno enfeitiçado ou amedrontado.' }),
   bulwarkOfForce: M('Bulwark of Force', 'bonus'),
@@ -429,7 +434,7 @@ export const RECURSOS_TCE = {
   deathsFriend: M("Death's Friend", 'passiva'),
   // ---- Lâmina da Alma
   psionicPowerSoulknife: M('Psionic Power', 'bonus'),
-  psiBolsteredKnack: S('Psi-Bolstered Knack', 'passiva', 'o jogo não diz ao teste de perícia quanto faltou para passar'),
+  psiBolsteredKnack: M('Psi-Bolstered Knack', 'passiva', { nota: 'Só nos testes com CD de fora da luta (a conversa, a exploração): na luta o teste não tem CD sabida.' }),
   psychicWhispers: S('Psychic Whispers', 'acao', 'o jogo não tem idiomas nem conversa à distância'),
   psychicBladesSoulknife: M('Psychic Blades', 'acao', { nota: 'A lâmina fica na lista de armas; a segunda sai pelo menu do alvo, como ação bônus. O jogo não confere a mão livre.' }),
   soulBlades: M('Soul Blades', 'passiva', { junta: ['Homing Strikes', 'Psychic Teleportation'], nota: 'No jogo o Golpe Teleguiado sai sozinho, quando o dado pode virar o erro. No Teletransporte, a casa se escolhe antes do dado: se ele não alcança, a lâmina cai no caminho.' }),
@@ -472,7 +477,7 @@ export const RECURSOS_TCE = {
   // ---- Ordem dos Escribas
   wizardlyQuill: S('Wizardly Quill', 'bonus', 'o jogo não copia magias nem escreve'),
   awakenedSpellbook: M('Awakened Spellbook', 'passiva', { nota: 'No jogo o tipo se escolhe por um interruptor. O ritual sem os 10 minutos e trocar de livro não existem no jogo.' }),
-  manifestMind: S('Manifest Mind', 'bonus', 'o motor não conjura a partir de outro ponto que não o do conjurador'),
+  manifestMind: M('Manifest Mind', 'bonus', { nota: 'A ação bônus concedida põe a mente numa casa a até 18 m (ou a move 9 m), e o interruptor na barra faz a magia de mago do turno sair do lugar dela: o alcance, a vista e a área se contam de lá. A mente some a mais de 90 m. Gastar um espaço para pôr a mente de novo e ver e ouvir por ela fora da luta não entram.' }),
   masterScrivener: M('Master Scrivener', 'passiva', { nota: 'No jogo o pergaminho é a primeira magia de 1º ou 2º círculo de 1 ação do grimório que você conjura depois do descanso: sai sem espaço, um círculo acima. O pergaminho comprado mais barato não existe no jogo.' }),
   oneWithTheWord: M('One with the Word', 'passiva', { nota: 'Vale a vantagem em Arcanismo; anular o dano depende da Mente Manifesta, que não existe no jogo.' }),
 };

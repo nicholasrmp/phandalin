@@ -119,7 +119,7 @@ def montar():
     embacado = [{'x': x, 'y': y} for y in range(58, 69) for x in range(29, 33) if terreno[y][x] == '_']
     interativos = [
         Z.obj(30, 70, 'rastrosDaEntrada', 'Olhar o chão', 'O chão de carne guarda marcas, mas se fecha devagar sobre elas, como pele.',
-              'percepcao', 15, 'Muitas criaturas saíram daqui para a esquerda, umas arrastadas: o bando dos fanáticos, com os presos. '
+              'procurar', 15, 'Muitas criaturas saíram daqui para a esquerda, umas arrastadas: o bando dos fanáticos, com os presos. '
               'Mais tarde, três pares de botas foram para a direita.'),
         Z.obj(14, 58, 'duergarMortos', 'Olhar os corpos', 'Quatro anões de pele cinzenta, de armadura, mortos de arma há meses.',
               'investigar', 12, 'Todos têm a cabeça aberta, e a ferida é de depois da morte: alguma coisa vem roer.'),
@@ -259,6 +259,9 @@ def covil():
             Z.obj(4, 2, 'cordaDoCovil', 'Olhar a corda', 'A corda com nós sobe seis metros até o buraco no teto, a única saída daqui.'),
             Z.obj(1, 7, 'bastoesDoCovil', 'Olhar os bastões', 'Dois bastões de metal saindo da parede, a dois metros um do outro, '
                   'lisos de tão polidos.'),
+            # o livro: a sala inteira coberta de muco, com cheiro de gordura rançosa
+            Z.obj(7, 8, 'mucoDoCovil', 'Olhar o chão', 'Muco escorregadio por todo lado, nas paredes e no chão, com um cheiro de '
+                  'gordura que passou do ponto. Quem anda aqui anda devagar.'),
         ],
     }
     pontos = {

@@ -165,6 +165,48 @@ export const MAGIAS_PHB = {
   "desc": "Cria, a até 9 m, um olho mágico invisível que flutua no ar e transmite a você tudo o que vê, com visão normal, visão no escuro de 9 m e capacidade de olhar em todas as direções. Com uma ação, você o desloca até 9 m para qualquer lado, sem limite de distância de você, mas ele não pode ir a outro plano. Barreiras sólidas o detêm, embora ele passe por frestas de apenas 2,5 cm. Dura até 1 hora (concentração). (Só fora de combate.)",
   "tom": 2
  },
+ "portalArcano": {
+  "id": "portalArcano",
+  "name": "Portal Arcano",
+  "nomeOriginal": "Arcane Gate",
+  "level": 6,
+  "school": "conjuração",
+  "fonte": "phb",
+  "castTime": "action",
+  "rangeFt": 500,
+  "concentration": true,
+  "duracaoRodadas": 100,
+  "classes": [
+   "feiticeiro",
+   "bruxo",
+   "mago"
+  ],
+  "kind": "livro",
+  "efeito": "portalArcano",
+  "mira": "casa",
+  "familiaSonora": "utilidade",
+  "desc": "Você abre dois portais circulares de 3 m de diâmetro ligados entre si, um em um ponto no chão a até 3 m de você e outro a até 150 m, ambos visíveis; se algum ponto estiver ocupado por uma criatura, a magia se perde. Cada portal é um anel de névoa opaca que só funciona pelo lado que você escolher, e quem entra por esse lado sai imediatamente pelo outro portal, como se fossem adjacentes. Com uma ação bônus no seu turno, você pode girar os anéis para mudar a direção do lado ativo. Dura até 10 minutos, com concentração. (Simplificação: cada anel ocupa uma casa; o primeiro nasce na casa livre mais perto de quem conjura. Os dois lados funcionam, e a névoa não tapa a vista.)",
+  "tom": 2
+ },
+ "trancaArcana": {
+  "id": "trancaArcana",
+  "name": "Tranca Arcana",
+  "nomeOriginal": "Arcane Lock",
+  "level": 2,
+  "school": "abjuração",
+  "fonte": "phb",
+  "castTime": "action",
+  "rangeFt": 5,
+  "classes": [
+   "mago"
+  ],
+  "kind": "livro",
+  "efeito": "trancaArcana",
+  "mira": "casa",
+  "familiaSonora": "utilidade",
+  "desc": "Ao tocar uma porta, janela, portão, baú ou outra passagem fechada, você a tranca magicamente até que a magia seja dissipada, consumindo pó de ouro de 25 po. Você e as criaturas que escolher ao conjurar abrem o objeto normalmente, e você pode definir uma senha que, dita a até 1,5 m dele, suspende o efeito por 1 minuto. Para os demais, a passagem fica bloqueada até ser quebrada, e a CD para arrombá-la ou abrir suas fechaduras aumenta em 10. A magia Arrombar suspende a tranca por 10 minutos. (Simplificação: o grupo inteiro abre a porta normalmente; a senha não existe no jogo. Também se conjura pelo menu da porta, explorando.)",
+  "tom": -7
+ },
  "auraDeVida": {
   "id": "auraDeVida",
   "name": "Aura de Vida",
@@ -761,6 +803,29 @@ export const MAGIAS_PHB = {
   },
   "desc": "Um ponto visível no solo a até 150 m vira o centro de um tremor de 30 m de raio que dura até 1 minuto (concentração): o chão vira terreno difícil, quem está concentrado em contato com o solo faz teste de resistência de Constituição para não perder a concentração, e ao lançar e no fim de cada turno seu as criaturas no chão fazem teste de resistência de Destreza ou ficam caídas. No início do seu turno seguinte, 1d6 fendas de 3 m de largura e 1d10 × 3 m de profundidade cortam a área de ponta a ponta; quem está onde uma se abre faz teste de Destreza para não cair nela. Estruturas no solo sofrem 50 de dano de concussão ao lançar e no início de cada turno seu, e desabam a 0 PV ou se uma fenda se abrir embaixo delas. Criaturas a até metade da altura da estrutura fazem teste de Destreza: na falha sofrem 5d6 de concussão, ficam caídas e soterradas (escapar exige ação e teste de Força (Atletismo) CD 20, ajustável pelo mestre); no sucesso, metade do dano e nada mais. (Simplificação: o chão treme e derruba; as fendas que se abrem e as construções que desabam não existem no jogo.)",
   "tom": 9
+ },
+ "formaEterea": {
+  "id": "formaEterea",
+  "name": "Forma Etérea",
+  "nomeOriginal": "Etherealness",
+  "level": 7,
+  "school": "transmutação",
+  "fonte": "phb",
+  "castTime": "action",
+  "rangeFt": 0,
+  "duracaoRodadas": 4800,
+  "classes": [
+   "bardo",
+   "clerigo",
+   "feiticeiro",
+   "bruxo",
+   "mago"
+  ],
+  "kind": "livro",
+  "efeito": "formaEterea",
+  "familiaSonora": "utilidade",
+  "desc": "Você passa para a Fronteira Etérea por até 8 horas (sem concentração) ou até usar uma ação para encerrar; lá pode se mover em qualquer direção (subir ou descer custa o dobro), atravessar objetos e só interage com o que também estiver no Plano Etéreo, enxergando o plano de origem em tons de cinza até 18 m. Quem está fora do Etéreo não percebe nem afeta você, salvo por magia ou habilidade especial. Ao fim, você reaparece no ponto correspondente; se estiver dentro de algo sólido, é empurrado ao espaço livre mais próximo e sofre dano energético igual a 2 por cada 30 cm deslocados (cerca de 10 por 1,5 m). Não funciona se lançada no Etéreo ou em planos que não fazem fronteira com ele; em círculo 8 ou maior, afeta até três criaturas voluntárias (incluindo você) a até 3 m por círculo acima do 7º. (Simplificação: só quem conjura vai para o etéreo, em qualquer círculo. Lá ninguém o vê nem o toca, e ele não ataca nem conjura; a ação Voltar do Plano Etéreo o traz de volta numa casa livre a até o deslocamento dele, por cima de parede.)",
+  "tom": -3
  },
  "tentaculosNegrosDeEvard": {
   "id": "tentaculosNegrosDeEvard",
@@ -1667,6 +1732,26 @@ export const MAGIAS_PHB = {
   "desc": "Uma criatura que você veja a até 9 m é forçada a dançar sem sair do lugar, gastando todo o seu deslocamento nisso, por até 1 minuto (concentração); criaturas imunes a ser enfeitiçadas não são afetadas. Enquanto dança, ela tem desvantagem em jogadas de ataque e em testes de resistência de Destreza, e os ataques contra ela têm vantagem. A cada turno, a vítima pode usar sua ação para fazer um teste de resistência de Sabedoria e, se passar, a magia termina.",
   "tom": 7
  },
+ "criarPassagem": {
+  "id": "criarPassagem",
+  "name": "Criar Passagem",
+  "nomeOriginal": "Passwall",
+  "level": 5,
+  "school": "transmutação",
+  "fonte": "phb",
+  "castTime": "action",
+  "rangeFt": 30,
+  "duracaoRodadas": 600,
+  "classes": [
+   "mago"
+  ],
+  "kind": "livro",
+  "efeito": "criarPassagem",
+  "mira": "casa",
+  "familiaSonora": "utilidade",
+  "desc": "Você abre uma passagem em uma superfície de madeira, gesso ou pedra (parede, teto ou piso) que consiga ver a até 9 m, com até 1,5 m de largura, 2,4 m de altura e 6 m de profundidade, sem abalar a estrutura ao redor. A abertura dura 1 hora, sem exigir concentração. Quando ela some, criaturas e objetos ainda lá dentro são expelidos em segurança para o espaço livre mais próximo da superfície onde a magia foi conjurada. (Simplificação: a passagem segue a direção de quem conjura até a parede mirada, numa fileira de casas, e fica aberta pela cena: uma hora passa de qualquer luta.)",
+  "tom": -3
+ },
  "viagemPlanar": {
   "id": "viagemPlanar",
   "name": "Viagem Planar",
@@ -1775,6 +1860,40 @@ export const MAGIAS_PHB = {
   "areaFt": 60,
   "desc": "Um cone de 18 m de raios coloridos exige de cada criatura um teste de resistência de Destreza contra a CD de magia, e um d8 rolado por alvo define qual raio a atinge. De 1 a 5, o raio causa 10d6 de dano (fogo, ácido, elétrico, veneno ou frio, nessa ordem), com metade em caso de sucesso. Com 6, quem falha fica contido e repete testes de Constituição ao fim de cada turno: três sucessos encerram o efeito e três falhas o deixam petrificado para sempre. Com 7, quem falha fica cego e, se falhar num teste de Sabedoria no início do seu próximo turno, é lançado a outro plano escolhido pelo mestre; com 8, o alvo sofre dois raios (role de novo duas vezes, ignorando novos 8). Efeito instantâneo, sem concentração. (Simplificação: o raio anil começa a petrificar como o olhar da medusa, e o violeta só cega; o livro leva três testes a cada um.)",
   "tom": 3
+ },
+ "muralhaPrismatica": {
+  "id": "muralhaPrismatica",
+  "name": "Muralha Prismática",
+  "nomeOriginal": "Prismatic Wall",
+  "level": 9,
+  "school": "abjuração",
+  "fonte": "phb",
+  "castTime": "action",
+  "rangeFt": 60,
+  "duracaoRodadas": 100,
+  "classes": [
+   "mago"
+  ],
+  "kind": "save",
+  "save": "dex",
+  "soZona": true,
+  "shape": "muralha",
+  "areaFt": 90,
+  "zona": {
+   "rodadas": 100,
+   "quando": "nunca",
+   "aoEntrar": true,
+   "dificil": false,
+   "semTeste": true,
+   "barraVisao": true,
+   "prismatica": true,
+   "luz": {
+    "claro": 100,
+    "penumbra": 100
+   }
+  },
+  "desc": "Cria, a até 18 m, uma parede opaca de luz com sete cores (até 27 m de comprimento por 9 m de altura) ou uma esfera de até 9 m de diâmetro, que dura 10 minutos sem concentração; falha se for posta sobre o espaço de uma criatura. Ela emite luz intensa num raio de 30 m, e quem a vê e chega a até 6 m dela, ou começa o turno ali, faz teste de resistência de Constituição ou fica cego por 1 minuto; você e os aliados que escolher a atravessam sem sofrer nada. Quem a atravessa faz um teste de Destreza para cada camada: vermelha, laranja, amarela, verde e azul causam 10d6 de dano (fogo, ácido, elétrico, veneno e frio, respectivamente; metade se passar), a anil deixa contido e pode petrificar após três falhas em testes de Constituição, e a violeta cega e pode lançar a criatura a outro plano se ela falhar num teste de Sabedoria. As camadas caem uma a uma, na ordem, cada qual por um meio próprio (como 25 de dano de frio na vermelha ou Dissipar Magia na violeta); campo antimagia não a afeta, e enquanto existem, as camadas bloqueiam ataques à distância e magias. (Simplificação: só a parede reta, de 27 m; a esfera não existe no jogo. Quem conjurou e o lado dele passam sem nada. O brilho cega quem começa o turno a até 6 m (e quem está perto quando ela surge), não quem chega andando; e as camadas não se destroem uma a uma.)",
+  "tom": 9
  },
  "vinculoTelepaticoDeRary": {
   "id": "vinculoTelepaticoDeRary",
@@ -2168,6 +2287,27 @@ export const MAGIAS_PHB = {
   "desc": "Você liga magicamente uma planta inanimada de tamanho Grande ou maior, a até 3 m de você, a outra planta no mesmo plano de existência, sem limite de distância. É preciso já ter visto ou tocado a planta de destino pelo menos uma vez. Até o fim da rodada seguinte, qualquer criatura pode gastar 1,5 m de movimento para entrar na primeira planta e sair pela outra. Não exige concentração. (No jogo, conjura-se na tela da região.)",
   "tom": -3
  },
+ "caminharEmArvores": {
+  "id": "caminharEmArvores",
+  "name": "Caminhar em Árvores",
+  "nomeOriginal": "Tree Stride",
+  "level": 5,
+  "school": "conjuração",
+  "fonte": "phb",
+  "castTime": "action",
+  "rangeFt": 0,
+  "concentration": true,
+  "duracaoRodadas": 10,
+  "classes": [
+   "druida",
+   "patrulheiro"
+  ],
+  "kind": "livro",
+  "efeito": "caminharEmArvores",
+  "familiaSonora": "utilidade",
+  "desc": "Por até 1 minuto (concentração), você pode gastar 1,5 m de deslocamento para entrar em uma árvore viva do seu tamanho ou maior e sair por outra da mesma espécie a até 150 m, cuja localização você conhece de imediato. Ao chegar, você surge a até 1,5 m da árvore de destino gastando mais 1,5 m de deslocamento; sem deslocamento restante, reaparece junto à árvore de origem. O salto pode ser feito uma vez por rodada, e você precisa terminar cada turno fora de uma árvore. (Simplificação: a travessia é a ação Atravessar a árvore, uma vez por rodada, nas árvores do mapa; a espécie e o tamanho da árvore não contam.)",
+  "tom": 0
+ },
  "metamorfoseVerdadeira": {
   "id": "metamorfoseVerdadeira",
   "name": "Metamorfose Verdadeira",
@@ -2281,6 +2421,97 @@ export const MAGIAS_PHB = {
   "kind": "utilidade",
   "utilidade": true,
   "desc": "Você e até dez criaturas voluntárias visíveis a até 9 m viram nuvens gasosas por 8 horas, sem concentração, ganhando deslocamento de voo de 90 m e resistência a dano de armas não mágicas. Nessa forma, só podem usar a ação Disparada ou voltar ao normal; a transformação, em qualquer sentido, leva 1 minuto, durante o qual a criatura fica incapacitada e imóvel. Se a magia acabar enquanto alguém voa como nuvem, ele desce 18 m por rodada com segurança por até 1 minuto e, se ainda não tiver pousado, cai o restante da altura. (No jogo, conjura-se na tela da região.)",
+  "tom": -3
+ },
+ "desejo": {
+  "id": "desejo",
+  "name": "Desejo",
+  "nomeOriginal": "Wish",
+  "level": 9,
+  "school": "conjuração",
+  "fonte": "phb",
+  "castTime": "action",
+  "rangeFt": 0,
+  "classes": [
+   "feiticeiro",
+   "mago"
+  ],
+  "kind": "livro",
+  "efeito": "desejo",
+  "familiaSonora": "utilidade",
+  "opcoes": [
+   {
+    "id": "cura",
+    "rotulo": "Curar o grupo",
+    "detalhe": "até vinte aliados à vista: todos os PV e o que a Restauração Maior tira"
+   },
+   {
+    "id": "res:ácido",
+    "rotulo": "Resistência a ácido",
+    "detalhe": "até dez aliados à vista, para sempre"
+   },
+   {
+    "id": "res:concussão",
+    "rotulo": "Resistência a concussão",
+    "detalhe": "até dez aliados à vista, para sempre"
+   },
+   {
+    "id": "res:cortante",
+    "rotulo": "Resistência a cortante",
+    "detalhe": "até dez aliados à vista, para sempre"
+   },
+   {
+    "id": "res:elétrico",
+    "rotulo": "Resistência a elétrico",
+    "detalhe": "até dez aliados à vista, para sempre"
+   },
+   {
+    "id": "res:energético",
+    "rotulo": "Resistência a energético",
+    "detalhe": "até dez aliados à vista, para sempre"
+   },
+   {
+    "id": "res:fogo",
+    "rotulo": "Resistência a fogo",
+    "detalhe": "até dez aliados à vista, para sempre"
+   },
+   {
+    "id": "res:frio",
+    "rotulo": "Resistência a frio",
+    "detalhe": "até dez aliados à vista, para sempre"
+   },
+   {
+    "id": "res:necrótico",
+    "rotulo": "Resistência a necrótico",
+    "detalhe": "até dez aliados à vista, para sempre"
+   },
+   {
+    "id": "res:perfurante",
+    "rotulo": "Resistência a perfurante",
+    "detalhe": "até dez aliados à vista, para sempre"
+   },
+   {
+    "id": "res:psíquico",
+    "rotulo": "Resistência a psíquico",
+    "detalhe": "até dez aliados à vista, para sempre"
+   },
+   {
+    "id": "res:radiante",
+    "rotulo": "Resistência a radiante",
+    "detalhe": "até dez aliados à vista, para sempre"
+   },
+   {
+    "id": "res:trovejante",
+    "rotulo": "Resistência a trovejante",
+    "detalhe": "até dez aliados à vista, para sempre"
+   },
+   {
+    "id": "res:veneno",
+    "rotulo": "Resistência a veneno",
+    "detalhe": "até dez aliados à vista, para sempre"
+   }
+  ],
+  "desc": "Com uma única palavra, você reproduz qualquer magia de 8º círculo ou menor sem precisar de componentes caros nem cumprir requisitos. Em vez disso, pode escolher um efeito maior: criar um objeto não mágico de até 25.000 po (no máximo 90 m em qualquer dimensão), curar todos os PV de até vinte criaturas visíveis e remover delas o que Restauração Maior removeria, dar a até dez criaturas resistência a um tipo de dano ou imunidade a uma magia ou efeito mágico por 8 horas, ou obrigar a rolar de novo qualquer jogada feita na última rodada, com vantagem ou desvantagem, ficando com o resultado que preferir. Pedidos além disso ficam a critério do Mestre e, quanto mais ambiciosos, maior a chance de falhar, sair pela metade ou trazer consequências inesperadas. Usar qualquer efeito que não seja copiar outra magia cobra um preço: até o próximo descanso longo, cada magia que você conjurar causa a você 1d10 de dano necrótico por círculo, que não pode ser reduzido; sua Força cai para 3 por 2d4 dias (cada dia de repouso desconta 2 dias); e há 33% de chance de você nunca mais conseguir conjurar Desejo. (Simplificação: só a cura do grupo e a resistência a um tipo de dano. Duplicar outra magia, criar um objeto, a imunidade a uma magia e desfazer uma jogada não existem no jogo. O desgaste vale: 1d10 necrótico por círculo de cada magia até o descanso longo, e um terço de chance de nunca mais conjurar o Desejo; a Força 3 por dias não existe.)",
   "tom": -3
  },
  "palavraDeRecordacao": {

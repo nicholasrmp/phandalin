@@ -141,7 +141,7 @@ def oco():
     t[5][18] = 'W'
     m['interativos'] = [
         Z.obj(25, 16, 'carneQueMigra', 'Olhar as paredes', 'Tudo aqui é carne áspera de verruga, dura como pedra, que range quando se '
-              'pisa. Dela vem um barulho de chapinhar.', 'percepcao', 15, 'As paredes andam. Devagar, quase nada, tudo escorre do '
+              'pisa. Dela vem um barulho de chapinhar.', 'procurar', 15, 'As paredes andam. Devagar, quase nada, tudo escorre do '
               'funil ao norte para o fundo do oco, a oeste.'),
         Z.obj(17, 6, 'redemoinho', 'Olhar o redemoinho', 'No fundo do funil, um redemoinho de água salgada, da largura de um homem. A '
               'carne do chão parece nascer da borda dele.'),
@@ -222,7 +222,7 @@ def labirinto():
         Z.obj(41, 20, 'ocular', 'Olhar as hastes', 'Dez hastes de pedra saem da parede do fundo. Nove estão quebradas; a décima termina '
               'num copo do tamanho de um olho, e o chão em volta está manchado de rosa.'),
         Z.obj(7, 26, 'ladraoMorto', 'Olhar o cadáver', 'Um corpo seco, de couro rachado, encostado no fim do beco: um githyanki, pelo '
-              'formato da cabeça, morto há anos. No cinto, cabos de cristal.', 'percepcao', 15, 'Os braços e as pernas estão menos '
+              'formato da cabeça, morto há anos. No cinto, cabos de cristal.', 'procurar', 15, 'Os braços e as pernas estão menos '
               'secos que a cabeça e o peito, como se alguma coisa ainda corresse por eles.'),
         Z.obj(30, 6, 'vidroQuebrado', 'Olhar o vidro', 'Um monte de vidro colorido quebrado, cacos de vitrais e de esculturas, varridos '
               'para o fundo do beco num acesso de raiva.'),

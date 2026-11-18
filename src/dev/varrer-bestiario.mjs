@@ -33,7 +33,10 @@ for (const id of ids) {
         if (enc.side === 'party') playCharacter(enc, pend[0]); else takeMonsterTurn(enc, pend[0]);
         if (enc.round > 30) break;
       }
-      if (!enc.over) semFim.push(`${id} (rodada ${enc.round})`);
+      // a luta que não acaba porque o GRUPO DA VARREDURA não fere: ele não leva arma mágica, e a criatura é imune ao golpe que
+      // não é mágico (o rakshasa, o recuperador). Não é defeito: é o bloco do livro contra um grupo que o livro não mandaria.
+      const imune = (m.immuneNaoMagico ?? []).filter((t) => ['cortante', 'perfurante', 'concussão'].includes(t)).length === 3;
+      if (!enc.over) semFim.push(`${id} (rodada ${enc.round})${imune ? ' — imune a arma não mágica, e o grupo da varredura não leva nenhuma' : ''}`);
       if (enc.outcome === 'vitoria') venceu++;
     } catch (e) {
       quebras.push(`${id}: ${String(e.stack ?? e).split('\n').slice(0, 3).join(' | ')}`);

@@ -58,6 +58,8 @@ function armaNomeada(item) {
     ...base,
     id: item.id, name: item.name, deBase: item.base, desc: item.desc,
     raridade: item.raridade, sintonia: item.sintonia, fonte: item.fonte,
+    // a LÂMINA LUNAR: só elfo ou meio-elfo se sintoniza (`itens-que-conjuram.js sintonizar`)
+    ...(item.sintoniaElfo ? { sintoniaElfo: true } : {}),
     campanha: item.campanha, peso: item.peso ?? base.peso,
     bonusAtaque: item.bonusAtaque ?? 0, bonusDano: item.bonusDano ?? 0,
     // a Espada Solar fere com radiante, e não com o corte da espada longa de base
@@ -85,6 +87,8 @@ function armaduraNomeada(item) {
     // origem vai em `deBase` para nao pisar nele.
     id: item.id, name: item.name, deBase: item.base, desc: item.desc,
     raridade: item.raridade, sintonia: item.sintonia, fonte: item.fonte,
+    // a LÂMINA LUNAR: só elfo ou meio-elfo se sintoniza (`itens-que-conjuram.js sintonizar`)
+    ...(item.sintoniaElfo ? { sintoniaElfo: true } : {}),
     campanha: item.campanha, peso: item.peso ?? base.peso,
     // O +1 da armadura magica. Vale enquanto ela esta vestida, como a base.
     bonusCA: item.acBonusArmadura ?? 0,
